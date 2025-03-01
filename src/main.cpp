@@ -31,6 +31,7 @@
 #include "table/HorizontalMetricsTable.hpp"
 #include "table/ScriptList.hpp"
 #include "table/FeatureList.hpp"
+#include "table/LookupList.hpp"
 #include "table/GlyphSubstitutionTable.hpp"
 #include "FontFile.hpp"
 // clang-format on

@@ -67,6 +67,19 @@ public:
       }
     }
 
+    LookupList lookupList;
+    {
+      if (!in.seek(lookupListOffset)) {
+        return nullptr;
+      }
+      OffsetInputStream sub(in);
+      if (auto ll = LookupList::Read(sub); ll) {
+        lookupList = *ll;
+      } else {
+        return nullptr;
+      }
+    }
+
     return r;
   }
 
