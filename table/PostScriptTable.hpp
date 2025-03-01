@@ -39,7 +39,7 @@ public:
         if (bytes > 63) {
           return nullopt;
         }
-        if (any_of(s.begin(), s.end(), InvalidNameCharacter)) {
+        if (ranges::any_of(s, InvalidNameCharacter)) {
           return nullopt;
         }
         names.push_back(s);
@@ -74,7 +74,7 @@ public:
           if (n.size() > 63) {
             return false;
           }
-          if (any_of(n.begin(), n.end(), InvalidNameCharacter)) {
+          if (ranges::any_of(n, InvalidNameCharacter)) {
             return false;
           }
           uint8_t bytes = n.size();
@@ -137,7 +137,7 @@ public:
     if (!out.u32(maxMemType1)) {
       return nullopt;
     }
-    if (version.major == 0x002 && version.minor == 0x0000) {
+    if (version.major == 0x0002 && version.minor == 0x0000) {
       if (!holds_alternative<Version2Data>(data)) {
         return nullopt;
       }
