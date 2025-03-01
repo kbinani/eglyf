@@ -119,7 +119,11 @@ public:
           return nullptr;
         } else if (it.lookupType == 7) {
           // Substitituion extension
-          return nullptr;
+          if (auto t = gsub::SubstitutionExtension::Read(sub); t) {
+            l.subtables.push_back(t);
+          } else {
+            return nullptr;
+          }
         } else if (it.lookupType == 8) {
           // Reverse chaining context single
           return nullptr;

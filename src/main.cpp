@@ -38,6 +38,7 @@
 #include "table/CoverageReader.hpp"
 #include "table/gsub/Subtable.hpp"
 #include "table/gsub/Single.hpp"
+#include "table/gsub/SubstitutionExtension.hpp"
 #include "table/GlyphSubstitutionTable.hpp"
 #include "FontFile.hpp"
 // clang-format on

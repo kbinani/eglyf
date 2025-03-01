@@ -54,6 +54,7 @@ list(APPEND src_files
   src/table/CoverageReader.hpp
   src/table/gsub/Subtable.hpp
   src/table/gsub/Single.hpp
+  src/table/gsub/SubstitutionExtension.hpp
 )
 
 juce_add_console_app(eglyf)
