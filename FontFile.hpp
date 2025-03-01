@@ -82,71 +82,90 @@ public:
     } else {
       return nullptr;
     }
-    shared_ptr<FontHeaderTable> head;
-    shared_ptr<MaximumProfileTable> maxp;
-    for (uint32_t i = 0; i < ff->tableDirectory.numTables; i++) {
-      TableRecord tr = ff->tableDirectory.tableRecords[i];
-      if (tr.tag.values != Tag::FCC("head") && tr.tag.values != Tag::FCC("maxp")) {
-        continue;
-      }
-      uint32_t size = tr.length;
-      if (size % 4 != 0) {
-        size += 4 - (tr.length % 4);
-      }
-      string buffer;
-      buffer.resize(size);
-      if (!in.seek(tr.offset)) {
-        return nullptr;
-      }
-      if (!in.read(buffer.data(), tr.length)) {
-        return nullptr;
-      }
-      ByteInputStream slice(buffer);
-      if (tr.tag.values == Tag::FCC("head")) {
-        head = FontHeaderTable::Read(slice);
-        if (!head) {
-          return nullptr;
-        }
-        ff->tables[tr.tag.values] = head;
-      } else if (tr.tag.values == Tag::FCC("maxp")) {
-        maxp = MaximumProfileTable::Read(slice);
-        if (!maxp) {
-          return nullptr;
-        }
-        ff->tables[tr.tag.values] = maxp;
-      }
+
+    map<array<uint8_t, 4>, TableRecord> records;
+    for (auto const &it : ff->tableDirectory.tableRecords) {
+      records[it.tag.values] = it;
     }
-    if (!head || !maxp) {
+
+    shared_ptr<FontHeaderTable> head;
+    if (auto tr = records.find(Tag::FCC("head")); tr == records.end()) {
+      return nullptr;
+    } else if (auto buffer = tr->second.read(in); buffer) {
+      ByteInputStream slice(*buffer);
+      if (auto result = FontHeaderTable::Read(slice); result) {
+        head = result;
+        ff->tables[tr->first] = head;
+      } else {
+        return nullptr;
+      }
+      records.erase(tr->first);
+    } else {
       return nullptr;
     }
 
-    for (uint32_t i = 0; i < ff->tableDirectory.numTables; i++) {
-      TableRecord tr = ff->tableDirectory.tableRecords[i];
-      if (tr.tag.values == Tag::FCC("head") || tr.tag.values == Tag::FCC("maxp")) {
-        continue;
-      }
-      uint32_t size = tr.length;
-      if (size % 4 != 0) {
-        size += 4 - (tr.length % 4);
-      }
-      string buffer;
-      buffer.resize(size);
-      if (!in.seek(tr.offset)) {
+    shared_ptr<MaximumProfileTable> maxp;
+    if (auto tr = records.find(Tag::FCC("maxp")); tr == records.end()) {
+      return nullptr;
+    } else if (auto buffer = tr->second.read(in); buffer) {
+      ByteInputStream slice(*buffer);
+      if (auto result = MaximumProfileTable::Read(slice); result) {
+        maxp = result;
+        ff->tables[tr->first] = maxp;
+      } else {
         return nullptr;
       }
-      if (!in.read(buffer.data(), tr.length)) {
+      records.erase(tr->first);
+    } else {
+      return nullptr;
+    }
+
+    if (auto tr0 = records.find(Tag::FCC("glyf")); tr0 != records.end()) {
+      auto tr1 = records.find(Tag::FCC("loca"));
+      if (tr1 == records.end()) {
         return nullptr;
       }
-      if (false && tr.tag.values == Tag::FCC("loca")) {
-        ByteInputStream slice(buffer);
-        auto loca = IndexToLocationTable::Read(slice, head->indexToLocFormat, maxp->numGlyphs);
+      shared_ptr<IndexToLocationTable> loca;
+      {
+        auto buffer = tr1->second.read(in);
+        if (!buffer) {
+          return nullptr;
+        }
+        ByteInputStream slice(*buffer);
+        loca = IndexToLocationTable::Read(slice, head->indexToLocFormat, maxp->numGlyphs);
         if (!loca) {
           return nullptr;
         }
-        ff->tables[tr.tag.values] = loca;
-      } else {
-        ff->tables[tr.tag.values] = make_shared<ReadonlyTable>(buffer, tr.length);
       }
+      shared_ptr<GlyphDataTable> glyf;
+      {
+        auto buffer = tr0->second.read(in);
+        if (!buffer) {
+          return nullptr;
+        }
+        ByteInputStream slice(*buffer);
+        glyf = GlyphDataTable::Read(slice, *loca);
+        if (!glyf) {
+          return nullptr;
+        }
+      }
+      ff->tables[tr0->first] = glyf;
+      ff->tables[tr1->first] = loca;
+      records.erase(tr0->first);
+      records.erase(tr1->first);
+    }
+
+    for (auto const &it : records) {
+      TableRecord tr = it.second;
+      auto buffer = tr.read(in);
+      if (!buffer) {
+        return nullptr;
+      }
+      string s = *buffer;
+      if (s.size() % 4 != 0) {
+        s.resize(s.size() + 4 - (s.size() % 4));
+      }
+      ff->tables[tr.tag.values] = make_shared<ReadonlyTable>(s, tr.length);
     }
     return ff;
   }

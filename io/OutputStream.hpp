@@ -5,6 +5,7 @@ namespace ksesh {
 class OutputStream {
 public:
   virtual ~OutputStream() {}
+
   virtual bool i64(int64_t v) = 0;
   virtual bool u32(uint32_t v) = 0;
   virtual bool i16(int16_t) = 0;

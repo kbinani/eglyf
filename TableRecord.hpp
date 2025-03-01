@@ -27,6 +27,19 @@ struct TableRecord {
     }
     return tr;
   }
+
+  std::optional<std::string> read(InputStream &in) const {
+    using namespace std;
+    string buffer;
+    buffer.resize(length);
+    if (!in.seek(offset)) {
+      return nullopt;
+    }
+    if (length != in.read(buffer.data(), length)) {
+      return nullopt;
+    }
+    return buffer;
+  }
 };
 
 } // namespace ksesh

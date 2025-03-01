@@ -65,28 +65,25 @@ public:
     }
   }
 
-  bool read(void *buf, size_t size) override {
-    if (pos + size <= buffer.size()) {
-      pos += size;
-      std::copy_n(buffer.data() + pos, size, (char *)buf);
-      return true;
+  size_t read(void *buf, size_t size) override {
+    if (pos < buffer.size()) {
+      size_t ret = std::min(size, buffer.size() - pos);
+      std::copy_n(buffer.data() + pos, ret, (char *)buf);
+      pos += ret;
+      return ret;
     } else {
       pos = buffer.size();
-      return false;
+      return 0;
     }
   }
 
   bool seek(int64_t loc) override {
-    if (0 <= pos + loc && pos + loc <= buffer.size()) {
+    if (0 <= loc && loc <= buffer.size()) {
       pos = loc;
       return true;
     } else {
       return false;
     }
-  }
-
-  bool ok() override {
-    return pos < buffer.size();
   }
 
 private:

@@ -54,15 +54,16 @@ public:
     }
   }
 
-  bool ok() override {
-    return s.openedOk() && !s.isExhausted();
-  }
-
-  bool read(void *buffer, size_t size) override {
+  size_t read(void *buffer, size_t size) override {
     if (size == 0) {
-      return true;
+      return 0;
     }
-    return s.read(buffer, size) == size;
+    int ret = s.read(buffer, size);
+    if (ret < 0) {
+      return 0;
+    } else {
+      return (size_t)ret;
+    }
   }
 
   bool seek(int64_t loc) override {
