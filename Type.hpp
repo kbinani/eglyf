@@ -21,7 +21,20 @@ struct Version16Dot16 {
 static_assert(sizeof(Version16Dot16) == sizeof(uint32_t));
 
 struct F2DOT14 {
-  uint16_t data = 0;
+  static constexpr float ToFloatScale = 1.0f / (1 << 14);
+  static constexpr float FromFloatScale = 1 << 14;
+
+  float toFloat() const {
+    return static_cast<int32_t>(data) * ToFloatScale;
+  }
+
+  static F2DOT14 FromFloat(float v) {
+    F2DOT14 r;
+    r.data = static_cast<int16_t>(roundf(v * FromFloatScale));
+    return r;
+  }
+
+  int16_t data = 0;
 };
 
 template <class T>

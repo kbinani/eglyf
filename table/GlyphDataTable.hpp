@@ -154,35 +154,35 @@ public:
         }
         if (flags & WE_HAVE_A_SCALE) {
           F2DOT14 scale;
-          if (!in.u16(&scale.data)) {
+          if (!in.f2dot14(&scale)) {
             return nullopt;
           }
           rec.scale = scale;
         } else if (flags & WE_HAVE_AN_X_AND_Y_SCALE) {
           F2DOT14 xscale;
           F2DOT14 yscale;
-          if (!in.u16(&xscale.data)) {
+          if (!in.f2dot14(&xscale)) {
             return nullopt;
           }
-          if (!in.u16(&yscale.data)) {
+          if (!in.f2dot14(&yscale)) {
             return nullopt;
           }
           rec.scale = Vec<F2DOT14>(xscale, yscale);
         } else if (flags & WE_HAVE_A_TWO_BY_TWO) {
           F2DOT14 xscale;
-          if (!in.u16(&xscale.data)) {
+          if (!in.f2dot14(&xscale)) {
             return nullopt;
           }
           F2DOT14 scale01;
-          if (!in.u16(&scale01.data)) {
+          if (!in.f2dot14(&scale01)) {
             return nullopt;
           }
           F2DOT14 scale10;
-          if (!in.u16(&scale10.data)) {
+          if (!in.f2dot14(&scale10)) {
             return nullopt;
           }
           F2DOT14 yscale;
-          if (!in.u16(&yscale.data)) {
+          if (!in.f2dot14(&yscale)) {
             return nullopt;
           }
           rec.scale = Vec<F2DOT14>(xscale, yscale);
@@ -277,29 +277,29 @@ public:
         if (rec.scale) {
           if (holds_alternative<F2DOT14>(*rec.scale)) {
             auto s1 = get<F2DOT14>(*rec.scale);
-            if (!out.u16(s1.data)) {
+            if (!out.f2dot14(s1)) {
               return false;
             }
           } else if (holds_alternative<Vec<F2DOT14>>(*rec.scale)) {
             auto s1 = get<Vec<F2DOT14>>(*rec.scale);
             if (rec.scale2) {
-              if (!out.u16(s1.x.data)) {
+              if (!out.f2dot14(s1.x)) {
                 return false;
               }
-              if (!out.u16(rec.scale2->x.data)) {
+              if (!out.f2dot14(rec.scale2->x)) {
                 return false;
               }
-              if (!out.u16(rec.scale2->y.data)) {
+              if (!out.f2dot14(rec.scale2->y)) {
                 return false;
               }
-              if (!out.u16(s1.y.data)) {
+              if (!out.f2dot14(s1.y)) {
                 return false;
               }
             } else {
-              if (!out.u16(s1.x.data)) {
+              if (!out.f2dot14(s1.x)) {
                 return false;
               }
-              if (!out.u16(s1.y.data)) {
+              if (!out.f2dot14(s1.y)) {
                 return false;
               }
             }

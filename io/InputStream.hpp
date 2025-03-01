@@ -67,6 +67,10 @@ public:
     return u32(v);
   }
 
+  bool f2dot14(F2DOT14 *v) {
+    return i16(&v->data);
+  }
+
   std::string readUntilEos() {
     using namespace std;
     string ret;

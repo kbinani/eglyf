@@ -44,6 +44,10 @@ public:
   bool o32(Offset32 v) {
     return u32(v);
   }
+
+  bool f2dot14(F2DOT14 v) {
+    return i16(v.data);
+  }
 };
 
 } // namespace ksesh::otf
