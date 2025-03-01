@@ -50,7 +50,11 @@ public:
       return nullptr;
     } else if (r->extensionLookupType == 6) {
       // Chained contexts substitution
-      return nullptr;
+      if (auto t = ChainedContextsSubstitution::Read(sub); t) {
+        r->extension = t;
+      } else {
+        return nullptr;
+      }
     } else if (r->extensionLookupType == 8) {
       // Reverse chaining context single
       return nullptr;

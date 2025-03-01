@@ -116,7 +116,11 @@ public:
           return nullptr;
         } else if (it.lookupType == 6) {
           // Chained contexts substitution
-          return nullptr;
+          if (auto t = gsub::ChainedContextsSubstitution::Read(sub); t) {
+            l.subtables.push_back(t);
+          } else {
+            return nullptr;
+          }
         } else if (it.lookupType == 7) {
           // Substitituion extension
           if (auto t = gsub::SubstitutionExtension::Read(sub); t) {
