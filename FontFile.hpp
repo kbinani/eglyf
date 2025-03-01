@@ -96,7 +96,7 @@ public:
       if (!in.read(buffer.data(), tr.length)) {
         return nullptr;
       }
-      if (tr.tag.values == Tag::FCC('h', 'e', 'a', 'd')) {
+      if (tr.tag.values == Tag::FCC("head")) {
         ByteInputStream slice(buffer);
         auto head = FontHeaderTable::Read(slice);
         if (!head) {

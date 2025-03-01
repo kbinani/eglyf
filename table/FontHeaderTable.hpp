@@ -8,29 +8,61 @@ public:
   static std::shared_ptr<FontHeaderTable> Read(InputStream &in) {
     using namespace std;
     auto r = make_shared<FontHeaderTable>();
-    r->majorVersion = in.u16();
-    r->minorVersion = in.u16();
-    r->fontRevision.value = in.u32();
-    r->checksumAdjustment = in.u32();
-    r->magicNumber = in.u32();
-    r->flags = in.u16();
-    r->unitsPerEm = in.u16();
-    r->created = in.i64();
-    r->modified = in.i64();
-    r->xMin = in.i16();
-    r->yMin = in.i16();
-    r->xMax = in.i16();
-    r->yMax = in.i16();
-    r->macStyle = in.u16();
-    r->lowestRecPPEM = in.u16();
-    r->fontDirectionHint = in.i16();
-    r->indexToLocFormat = in.i16();
-    r->glyphDataFormat = in.i16();
-    if (in.ok()) {
-      return r;
-    } else {
+    if (!in.u16(&r->majorVersion)) {
       return nullptr;
     }
+    if (!in.u16(&r->minorVersion)) {
+      return nullptr;
+    }
+    if (!in.u32(&r->fontRevision.value)) {
+      return nullptr;
+    }
+    if (!in.u32(&r->checksumAdjustment)) {
+      return nullptr;
+    }
+    if (!in.u32(&r->magicNumber)) {
+      return nullptr;
+    }
+    if (!in.u16(&r->flags)) {
+      return nullptr;
+    }
+    if (!in.u16(&r->unitsPerEm)) {
+      return nullptr;
+    }
+    if (!in.i64(&r->created)) {
+      return nullptr;
+    }
+    if (!in.i64(&r->modified)) {
+      return nullptr;
+    }
+    if (!in.i16(&r->xMin)) {
+      return nullptr;
+    }
+    if (!in.i16(&r->yMin)) {
+      return nullptr;
+    }
+    if (!in.i16(&r->xMax)) {
+      return nullptr;
+    }
+    if (!in.i16(&r->yMax)) {
+      return nullptr;
+    }
+    if (!in.u16(&r->macStyle)) {
+      return nullptr;
+    }
+    if (!in.u16(&r->lowestRecPPEM)) {
+      return nullptr;
+    }
+    if (!in.i16(&r->fontDirectionHint)) {
+      return nullptr;
+    }
+    if (!in.i16(&r->indexToLocFormat)) {
+      return nullptr;
+    }
+    if (!in.i16(&r->glyphDataFormat)) {
+      return nullptr;
+    }
+    return r;
   }
 
   std::optional<EncodeResult> encode() override {
@@ -90,14 +122,7 @@ public:
     if (!out.i16(glyphDataFormat)) {
       return nullopt;
     }
-    auto data = out.data();
-    EncodeResult er;
-    er.length = data.size();
-    if (er.length % 4 != 0) {
-      data.resize(er.length + (4 - (er.length % 4)));
-    }
-    er.data = data;
-    return er;
+    return EncodeResult(out.data());
   }
 
 public:

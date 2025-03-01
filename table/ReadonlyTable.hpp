@@ -7,10 +7,7 @@ public:
   explicit ReadonlyTable(std::string const &content, uint32_t length) : content(content), len(length) {}
 
   std::optional<EncodeResult> encode() override {
-    EncodeResult er;
-    er.data = content;
-    er.length = len;
-    return er;
+    return EncodeResult(content, len);
   }
 
 public:

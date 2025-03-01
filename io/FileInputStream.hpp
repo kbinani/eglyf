@@ -6,42 +6,52 @@ class FileInputStream : public InputStream {
 public:
   explicit FileInputStream(juce::File file) : s(file) {}
 
-  int64_t i64() override {
-    if (!ok()) {
-      return 0;
+  bool i64(int64_t *v) override {
+    if (s.openedOk() && s.getPosition() + 8 <= s.getTotalLength()) {
+      *v = s.readInt64BigEndian();
+      return s.openedOk();
+    } else {
+      return false;
     }
-    return s.readInt64BigEndian();
   }
 
-  uint32_t u32() override {
-    if (!ok()) {
-      return 0;
+  bool u32(uint32_t *x) override {
+    if (s.openedOk() && s.getPosition() + 4 <= s.getTotalLength()) {
+      int32_t v = s.readIntBigEndian();
+      *x = *(uint32_t *)&v;
+      return s.openedOk();
+    } else {
+      return false;
     }
-    int32_t v = s.readIntBigEndian();
-    return *(uint32_t *)&v;
   }
 
-  int16_t i16() override {
-    if (!ok()) {
-      return 0;
+  bool i16(int16_t *x) override {
+    if (s.openedOk() && s.getPosition() + 2 <= s.getTotalLength()) {
+      *x = s.readShortBigEndian();
+      return s.openedOk();
+    } else {
+      return false;
     }
-    return s.readShortBigEndian();
   }
 
-  uint16_t u16() override {
-    if (!ok()) {
-      return 0;
+  bool u16(uint16_t *x) override {
+    if (s.openedOk() && s.getPosition() + 2 <= s.getTotalLength()) {
+      int16_t v = s.readShortBigEndian();
+      *x = *(uint16_t *)&v;
+      return s.openedOk();
+    } else {
+      return false;
     }
-    int16_t v = s.readShortBigEndian();
-    return *(uint16_t *)&v;
   }
 
-  uint8_t u8() override {
-    if (!ok()) {
-      return 0;
+  bool u8(uint8_t *x) override {
+    if (s.openedOk() && s.getPosition() + 1 <= s.getTotalLength()) {
+      char v = s.readByte();
+      *x = *(uint8_t *)&v;
+      return s.openedOk();
+    } else {
+      return false;
     }
-    char v = s.readByte();
-    return *(uint8_t *)&v;
   }
 
   bool ok() override {

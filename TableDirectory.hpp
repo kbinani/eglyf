@@ -13,11 +13,21 @@ struct TableDirectory {
   static std::optional<TableDirectory> Read(InputStream &in) {
     using namespace std;
     TableDirectory td;
-    td.sfntVersion = in.u32();
-    td.numTables = in.u16();
-    td.searchRange = in.u16();
-    td.entrySelector = in.u16();
-    td.rangeShift = in.u16();
+    if (!in.u32(&td.sfntVersion)) {
+      return nullopt;
+    }
+    if (!in.u16(&td.numTables)) {
+      return nullopt;
+    }
+    if (!in.u16(&td.searchRange)) {
+      return nullopt;
+    }
+    if (!in.u16(&td.entrySelector)) {
+      return nullopt;
+    }
+    if (!in.u16(&td.rangeShift)) {
+      return nullopt;
+    }
     td.tableRecords.resize(td.numTables);
     for (uint32_t i = 0; i < td.numTables; i++) {
       if (auto record = TableRecord::Read(in); record) {

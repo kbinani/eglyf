@@ -16,14 +16,16 @@ struct TableRecord {
     } else {
       return nullopt;
     }
-    tr.checksum = in.u32();
-    tr.offset = in.o32();
-    tr.length = in.u32();
-    if (in.ok()) {
-      return tr;
-    } else {
+    if (!in.u32(&tr.checksum)) {
       return nullopt;
     }
+    if (!in.o32(&tr.offset)) {
+      return nullopt;
+    }
+    if (!in.u32(&tr.length)) {
+      return nullopt;
+    }
+    return tr;
   }
 };
 

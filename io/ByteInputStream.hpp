@@ -4,68 +4,71 @@ namespace ksesh {
 
 class ByteInputStream : public InputStream {
 public:
-  explicit ByteInputStream(std::string const &buffer) : buffer(buffer) {
+  explicit ByteInputStream(std::string_view buffer) : buffer(buffer) {
   }
 
-  int64_t i64() override {
+  bool i64(int64_t *x) override {
     if (pos + 8 <= buffer.size()) {
-      uint64_t v = juce::ByteOrder::bigEndianInt64(buffer.c_str() + pos);
+      uint64_t v = juce::ByteOrder::bigEndianInt64(buffer.data() + pos);
       pos += 8;
-      return *(int64_t *)&v;
+      *x = *(int64_t *)&v;
+      return true;
     } else {
       pos = buffer.size();
-      return 0;
+      return false;
     }
   }
 
-  uint32_t u32() override {
+  bool u32(uint32_t *x) override {
     if (pos + 4 <= buffer.size()) {
-      uint32_t v = juce::ByteOrder::bigEndianInt(buffer.c_str() + pos);
+      *x = juce::ByteOrder::bigEndianInt(buffer.data() + pos);
       pos += 4;
-      return v;
+      return true;
     } else {
       pos = buffer.size();
-      return 0;
+      return false;
     }
   }
 
-  int16_t i16() override {
+  bool i16(int16_t *x) override {
     if (pos + 2 <= buffer.size()) {
-      uint16_t v = juce::ByteOrder::bigEndianShort(buffer.c_str() + pos);
+      uint16_t v = juce::ByteOrder::bigEndianShort(buffer.data() + pos);
       pos += 2;
-      return *(int16_t *)&v;
+      *x = *(int16_t *)&v;
+      return true;
     } else {
       pos = buffer.size();
-      return 0;
+      return false;
     }
   }
 
-  uint16_t u16() override {
+  bool u16(uint16_t *x) override {
     if (pos + 2 <= buffer.size()) {
-      uint16_t v = juce::ByteOrder::bigEndianShort(buffer.c_str() + pos);
+      *x = juce::ByteOrder::bigEndianShort(buffer.data() + pos);
       pos += 2;
-      return v;
+      return true;
     } else {
       pos = buffer.size();
-      return 0;
+      return false;
     }
   }
 
-  uint8_t u8() override {
+  bool u8(uint8_t *x) override {
     if (pos + 1 <= buffer.size()) {
       char v = buffer[pos];
       pos += 1;
-      return *(uint8_t *)&v;
+      *x = *(uint8_t *)&v;
+      return true;
     } else {
       pos = buffer.size();
-      return 0;
+      return false;
     }
   }
 
   bool read(void *buf, size_t size) override {
     if (pos + size <= buffer.size()) {
       pos += size;
-      std::copy_n(buffer.c_str() + pos, size, (char *)buf);
+      std::copy_n(buffer.data() + pos, size, (char *)buf);
       return true;
     } else {
       pos = buffer.size();
@@ -88,7 +91,7 @@ public:
 
 private:
   size_t pos = 0;
-  std::string buffer;
+  std::string_view buffer;
 };
 
 } // namespace ksesh
