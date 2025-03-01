@@ -339,6 +339,20 @@ public:
       return nullptr;
     }
 
+    if (auto tr = records.find(Tag::FCC("GSUB")); tr != records.end()) {
+      if (auto buffer = tr->second.read(in); buffer) {
+        ByteInputStream slice(*buffer);
+        if (auto result = GlyphSubstitutionTable::Read(slice); result) {
+          ff->tables[tr->second.tag.values] = result;
+        } else {
+          return nullptr;
+        }
+        records.erase(tr->first);
+      } else {
+        return nullptr;
+      }
+    }
+
     for (auto const &it : records) {
       TableRecord tr = it.second;
       auto buffer = tr.read(in);

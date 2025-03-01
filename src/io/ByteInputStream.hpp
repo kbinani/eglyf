@@ -28,6 +28,10 @@ public:
     }
   }
 
+  int64_t position() override {
+    return pos;
+  }
+
 private:
   size_t pos = 0;
   std::string_view buffer;

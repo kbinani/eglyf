@@ -33,6 +33,7 @@ list(APPEND src_files
   src/io/FileOutputStream.hpp
   src/io/ByteInputStream.hpp
   src/io/ByteOutputStream.hpp
+  src/io/OffsetInputStream.hpp
   src/table/Table.hpp
   src/table/ReadonlyTable.hpp
   src/table/FontHeaderTable.hpp
@@ -43,6 +44,8 @@ list(APPEND src_files
   src/table/OS2AndWindowsMetricsTable.hpp
   src/table/HorizontalHeaderTable.hpp
   src/table/HorizontalMetricsTable.hpp
+  src/table/GlyphSubstitutionTable.hpp
+  src/table/gsub/ScriptList.hpp
 )
 
 juce_add_console_app(eglyf)
@@ -62,3 +65,5 @@ if (MSVC)
       WIN32_LEAN_AND_MEAN
   )
 endif()
+
+source_group(TREE ${CMAKE_CURRENT_LIST_DIR} FILES ${src_files})

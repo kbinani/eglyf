@@ -11,6 +11,7 @@
 #include "Type.hpp"
 #include "io/InputStream.hpp"
 #include "io/OutputStream.hpp"
+#include "io/OffsetInputStream.hpp"
 #include "io/FileInputStream.hpp"
 #include "io/FileOutputStream.hpp"
 #include "io/ByteInputStream.hpp"
@@ -28,6 +29,8 @@
 #include "table/OS2AndWindowsMetricsTable.hpp"
 #include "table/HorizontalHeaderTable.hpp"
 #include "table/HorizontalMetricsTable.hpp"
+#include "table/gsub/ScriptList.hpp"
+#include "table/GlyphSubstitutionTable.hpp"
 #include "FontFile.hpp"
 // clang-format on
 
