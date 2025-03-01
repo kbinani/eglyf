@@ -11,7 +11,7 @@ struct TableRecord {
   static std::optional<TableRecord> Read(InputStream &in) {
     using namespace std;
     TableRecord tr;
-    if (auto tag = Tag::Read(in); tag) {
+    if (auto tag = ReadTag(in); tag) {
       tr.tag = *tag;
     } else {
       return nullopt;

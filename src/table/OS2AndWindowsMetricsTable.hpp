@@ -73,7 +73,7 @@ public:
     if (!in.u32(&r->ulUnicodeRange4)) {
       return nullptr;
     }
-    if (auto id = Tag::Read(in); id) {
+    if (auto id = ReadTag(in); id) {
       r->achVendID = *id;
     } else {
       return nullptr;
@@ -220,7 +220,7 @@ public:
     if (!out.u32(ulUnicodeRange4)) {
       return nullopt;
     }
-    if (!out.write(achVendID.values.data(), achVendID.values.size())) {
+    if (!out.write(achVendID.data(), achVendID.size())) {
       return nullopt;
     }
     if (!out.u16(fsSelection)) {

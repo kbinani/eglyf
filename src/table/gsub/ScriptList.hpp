@@ -55,7 +55,7 @@ public:
     }
     vector<pair<Tag, Offset16>> scriptOffsetList;
     for (uint16_t i = 0; i < scriptCount; i++) {
-      auto scriptTag = Tag::Read(in);
+      auto scriptTag = ReadTag(in);
       if (!scriptTag) {
         return nullopt;
       }
@@ -81,7 +81,7 @@ public:
       }
       vector<pair<Tag, Offset16>> langSysOffsetList;
       for (uint16_t j = 0; j < langSysCount; j++) {
-        auto langSysTag = Tag::Read(in);
+        auto langSysTag = ReadTag(in);
         if (!langSysTag) {
           return nullopt;
         }
@@ -109,9 +109,9 @@ public:
         if (!langSys) {
           return nullopt;
         }
-        script.langSysTable[langSysTag.values] = *langSys;
+        script.langSysTable[langSysTag] = *langSys;
       }
-      scriptList.scriptTable[scriptTag.values] = script;
+      scriptList.scriptTable[scriptTag] = script;
     }
     return scriptList;
   }

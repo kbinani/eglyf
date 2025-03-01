@@ -18,13 +18,13 @@ public:
     for (auto const &it : tables) {
       all[it.first] = it.second;
     }
-    all[Tag::FCC("cmap")] = cmap;
-    all[Tag::FCC("head")] = head;
-    all[Tag::FCC("hhea")] = hhea;
-    all[Tag::FCC("maxp")] = maxp;
-    all[Tag::FCC("name")] = name;
-    all[Tag::FCC("OS/2")] = os2;
-    all[Tag::FCC("post")] = post;
+    all[FCC("cmap")] = cmap;
+    all[FCC("head")] = head;
+    all[FCC("hhea")] = hhea;
+    all[FCC("maxp")] = maxp;
+    all[FCC("name")] = name;
+    all[FCC("OS/2")] = os2;
+    all[FCC("post")] = post;
     numTables = all.size();
     numTables += 1; // hmtx
     if (holds_alternative<TrueTypeOutlines>(outlines)) {
@@ -65,9 +65,9 @@ public:
         return false;
       }
 
-      auto glyfTag = Tag::FCC("glyf");
+      auto glyfTag = FCC("glyf");
       TableRecord glyfRecord;
-      glyfRecord.tag.values = glyfTag;
+      glyfRecord.tag = glyfTag;
       glyfRecord.checksum = encodedGlyf->checksum;
       glyfRecord.offset = offset;
       glyfRecord.length = encodedGlyf->length;
@@ -78,13 +78,13 @@ public:
       }
       offset += encodedGlyf->data.size();
 
-      auto locaTag = Tag::FCC("loca");
+      auto locaTag = FCC("loca");
       auto encodedLoca = loca.encode();
       if (!encodedLoca) {
         return false;
       }
       TableRecord locaRecord;
-      locaRecord.tag.values = locaTag;
+      locaRecord.tag = locaTag;
       locaRecord.checksum = encodedLoca->checksum;
       locaRecord.offset = offset;
       locaRecord.length = encodedLoca->length;
@@ -100,11 +100,11 @@ public:
     uint16_t numberOfHMetrics = 0;
     if (auto encoded = hmtx->encode(numberOfHMetrics); encoded) {
       TableRecord hmtxRecord;
-      hmtxRecord.tag.values = Tag::FCC("hmtx");
+      hmtxRecord.tag = FCC("hmtx");
       hmtxRecord.checksum = encoded->checksum;
       hmtxRecord.offset = offset;
       hmtxRecord.length = encoded->length;
-      tableRecords[Tag::FCC("hmtx")] = hmtxRecord;
+      tableRecords[FCC("hmtx")] = hmtxRecord;
 
       if (!out.write(encoded->data.data(), encoded->data.size())) {
         return false;
@@ -122,7 +122,7 @@ public:
         return false;
       }
       TableRecord tr;
-      tr.tag.values = tag;
+      tr.tag = tag;
       tr.checksum = encoded->checksum;
       tr.offset = offset;
       tr.length = encoded->length;
@@ -138,7 +138,7 @@ public:
       return false;
     }
     for (auto [_, record] : tableRecords) {
-      if (!out.write(record.tag.values.data(), record.tag.values.size())) {
+      if (!out.write(record.tag.data(), record.tag.size())) {
         return false;
       }
       if (!out.u32(record.checksum)) {
@@ -194,10 +194,10 @@ public:
 
     map<array<uint8_t, 4>, TableRecord> records;
     for (auto const &it : td->tableRecords) {
-      records[it.tag.values] = it;
+      records[it.tag] = it;
     }
 
-    if (auto tr = records.find(Tag::FCC("head")); tr == records.end()) {
+    if (auto tr = records.find(FCC("head")); tr == records.end()) {
       return nullptr;
     } else if (auto buffer = tr->second.read(in); buffer) {
       ByteInputStream slice(*buffer);
@@ -211,7 +211,7 @@ public:
       return nullptr;
     }
 
-    if (auto tr = records.find(Tag::FCC("maxp")); tr == records.end()) {
+    if (auto tr = records.find(FCC("maxp")); tr == records.end()) {
       return nullptr;
     } else if (auto buffer = tr->second.read(in); buffer) {
       ByteInputStream slice(*buffer);
@@ -225,7 +225,7 @@ public:
       return nullptr;
     }
 
-    if (auto tr = records.find(Tag::FCC("cmap")); tr == records.end()) {
+    if (auto tr = records.find(FCC("cmap")); tr == records.end()) {
       return nullptr;
     } else if (auto buffer = tr->second.read(in); buffer) {
       ff->cmap = make_shared<ReadonlyTable>(*buffer);
@@ -234,7 +234,7 @@ public:
       return nullptr;
     }
 
-    if (auto tr = records.find(Tag::FCC("hhea")); tr == records.end()) {
+    if (auto tr = records.find(FCC("hhea")); tr == records.end()) {
       return nullptr;
     } else if (auto buffer = tr->second.read(in); buffer) {
       ByteInputStream slice(*buffer);
@@ -248,7 +248,7 @@ public:
       return nullptr;
     }
 
-    if (auto tr = records.find(Tag::FCC("hmtx")); tr == records.end()) {
+    if (auto tr = records.find(FCC("hmtx")); tr == records.end()) {
       return nullptr;
     } else if (auto buffer = tr->second.read(in); buffer) {
       ByteInputStream slice(*buffer);
@@ -262,7 +262,7 @@ public:
       return nullptr;
     }
 
-    if (auto tr = records.find(Tag::FCC("name")); tr == records.end()) {
+    if (auto tr = records.find(FCC("name")); tr == records.end()) {
       return nullptr;
     } else if (auto buffer = tr->second.read(in); buffer) {
       ff->name = make_shared<ReadonlyTable>(*buffer);
@@ -271,7 +271,7 @@ public:
       return nullptr;
     }
 
-    if (auto tr = records.find(Tag::FCC("OS/2")); tr == records.end()) {
+    if (auto tr = records.find(FCC("OS/2")); tr == records.end()) {
       return nullptr;
     } else if (auto buffer = tr->second.read(in); buffer) {
       ByteInputStream slice(*buffer);
@@ -285,7 +285,7 @@ public:
       return nullptr;
     }
 
-    if (auto tr = records.find(Tag::FCC("post")); tr == records.end()) {
+    if (auto tr = records.find(FCC("post")); tr == records.end()) {
       return nullptr;
     } else if (auto buffer = tr->second.read(in); buffer) {
       ByteInputStream slice(*buffer);
@@ -299,8 +299,8 @@ public:
       return nullptr;
     }
 
-    if (auto tr0 = records.find(Tag::FCC("glyf")); tr0 != records.end()) {
-      auto tr1 = records.find(Tag::FCC("loca"));
+    if (auto tr0 = records.find(FCC("glyf")); tr0 != records.end()) {
+      auto tr1 = records.find(FCC("loca"));
       if (tr1 == records.end()) {
         return nullptr;
       }
@@ -339,11 +339,11 @@ public:
       return nullptr;
     }
 
-    if (auto tr = records.find(Tag::FCC("GSUB")); tr != records.end()) {
+    if (auto tr = records.find(FCC("GSUB")); tr != records.end()) {
       if (auto buffer = tr->second.read(in); buffer) {
         ByteInputStream slice(*buffer);
         if (auto result = GlyphSubstitutionTable::Read(slice); result) {
-          ff->tables[tr->second.tag.values] = result;
+          ff->tables[tr->second.tag] = result;
         } else {
           return nullptr;
         }
@@ -359,7 +359,7 @@ public:
       if (!buffer) {
         return nullptr;
       }
-      ff->tables[tr.tag.values] = make_shared<ReadonlyTable>(*buffer);
+      ff->tables[tr.tag] = make_shared<ReadonlyTable>(*buffer);
     }
     return ff;
   }
