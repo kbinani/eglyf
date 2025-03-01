@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh {
+namespace ksesh::otf {
 
 class InputStream {
 public:
@@ -41,4 +41,4 @@ public:
   }
 };
 
-} // namespace ksesh
+} // namespace ksesh::otf

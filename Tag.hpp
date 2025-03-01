@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh {
+namespace ksesh::otf {
 
 struct Tag {
   std::array<uint8_t, 4> values;
@@ -26,4 +26,4 @@ struct Tag {
   }
 };
 
-} // namespace ksesh
+} // namespace ksesh::otf

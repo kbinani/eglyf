@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh {
+namespace ksesh::otf {
 
 class Table {
 public:
@@ -35,4 +35,4 @@ public:
   }
 };
 
-} // namespace ksesh
+} // namespace ksesh::otf

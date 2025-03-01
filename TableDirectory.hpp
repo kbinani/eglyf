@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh {
+namespace ksesh::otf {
 
 struct TableDirectory {
   uint32_t sfntVersion;
@@ -40,4 +40,4 @@ struct TableDirectory {
   }
 };
 
-} // namespace ksesh
+} // namespace ksesh::otf

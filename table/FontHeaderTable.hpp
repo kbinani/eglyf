@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh {
+namespace ksesh::otf {
 
 // 'head'
 class FontHeaderTable : public Table {
@@ -146,4 +146,4 @@ public:
   int16_t glyphDataFormat;
 };
 
-} // namespace ksesh
+} // namespace ksesh::otf

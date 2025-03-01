@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh {
+namespace ksesh::otf {
 
 // 'maxp'
 class MaximumProfileTable : public Table {
@@ -142,4 +142,4 @@ public:
   uint16_t maxComponentDepth = 0;
 };
 
-} // namespace ksesh
+} // namespace ksesh::otf

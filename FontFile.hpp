@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh {
+namespace ksesh::otf {
 
 class FontFile {
 public:
@@ -313,4 +313,4 @@ public:
   std::map<std::array<uint8_t, 4>, std::shared_ptr<Table>> tables;
 };
 
-} // namespace ksesh
+} // namespace ksesh::otf

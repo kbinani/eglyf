@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh {
+namespace ksesh::otf {
 
 class ByteInputStream : public InputStream {
 public:
@@ -91,4 +91,4 @@ private:
   std::string_view buffer;
 };
 
-} // namespace ksesh
+} // namespace ksesh::otf

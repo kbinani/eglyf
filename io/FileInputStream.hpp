@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh {
+namespace ksesh::otf {
 
 class FileInputStream : public InputStream {
 public:
@@ -74,4 +74,4 @@ private:
   juce::FileInputStream s;
 };
 
-} // namespace ksesh
+} // namespace ksesh::otf

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh {
+namespace ksesh::otf {
 
 struct TableRecord {
   Tag tag;
@@ -42,4 +42,4 @@ struct TableRecord {
   }
 };
 
-} // namespace ksesh
+} // namespace ksesh::otf

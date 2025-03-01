@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh {
+namespace ksesh::otf {
 
 using Offset16 = uint16_t;
 using Offset32 = uint32_t;
@@ -18,4 +18,4 @@ struct Version16Dot16 {
 
 static_assert(sizeof(Version16Dot16) == sizeof(uint32_t));
 
-} // namespace ksesh
+} // namespace ksesh::otf

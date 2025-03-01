@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh {
+namespace ksesh::otf {
 
 // 'glyf'
 class GlyphDataTable : public Table {
@@ -150,4 +150,4 @@ public:
   std::vector<std::variant<EmptyGlyph, ReadonlyGlyph, CompositeGlyph>> glyphs;
 };
 
-} // namespace ksesh
+} // namespace ksesh::otf

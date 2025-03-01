@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh {
+namespace ksesh::otf {
 
 // 'cmap'
 class CharacterToGlyphIndexMapping : public Table {
@@ -260,4 +260,4 @@ public:
   std::vector<SubtableHolder> subtables;
 };
 
-} // namespace ksesh
+} // namespace ksesh::otf

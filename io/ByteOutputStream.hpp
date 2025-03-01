@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh {
+namespace ksesh::otf {
 
 class ByteOutputStream : public OutputStream {
 public:
@@ -86,4 +86,4 @@ private:
   size_t loc = 0;
 };
 
-} // namespace ksesh
+} // namespace ksesh::otf
