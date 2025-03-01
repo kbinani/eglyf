@@ -10,7 +10,7 @@ public:
     }
   }
 
-  std::optional<EncodeResult> encode() override {
+  std::optional<EncodeResult> encode() const override {
     auto checksum = Table::Checksum(content);
     if (!checksum) {
       return std::nullopt;

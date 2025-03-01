@@ -65,7 +65,7 @@ public:
     return r;
   }
 
-  std::optional<EncodeResult> encode() override {
+  std::optional<EncodeResult> encode() const override {
     using namespace std;
     ByteOutputStream out;
     if (!out.u16(majorVersion)) {
@@ -123,6 +123,10 @@ public:
       return nullopt;
     }
     return EncodeResult(out.data());
+  }
+
+  std::shared_ptr<FontHeaderTable> clone() const {
+    return defaultClone<FontHeaderTable>();
   }
 
 public:

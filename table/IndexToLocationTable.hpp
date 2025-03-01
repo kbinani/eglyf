@@ -34,7 +34,7 @@ public:
     }
   }
 
-  std::optional<EncodeResult> encode() override {
+  std::optional<EncodeResult> encode() const override {
     using namespace std;
     ByteOutputStream out;
     if (indexToLocFormat == 0) {

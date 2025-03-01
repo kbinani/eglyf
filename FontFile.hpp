@@ -136,6 +136,41 @@ public:
     return true;
   }
 
+  std::optional<uint16_t> addCompositeGlyph(std::string const &name, GlyphDataTable::CompositeGlyph::GlyphRecord child) {
+    using namespace std;
+    if (!holds_alternative<TrueTypeOutlines>(outlines)) {
+      return nullopt;
+    }
+    TrueTypeOutlines &tto = get<TrueTypeOutlines>(outlines);
+
+    auto nGlyph = tto.glyf->clone();
+    if (!nGlyph) {
+      return nullopt;
+    }
+    auto nPost = post->clone();
+    if (!nPost) {
+      return nullopt;
+    }
+    auto nMaxp = maxp->clone();
+    if (!nMaxp) {
+      return nullopt;
+    }
+
+    auto gid = nGlyph->addCompositeGlyph(child);
+    if (!gid) {
+      return nullopt;
+    }
+    if (!nPost->addName(name)) {
+      return nullopt;
+    }
+    nMaxp->numGlyphs = nGlyph->glyphs.size();
+
+    tto.glyf = nGlyph;
+    post = nPost;
+    maxp = nMaxp;
+    return *gid;
+  }
+
   static std::shared_ptr<FontFile> Read(InputStream &in) {
     using namespace std;
     auto ff = make_shared<FontFile>();

@@ -33,7 +33,7 @@ public:
         }
         string s;
         s.resize(bytes);
-        if (!in.read(s.data(), bytes)) {
+        if (in.read(s.data(), bytes) != bytes) {
           return nullopt;
         }
         if (bytes > 63) {
@@ -104,7 +104,7 @@ public:
   };
 
 public:
-  std::optional<EncodeResult> encode() override {
+  std::optional<EncodeResult> encode() const override {
     using namespace std;
     ByteOutputStream out;
     if (!out.u16(version.major)) {
@@ -201,6 +201,24 @@ public:
       r->data = in.readUntilEos();
     }
     return r;
+  }
+
+  bool addName(std::string const &name) {
+    using namespace std;
+    if (!holds_alternative<Version2Data>(data)) {
+      return false;
+    }
+    if (ranges::any_of(name, Version2Data::InvalidNameCharacter)) {
+      return false;
+    }
+    auto &d = get<Version2Data>(data);
+    d.numGlyphs++;
+    d.names.push_back(name);
+    return true;
+  }
+
+  std::shared_ptr<PostScriptTable> clone() const {
+    return defaultClone<PostScriptTable>();
   }
 
 public:

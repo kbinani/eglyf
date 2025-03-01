@@ -19,7 +19,7 @@ public:
 
     EncodeResult(std::string const &data, uint32_t length, uint32_t checksum) : data(data), length(length), checksum(checksum) {}
   };
-  virtual std::optional<EncodeResult> encode() = 0;
+  virtual std::optional<EncodeResult> encode() const = 0;
 
   static std::optional<uint32_t> Checksum(std::string const &table) {
     if (table.size() % 4 != 0) {
@@ -32,6 +32,18 @@ public:
       sum += *ptr++;
     }
     return sum;
+  }
+
+protected:
+  template <class T>
+  std::shared_ptr<T> defaultClone() const {
+    using namespace std;
+    auto encoded = encode();
+    if (!encoded) {
+      return nullptr;
+    }
+    ByteInputStream in(encoded->data);
+    return T::Read(in);
   }
 };
 

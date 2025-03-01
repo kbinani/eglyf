@@ -52,11 +52,11 @@ public:
   }
 
   bool i8(int8_t *x) {
-    return read(x, 1);
+    return read(x, 1) == 1;
   }
 
   bool u8(uint8_t *x) {
-    return read(x, 1);
+    return read(x, 1) == 1;
   }
 
   bool o16(Offset16 *v) {

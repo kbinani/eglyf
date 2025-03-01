@@ -58,7 +58,7 @@ public:
     if (!in.i16(&r->sFamilyClass)) {
       return nullptr;
     }
-    if (!in.read(r->panose.data(), r->panose.size())) {
+    if (in.read(r->panose.data(), r->panose.size()) != r->panose.size()) {
       return nullptr;
     }
     if (!in.u32(&r->ulUnicodeRange1)) {
@@ -154,7 +154,7 @@ public:
     return r;
   }
 
-  std::optional<EncodeResult> encode() override {
+  std::optional<EncodeResult> encode() const override {
     using namespace std;
     ByteOutputStream out;
     if (!out.u16(version)) {

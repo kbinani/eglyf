@@ -69,7 +69,7 @@ public:
     return r;
   }
 
-  std::optional<EncodeResult> encode() override {
+  std::optional<EncodeResult> encode() const override {
     using namespace std;
     if (majorVersion != 1 || minorVersion != 0) {
       return nullopt;

@@ -40,7 +40,7 @@ public:
     return r;
   }
 
-  std::optional<EncodeResult> encode() override {
+  std::optional<EncodeResult> encode() const override {
     using namespace std;
     ByteOutputStream out;
     for (auto const &m : hMetrics) {

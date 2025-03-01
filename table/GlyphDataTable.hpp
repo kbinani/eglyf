@@ -95,6 +95,18 @@ public:
       std::variant<Vec<uint8_t>, Vec<int8_t>, Vec<uint16_t>, Vec<int16_t>> offset;
       std::optional<std::variant<F2DOT14, Vec<F2DOT14>>> scale;
       std::optional<Vec<F2DOT14>> scale2;
+
+      static GlyphRecord New(uint16_t gyphIndex, int16_t dx, int16_t dy, std::optional<F2DOT14> scale = std::nullopt) {
+        GlyphRecord r;
+        r.glyphIndex = 0;
+        r.flags = ARGS_ARE_XY_VALUES | ARG_1_AND_2_ARE_WORDS;
+        if (scale) {
+          r.flags |= WE_HAVE_A_SCALE;
+        }
+        r.offset = Vec<int16_t>(dx, dy);
+        r.scale = scale;
+        return r;
+      }
     };
 
     static std::optional<CompositeGlyph> Read(Header h, InputStream &in) {
@@ -196,7 +208,7 @@ public:
           return nullopt;
         }
         ret.instructions.resize(numInstr);
-        if (!in.read(ret.instructions.data(), numInstr)) {
+        if (in.read(ret.instructions.data(), numInstr) != numInstr) {
           return nullopt;
         }
       }
@@ -366,11 +378,11 @@ public:
     return ret;
   }
 
-  std::optional<EncodeResult> encode() override {
+  std::optional<EncodeResult> encode() const override {
     return std::nullopt;
   }
 
-  std::optional<EncodeResult> encode(IndexToLocationTable &loca) {
+  std::optional<EncodeResult> encode(IndexToLocationTable &loca) const {
     using namespace std;
 
     loca.offsets.clear();
@@ -401,6 +413,40 @@ public:
     }
     loca.offsets.push_back(out.size());
     return EncodeResult(out.data());
+  }
+
+  std::optional<uint16_t> addCompositeGlyph(GlyphDataTable::CompositeGlyph::GlyphRecord child) {
+    using namespace std;
+    if (child.glyphIndex >= glyphs.size()) {
+      return nullopt;
+    }
+    auto g = glyphs[child.glyphIndex];
+    uint16_t gid = glyphs.size();
+    CompositeGlyph add;
+    if (holds_alternative<ReadonlyGlyph>(g)) {
+      auto rg = get<ReadonlyGlyph>(g);
+      add.header = rg.header;
+    } else if (holds_alternative<CompositeGlyph>(g)) {
+      auto cg = get<CompositeGlyph>(g);
+      add.header = cg.header;
+    } else {
+      return nullopt;
+    }
+    add.header.numberOfContours = -1;
+    add.records.push_back(child);
+    glyphs.push_back(add);
+    return gid;
+  }
+
+  std::shared_ptr<GlyphDataTable> clone() const {
+    using namespace std;
+    IndexToLocationTable loca(1);
+    auto encoded = encode(loca);
+    if (!encoded) {
+      return nullptr;
+    }
+    ByteInputStream in(encoded->data);
+    return Read(in, loca);
   }
 
 public:

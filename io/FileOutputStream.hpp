@@ -11,7 +11,7 @@ public:
     s.truncate();
   }
 
-  bool write(void *buffer, size_t size) override {
+  bool write(void const *buffer, size_t size) override {
     if (s.failedToOpen()) {
       return false;
     }

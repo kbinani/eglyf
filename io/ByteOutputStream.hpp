@@ -4,7 +4,7 @@ namespace ksesh::otf {
 
 class ByteOutputStream : public OutputStream {
 public:
-  bool write(void *buf, size_t size) override {
+  bool write(void const *buf, size_t size) override {
     if (loc + size > buffer.size()) {
       buffer.resize(loc + size);
     }

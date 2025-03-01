@@ -6,7 +6,7 @@ class OutputStream {
 public:
   virtual ~OutputStream() {}
 
-  virtual bool write(void *buffer, size_t size) = 0;
+  virtual bool write(void const *buffer, size_t size) = 0;
   virtual bool seek(int64_t loc) = 0;
 
   bool i64(int64_t v) {
