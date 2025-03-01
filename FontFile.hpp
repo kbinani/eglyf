@@ -103,6 +103,13 @@ public:
           return nullptr;
         }
         ff->tables[tr.tag.values] = head;
+      } else if (tr.tag.values == Tag::FCC("maxp")) {
+        ByteInputStream slice(buffer);
+        auto maxp = MaximumProfileTable::Read(slice);
+        if (!maxp) {
+          return nullptr;
+        }
+        ff->tables[tr.tag.values] = maxp;
       } else {
         ff->tables[tr.tag.values] = make_shared<ReadonlyTable>(buffer, tr.length);
       }

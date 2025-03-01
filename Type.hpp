@@ -10,4 +10,11 @@ struct Fixed {
 
 using LONGDATETIME = int64_t;
 
+struct Version16Dot16 {
+  uint16_t major;
+  uint16_t minor;
+};
+
+static_assert(sizeof(Version16Dot16) == sizeof(uint32_t));
+
 } // namespace ksesh
