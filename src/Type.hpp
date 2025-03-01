@@ -20,22 +20,55 @@ struct Version16Dot16 {
 
 static_assert(sizeof(Version16Dot16) == sizeof(uint32_t));
 
-struct F2DOT14 {
-  static constexpr float ToFloatScale = 1.0f / (1 << 14);
-  static constexpr float FromFloatScale = 1 << 14;
+namespace impl {
 
-  float toFloat() const {
-    return static_cast<int32_t>(data) * ToFloatScale;
+template <size_t Bits>
+constexpr auto _IntAtLeast() {
+  if constexpr (Bits <= 8) {
+    return int8_t{};
+  } else if constexpr (Bits <= 16) {
+    return int16_t{};
+  } else if constexpr (Bits <= 32) {
+    return int32_t{};
+  } else if constexpr (Bits <= 64) {
+    return int64_t{};
+  } else {
+    static_assert(false);
+  }
+}
+
+template <size_t Bits>
+using IntAtLeast = decltype(_IntAtLeast<Bits>());
+
+template <std::integral Int, size_t Bits, std::floating_point Float>
+struct FixedFloat {
+private:
+  using Support = IntAtLeast<sizeof(Int) * 8 + 1>;
+  static constexpr Float ToFloatScale = (Float)1 / (1 << Bits);
+  static constexpr Float FromFloatScale = 1 << Bits;
+
+  static_assert(sizeof(Support) > sizeof(Int));
+  static_assert(std::is_signed_v<Int>);
+  static_assert(std::is_signed_v<Support>);
+  static_assert(sizeof(Int) * 8 > Bits);
+
+public:
+  Float toFloat() const {
+    return static_cast<Support>(data) * ToFloatScale;
   }
 
-  static F2DOT14 FromFloat(float v) {
-    F2DOT14 r;
-    r.data = static_cast<int16_t>(roundf(v * FromFloatScale));
+  static FixedFloat<Int, Bits, Float> FromFloat(Float v) {
+    FixedFloat<Int, Bits, Float> r;
+    r.data = static_cast<Int>(std::round(v * FromFloatScale));
     return r;
   }
 
-  int16_t data = 0;
+  Int data = 0;
 };
+
+} // namespace impl
+
+using F2DOT14 = impl::FixedFloat<int16_t, 14, float>;
 
 template <class T>
 struct Vec {
