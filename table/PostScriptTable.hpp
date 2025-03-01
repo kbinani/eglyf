@@ -2,6 +2,7 @@
 
 namespace ksesh::otf {
 
+// 'post'
 class PostScriptTable : public Table {
 public:
   struct Version2Data {

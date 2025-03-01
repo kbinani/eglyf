@@ -2,6 +2,7 @@
 
 namespace ksesh::otf {
 
+// 'OS/2'
 class OS2AndWindowsMetricsTable : public Table {
 public:
   static std::shared_ptr<OS2AndWindowsMetricsTable> Read(InputStream &in) {

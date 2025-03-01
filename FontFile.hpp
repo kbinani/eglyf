@@ -194,7 +194,12 @@ public:
     if (auto tr = records.find(Tag::FCC("hhea")); tr == records.end()) {
       return nullptr;
     } else if (auto buffer = tr->second.read(in); buffer) {
-      ff->hhea = make_shared<ReadonlyTable>(*buffer);
+      ByteInputStream slice(*buffer);
+      if (auto result = HorizontalHeaderTable::Read(slice); result) {
+        ff->hhea = result;
+      } else {
+        return nullptr;
+      }
       records.erase(tr->first);
     } else {
       return nullptr;
@@ -306,7 +311,7 @@ public:
 
   std::shared_ptr<ReadonlyTable> cmap;
   std::shared_ptr<FontHeaderTable> head;
-  std::shared_ptr<ReadonlyTable> hhea;
+  std::shared_ptr<HorizontalHeaderTable> hhea;
   std::shared_ptr<ReadonlyTable> hmtx;
   std::shared_ptr<MaximumProfileTable> maxp;
   std::shared_ptr<ReadonlyTable> name;
