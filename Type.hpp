@@ -20,4 +20,17 @@ struct Version16Dot16 {
 
 static_assert(sizeof(Version16Dot16) == sizeof(uint32_t));
 
+struct F2DOT14 {
+  uint16_t data = 0;
+};
+
+template <class T>
+struct Vec {
+  T x;
+  T y;
+
+  Vec() : x(T()), y(T()) {}
+  Vec(T x, T y) : x(x), y(y) {}
+};
+
 } // namespace ksesh::otf

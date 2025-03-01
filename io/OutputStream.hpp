@@ -29,6 +29,10 @@ public:
     return write(&x, sizeof(v));
   }
 
+  bool i8(uint8_t v) {
+    return write(&v, sizeof(v));
+  }
+
   bool u8(uint8_t v) {
     return write(&v, sizeof(v));
   }
