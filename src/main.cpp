@@ -36,6 +36,7 @@
 #include "table/coverage/Coverage1.hpp"
 #include "table/coverage/Coverage2.hpp"
 #include "table/coverage/CoverageReader.hpp"
+#include "table/ClassDef.hpp"
 #include "table/gsub/Subtable.hpp"
 #include "table/gsub/Single.hpp"
 #include "table/gsub/SequenceLookup.hpp"

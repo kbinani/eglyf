@@ -52,6 +52,7 @@ list(APPEND src_files
   src/table/coverage/Coverage2.hpp
   src/table/coverage/Coverage.hpp
   src/table/coverage/CoverageReader.hpp
+  src/table/ClassDef.hpp
   src/table/gsub/Subtable.hpp
   src/table/gsub/Single.hpp
   src/table/gsub/SubstitutionExtension.hpp
