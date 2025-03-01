@@ -59,6 +59,17 @@ public:
     return EncodeResult(out.data());
   }
 
+  std::shared_ptr<HorizontalMetricsTable> clone() const {
+    auto encoded = encode();
+    if (!encoded) {
+      return nullptr;
+    }
+    uint16_t numberOfHMetrics = hMetrics.size();
+    uint16_t numGlyphs = numberOfHMetrics + leftSideBearings.size();
+    ByteInputStream in(encoded->data);
+    return Read(in, numGlyphs, numberOfHMetrics);
+  }
+
 public:
   std::vector<LongHorMetric> hMetrics;
   std::vector<FWORD> leftSideBearings;

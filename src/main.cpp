@@ -42,7 +42,7 @@ int main() {
   if (!gid0) {
     return 1;
   }
-  auto gid1 = ff->addCompositeGlyph("bar", GlyphDataTable::CompositeGlyph::GlyphRecord::New(1, 0, 0));
+  auto gid1 = ff->addCompositeGlyph("baz", GlyphDataTable::CompositeGlyph::GlyphRecord::New(1, 0, 0), 0, 0);
   if (!gid1) {
     return 1;
   }

@@ -133,6 +133,10 @@ public:
     return EncodeResult(out.data());
   }
 
+  std::shared_ptr<HorizontalHeaderTable> clone() const {
+    return defaultClone<HorizontalHeaderTable>();
+  }
+
 public:
   uint16_t majorVersion;
   uint16_t minorVersion;

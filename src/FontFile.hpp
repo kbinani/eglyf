@@ -137,14 +137,27 @@ public:
   }
 
   std::optional<uint16_t> addEmptyGlyph(std::string const &name) {
-    return addTrueTypeGlyph(name, [&](GlyphDataTable &glyf) {
+    return addTrueTypeGlyph(name, [&](GlyphDataTable &glyf, HorizontalMetricsTable &hmtx) {
+      HorizontalMetricsTable::LongHorMetric hm;
+      hm.advanceWidth = 0;
+      hm.lsb = 0;
+      hmtx.hMetrics.push_back(hm);
       return glyf.addEmptyGlyph();
     });
   }
 
-  std::optional<uint16_t> addCompositeGlyph(std::string const &name, GlyphDataTable::CompositeGlyph::GlyphRecord child) {
-    return addTrueTypeGlyph(name, [&](GlyphDataTable &glyf) {
-      return glyf.addCompositeGlyph(child);
+  std::optional<uint16_t> addCompositeGlyph(std::string const &name, GlyphDataTable::CompositeGlyph::GlyphRecord child, uint16_t advanceWidth, uint16_t lsb) {
+    using namespace std;
+    return addTrueTypeGlyph(name, [&](GlyphDataTable &glyf, HorizontalMetricsTable &hmtx) -> optional<uint16_t> {
+      auto gid = glyf.addCompositeGlyph(child);
+      if (!gid) {
+        return nullopt;
+      }
+      HorizontalMetricsTable::LongHorMetric hm;
+      hm.advanceWidth = advanceWidth;
+      hm.lsb = lsb;
+      hmtx.hMetrics.push_back(hm);
+      return *gid;
     });
   }
 
@@ -320,7 +333,7 @@ public:
   }
 
 private:
-  std::optional<uint16_t> addTrueTypeGlyph(std::string const &name, std::function<std::optional<uint16_t>(GlyphDataTable &glyf)> addOp) {
+  std::optional<uint16_t> addTrueTypeGlyph(std::string const &name, std::function<std::optional<uint16_t>(GlyphDataTable &glyf, HorizontalMetricsTable &hmtx)> addOp) {
     using namespace std;
     if (!holds_alternative<TrueTypeOutlines>(outlines)) {
       return nullopt;
@@ -339,11 +352,20 @@ private:
     if (!nMaxp) {
       return nullopt;
     }
+    auto nHmtx = hmtx->clone();
+    if (!nHmtx) {
+      return nullopt;
+    }
+    auto nHhea = hhea->clone();
+    if (!nHhea) {
+      return nullopt;
+    }
 
-    auto gid = addOp(*nGlyph);
+    auto gid = addOp(*nGlyph, *nHmtx);
     if (!gid) {
       return nullopt;
     }
+    nHhea->numberOfHMetrics = nHmtx->hMetrics.size();
     if (!nPost->addName(name)) {
       return nullopt;
     }
@@ -354,6 +376,8 @@ private:
     tto.glyf = nGlyph;
     post = nPost;
     maxp = nMaxp;
+    hmtx = nHmtx;
+    hhea = nHhea;
     return *gid;
   }
 
