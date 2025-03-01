@@ -6,39 +6,101 @@ namespace ksesh::otf {
 class PostScriptTable : public Table {
 public:
   struct Version2Data {
+    static bool InvalidNameCharacter(char ch) {
+      return !(('A' <= ch && ch <= 'Z') || ('a' <= ch && ch <= 'z') || ('0' <= ch && ch <= '9') || ch == '.' || ch == '_');
+    }
+
     static std::optional<Version2Data> Read(InputStream &in) {
       using namespace std;
       Version2Data r;
       if (!in.u16(&r.numGlyphs)) {
         return nullopt;
       }
-      r.glyphNameIndex.reserve(r.numGlyphs);
+      vector<uint16_t> nameIndex;
+      nameIndex.reserve(r.numGlyphs);
       for (uint16_t i = 0; i < r.numGlyphs; i++) {
         uint16_t v;
         if (!in.u16(&v)) {
           return nullopt;
         }
-        r.glyphNameIndex.push_back(v);
+        nameIndex.push_back(v);
       }
-      r.stringData = in.readUntilEos();
+      vector<string> names;
+      while (true) {
+        uint8_t bytes;
+        if (!in.u8(&bytes)) {
+          break;
+        }
+        string s;
+        s.resize(bytes);
+        if (!in.read(s.data(), bytes)) {
+          return nullopt;
+        }
+        if (bytes > 63) {
+          return nullopt;
+        }
+        if (any_of(s.begin(), s.end(), InvalidNameCharacter)) {
+          return nullopt;
+        }
+        names.push_back(s);
+      }
+      for (auto index : nameIndex) {
+        if (index <= 257) {
+          r.names.push_back(index);
+        } else {
+          auto offset = index - 258;
+          if (offset >= names.size()) {
+            return nullopt;
+          }
+          r.names.push_back(names[offset]);
+        }
+      }
       return r;
     }
 
     bool encode(OutputStream &out) const {
+      using namespace std;
       if (!out.u16(numGlyphs)) {
         return false;
       }
-      for (uint16_t i = 0; i < numGlyphs; i++) {
-        if (!out.u16(glyphNameIndex[i])) {
-          return false;
+      ByteOutputStream strings;
+      uint16_t count = 0;
+      for (auto const &name : names) {
+        if (holds_alternative<string>(name)) {
+          auto const &n = get<string>(name);
+          if (!out.u16(count + 258)) {
+            return false;
+          }
+          if (n.size() > 63) {
+            return false;
+          }
+          if (any_of(n.begin(), n.end(), InvalidNameCharacter)) {
+            return false;
+          }
+          uint8_t bytes = n.size();
+          if (!strings.u8(bytes)) {
+            return false;
+          }
+          if (!strings.write((void *)n.data(), bytes)) {
+            return false;
+          }
+          count++;
+        } else if (holds_alternative<uint16_t>(name)) {
+          auto n = get<uint16_t>(name);
+          if (n > 257) {
+            return false;
+          }
+          if (!out.u16(n)) {
+            return false;
+          }
         }
       }
-      return out.write((void *)stringData.c_str(), stringData.size());
+      string data = strings.data();
+      return out.write(data.data(), data.size());
     }
 
     uint16_t numGlyphs;
-    std::vector<uint16_t> glyphNameIndex;
-    std::string stringData;
+    std::vector<std::variant<uint16_t, std::string>> names;
   };
 
 public:
