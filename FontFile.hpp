@@ -185,7 +185,12 @@ public:
     if (auto tr = records.find(Tag::FCC("cmap")); tr == records.end()) {
       return nullptr;
     } else if (auto buffer = tr->second.read(in); buffer) {
-      ff->cmap = make_shared<ReadonlyTable>(*buffer);
+      ByteInputStream slice(*buffer);
+      if (auto result = CharacterToGlyphIndexMapping::Read(slice); result) {
+        ff->cmap = result;
+      } else {
+        return nullptr;
+      }
       records.erase(tr->first);
     } else {
       return nullptr;
@@ -294,7 +299,7 @@ public:
   uint16_t entrySelector;
   uint16_t rangeShift;
 
-  std::shared_ptr<ReadonlyTable> cmap;
+  std::shared_ptr<CharacterToGlyphIndexMapping> cmap;
   std::shared_ptr<FontHeaderTable> head;
   std::shared_ptr<ReadonlyTable> hhea;
   std::shared_ptr<ReadonlyTable> hmtx;
