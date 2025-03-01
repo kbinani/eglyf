@@ -36,9 +36,6 @@ public:
         if (in.read(s.data(), bytes) != bytes) {
           return nullopt;
         }
-        if (bytes > 63) {
-          return nullopt;
-        }
         if (ranges::any_of(s, InvalidNameCharacter)) {
           return nullopt;
         }
@@ -69,9 +66,6 @@ public:
         if (holds_alternative<string>(name)) {
           auto const &n = get<string>(name);
           if (!out.u16(count + 258)) {
-            return false;
-          }
-          if (n.size() > 63) {
             return false;
           }
           if (ranges::any_of(n, InvalidNameCharacter)) {
