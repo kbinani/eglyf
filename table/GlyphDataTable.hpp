@@ -427,6 +427,20 @@ public:
     return EncodeResult(out.data());
   }
 
+  std::optional<uint16_t> addEmptyGlyph() {
+    Header h;
+    h.numberOfContours = 0;
+    h.xMin = 0;
+    h.yMin = 0;
+    h.xMax = 0;
+    h.yMax = 0;
+    ReadonlyGlyph add;
+    add.header = h;
+    uint16_t gid = glyphs.size();
+    glyphs.push_back(add);
+    return gid;
+  }
+
   std::optional<uint16_t> addCompositeGlyph(GlyphDataTable::CompositeGlyph::GlyphRecord child) {
     using namespace std;
     if (child.glyphIndex >= glyphs.size()) {

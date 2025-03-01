@@ -136,41 +136,16 @@ public:
     return true;
   }
 
+  std::optional<uint16_t> addEmptyGlyph(std::string const &name) {
+    return addTrueTypeGlyph(name, [&](GlyphDataTable &glyf) {
+      return glyf.addEmptyGlyph();
+    });
+  }
+
   std::optional<uint16_t> addCompositeGlyph(std::string const &name, GlyphDataTable::CompositeGlyph::GlyphRecord child) {
-    using namespace std;
-    if (!holds_alternative<TrueTypeOutlines>(outlines)) {
-      return nullopt;
-    }
-    TrueTypeOutlines &tto = get<TrueTypeOutlines>(outlines);
-
-    auto nGlyph = tto.glyf->clone();
-    if (!nGlyph) {
-      return nullopt;
-    }
-    auto nPost = post->clone();
-    if (!nPost) {
-      return nullopt;
-    }
-    auto nMaxp = maxp->clone();
-    if (!nMaxp) {
-      return nullopt;
-    }
-
-    auto gid = nGlyph->addCompositeGlyph(child);
-    if (!gid) {
-      return nullopt;
-    }
-    if (!nPost->addName(name)) {
-      return nullopt;
-    }
-    if (!nGlyph->updateMaxp(*nMaxp)) {
-      return nullopt;
-    }
-
-    tto.glyf = nGlyph;
-    post = nPost;
-    maxp = nMaxp;
-    return *gid;
+    return addTrueTypeGlyph(name, [&](GlyphDataTable &glyf) {
+      return glyf.addCompositeGlyph(child);
+    });
   }
 
   static std::shared_ptr<FontFile> Read(InputStream &in) {
@@ -342,6 +317,44 @@ public:
       ff->tables[tr.tag.values] = make_shared<ReadonlyTable>(*buffer);
     }
     return ff;
+  }
+
+private:
+  std::optional<uint16_t> addTrueTypeGlyph(std::string const &name, std::function<std::optional<uint16_t>(GlyphDataTable &glyf)> addOp) {
+    using namespace std;
+    if (!holds_alternative<TrueTypeOutlines>(outlines)) {
+      return nullopt;
+    }
+    TrueTypeOutlines &tto = get<TrueTypeOutlines>(outlines);
+
+    auto nGlyph = tto.glyf->clone();
+    if (!nGlyph) {
+      return nullopt;
+    }
+    auto nPost = post->clone();
+    if (!nPost) {
+      return nullopt;
+    }
+    auto nMaxp = maxp->clone();
+    if (!nMaxp) {
+      return nullopt;
+    }
+
+    auto gid = addOp(*nGlyph);
+    if (!gid) {
+      return nullopt;
+    }
+    if (!nPost->addName(name)) {
+      return nullopt;
+    }
+    if (!nGlyph->updateMaxp(*nMaxp)) {
+      return nullopt;
+    }
+
+    tto.glyf = nGlyph;
+    post = nPost;
+    maxp = nMaxp;
+    return *gid;
   }
 
 public:
