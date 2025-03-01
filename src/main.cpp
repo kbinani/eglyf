@@ -32,7 +32,7 @@
 // clang-format on
 
 int main() {
-  using namespace ksesh::otf;
+  using namespace eglyf;
   FileInputStream fis(juce::File::getCurrentWorkingDirectory().getChildFile("egyptiantext-COLR.ttf"));
   auto ff = FontFile::Read(fis);
   if (!ff) {

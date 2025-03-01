@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh::otf {
+namespace eglyf {
 
 struct TableRecord {
   Tag tag;
@@ -42,4 +42,4 @@ struct TableRecord {
   }
 };
 
-} // namespace ksesh::otf
+} // namespace eglyf

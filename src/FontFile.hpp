@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh::otf {
+namespace eglyf {
 
 class FontFile {
 public:
@@ -419,4 +419,4 @@ public:
   std::map<std::array<uint8_t, 4>, std::shared_ptr<Table>> tables;
 };
 
-} // namespace ksesh::otf
+} // namespace eglyf

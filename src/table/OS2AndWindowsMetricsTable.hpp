@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh::otf {
+namespace eglyf {
 
 // 'OS/2'
 class OS2AndWindowsMetricsTable : public Table {
@@ -344,4 +344,4 @@ public:
   std::optional<uint16_t> usUpperOpticalPointSize;
 };
 
-} // namespace ksesh::otf
+} // namespace eglyf

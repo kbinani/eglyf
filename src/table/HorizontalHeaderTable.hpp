@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh::otf {
+namespace eglyf {
 
 // 'hhea'
 class HorizontalHeaderTable : public Table {
@@ -154,4 +154,4 @@ public:
   uint16_t numberOfHMetrics;
 };
 
-} // namespace ksesh::otf
+} // namespace eglyf

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh::otf {
+namespace eglyf {
 
 class OutputStream {
 public:
@@ -50,4 +50,4 @@ public:
   }
 };
 
-} // namespace ksesh::otf
+} // namespace eglyf

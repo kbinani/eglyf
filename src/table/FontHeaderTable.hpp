@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh::otf {
+namespace eglyf {
 
 // 'head'
 class FontHeaderTable : public Table {
@@ -150,4 +150,4 @@ public:
   int16_t glyphDataFormat;
 };
 
-} // namespace ksesh::otf
+} // namespace eglyf

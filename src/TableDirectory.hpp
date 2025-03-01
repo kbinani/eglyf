@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh::otf {
+namespace eglyf {
 
 struct TableDirectory {
   uint32_t sfntVersion;
@@ -40,4 +40,4 @@ struct TableDirectory {
   }
 };
 
-} // namespace ksesh::otf
+} // namespace eglyf

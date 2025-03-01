@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh::otf {
+namespace eglyf {
 
 class ByteInputStream : public InputStream {
 public:
@@ -33,4 +33,4 @@ private:
   std::string_view buffer;
 };
 
-} // namespace ksesh::otf
+} // namespace eglyf

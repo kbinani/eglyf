@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh::otf {
+namespace eglyf {
 
 // 'loca'
 class IndexToLocationTable : public Table {
@@ -68,4 +68,4 @@ public:
   std::vector<Offset32> offsets;
 };
 
-} // namespace ksesh::otf
+} // namespace eglyf

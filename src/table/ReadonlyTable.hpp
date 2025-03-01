@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh::otf {
+namespace eglyf {
 
 class ReadonlyTable : public Table {
 public:
@@ -23,4 +23,4 @@ public:
   uint32_t len;
 };
 
-} // namespace ksesh::otf
+} // namespace eglyf

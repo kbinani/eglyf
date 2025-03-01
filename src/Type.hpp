@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh::otf {
+namespace eglyf {
 
 using Offset16 = uint16_t;
 using Offset32 = uint32_t;
@@ -46,4 +46,4 @@ struct Vec {
   Vec(T x, T y) : x(x), y(y) {}
 };
 
-} // namespace ksesh::otf
+} // namespace eglyf

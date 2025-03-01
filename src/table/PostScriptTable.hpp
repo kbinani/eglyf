@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh::otf {
+namespace eglyf {
 
 // 'post'
 class PostScriptTable : public Table {
@@ -235,4 +235,4 @@ public:
   std::variant<Version2Data, std::string> data;
 };
 
-} // namespace ksesh::otf
+} // namespace eglyf

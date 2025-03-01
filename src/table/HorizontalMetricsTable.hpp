@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh::otf {
+namespace eglyf {
 
 // 'hmtx'
 class HorizontalMetricsTable : public Table {
@@ -95,4 +95,4 @@ public:
   std::vector<LongHorMetric> metrics;
 };
 
-} // namespace ksesh::otf
+} // namespace eglyf

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ksesh::otf {
+namespace eglyf {
 
 class Table {
 public:
@@ -47,4 +47,4 @@ protected:
   }
 };
 
-} // namespace ksesh::otf
+} // namespace eglyf
