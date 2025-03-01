@@ -10,6 +10,7 @@ struct Fixed {
 };
 
 using LONGDATETIME = int64_t;
+using FWORD = int16_t;
 
 struct Version16Dot16 {
   uint16_t major;

@@ -185,7 +185,7 @@ public:
     if (auto tr = records.find(Tag::FCC("cmap")); tr == records.end()) {
       return nullptr;
     } else if (auto buffer = tr->second.read(in); buffer) {
-        ff->cmap = make_shared<ReadonlyTable>(*buffer);
+      ff->cmap = make_shared<ReadonlyTable>(*buffer);
       records.erase(tr->first);
     } else {
       return nullptr;
@@ -230,7 +230,12 @@ public:
     if (auto tr = records.find(Tag::FCC("post")); tr == records.end()) {
       return nullptr;
     } else if (auto buffer = tr->second.read(in); buffer) {
-      ff->post = make_shared<ReadonlyTable>(*buffer);
+      ByteInputStream slice(*buffer);
+      if (auto result = PostScriptTable::Read(slice); result) {
+        ff->post = result;
+      } else {
+        return nullptr;
+      }
       records.erase(tr->first);
     } else {
       return nullptr;
@@ -301,7 +306,7 @@ public:
   std::shared_ptr<MaximumProfileTable> maxp;
   std::shared_ptr<ReadonlyTable> name;
   std::shared_ptr<ReadonlyTable> os2;
-  std::shared_ptr<ReadonlyTable> post;
+  std::shared_ptr<PostScriptTable> post;
 
   std::variant<TrueTypeOutlines, CFFOutlines> outlines;
 
