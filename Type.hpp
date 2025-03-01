@@ -2,6 +2,7 @@
 
 namespace ksesh {
 
+using Offset16 = uint16_t;
 using Offset32 = uint32_t;
 
 struct Fixed {

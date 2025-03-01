@@ -14,6 +14,10 @@ public:
   virtual bool read(void *buffer, size_t size) = 0;
   virtual bool seek(int64_t loc) = 0;
 
+  bool o16(Offset16 *v) {
+    return u16(v);
+  }
+
   bool o32(Offset32 *v) {
     return u32(v);
   }

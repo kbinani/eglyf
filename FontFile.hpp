@@ -82,8 +82,13 @@ public:
     } else {
       return nullptr;
     }
+    shared_ptr<FontHeaderTable> head;
+    shared_ptr<MaximumProfileTable> maxp;
     for (uint32_t i = 0; i < ff->tableDirectory.numTables; i++) {
       TableRecord tr = ff->tableDirectory.tableRecords[i];
+      if (tr.tag.values != Tag::FCC("head") && tr.tag.values != Tag::FCC("maxp")) {
+        continue;
+      }
       uint32_t size = tr.length;
       if (size % 4 != 0) {
         size += 4 - (tr.length % 4);
@@ -96,20 +101,49 @@ public:
       if (!in.read(buffer.data(), tr.length)) {
         return nullptr;
       }
+      ByteInputStream slice(buffer);
       if (tr.tag.values == Tag::FCC("head")) {
-        ByteInputStream slice(buffer);
-        auto head = FontHeaderTable::Read(slice);
+        head = FontHeaderTable::Read(slice);
         if (!head) {
           return nullptr;
         }
         ff->tables[tr.tag.values] = head;
       } else if (tr.tag.values == Tag::FCC("maxp")) {
-        ByteInputStream slice(buffer);
-        auto maxp = MaximumProfileTable::Read(slice);
+        maxp = MaximumProfileTable::Read(slice);
         if (!maxp) {
           return nullptr;
         }
         ff->tables[tr.tag.values] = maxp;
+      }
+    }
+    if (!head || !maxp) {
+      return nullptr;
+    }
+
+    for (uint32_t i = 0; i < ff->tableDirectory.numTables; i++) {
+      TableRecord tr = ff->tableDirectory.tableRecords[i];
+      if (tr.tag.values == Tag::FCC("head") || tr.tag.values == Tag::FCC("maxp")) {
+        continue;
+      }
+      uint32_t size = tr.length;
+      if (size % 4 != 0) {
+        size += 4 - (tr.length % 4);
+      }
+      string buffer;
+      buffer.resize(size);
+      if (!in.seek(tr.offset)) {
+        return nullptr;
+      }
+      if (!in.read(buffer.data(), tr.length)) {
+        return nullptr;
+      }
+      if (false && tr.tag.values == Tag::FCC("loca")) {
+        ByteInputStream slice(buffer);
+        auto loca = IndexToLocationTable::Read(slice, head->indexToLocFormat, maxp->numGlyphs);
+        if (!loca) {
+          return nullptr;
+        }
+        ff->tables[tr.tag.values] = loca;
       } else {
         ff->tables[tr.tag.values] = make_shared<ReadonlyTable>(buffer, tr.length);
       }
