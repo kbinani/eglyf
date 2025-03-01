@@ -347,6 +347,108 @@ public:
   std::vector<ChainedClassSequenceRuleSet> ruleSets;
 };
 
+class ChainedContextsSubstitution3 : public Subtable {
+public:
+  static std::shared_ptr<ChainedContextsSubstitution3> Read(InputStream &in) {
+    using namespace std;
+    auto r = make_shared<ChainedContextsSubstitution3>();
+
+    uint16_t backtrackGlyphCount;
+    if (!in.u16(&backtrackGlyphCount)) {
+      return nullptr;
+    }
+    vector<Offset16> backtrackCoverageOffsets;
+    backtrackCoverageOffsets.reserve(backtrackGlyphCount);
+    for (uint16_t i = 0; i < backtrackGlyphCount; i++) {
+      Offset16 v;
+      if (!in.o16(&v)) {
+        return nullptr;
+      }
+      backtrackCoverageOffsets.push_back(v);
+    }
+
+    uint16_t inputGlyphCount;
+    if (!in.u16(&inputGlyphCount)) {
+      return nullptr;
+    }
+    vector<Offset16> inputCoverageOffsets;
+    inputCoverageOffsets.reserve(inputGlyphCount);
+    for (uint16_t i = 0; i < inputGlyphCount; i++) {
+      Offset16 v;
+      if (!in.o16(&v)) {
+        return nullptr;
+      }
+      inputCoverageOffsets.push_back(v);
+    }
+
+    uint16_t lookaheadGlyphCount;
+    if (!in.u16(&lookaheadGlyphCount)) {
+      return nullptr;
+    }
+    vector<Offset16> lookaheadCoverageOffsets;
+    lookaheadCoverageOffsets.reserve(lookaheadGlyphCount);
+    for (uint16_t i = 0; i < lookaheadGlyphCount; i++) {
+      Offset16 v;
+      if (!in.o16(&v)) {
+        return nullptr;
+      }
+      lookaheadCoverageOffsets.push_back(v);
+    }
+
+    uint16_t seqLookupCount;
+    if (!in.u16(&seqLookupCount)) {
+      return nullptr;
+    }
+    r->seqLookups.reserve(seqLookupCount);
+    for (uint16_t i = 0; i < seqLookupCount; i++) {
+      if (auto seq = SequenceLookup::Read(in); seq) {
+        r->seqLookups.push_back(*seq);
+      } else {
+        return nullptr;
+      }
+    }
+
+    for (Offset16 offset : backtrackCoverageOffsets) {
+      if (!in.seek(offset)) {
+        return nullptr;
+      }
+      if (auto cov = CoverageReader::Read(in); cov) {
+        r->backtrackCoverage.push_back(cov);
+      } else {
+        return nullptr;
+      }
+    }
+    for (Offset16 offset : inputCoverageOffsets) {
+      if (!in.seek(offset)) {
+        return nullptr;
+      }
+      if (auto cov = CoverageReader::Read(in); cov) {
+        r->inputCoverage.push_back(cov);
+      } else {
+        return nullptr;
+      }
+    }
+    for (Offset16 offset : lookaheadCoverageOffsets) {
+      if (!in.seek(offset)) {
+        return nullptr;
+      }
+      if (auto cov = CoverageReader::Read(in); cov) {
+        r->lookaheadCoverage.push_back(cov);
+      } else {
+        return nullptr;
+      }
+    }
+
+    return r;
+  }
+
+public:
+  std::vector<std::shared_ptr<Coverage>> backtrackCoverage;
+  std::vector<std::shared_ptr<Coverage>> inputCoverage;
+  std::vector<std::shared_ptr<Coverage>> lookaheadCoverage;
+  std::vector<SequenceLookup> seqLookups;
+};
+
 class ChainedContextsSubstitution {
 public:
   static std::shared_ptr<Subtable> Read(InputStream &in) {
@@ -361,10 +463,10 @@ public:
     } else if (format == 2) {
       return ChainedContextsSubstitution2::Read(in);
     } else if (format == 3) {
-      // TODO:
+      return ChainedContextsSubstitution3::Read(in);
+    } else {
       return nullptr;
     }
-    return nullptr;
   }
 };
 
