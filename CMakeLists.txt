@@ -48,6 +48,9 @@ list(APPEND src_files
   src/table/ScriptList.hpp
   src/table/FeatureList.hpp
   src/table/LookupList.hpp
+  src/table/Coverage1.hpp
+  src/table/Coverage2.hpp
+  src/table/Coverage.hpp
 )
 
 juce_add_console_app(eglyf)
