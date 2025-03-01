@@ -110,7 +110,11 @@ public:
           return nullptr;
         } else if (it.lookupType == 4) {
           // Ligature
-          return nullptr;
+          if (auto t = gsub::Ligature::Read(sub); t) {
+            l.subtables.push_back(t);
+          } else {
+            return nullptr;
+          }
         } else if (it.lookupType == 5) {
           // Contextual substitution
           return nullptr;

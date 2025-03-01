@@ -44,7 +44,11 @@ public:
       return nullptr;
     } else if (r->extensionLookupType == 4) {
       // Ligature
-      return nullptr;
+      if (auto t = Ligature::Read(sub); t) {
+        r->extension = t;
+      } else {
+        return nullptr;
+      }
     } else if (r->extensionLookupType == 5) {
       // Contextual substitution
       return nullptr;
