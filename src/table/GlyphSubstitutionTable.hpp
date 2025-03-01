@@ -41,24 +41,27 @@ public:
       }
     }
 
+    ScriptList scriptList;
     {
       if (!in.seek(scriptListOffset)) {
         return nullptr;
       }
       OffsetInputStream sub(in);
       if (auto sl = ScriptList::Read(sub); sl) {
-        r->scriptList = *sl;
+        scriptList = *sl;
       } else {
         return nullptr;
       }
     }
+
+    FeatureList featureList;
     {
       if (!in.seek(featureListOffset)) {
         return nullptr;
       }
       OffsetInputStream sub(in);
       if (auto fl = FeatureList::Read(sub); fl) {
-        r->featureList = *fl;
+        featureList = *fl;
       } else {
         return nullptr;
       }
@@ -76,9 +79,6 @@ public:
   uint16_t majorVersion;
   uint16_t minorVersion;
   std::optional<Offset32> featureVariationsOffset;
-
-  ScriptList scriptList;
-  FeatureList featureList;
 };
 
 } // namespace eglyf

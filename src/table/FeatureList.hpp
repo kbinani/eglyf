@@ -6,6 +6,7 @@ class FeatureList {
 public:
   struct Feature {
     Tag tag;
+    std::optional<Offset16> featureParamsOffset;
     std::vector<uint16_t> lookupListIndices;
   };
 
@@ -41,6 +42,9 @@ public:
       }
       Feature f;
       f.tag = tag;
+      if (featureParamsOffset != 0) {
+        f.featureParamsOffset = featureParamsOffset;
+      }
       f.lookupListIndices.reserve(lookupIndexCount);
       for (uint16_t i = 0; i < lookupIndexCount; i++) {
         uint16_t v;

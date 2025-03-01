@@ -29,8 +29,8 @@
 #include "table/OS2AndWindowsMetricsTable.hpp"
 #include "table/HorizontalHeaderTable.hpp"
 #include "table/HorizontalMetricsTable.hpp"
-#include "table/gsub/ScriptList.hpp"
-#include "table/gsub/FeatureList.hpp"
+#include "table/ScriptList.hpp"
+#include "table/FeatureList.hpp"
 #include "table/GlyphSubstitutionTable.hpp"
 #include "FontFile.hpp"
 // clang-format on

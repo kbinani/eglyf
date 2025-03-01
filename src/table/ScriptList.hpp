@@ -39,6 +39,7 @@ public:
   };
 
   struct Script {
+    Tag tag;
     std::optional<LangSys> defaultLangSys;
     std::map<std::array<uint8_t, 4>, LangSys> langSysTable;
   };
@@ -71,6 +72,7 @@ public:
       }
       OffsetInputStream sub(in);
       Script script;
+      script.tag = scriptTag;
       Offset16 defaultLangSysOffset;
       if (!sub.o16(&defaultLangSysOffset)) {
         return nullopt;
@@ -111,13 +113,13 @@ public:
         }
         script.langSysTable[langSysTag] = *langSys;
       }
-      scriptList.scriptTable[scriptTag] = script;
+      scriptList.scriptTable.push_back(script);
     }
     return scriptList;
   }
 
 public:
-  std::map<std::array<uint8_t, 4>, Script> scriptTable;
+  std::vector<Script> scriptTable;
 };
 
 } // namespace eglyf

@@ -45,8 +45,8 @@ list(APPEND src_files
   src/table/HorizontalHeaderTable.hpp
   src/table/HorizontalMetricsTable.hpp
   src/table/GlyphSubstitutionTable.hpp
-  src/table/gsub/ScriptList.hpp
-  src/table/gsub/FeatureList.hpp
+  src/table/ScriptList.hpp
+  src/table/FeatureList.hpp
 )
 
 juce_add_console_app(eglyf)
