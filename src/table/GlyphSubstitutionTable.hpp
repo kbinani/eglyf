@@ -52,6 +52,17 @@ public:
         return nullptr;
       }
     }
+    {
+      if (!in.seek(featureListOffset)) {
+        return nullptr;
+      }
+      OffsetInputStream sub(in);
+      if (auto fl = FeatureList::Read(sub); fl) {
+        r->featureList = *fl;
+      } else {
+        return nullptr;
+      }
+    }
 
     return r;
   }
@@ -67,6 +78,7 @@ public:
   std::optional<Offset32> featureVariationsOffset;
 
   ScriptList scriptList;
+  FeatureList featureList;
 };
 
 } // namespace eglyf
