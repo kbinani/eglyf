@@ -77,6 +77,10 @@ public:
     return s;
   }
 
+  size_t size() const {
+    return buffer.size();
+  }
+
 private:
   std::vector<uint8_t> buffer;
   size_t loc = 0;

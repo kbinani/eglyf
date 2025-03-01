@@ -119,9 +119,17 @@ public:
   }
 
   std::optional<EncodeResult> encode() override {
+    return std::nullopt;
+  }
+
+  std::optional<EncodeResult> encode(IndexToLocationTable &loca) {
     using namespace std;
+
+    loca.offsets.clear();
+
     ByteOutputStream out;
     for (auto const &g : glyphs) {
+      loca.offsets.push_back(out.size());
       if (holds_alternative<ReadonlyGlyph>(g)) {
         auto rg = get<ReadonlyGlyph>(g);
         if (!rg.encode(out)) {
@@ -134,6 +142,7 @@ public:
         }
       }
     }
+    loca.offsets.push_back(out.size());
     return EncodeResult(out.data());
   }
 
