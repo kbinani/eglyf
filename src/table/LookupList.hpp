@@ -50,7 +50,7 @@ public:
         if (!in.o16(&v)) {
           return nullopt;
         }
-        l.subtableOffsets.push_back(v);
+        l.subtableOffsets.push_back(lookupOffset + v);
       }
       if (!in.u16(&l.markFilteringSet)) {
         return nullopt;

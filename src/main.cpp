@@ -32,9 +32,12 @@
 #include "table/ScriptList.hpp"
 #include "table/FeatureList.hpp"
 #include "table/LookupList.hpp"
+#include "table/Coverage.hpp"
 #include "table/Coverage1.hpp"
 #include "table/Coverage2.hpp"
-#include "table/Coverage.hpp"
+#include "table/CoverageReader.hpp"
+#include "table/gsub/Subtable.hpp"
+#include "table/gsub/Single.hpp"
 #include "table/GlyphSubstitutionTable.hpp"
 #include "FontFile.hpp"
 // clang-format on

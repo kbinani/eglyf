@@ -2,7 +2,7 @@
 
 namespace eglyf {
 
-class Coverage2 {
+class Coverage2 : public Coverage {
 public:
   struct RangeRecord {
     uint16_t startGlyphID;
@@ -11,26 +11,26 @@ public:
   };
 
 public:
-  static std::optional<Coverage2> Read(InputStream &in) {
+  static std::shared_ptr<Coverage2> Read(InputStream &in) {
     using namespace std;
-    Coverage2 r;
+    auto r = make_shared<Coverage2>();
     uint16_t rangeCount;
     if (!in.u16(&rangeCount)) {
-      return nullopt;
+      return nullptr;
     }
-    r.rangeRecords.reserve(rangeCount);
+    r->rangeRecords.reserve(rangeCount);
     for (uint16_t i = 0; i < rangeCount; i++) {
       RangeRecord rr;
       if (!in.u16(&rr.startGlyphID)) {
-        return nullopt;
+        return nullptr;
       }
       if (!in.u16(&rr.endGlyphID)) {
-        return nullopt;
+        return nullptr;
       }
       if (!in.u16(&rr.startCoverageIndex)) {
-        return nullopt;
+        return nullptr;
       }
-      r.rangeRecords.push_back(rr);
+      r->rangeRecords.push_back(rr);
     }
     return r;
   }

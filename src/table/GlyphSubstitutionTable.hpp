@@ -4,6 +4,14 @@ namespace eglyf {
 
 class GlyphSubstitutionTable : public Table {
 public:
+  struct Lookup {
+    uint16_t lookupType;
+    uint16_t lookupFlag;
+    uint16_t markFilteringSet;
+    std::vector<std::shared_ptr<gsub::Subtable>> subtables;
+  };
+
+public:
   static std::shared_ptr<GlyphSubstitutionTable> Read(InputStream &in) {
     using namespace std;
     auto r = make_shared<GlyphSubstitutionTable>();
@@ -80,6 +88,47 @@ public:
       }
     }
 
+    for (auto const &it : lookupList.lookupTable) {
+      Lookup l;
+      for (auto offset : it.subtableOffsets) {
+        if (!in.seek(lookupListOffset + offset)) {
+          return nullptr;
+        }
+        OffsetInputStream sub(in);
+        if (it.lookupType == 1) {
+          // Single
+          if (auto t = gsub::Single::Read(sub); t) {
+            l.subtables.push_back(t);
+          } else {
+            return nullptr;
+          }
+        } else if (it.lookupType == 2) {
+          // Multiple
+          return nullptr;
+        } else if (it.lookupType == 3) {
+          // Alternate
+          return nullptr;
+        } else if (it.lookupType == 4) {
+          // Ligature
+          return nullptr;
+        } else if (it.lookupType == 5) {
+          // Contextual substitution
+          return nullptr;
+        } else if (it.lookupType == 6) {
+          // Chained contexts substitution
+          return nullptr;
+        } else if (it.lookupType == 7) {
+          // Substitituion extension
+          return nullptr;
+        } else if (it.lookupType == 8) {
+          // Reverse chaining context single
+          return nullptr;
+        } else {
+          return nullptr;
+        }
+      }
+    }
+
     return r;
   }
 
@@ -92,6 +141,8 @@ public:
   uint16_t majorVersion;
   uint16_t minorVersion;
   std::optional<Offset32> featureVariationsOffset;
+
+  std::vector<Lookup> lookups;
 };
 
 } // namespace eglyf

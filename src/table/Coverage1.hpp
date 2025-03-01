@@ -2,22 +2,22 @@
 
 namespace eglyf {
 
-class Coverage1 {
+class Coverage1 : public Coverage {
 public:
-  static std::optional<Coverage1> Read(InputStream &in) {
+  static std::shared_ptr<Coverage1> Read(InputStream &in) {
     using namespace std;
-    Coverage1 r;
+    auto r = make_shared<Coverage1>();
     uint16_t glyphCount;
     if (!in.u16(&glyphCount)) {
-      return nullopt;
+      return nullptr;
     }
-    r.glyphArray.reserve(glyphCount);
+    r->glyphArray.reserve(glyphCount);
     for (uint16_t i = 0; i < glyphCount; i++) {
       uint16_t v;
       if (!in.u16(&v)) {
-        return nullopt;
+        return nullptr;
       }
-      r.glyphArray.push_back(v);
+      r->glyphArray.push_back(v);
     }
     return r;
   }
