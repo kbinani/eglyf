@@ -4,44 +4,44 @@ namespace ksesh {
 
 class FontFile {
 public:
-  TableDirectory tableDirectory;
+  uint32_t sfntVersion;
+  uint16_t numTables;
+  uint16_t searchRange;
+  uint16_t entrySelector;
+  uint16_t rangeShift;
   std::map<std::array<uint8_t, 4>, std::shared_ptr<Table>> tables;
 
   bool write(OutputStream &out) {
     using namespace std;
-    if (!out.u32(tableDirectory.sfntVersion)) {
+    numTables = tables.size();
+    if (!out.u32(sfntVersion)) {
       return false;
     }
-    if (!out.u16(tableDirectory.numTables)) {
+    if (!out.u16(numTables)) {
       return false;
     }
-    if (!out.u16(tableDirectory.searchRange)) {
+    if (!out.u16(searchRange)) {
       return false;
     }
-    if (!out.u16(tableDirectory.entrySelector)) {
+    if (!out.u16(entrySelector)) {
       return false;
     }
-    if (!out.u16(tableDirectory.rangeShift)) {
+    if (!out.u16(rangeShift)) {
       return false;
     }
-    Offset32 const start = 12 + 16 * tableDirectory.numTables;
+    map<array<uint8_t, 4>, string> tableContents;
+    Offset32 const start = 12 + 16 * numTables;
     Offset32 offset = start;
-    vector<string> tableContents;
-    for (TableRecord const &tr : tableDirectory.tableRecords) {
-      if (!out.write((void *)tr.tag.values.data(), tr.tag.values.size())) {
+    for (auto [tag, table] : tables) {
+      if (!out.write((void *)tag.data(), tag.size())) {
         return false;
       }
-      auto item = tables.find(tr.tag.values);
-      if (item == tables.end()) {
-        return false;
-      }
-      auto table = item->second;
       auto encoded = table->encode();
       if (!encoded) {
         return false;
       }
       uint32_t length = encoded->length;
-      tableContents.push_back(encoded->data);
+      tableContents[tag] = encoded->data;
       if (encoded->data.size() < length) {
         return false;
       }
@@ -66,7 +66,7 @@ public:
     if (!out.seek(start)) {
       return false;
     }
-    for (auto const &data : tableContents) {
+    for (auto [_, data] : tableContents) {
       if (!out.write((void *)data.c_str(), data.size())) {
         return false;
       }
@@ -77,14 +77,18 @@ public:
   static std::shared_ptr<FontFile> Read(InputStream &in) {
     using namespace std;
     auto ff = make_shared<FontFile>();
-    if (auto td = TableDirectory::Read(in); td) {
-      ff->tableDirectory = *td;
-    } else {
+    auto td = TableDirectory::Read(in);
+    if (!td) {
       return nullptr;
     }
+    ff->sfntVersion = td->sfntVersion;
+    ff->numTables = td->numTables;
+    ff->searchRange = td->searchRange;
+    ff->entrySelector = td->entrySelector;
+    ff->rangeShift = td->rangeShift;
 
     map<array<uint8_t, 4>, TableRecord> records;
-    for (auto const &it : ff->tableDirectory.tableRecords) {
+    for (auto const &it : td->tableRecords) {
       records[it.tag.values] = it;
     }
 
