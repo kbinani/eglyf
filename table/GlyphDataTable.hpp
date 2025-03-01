@@ -59,6 +59,17 @@ public:
       ReadonlyGlyph r;
       r.header = header;
       r.data = in.readUntilEos();
+      r.numPoints = 0;
+      if (header.numberOfContours > 0) {
+        ByteInputStream in(r.data);
+        for (uint16_t i = 0; i < header.numberOfContours; i++) {
+          uint16_t index;
+          if (!in.u16(&index)) {
+            return nullopt;
+          }
+          r.numPoints = (std::max)(r.numPoints, (uint16_t)(index + 1));
+        }
+      }
       return r;
     }
 
@@ -70,6 +81,7 @@ public:
     }
 
     Header header;
+    uint16_t numPoints;
     std::string data;
   };
 
@@ -447,6 +459,67 @@ public:
     }
     ByteInputStream in(encoded->data);
     return Read(in, loca);
+  }
+
+  bool updateMaxp(MaximumProfileTable &out) const {
+    using namespace std;
+    out.numGlyphs = glyphs.size();
+    for (uint16_t gid = 0; gid < glyphs.size(); gid++) {
+      auto const &g = glyphs[gid];
+      if (holds_alternative<ReadonlyGlyph>(g)) {
+        auto const &rg = get<ReadonlyGlyph>(g);
+        out.maxContours = (std::max)(out.maxContours, (uint16_t)rg.header.numberOfContours);
+        out.maxPoints = (std::max)(out.maxPoints, rg.numPoints);
+      } else if (holds_alternative<CompositeGlyph>(g)) {
+        auto const &cg = get<CompositeGlyph>(g);
+        uint16_t depth = 1;
+        set<uint16_t> path;
+        path.insert(gid);
+        uint16_t compositePoints = 0;
+        uint16_t compositeContours = 0;
+        for (auto const &record : cg.records) {
+          if (!visit(record, depth, path, out, compositePoints, compositeContours)) {
+            return false;
+          }
+        }
+        out.maxComponentElements = (std::max)(out.maxComponentElements, (uint16_t)cg.records.size());
+        out.maxCompositePoints = (std::max)(out.maxCompositePoints, compositePoints);
+        out.maxCompositeContours = (std::max)(out.maxCompositeContours, compositeContours);
+      }
+    }
+    return true;
+  }
+
+private:
+  bool visit(CompositeGlyph::GlyphRecord const &record, uint16_t depth, std::set<uint16_t> path, MaximumProfileTable &out, uint16_t &compositePoints, uint16_t &compositeContours) const {
+    using namespace std;
+    if (record.glyphIndex >= glyphs.size()) {
+      return false;
+    }
+    if (path.find(record.glyphIndex) != path.end()) {
+      // recursive composition
+      return false;
+    }
+    auto const &child = glyphs[record.glyphIndex];
+    if (holds_alternative<CompositeGlyph>(child)) {
+      auto const &cchild = get<CompositeGlyph>(child);
+      out.maxComponentDepth = (std::max)(out.maxComponentDepth, depth);
+      auto next = path;
+      next.insert(record.glyphIndex);
+      for (auto const &r : cchild.records) {
+        if (!visit(r, depth + 1, next, out, compositePoints, compositeContours)) {
+          return false;
+        }
+      }
+      return true;
+    } else if (holds_alternative<ReadonlyGlyph>(child)) {
+      auto const &rchild = get<ReadonlyGlyph>(child);
+      compositePoints += rchild.numPoints;
+      compositeContours += rchild.header.numberOfContours;
+      return true;
+    } else {
+      return false;
+    }
   }
 
 public:

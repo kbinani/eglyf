@@ -163,7 +163,9 @@ public:
     if (!nPost->addName(name)) {
       return nullopt;
     }
-    nMaxp->numGlyphs = nGlyph->glyphs.size();
+    if (!nGlyph->updateMaxp(*nMaxp)) {
+      return nullopt;
+    }
 
     tto.glyf = nGlyph;
     post = nPost;
