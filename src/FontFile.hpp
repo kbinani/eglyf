@@ -21,16 +21,14 @@ public:
     all[Tag::FCC("cmap")] = cmap;
     all[Tag::FCC("head")] = head;
     all[Tag::FCC("hhea")] = hhea;
-    all[Tag::FCC("hmtx")] = hmtx;
     all[Tag::FCC("maxp")] = maxp;
     all[Tag::FCC("name")] = name;
     all[Tag::FCC("OS/2")] = os2;
     all[Tag::FCC("post")] = post;
+    numTables = all.size();
+    numTables += 1; // hmtx
     if (holds_alternative<TrueTypeOutlines>(outlines)) {
-      auto const &o = get<TrueTypeOutlines>(outlines);
-      numTables = all.size() + 2; // glyf, loca
-    } else {
-      numTables = all.size();
+      numTables += 2; // glyf, loca
     }
 
     if (!out.u32(sfntVersion)) {
@@ -98,6 +96,26 @@ public:
       offset += encodedLoca->data.size();
     }
 
+    // hmtx
+    uint16_t numberOfHMetrics = 0;
+    if (auto encoded = hmtx->encode(numberOfHMetrics); encoded) {
+      TableRecord hmtxRecord;
+      hmtxRecord.tag.values = Tag::FCC("hmtx");
+      hmtxRecord.checksum = encoded->checksum;
+      hmtxRecord.offset = offset;
+      hmtxRecord.length = encoded->length;
+      tableRecords[Tag::FCC("hmtx")] = hmtxRecord;
+
+      if (!out.write(encoded->data.data(), encoded->data.size())) {
+        return false;
+      }
+      offset += encoded->data.size();
+
+      hhea->numberOfHMetrics = numberOfHMetrics;
+    } else {
+      return false;
+    }
+
     for (auto &[tag, table] : all) {
       auto encoded = table->encode();
       if (!encoded) {
@@ -136,12 +154,12 @@ public:
     return true;
   }
 
-  std::optional<uint16_t> addEmptyGlyph(std::string const &name) {
+  std::optional<uint16_t> addEmptyGlyph(std::string const &name, uint16_t advanceWidth, uint16_t lsb) {
     return addTrueTypeGlyph(name, [&](GlyphDataTable &glyf, HorizontalMetricsTable &hmtx) {
       HorizontalMetricsTable::LongHorMetric hm;
-      hm.advanceWidth = 0;
-      hm.lsb = 0;
-      hmtx.hMetrics.push_back(hm);
+      hm.advanceWidth = advanceWidth;
+      hm.lsb = lsb;
+      hmtx.metrics.push_back(hm);
       return glyf.addEmptyGlyph();
     });
   }
@@ -156,7 +174,7 @@ public:
       HorizontalMetricsTable::LongHorMetric hm;
       hm.advanceWidth = advanceWidth;
       hm.lsb = lsb;
-      hmtx.hMetrics.push_back(hm);
+      hmtx.metrics.push_back(hm);
       return *gid;
     });
   }
@@ -365,7 +383,6 @@ private:
     if (!gid) {
       return nullopt;
     }
-    nHhea->numberOfHMetrics = nHmtx->hMetrics.size();
     if (!nPost->addName(name)) {
       return nullopt;
     }

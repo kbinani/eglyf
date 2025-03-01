@@ -16,9 +16,12 @@ public:
     if (numGlyphs < numberOfHMetrics) {
       return nullptr;
     }
+    if (numberOfHMetrics == 0) {
+      return nullptr;
+    }
     uint16_t count = numGlyphs - numberOfHMetrics;
     auto r = make_shared<HorizontalMetricsTable>();
-    r->hMetrics.reserve(numberOfHMetrics);
+    r->metrics.reserve(numGlyphs);
     for (uint16_t i = 0; i < numberOfHMetrics; i++) {
       LongHorMetric m;
       if (!in.u16(&m.advanceWidth)) {
@@ -27,23 +30,40 @@ public:
       if (!in.i16(&m.lsb)) {
         return nullptr;
       }
-      r->hMetrics.push_back(m);
+      r->metrics.push_back(m);
     }
-    r->leftSideBearings.reserve(count);
+    UFWORD const advanceWidth = r->metrics.back().advanceWidth;
     for (uint16_t i = 0; i < count; i++) {
-      FWORD v;
-      if (!in.i16(&v)) {
+      LongHorMetric m;
+      m.advanceWidth = advanceWidth;
+      if (!in.i16(&m.lsb)) {
         return nullptr;
       }
-      r->leftSideBearings.push_back(v);
+      r->metrics.push_back(m);
     }
     return r;
   }
 
   std::optional<EncodeResult> encode() const override {
+    return std::nullopt;
+  }
+
+  std::optional<EncodeResult> encode(uint16_t &numberOfHMetrics) const {
     using namespace std;
+    if (metrics.empty()) {
+      return EncodeResult("");
+    }
+    numberOfHMetrics = metrics.size();
+    UFWORD const advanceWidth = metrics.back().advanceWidth;
+    for (int i = numberOfHMetrics - 1; i >= 0; i--) {
+      if (advanceWidth != metrics[i].advanceWidth) {
+        break;
+      }
+      numberOfHMetrics = i;
+    }
     ByteOutputStream out;
-    for (auto const &m : hMetrics) {
+    for (uint16_t i = 0; i < numberOfHMetrics; i++) {
+      auto const &m = metrics[i];
       if (!out.u16(m.advanceWidth)) {
         return nullopt;
       }
@@ -51,8 +71,9 @@ public:
         return nullopt;
       }
     }
-    for (FWORD const &v : leftSideBearings) {
-      if (!out.i16(v)) {
+    for (uint16_t i = numberOfHMetrics; i < metrics.size(); i++) {
+      auto const &m = metrics[i];
+      if (!out.i16(m.lsb)) {
         return nullopt;
       }
     }
@@ -60,19 +81,18 @@ public:
   }
 
   std::shared_ptr<HorizontalMetricsTable> clone() const {
-    auto encoded = encode();
+    uint16_t numberOfHMetrics = 0;
+    auto encoded = encode(numberOfHMetrics);
     if (!encoded) {
       return nullptr;
     }
-    uint16_t numberOfHMetrics = hMetrics.size();
-    uint16_t numGlyphs = numberOfHMetrics + leftSideBearings.size();
+    uint16_t numGlyphs = metrics.size();
     ByteInputStream in(encoded->data);
     return Read(in, numGlyphs, numberOfHMetrics);
   }
 
 public:
-  std::vector<LongHorMetric> hMetrics;
-  std::vector<FWORD> leftSideBearings;
+  std::vector<LongHorMetric> metrics;
 };
 
 } // namespace ksesh::otf

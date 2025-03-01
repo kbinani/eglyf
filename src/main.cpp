@@ -38,7 +38,7 @@ int main() {
   if (!ff) {
     return 1;
   }
-  auto gid0 = ff->addEmptyGlyph("foo");
+  auto gid0 = ff->addEmptyGlyph("foo", 0, 0);
   if (!gid0) {
     return 1;
   }
