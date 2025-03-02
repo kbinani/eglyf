@@ -40,6 +40,7 @@
 #include "table/gsub/Subtable.hpp"
 #include "table/gsub/Single.hpp"
 #include "table/gsub/Ligature.hpp"
+#include "table/gsub/Multiple.hpp"
 #include "table/gsub/SequenceLookup.hpp"
 #include "table/gsub/ChainedContextsSubstitution.hpp"
 #include "table/gsub/SubstitutionExtension.hpp"

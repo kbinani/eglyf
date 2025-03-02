@@ -38,7 +38,11 @@ public:
       }
     } else if (r->extensionLookupType == 2) {
       // Multiple
-      return nullptr;
+      if (auto t = gsub::Multiple::Read(sub); t) {
+        r->extension = t;
+      } else {
+        return nullptr;
+      }
     } else if (r->extensionLookupType == 3) {
       // Alternate
       return nullptr;

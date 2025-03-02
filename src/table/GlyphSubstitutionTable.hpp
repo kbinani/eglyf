@@ -104,7 +104,11 @@ public:
           }
         } else if (it.lookupType == 2) {
           // Multiple
-          return nullptr;
+          if (auto t = gsub::Multiple::Read(sub); t) {
+            l.subtables.push_back(t);
+          } else {
+            return nullptr;
+          }
         } else if (it.lookupType == 3) {
           // Alternate
           return nullptr;

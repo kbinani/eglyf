@@ -57,6 +57,7 @@ list(APPEND src_files
   src/table/gsub/Single.hpp
   src/table/gsub/SubstitutionExtension.hpp
   src/table/gsub/Ligature.hpp
+  src/table/gsub/Multiple.hpp
   src/table/gsub/SequenceLookup.hpp
   src/table/gsub/ChainedContextsSubstitution.hpp
 )
