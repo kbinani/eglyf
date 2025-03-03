@@ -22,6 +22,10 @@ public:
     }
   }
 
+  int64_t position() override {
+    return loc;
+  }
+
   std::string data() {
     std::string s;
     s.assign((char const *)buffer.data(), buffer.size());

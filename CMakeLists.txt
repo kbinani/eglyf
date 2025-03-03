@@ -60,6 +60,7 @@ list(APPEND src_files
   src/table/gsub/Multiple.hpp
   src/table/gsub/SequenceLookup.hpp
   src/table/gsub/ChainedContextsSubstitution.hpp
+  src/io/OffsetWriter.hpp
 )
 
 juce_add_console_app(eglyf)

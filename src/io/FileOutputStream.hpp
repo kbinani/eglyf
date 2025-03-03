@@ -25,6 +25,10 @@ public:
     return s.setPosition(loc);
   }
 
+  int64_t position() override {
+    return s.getPosition();
+  }
+
 private:
   juce::FileOutputStream s;
 };

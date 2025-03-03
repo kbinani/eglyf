@@ -8,6 +8,7 @@ public:
 
   virtual bool write(void const *buffer, size_t size) = 0;
   virtual bool seek(int64_t loc) = 0;
+  virtual int64_t position() = 0;
 
   bool i64(int64_t v) {
     int64_t x = juce::ByteOrder::bigEndianInt64(&v);
