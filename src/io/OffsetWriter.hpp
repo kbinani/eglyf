@@ -9,7 +9,7 @@ public:
   public:
     int64_t const position;
     std::optional<std::pair<int64_t, T>> result;
-    std::weak_ptr<OffsetWriter> parent;
+    std::weak_ptr<OffsetWriter> const parent;
 
     explicit Handle(int64_t position, std::shared_ptr<OffsetWriter> parent) : position(position), parent(parent) {}
 
@@ -32,34 +32,37 @@ public:
     }
   };
 
+  using Handle16 = std::shared_ptr<Handle<Offset16>>;
+  using Handle32 = std::shared_ptr<Handle<Offset32>>;
+
 public:
   explicit OffsetWriter(OutputStream &upstream) : upstream(upstream), base(upstream.position()) {
   }
 
-  std::shared_ptr<Handle<Offset16>> o16() {
+  Handle16 o16() {
     using namespace std;
-    auto pos = upstream.position();
-    if (offsets.count(pos) > 0) {
+    int64_t const pos = upstream.position();
+    if (auto found = offsets.find(pos); found != offsets.end()) {
       return nullptr;
     }
     if (!upstream.o16(0)) {
       return nullptr;
     }
-    auto handle = make_shared<Handle<Offset16>>(upstream.position(), shared_from_this());
+    auto handle = make_shared<Handle<Offset16>>(pos, shared_from_this());
     offsets[pos] = handle;
     return handle;
   }
 
-  std::shared_ptr<Handle<Offset32>> o32() {
+  Handle32 o32() {
     using namespace std;
-    auto pos = upstream.position();
-    if (offsets.count(pos) > 0) {
+    int64_t const pos = upstream.position();
+    if (auto found = offsets.find(pos); found != offsets.end()) {
       return nullptr;
     }
     if (!upstream.o32(0)) {
       return nullptr;
     }
-    auto handle = make_shared<Handle<Offset32>>(upstream.position(), shared_from_this());
+    auto handle = make_shared<Handle<Offset32>>(pos, shared_from_this());
     offsets[pos] = handle;
     return handle;
   }
@@ -71,8 +74,8 @@ public:
     }
     auto pos = upstream.position();
     for (auto const &[position, handle] : offsets) {
-      if (holds_alternative<shared_ptr<Handle<Offset16>>>(handle)) {
-        auto const &h16 = get<shared_ptr<Handle<Offset16>>>(handle);
+      if (holds_alternative<Handle16>(handle)) {
+        auto const &h16 = get<Handle16>(handle);
         if (!h16->result) {
           return false;
         }
@@ -82,8 +85,8 @@ public:
         if (!upstream.o16(h16->result->second)) {
           return false;
         }
-      } else if (holds_alternative<shared_ptr<Handle<Offset32>>>(handle)) {
-        auto const &h32 = get<shared_ptr<Handle<Offset32>>>(handle);
+      } else if (holds_alternative<Handle32>(handle)) {
+        auto const &h32 = get<Handle32>(handle);
         if (!h32->result) {
           return false;
         }
@@ -103,7 +106,7 @@ public:
 private:
   OutputStream &upstream;
   int64_t const base;
-  std::map<int64_t, std::variant<std::shared_ptr<Handle<Offset16>>, std::shared_ptr<Handle<Offset32>>>> offsets;
+  std::map<int64_t, std::variant<Handle16, Handle32>> offsets;
 };
 
 } // namespace eglyf
