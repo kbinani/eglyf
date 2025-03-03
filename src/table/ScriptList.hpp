@@ -8,31 +8,31 @@ public:
     std::optional<uint16_t> requiredFeatureIndex;
     std::vector<uint16_t> featureIndices;
 
-    static std::optional<LangSys> Read(InputStream &in) {
+    static std::shared_ptr<LangSys> Read(InputStream &in) {
       using namespace std;
       Offset16 lookupOrderOffset;
       if (!in.o16(&lookupOrderOffset)) {
-        return nullopt;
+        return nullptr;
       }
-      LangSys langSys;
+      auto langSys = make_shared<LangSys>();
       uint16_t requiredFeatureIndex;
       if (!in.u16(&requiredFeatureIndex)) {
-        return nullopt;
+        return nullptr;
       }
       if (requiredFeatureIndex != 0xffff) {
-        langSys.requiredFeatureIndex = requiredFeatureIndex;
+        langSys->requiredFeatureIndex = requiredFeatureIndex;
       }
       uint16_t featureIndexCount;
       if (!in.u16(&featureIndexCount)) {
-        return nullopt;
+        return nullptr;
       }
-      langSys.featureIndices.reserve(featureIndexCount);
+      langSys->featureIndices.reserve(featureIndexCount);
       for (uint16_t i = 0; i < featureIndexCount; i++) {
         uint16_t v;
         if (!in.u16(&v)) {
-          return nullopt;
+          return nullptr;
         }
-        langSys.featureIndices.push_back(v);
+        langSys->featureIndices.push_back(v);
       }
       return langSys;
     }
@@ -40,8 +40,8 @@ public:
 
   struct Script {
     Tag tag;
-    std::optional<LangSys> defaultLangSys;
-    std::map<std::array<uint8_t, 4>, LangSys> langSysTable;
+    std::shared_ptr<LangSys> defaultLangSys;
+    std::vector<std::pair<Tag, std::shared_ptr<LangSys>>> langSysTable;
   };
 
 public:
@@ -66,6 +66,7 @@ public:
       }
       scriptOffsetList.push_back(make_pair(*scriptTag, scriptOffset));
     }
+    map<Offset16, shared_ptr<LangSys>> langSysList;
     for (auto [scriptTag, scriptOffset] : scriptOffsetList) {
       if (!in.seek(scriptOffset)) {
         return nullopt;
@@ -94,24 +95,34 @@ public:
         langSysOffsetList.push_back(make_pair(*langSysTag, langSysOffset));
       }
       if (defaultLangSysOffset > 0) {
-        if (!sub.seek(defaultLangSysOffset)) {
-          return nullopt;
+        if (auto found = langSysList.find(defaultLangSysOffset); found == langSysList.end()) {
+          if (!sub.seek(defaultLangSysOffset)) {
+            return nullopt;
+          }
+          auto defaultLangSys = LangSys::Read(sub);
+          if (!defaultLangSys) {
+            return nullopt;
+          }
+          script.defaultLangSys = defaultLangSys;
+          langSysList[defaultLangSysOffset] = defaultLangSys;
+        } else {
+          script.defaultLangSys = found->second;
         }
-        auto defaultLangSys = LangSys::Read(sub);
-        if (!defaultLangSys) {
-          return nullopt;
-        }
-        script.defaultLangSys = *defaultLangSys;
       }
       for (auto [langSysTag, langSysOffset] : langSysOffsetList) {
-        if (!sub.seek(langSysOffset)) {
-          return nullopt;
+        if (auto found = langSysList.find(langSysOffset); found == langSysList.end()) {
+          if (!sub.seek(langSysOffset)) {
+            return nullopt;
+          }
+          auto langSys = LangSys::Read(sub);
+          if (!langSys) {
+            return nullopt;
+          }
+          script.langSysTable.push_back(make_pair(langSysTag, langSys));
+          langSysList[langSysOffset] = langSys;
+        } else {
+          script.langSysTable.push_back(make_pair(langSysTag, found->second));
         }
-        auto langSys = LangSys::Read(sub);
-        if (!langSys) {
-          return nullopt;
-        }
-        script.langSysTable[langSysTag] = *langSys;
       }
       scriptList.scriptTable.push_back(script);
     }

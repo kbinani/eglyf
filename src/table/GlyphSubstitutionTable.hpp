@@ -11,6 +11,23 @@ public:
     std::vector<std::shared_ptr<gsub::Subtable>> subtables;
   };
 
+  struct Feature {
+    Tag tag;
+    std::optional<Offset16> featureParamsOffset;
+    std::vector<std::shared_ptr<Lookup>> lookups;
+  };
+
+  struct LangSys {
+    std::shared_ptr<Feature> requiredFeature;
+    std::vector<std::shared_ptr<Feature>> features;
+  };
+
+  struct Script {
+    Tag tag;
+    std::shared_ptr<LangSys> defaultLangSys;
+    std::vector<std::pair<Tag, std::shared_ptr<LangSys>>> langSysTable;
+  };
+
 public:
   static std::shared_ptr<GlyphSubstitutionTable> Read(InputStream &in) {
     using namespace std;
@@ -89,7 +106,7 @@ public:
     }
 
     for (auto const &it : lookupList.lookupTable) {
-      Lookup l;
+      auto l = make_shared<Lookup>();
       for (auto offset : it.subtableOffsets) {
         if (!in.seek(lookupListOffset + offset)) {
           return nullptr;
@@ -98,14 +115,14 @@ public:
         if (it.lookupType == 1) {
           // Single
           if (auto t = gsub::Single::Read(sub); t) {
-            l.subtables.push_back(t);
+            l->subtables.push_back(t);
           } else {
             return nullptr;
           }
         } else if (it.lookupType == 2) {
           // Multiple
           if (auto t = gsub::Multiple::Read(sub); t) {
-            l.subtables.push_back(t);
+            l->subtables.push_back(t);
           } else {
             return nullptr;
           }
@@ -115,7 +132,7 @@ public:
         } else if (it.lookupType == 4) {
           // Ligature
           if (auto t = gsub::Ligature::Read(sub); t) {
-            l.subtables.push_back(t);
+            l->subtables.push_back(t);
           } else {
             return nullptr;
           }
@@ -125,14 +142,14 @@ public:
         } else if (it.lookupType == 6) {
           // Chained contexts substitution
           if (auto t = gsub::ChainedContextsSubstitution::Read(sub); t) {
-            l.subtables.push_back(t);
+            l->subtables.push_back(t);
           } else {
             return nullptr;
           }
         } else if (it.lookupType == 7) {
           // Substitituion extension
           if (auto t = gsub::SubstitutionExtension::Read(sub); t) {
-            l.subtables.push_back(t);
+            l->subtables.push_back(t);
           } else {
             return nullptr;
           }
@@ -143,6 +160,67 @@ public:
           return nullptr;
         }
       }
+      r->lookups.push_back(l);
+    }
+
+    for (auto const &f : featureList.featureTable) {
+      auto v = make_shared<Feature>();
+      v->tag = f.tag;
+      v->featureParamsOffset = f.featureParamsOffset;
+      for (uint16_t index : f.lookupListIndices) {
+        if (index >= r->lookups.size()) {
+          return nullptr;
+        }
+        v->lookups.push_back(r->lookups[index]);
+      }
+      r->features.push_back(v);
+    }
+
+    map<shared_ptr<ScriptList::LangSys>, shared_ptr<LangSys>> convertedLangSysList;
+    auto convertLangSys = [&](ScriptList::LangSys const &from) -> shared_ptr<LangSys> {
+      auto converted = make_shared<LangSys>();
+      if (from.requiredFeatureIndex) {
+        if (*from.requiredFeatureIndex >= r->features.size()) {
+          return nullptr;
+        }
+        converted->requiredFeature = r->features[*from.requiredFeatureIndex];
+      }
+      for (auto const &index : from.featureIndices) {
+        if (index >= r->features.size()) {
+          return nullptr;
+        }
+        converted->features.push_back(r->features[index]);
+      }
+      return converted;
+    };
+    for (auto const &s : scriptList.scriptTable) {
+      Script script;
+      script.tag = s.tag;
+      if (s.defaultLangSys) {
+        if (auto found = convertedLangSysList.find(s.defaultLangSys); found == convertedLangSysList.end()) {
+          auto converted = convertLangSys(*s.defaultLangSys);
+          if (!converted) {
+            return nullptr;
+          }
+          script.defaultLangSys = converted;
+          convertedLangSysList[s.defaultLangSys] = converted;
+        } else {
+          script.defaultLangSys = found->second;
+        }
+      }
+      for (auto const &[langSysTag, langSys] : s.langSysTable) {
+        if (auto found = convertedLangSysList.find(langSys); found == convertedLangSysList.end()) {
+          auto converted = convertLangSys(*langSys);
+          if (!converted) {
+            return nullptr;
+          }
+          script.langSysTable.push_back(make_pair(langSysTag, converted));
+          convertedLangSysList[langSys] = converted;
+        } else {
+          script.langSysTable.push_back(make_pair(langSysTag, found->second));
+        }
+      }
+      r->scripts.push_back(script);
     }
 
     return r;
@@ -158,7 +236,9 @@ public:
   uint16_t minorVersion;
   std::optional<Offset32> featureVariationsOffset;
 
-  std::vector<Lookup> lookups;
+  std::vector<Script> scripts;
+  std::vector<std::shared_ptr<Feature>> features;
+  std::vector<std::shared_ptr<Lookup>> lookups;
 };
 
 } // namespace eglyf
