@@ -49,6 +49,14 @@ public:
   bool f2dot14(F2DOT14 v) {
     return i16(v.data);
   }
+
+  bool sizeU16(size_t v) {
+    if ((size_t)std::numeric_limits<uint16_t>::max() < v) {
+      return false;
+    }
+    uint16_t u = (uint16_t)v;
+    return u16(v);
+  }
 };
 
 } // namespace eglyf

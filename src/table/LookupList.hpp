@@ -60,6 +60,11 @@ public:
     return ret;
   }
 
+  bool write(OutputStream &out) {
+    // TODO:
+    return true;
+  }
+
 public:
   std::vector<Lookup> lookupTable;
 };

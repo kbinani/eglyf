@@ -228,7 +228,150 @@ public:
 
   std::optional<EncodeResult> encode() const override {
     using namespace std;
-    return nullopt;
+    ByteOutputStream out;
+    if (majorVersion != 1) {
+      return nullopt;
+    }
+    auto gsubHeader = make_shared<OffsetWriter>(out);
+    if (!out.u16(majorVersion)) {
+      return nullopt;
+    }
+    if (!out.u16(minorVersion)) {
+      return nullopt;
+    }
+    auto scriptListOffsetHandle = gsubHeader->o16();
+    if (!scriptListOffsetHandle) {
+      return nullopt;
+    }
+    auto featureListOffsetHandle = gsubHeader->o16();
+    if (!featureListOffsetHandle) {
+      return nullopt;
+    }
+    auto lookupListOffsetHandle = gsubHeader->o16();
+    if (!lookupListOffsetHandle) {
+      return nullopt;
+    }
+    if (minorVersion == 0) {
+      // nop
+    } else if (minorVersion == 1) {
+      if (!out.o32(featureVariationsOffset ? *featureVariationsOffset : 0)) {
+        return nullopt;
+      }
+    } else {
+      return nullopt;
+    }
+
+    LookupList lookupList;
+    for (auto const &lookup : lookups) {
+      LookupList::Lookup l;
+      l.lookupType = lookup->lookupType;
+      l.lookupFlag = lookup->lookupFlag;
+      l.subtableOffsets.resize(lookup->subtables.size());
+      l.markFilteringSet = lookup->markFilteringSet;
+      lookupList.lookupTable.push_back(l);
+    }
+
+    FeatureList featureList;
+    for (auto const &feature : features) {
+      FeatureList::Feature f;
+      f.tag = feature->tag;
+      f.featureParamsOffset = feature->featureParamsOffset;
+      for (auto const &lookup : feature->lookups) {
+        auto found = ranges::find(lookups, lookup);
+        if (found == lookups.end()) {
+          return nullopt;
+        }
+        auto index = distance(lookups.begin(), found);
+        if (index > numeric_limits<uint16_t>::max()) {
+          return nullopt;
+        }
+        f.lookupListIndices.push_back(index);
+      }
+      featureList.featureTable.push_back(f);
+    }
+
+    ScriptList scriptList;
+    map<shared_ptr<LangSys>, shared_ptr<ScriptList::LangSys>> langSysMap;
+    auto convertLangSys = [&](shared_ptr<LangSys> from) -> shared_ptr<ScriptList::LangSys> {
+      auto found = langSysMap.find(from);
+      if (found == langSysMap.end()) {
+        auto to = make_shared<ScriptList::LangSys>();
+        if (from->requiredFeature) {
+          auto f = ranges::find(features, from->requiredFeature);
+          if (f == features.end()) {
+            return nullptr;
+          }
+          auto index = distance(features.begin(), f);
+          if (index > numeric_limits<uint16_t>::max()) {
+            return nullptr;
+          }
+          to->requiredFeatureIndex = index;
+        }
+        for (auto const &f : from->features) {
+          auto ff = ranges::find(features, f);
+          if (ff == features.end()) {
+            return nullptr;
+          }
+          auto index = distance(features.begin(), ff);
+          if (index > numeric_limits<uint16_t>::max()) {
+            return nullptr;
+          }
+          to->featureIndices.push_back(index);
+        }
+        langSysMap[from] = to;
+        return to;
+      } else {
+        return found->second;
+      }
+    };
+    for (auto const &script : scripts) {
+      ScriptList::Script s;
+      s.tag = script.tag;
+      if (script.defaultLangSys) {
+        if (auto converted = convertLangSys(script.defaultLangSys); converted) {
+          s.defaultLangSys = converted;
+        } else {
+          return nullopt;
+        }
+      }
+      for (auto const &[tag, langSys] : script.langSysTable) {
+        if (auto converted = convertLangSys(langSys); converted) {
+          s.langSysTable.push_back(make_pair(tag, converted));
+        } else {
+          return nullopt;
+        }
+      }
+      scriptList.scriptTable.push_back(s);
+    }
+
+    // Write ScriptList
+    if (!scriptListOffsetHandle->mark()) {
+      return nullopt;
+    }
+    if (!scriptList.write(out)) {
+      return nullopt;
+    }
+
+    // Write FeatureList
+    if (!featureListOffsetHandle->mark()) {
+      return nullopt;
+    }
+    if (!featureList.write(out)) {
+      return nullopt;
+    }
+
+    // Write LookupList
+    if (!lookupListOffsetHandle->mark()) {
+      return nullopt;
+    }
+    if (!lookupList.write(out)) {
+      return nullopt;
+    }
+
+    if (!gsubHeader->commit()) {
+      return nullopt;
+    }
+    return EncodeResult(out.data());
   }
 
 public:

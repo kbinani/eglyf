@@ -58,6 +58,11 @@ public:
     return featureList;
   }
 
+  bool write(OutputStream &out) {
+    // TODO:
+    return true;
+  }
+
 public:
   std::vector<Feature> featureTable;
 };
