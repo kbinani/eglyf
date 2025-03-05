@@ -44,6 +44,7 @@ list(APPEND src_files
   src/table/OS2AndWindowsMetricsTable.hpp
   src/table/HorizontalHeaderTable.hpp
   src/table/HorizontalMetricsTable.hpp
+  src/table/SubtableCollection.hpp
   src/table/GlyphSubstitutionTable.hpp
   src/table/ScriptList.hpp
   src/table/FeatureList.hpp

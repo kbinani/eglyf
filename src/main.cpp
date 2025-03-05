@@ -45,6 +45,7 @@
 #include "table/gsub/SequenceLookup.hpp"
 #include "table/gsub/ChainedContextsSubstitution.hpp"
 #include "table/gsub/SubstitutionExtension.hpp"
+#include "table/SubtableCollection.hpp"
 #include "table/GlyphSubstitutionTable.hpp"
 #include "FontFile.hpp"
 // clang-format on

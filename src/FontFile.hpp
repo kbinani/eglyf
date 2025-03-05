@@ -342,7 +342,8 @@ public:
     if (auto tr = records.find(FCC("GSUB")); tr != records.end()) {
       if (auto buffer = tr->second.read(in); buffer) {
         ByteInputStream slice(*buffer);
-        if (auto result = GlyphSubstitutionTable::Read(slice); result) {
+        auto result = make_shared<GlyphSubstitutionTable>();
+        if (result->read(slice)) {
           ff->tables[tr->second.tag] = result;
         } else {
           return nullptr;
