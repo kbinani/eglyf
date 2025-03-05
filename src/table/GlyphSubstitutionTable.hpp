@@ -262,6 +262,7 @@ public:
     }
 
     LookupList lookupList;
+    vector<vector<shared_ptr<gsub::Subtable>>> subtables;
     for (auto const &lookup : lookups) {
       LookupList::Lookup l;
       l.lookupType = lookup->lookupType;
@@ -269,6 +270,8 @@ public:
       l.subtableOffsets.resize(lookup->subtables.size());
       l.markFilteringSet = lookup->markFilteringSet;
       lookupList.lookupTable.push_back(l);
+
+      subtables.push_back(lookup->subtables);
     }
 
     FeatureList featureList;
@@ -364,7 +367,7 @@ public:
     if (!lookupListOffsetHandle->mark()) {
       return nullopt;
     }
-    if (!lookupList.write(out)) {
+    if (!lookupList.write<gsub::Subtable>(out, subtables)) {
       return nullopt;
     }
 

@@ -25,6 +25,11 @@ public:
     return r;
   }
 
+  bool write(OutputStream &out) override {
+    // TODO:
+    return true;
+  }
+
 public:
   int16_t deltaGlyphID;
 };
@@ -59,6 +64,11 @@ public:
       return nullptr;
     }
     return r;
+  }
+
+  bool write(OutputStream &out) override {
+    // TODO:
+    return true;
   }
 
 public:

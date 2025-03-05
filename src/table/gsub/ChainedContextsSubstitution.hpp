@@ -154,6 +154,11 @@ public:
     return r;
   }
 
+  bool write(OutputStream &out) override {
+    // TODO:
+    return true;
+  }
+
 public:
   std::vector<ChainedSequenceRuleSet> ruleSets;
 };
@@ -340,6 +345,11 @@ public:
     return r;
   }
 
+  bool write(OutputStream &out) override {
+    // TODO:
+    return true;
+  }
+
 public:
   std::shared_ptr<ClassDef> backtrackClassDef;
   std::shared_ptr<ClassDef> inputClassDef;
@@ -440,6 +450,11 @@ public:
     }
 
     return r;
+  }
+
+  bool write(OutputStream &out) override {
+    // TODO:
+    return true;
   }
 
 public:

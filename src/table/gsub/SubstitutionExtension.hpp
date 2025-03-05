@@ -72,6 +72,11 @@ public:
     return r;
   }
 
+  bool write(OutputStream &out) override {
+    // TODO:
+    return true;
+  }
+
 public:
   uint16_t extensionLookupType;
   std::shared_ptr<Subtable> extension;

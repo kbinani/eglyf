@@ -76,6 +76,11 @@ public:
     return r;
   }
 
+  bool write(OutputStream &out) override {
+    // TODO:
+    return true;
+  }
+
 public:
   std::vector<Sequence> sequences;
 };
