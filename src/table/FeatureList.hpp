@@ -59,8 +59,47 @@ public:
   }
 
   bool write(OutputStream &out) {
-    // TODO:
-    return true;
+    using namespace std;
+    auto featureTableBeginning = make_shared<OffsetWriter>(out);
+    if (!out.sizeU16(featureTable.size())) {
+      return false;
+    }
+    vector<OffsetWriter::Handle16> featureOffsets;
+    for (auto const &feature : featureTable) {
+      if (!out.write(feature.tag.data(), feature.tag.size())) {
+        return false;
+      }
+      auto handle = featureTableBeginning->o16();
+      if (!handle) {
+        return false;
+      }
+      featureOffsets.push_back(handle);
+    }
+    for (size_t i = 0; i < featureTable.size(); i++) {
+      auto const &feature = featureTable[i];
+      auto handle = featureOffsets[i];
+      if (!handle->mark()) {
+        return false;
+      }
+      if (feature.featureParamsOffset) {
+        if (!out.o16(*feature.featureParamsOffset)) {
+          return false;
+        }
+      } else {
+        if (!out.o16(0)) {
+          return false;
+        }
+      }
+      if (!out.sizeU16(feature.lookupListIndices.size())) {
+        return false;
+      }
+      for (uint16_t index : feature.lookupListIndices) {
+        if (!out.u16(index)) {
+          return false;
+        }
+      }
+    }
+    return featureTableBeginning->commit();
   }
 
 public:
