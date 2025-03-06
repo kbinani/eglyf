@@ -35,6 +35,28 @@ public:
     return r;
   }
 
+  bool write(OutputStream &out) override {
+    using namespace std;
+    if (!out.u16(2)) {
+      return false;
+    }
+    if (!out.sizeU16(rangeRecords.size())) {
+      return false;
+    }
+    for (auto const &rangeRecord : rangeRecords) {
+      if (!out.u16(rangeRecord.startGlyphID)) {
+        return false;
+      }
+      if (!out.u16(rangeRecord.endGlyphID)) {
+        return false;
+      }
+      if (!out.u16(rangeRecord.startCoverageIndex)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
 public:
   std::vector<RangeRecord> rangeRecords;
 };

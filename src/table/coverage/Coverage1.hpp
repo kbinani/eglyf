@@ -22,6 +22,22 @@ public:
     return r;
   }
 
+  bool write(OutputStream &out) override {
+    using namespace std;
+    if (!out.u16(1)) {
+      return false;
+    }
+    if (!out.sizeU16(glyphArray.size())) {
+      return false;
+    }
+    for (uint16_t glyph : glyphArray) {
+      if (!out.u16(glyph)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
 public:
   std::vector<uint16_t> glyphArray;
 };
