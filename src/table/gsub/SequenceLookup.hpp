@@ -17,6 +17,13 @@ struct SequenceLookup {
     }
     return r;
   }
+
+  bool write(OutputStream &out) const {
+    if (!out.u16(sequenceIndex)) {
+      return false;
+    }
+    return out.u16(lookupListIndex);
+  }
 };
 
 } // namespace eglyf::gsub

@@ -30,6 +30,15 @@ public:
       result = make_pair(position, (T)offset);
       return true;
     }
+
+    bool null() {
+      using namespace std;
+      if (result) {
+        return false;
+      }
+      result = make_pair(position, 0);
+      return true;
+    }
   };
 
   using Handle16 = std::shared_ptr<Handle<Offset16>>;

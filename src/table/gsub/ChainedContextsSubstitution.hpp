@@ -138,6 +138,7 @@ public:
     }
     for (auto offset : chainedSeqRuleSetOffsets) {
       if (offset == 0) {
+        r->ruleSets.push_back(nullopt);
         continue;
       }
       if (!in.seek(offset)) {
@@ -155,12 +156,98 @@ public:
   }
 
   bool write(OutputStream &out) override {
-    // TODO:
-    return true;
+    using namespace std;
+    auto beginning = make_shared<OffsetWriter>(out);
+    if (!out.u16(1)) {
+      return false;
+    }
+    auto coverageOffset = beginning->o16();
+    if (!coverageOffset) {
+      return false;
+    }
+    if (!out.sizeU16(ruleSets.size())) {
+      return false;
+    }
+    vector<OffsetWriter::Handle16> chainedSeqRuleSetOffsets;
+    for (auto const &ruleSet : ruleSets) {
+      auto h = beginning->o16();
+      if (!h) {
+        return false;
+      }
+      chainedSeqRuleSetOffsets.push_back(h);
+    }
+
+    if (!coverageOffset->mark()) {
+      return false;
+    }
+    if (!coverage->write(out)) {
+      return false;
+    }
+
+    for (size_t i = 0; i < ruleSets.size(); i++) {
+      auto chainedSequenceRuleSetBeginning = make_shared<OffsetWriter>(out);
+      auto const &ruleSet = ruleSets[i];
+      auto handle = chainedSeqRuleSetOffsets[i];
+      if (!ruleSet) {
+        if (!handle->null()) {
+          return false;
+        }
+        continue;
+      }
+      if (!handle->mark()) {
+        return false;
+      }
+      if (!out.sizeU16(ruleSet->rules.size())) {
+        return false;
+      }
+      vector<OffsetWriter::Handle16> chainedSeqRuleOffsets;
+      for (auto const &rule : ruleSet->rules) {
+        auto h = chainedSequenceRuleSetBeginning->o16();
+        if (!h) {
+          return false;
+        }
+        chainedSeqRuleOffsets.push_back(h);
+      }
+      for (size_t j = 0; j < ruleSet->rules.size(); j++) {
+        auto const &rule = ruleSet->rules[j];
+        auto h = chainedSeqRuleOffsets[j];
+        if (!h->mark()) {
+          return false;
+        }
+        if (!out.sizeU16(rule.backtrackSequence.size())) {
+          return false;
+        }
+        if (!out.u16a(rule.backtrackSequence)) {
+          return false;
+        }
+        if (!out.sizeU16(rule.inputSequence.size() + 1)) {
+          return false;
+        }
+        if (!out.u16a(rule.inputSequence)) {
+          return false;
+        }
+        if (!out.sizeU16(rule.lookaheadSequence.size())) {
+          return false;
+        }
+        if (!out.u16a(rule.lookaheadSequence)) {
+          return false;
+        }
+        for (auto const &seq : rule.seqLookupRecords) {
+          if (!seq.write(out)) {
+            return false;
+          }
+        }
+      }
+      if (!chainedSequenceRuleSetBeginning->commit()) {
+        return false;
+      }
+    }
+
+    return beginning->commit();
   }
 
 public:
-  std::vector<ChainedSequenceRuleSet> ruleSets;
+  std::vector<std::optional<ChainedSequenceRuleSet>> ruleSets;
 };
 
 class ChainedContextsSubstitution2 : public Subtable {
@@ -227,6 +314,37 @@ public:
       return r;
     }
 
+    bool write(OutputStream &out) const {
+      using namespace std;
+      if (!out.sizeU16(backtrackSequence.size())) {
+        return false;
+      }
+      if (!out.u16a(backtrackSequence)) {
+        return false;
+      }
+      if (!out.sizeU16(inputSequence.size() + 1)) {
+        return false;
+      }
+      if (!out.u16a(inputSequence)) {
+        return false;
+      }
+      if (!out.sizeU16(lookaheadSequence.size())) {
+        return false;
+      }
+      if (!out.u16a(lookaheadSequence)) {
+        return false;
+      }
+      if (!out.sizeU16(seqLookupRecords.size())) {
+        return false;
+      }
+      for (auto const &seq : seqLookupRecords) {
+        if (!seq.write(out)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
   public:
     std::vector<uint16_t> backtrackSequence;
     std::vector<uint16_t> inputSequence;
@@ -251,6 +369,33 @@ public:
         }
       }
       return r;
+    }
+
+    bool write(OutputStream &out) const {
+      using namespace std;
+      auto beginning = make_shared<OffsetWriter>(out);
+      if (!out.sizeU16(rules.size())) {
+        return false;
+      }
+      vector<OffsetWriter::Handle16> handles;
+      for (auto const &rule : rules) {
+        auto h = beginning->o16();
+        if (!h) {
+          return false;
+        }
+        handles.push_back(h);
+      }
+      for (size_t i = 0; i < rules.size(); i++) {
+        auto const &rule = rules[i];
+        auto handle = handles[i];
+        if (!handle->mark()) {
+          return false;
+        }
+        if (!rule.write(out)) {
+          return false;
+        }
+      }
+      return beginning->commit();
     }
 
     std::vector<ChainedClassSequenceRule> rules;
@@ -330,6 +475,7 @@ public:
     r->ruleSets.reserve(chainedClassSeqRuleSetCount);
     for (Offset16 offset : chainedClassSeqRuleSetOffsets) {
       if (offset == 0) {
+        r->ruleSets.push_back(nullopt);
         continue;
       }
       if (!in.seek(offset)) {
@@ -346,15 +492,92 @@ public:
   }
 
   bool write(OutputStream &out) override {
-    // TODO:
-    return true;
+    using namespace std;
+    auto beginning = make_shared<OffsetWriter>(out);
+    if (!out.u16(2)) {
+      return false;
+    }
+    auto coverageOffset = beginning->o16();
+    if (!coverageOffset) {
+      return false;
+    }
+    auto backtrackClassDefOffset = beginning->o16();
+    if (!backtrackClassDefOffset) {
+      return false;
+    }
+    auto inputClassDefOffset = beginning->o16();
+    if (!inputClassDefOffset) {
+      return false;
+    }
+    auto lookaheadClassDefOffset = beginning->o16();
+    if (!lookaheadClassDefOffset) {
+      return false;
+    }
+    if (!out.sizeU16(ruleSets.size())) {
+      return false;
+    }
+    vector<OffsetWriter::Handle16> chainedClassSeqRuleSetOffsets;
+    for (auto const &ruleSet : ruleSets) {
+      auto h = beginning->o16();
+      if (!h) {
+        return false;
+      }
+      chainedClassSeqRuleSetOffsets.push_back(h);
+    }
+
+    if (!coverageOffset->mark()) {
+      return false;
+    }
+    if (!coverage->write(out)) {
+      return false;
+    }
+
+    if (!backtrackClassDefOffset->mark()) {
+      return false;
+    }
+    if (!backtrackClassDef->write(out)) {
+      return false;
+    }
+
+    if (!inputClassDefOffset->mark()) {
+      return false;
+    }
+    if (!inputClassDef->write(out)) {
+      return false;
+    }
+
+    if (!lookaheadClassDefOffset->mark()) {
+      return false;
+    }
+    if (!lookaheadClassDef->write(out)) {
+      return false;
+    }
+
+    for (size_t i = 0; i < ruleSets.size(); i++) {
+      auto const &ruleSet = ruleSets[i];
+      auto offset = chainedClassSeqRuleSetOffsets[i];
+      if (!ruleSet) {
+        if (!offset->null()) {
+          return false;
+        }
+        continue;
+      }
+      if (!offset->mark()) {
+        return false;
+      }
+      if (!ruleSet->write(out)) {
+        return false;
+      }
+    }
+
+    return beginning->commit();
   }
 
 public:
   std::shared_ptr<ClassDef> backtrackClassDef;
   std::shared_ptr<ClassDef> inputClassDef;
   std::shared_ptr<ClassDef> lookaheadClassDef;
-  std::vector<ChainedClassSequenceRuleSet> ruleSets;
+  std::vector<std::optional<ChainedClassSequenceRuleSet>> ruleSets;
 };
 
 class ChainedContextsSubstitution3 : public Subtable {
@@ -453,8 +676,91 @@ public:
   }
 
   bool write(OutputStream &out) override {
-    // TODO:
-    return true;
+    using namespace std;
+    auto beginning = make_shared<OffsetWriter>(out);
+    if (!out.u16(3)) {
+      return false;
+    }
+
+    if (!out.sizeU16(backtrackCoverage.size())) {
+      return false;
+    }
+    vector<OffsetWriter::Handle16> backtrackCoverageOffsets;
+    for (auto const &it : backtrackCoverage) {
+      auto h = beginning->o16();
+      if (!h) {
+        return false;
+      }
+      backtrackCoverageOffsets.push_back(h);
+    }
+
+    if (!out.sizeU16(inputCoverage.size())) {
+      return false;
+    }
+    vector<OffsetWriter::Handle16> inputCoverageOffsets;
+    for (auto const &it : inputCoverage) {
+      auto h = beginning->o16();
+      if (!h) {
+        return false;
+      }
+      inputCoverageOffsets.push_back(h);
+    }
+
+    if (!out.sizeU16(lookaheadCoverage.size())) {
+      return false;
+    }
+    vector<OffsetWriter::Handle16> lookaheadCoverageOffsets;
+    for (auto const &it : lookaheadCoverage) {
+      auto h = beginning->o16();
+      if (!h) {
+        return false;
+      }
+      lookaheadCoverageOffsets.push_back(h);
+    }
+
+    if (!out.sizeU16(seqLookups.size())) {
+      return false;
+    }
+    for (auto const &seq : seqLookups) {
+      if (!seq.write(out)) {
+        return false;
+      }
+    }
+
+    for (size_t i = 0; i < backtrackCoverage.size(); i++) {
+      auto const &cov = backtrackCoverage[i];
+      auto handle = backtrackCoverageOffsets[i];
+      if (!handle->mark()) {
+        return false;
+      }
+      if (!cov->write(out)) {
+        return false;
+      }
+    }
+
+    for (size_t i = 0; i < inputCoverage.size(); i++) {
+      auto const &cov = inputCoverage[i];
+      auto handle = inputCoverageOffsets[i];
+      if (!handle->mark()) {
+        return false;
+      }
+      if (!cov->write(out)) {
+        return false;
+      }
+    }
+
+    for (size_t i = 0; i < lookaheadCoverage.size(); i++) {
+      auto const &cov = lookaheadCoverage[i];
+      auto handle = lookaheadCoverageOffsets[i];
+      if (!handle->mark()) {
+        return false;
+      }
+      if (!cov->write(out)) {
+        return false;
+      }
+    }
+
+    return beginning->commit();
   }
 
 public:
