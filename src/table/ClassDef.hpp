@@ -5,6 +5,7 @@ namespace eglyf {
 class ClassDef {
 public:
   virtual ~ClassDef() {}
+  virtual bool write(OutputStream &out) = 0;
 };
 
 class ClassDef1 : public ClassDef {
@@ -28,6 +29,20 @@ public:
       r->classValues.push_back(v);
     }
     return r;
+  }
+
+  bool write(OutputStream &out) override {
+    using namespace std;
+    if (!out.u16(1)) {
+      return false;
+    }
+    if (!out.u16(startGlyphID)) {
+      return false;
+    }
+    if (!out.sizeU16(classValues.size())) {
+      return false;
+    }
+    return out.u16a(classValues);
   }
 
 public:
@@ -56,6 +71,16 @@ public:
       }
       return r;
     }
+
+    bool write(OutputStream &out) const {
+      if (!out.u16(startGlyphID)) {
+        return false;
+      }
+      if (!out.u16(endGlyphID)) {
+        return false;
+      }
+      return out.u16(classValue);
+    }
   };
 
 public:
@@ -75,6 +100,22 @@ public:
       }
     }
     return r;
+  }
+
+  bool write(OutputStream &out) override {
+    using namespace std;
+    if (!out.u16(2)) {
+      return false;
+    }
+    if (!out.sizeU16(classRanges.size())) {
+      return false;
+    }
+    for (auto const &range : classRanges) {
+      if (!range.write(out)) {
+        return false;
+      }
+    }
+    return true;
   }
 
 public:

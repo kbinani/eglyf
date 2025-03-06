@@ -57,6 +57,15 @@ public:
     uint16_t u = (uint16_t)v;
     return u16(v);
   }
+
+  bool u16a(std::vector<uint16_t> const &a) {
+    for (uint16_t v : a) {
+      if (!u16(v)) {
+        return false;
+      }
+    }
+    return true;
+  }
 };
 
 } // namespace eglyf
