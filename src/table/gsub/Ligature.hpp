@@ -31,6 +31,16 @@ public:
       }
       return r;
     }
+
+    bool write(OutputStream &out) const {
+      if (!out.u16(ligatureGlyph)) {
+        return false;
+      }
+      if (!out.sizeU16(componentGlyphIDs.size() + 1)) {
+        return false;
+      }
+      return out.u16a(componentGlyphIDs);
+    }
   };
 
   struct LigatureSet {
@@ -64,6 +74,33 @@ public:
         }
       }
       return r;
+    }
+
+    bool write(OutputStream &out) const {
+      using namespace std;
+      auto beginning = make_shared<OffsetWriter>(out);
+      if (!out.sizeU16(ligatures.size())) {
+        return false;
+      }
+      vector<OffsetWriter::Handle16> ligatureOffsets;
+      for (size_t i = 0; i < ligatures.size(); i++) {
+        auto offset = beginning->o16();
+        if (!offset) {
+          return false;
+        }
+        ligatureOffsets.push_back(offset);
+      }
+      for (size_t i = 0; i < ligatures.size(); i++) {
+        auto const &ligature = ligatures[i];
+        auto offset = ligatureOffsets[i];
+        if (!offset->mark()) {
+          return false;
+        }
+        if (!ligature.write(out)) {
+          return false;
+        }
+      }
+      return beginning->commit();
     }
   };
 
@@ -119,8 +156,43 @@ public:
   }
 
   bool write(OutputStream &out) override {
-    // TODO:
-    return true;
+    using namespace std;
+    auto beginning = make_shared<OffsetWriter>(out);
+    if (!out.u16(1)) {
+      return false;
+    }
+    auto coverageOffset = beginning->o16();
+    if (!coverageOffset) {
+      return false;
+    }
+    if (!out.sizeU16(ligatureSets.size())) {
+      return false;
+    }
+    vector<OffsetWriter::Handle16> ligatureSetOffsets;
+    for (size_t i = 0; i < ligatureSets.size(); i++) {
+      auto h = beginning->o16();
+      if (!h) {
+        return false;
+      }
+      ligatureSetOffsets.push_back(h);
+    }
+    for (size_t i = 0; i < ligatureSets.size(); i++) {
+      auto const &ligatureSet = ligatureSets[i];
+      auto offset = ligatureSetOffsets[i];
+      if (!offset->mark()) {
+        return false;
+      }
+      if (!ligatureSet.write(out)) {
+        return false;
+      }
+    }
+    if (!coverageOffset->mark()) {
+      return false;
+    }
+    if (!coverage->write(out)) {
+      return false;
+    }
+    return beginning->commit();
   }
 
 public:
