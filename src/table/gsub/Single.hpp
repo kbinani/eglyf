@@ -26,8 +26,25 @@ public:
   }
 
   bool write(OutputStream &out) override {
-    // TODO:
-    return true;
+    using namespace std;
+    auto beginning = make_shared<OffsetWriter>(out);
+    if (!out.u16(1)) {
+      return false;
+    }
+    auto coverageOffset = beginning->o16();
+    if (!coverageOffset) {
+      return false;
+    }
+    if (!out.i16(deltaGlyphID)) {
+      return false;
+    }
+    if (!coverageOffset->mark()) {
+      return false;
+    }
+    if (!coverage->write(out)) {
+      return false;
+    }
+    return beginning->commit();
   }
 
 public:
@@ -67,8 +84,28 @@ public:
   }
 
   bool write(OutputStream &out) override {
-    // TODO:
-    return true;
+    using namespace std;
+    auto beginning = make_shared<OffsetWriter>(out);
+    if (!out.u16(2)) {
+      return false;
+    }
+    auto coverageOffset = beginning->o16();
+    if (!coverageOffset) {
+      return false;
+    }
+    if (!out.sizeU16(substituteGlyphIDs.size())) {
+      return false;
+    }
+    if (!out.u16a(substituteGlyphIDs)) {
+      return false;
+    }
+    if (!coverageOffset->mark()) {
+      return false;
+    }
+    if (!coverage->write(out)) {
+      return false;
+    }
+    return beginning->commit();
   }
 
 public:
