@@ -61,8 +61,8 @@ public:
   }
 
   template <class Subtable>
-    requires requires(Subtable &t, OutputStream &out) {
-      { t.write(out) } -> std::convertible_to<bool>;
+    requires requires(Subtable &t, OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) {
+      { t.write(out, extensions) } -> std::convertible_to<bool>;
     }
   bool write(OutputStream &out, std::vector<std::vector<std::shared_ptr<Subtable>>> const &subtables) {
     using namespace std;
@@ -125,13 +125,34 @@ public:
       }
     }
 
+    map<shared_ptr<Subtable>, pair<shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> extensions;
     for (auto const &[table, handleList] : handles) {
       for (auto handle : handleList) {
         if (!handle->mark()) {
           return false;
         }
       }
-      if (!table->write(out)) {
+      if (!table->write(out, extensions)) {
+        return false;
+      }
+    }
+
+    for (auto [table, p] : extensions) {
+      auto [writer, offset] = p;
+      if (!offset->mark()) {
+        return false;
+      }
+      map<shared_ptr<Subtable>, pair<shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> ex;
+      if (!table->write(out, ex)) {
+        return false;
+      }
+      if (!ex.empty()) {
+        return false;
+      }
+    }
+    for (auto [table, p] : extensions) {
+      auto [writer, offset] = p;
+      if (!writer->commit()) {
         return false;
       }
     }

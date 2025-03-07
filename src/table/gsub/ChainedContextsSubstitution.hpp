@@ -155,7 +155,7 @@ public:
     return r;
   }
 
-  bool write(OutputStream &out) override {
+  bool write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &) override {
     using namespace std;
     auto beginning = make_shared<OffsetWriter>(out);
     if (!out.u16(1)) {
@@ -491,7 +491,7 @@ public:
     return r;
   }
 
-  bool write(OutputStream &out) override {
+  bool write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &) override {
     using namespace std;
     auto beginning = make_shared<OffsetWriter>(out);
     if (!out.u16(2)) {
@@ -675,7 +675,7 @@ public:
     return r;
   }
 
-  bool write(OutputStream &out) override {
+  bool write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &) override {
     using namespace std;
     auto beginning = make_shared<OffsetWriter>(out);
     if (!out.u16(3)) {

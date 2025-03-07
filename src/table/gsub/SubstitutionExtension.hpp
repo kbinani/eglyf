@@ -72,8 +72,20 @@ public:
     return r;
   }
 
-  bool write(OutputStream &out) override {
-    // TODO:
+  bool write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) override {
+    using namespace std;
+    auto writer = make_shared<OffsetWriter>(out);
+    if (!out.u16(1)) {
+      return false;
+    }
+    if (!out.u16(extensionLookupType)) {
+      return false;
+    }
+    auto offset = writer->o32();
+    if (!offset) {
+      return false;
+    }
+    extensions[extension] = make_pair(writer, offset);
     return true;
   }
 

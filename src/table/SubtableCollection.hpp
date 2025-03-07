@@ -3,8 +3,8 @@
 namespace eglyf {
 
 template <class T>
-concept Subtable = requires(T &t, OutputStream &out) {
-  { t.write(out) } -> std::convertible_to<bool>;
+concept Subtable = requires(T &t, OutputStream &out, std::map<std::shared_ptr<T>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) {
+  { t.write(out, extensions) } -> std::convertible_to<bool>;
 };
 
 template <Subtable T>
