@@ -66,7 +66,7 @@ list(APPEND src_files
 
 juce_add_console_app(eglyf)
 target_sources(eglyf PRIVATE ${src_files})
-target_include_directories(eglyf PRIVATE src)
+target_include_directories(eglyf PRIVATE src include)
 target_link_libraries(eglyf
   PRIVATE
     juce::juce_gui_extra
@@ -76,6 +76,24 @@ target_link_libraries(eglyf
 )
 if (MSVC)
   target_compile_definitions(eglyf
+    PRIVATE
+      NOMINMAX
+      WIN32_LEAN_AND_MEAN
+  )
+endif()
+
+juce_add_console_app(resave)
+target_sources(resave PRIVATE test/resave.cpp)
+target_include_directories(resave PRIVATE src include)
+target_link_libraries(resave
+  PRIVATE
+    juce::juce_gui_extra
+  PUBLIC
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_lto_flags
+)
+if (MSVC)
+  target_compile_definitions(resave
     PRIVATE
       NOMINMAX
       WIN32_LEAN_AND_MEAN
