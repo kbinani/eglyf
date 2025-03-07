@@ -24,6 +24,13 @@ public:
       }
       return r;
     }
+
+    bool write(OutputStream &out) const {
+      if (!out.sizeU16(substituteGlyphIDs.size())) {
+        return false;
+      }
+      return out.u16a(substituteGlyphIDs);
+    }
   };
 
 public:
@@ -77,8 +84,43 @@ public:
   }
 
   bool write(OutputStream &out) override {
-    // TODO:
-    return true;
+    using namespace std;
+    auto beginning = make_shared<OffsetWriter>(out);
+    if (!out.u16(1)) {
+      return false;
+    }
+    auto coverageOffset = beginning->o16();
+    if (!coverageOffset) {
+      return false;
+    }
+    if (!out.sizeU16(sequences.size())) {
+      return false;
+    }
+    vector<OffsetWriter::Handle16> sequenceOffsets;
+    for (size_t i = 0; i < sequences.size(); i++) {
+      auto offset = beginning->o16();
+      if (!offset) {
+        return false;
+      }
+      sequenceOffsets.push_back(offset);
+    }
+    for (size_t i = 0; i < sequences.size(); i++) {
+      auto const &sequence = sequences[i];
+      auto offset = sequenceOffsets[i];
+      if (!offset->mark()) {
+        return false;
+      }
+      if (!sequence.write(out)) {
+        return false;
+      }
+    }
+    if (!coverageOffset->mark()) {
+      return false;
+    }
+    if (!coverage->write(out)) {
+      return false;
+    }
+    return beginning->commit();
   }
 
 public:
