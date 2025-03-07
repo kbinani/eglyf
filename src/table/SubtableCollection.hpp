@@ -116,6 +116,9 @@ public:
 
     for (auto const &it : lookupList.lookupTable) {
       auto l = make_shared<Lookup>();
+      l->lookupType = it.lookupType;
+      l->lookupFlag = it.lookupFlag;
+      l->markFilteringSet = it.markFilteringSet;
       for (auto offset : it.subtableOffsets) {
         if (!in.seek(lookupListOffset + offset)) {
           return false;
