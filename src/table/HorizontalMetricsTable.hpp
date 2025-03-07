@@ -56,10 +56,11 @@ public:
     numberOfHMetrics = metrics.size();
     UFWORD const advanceWidth = metrics.back().advanceWidth;
     for (int i = numberOfHMetrics - 1; i >= 0; i--) {
-      if (advanceWidth != metrics[i].advanceWidth) {
+      auto v = metrics[i].advanceWidth;
+      if (advanceWidth != v) {
         break;
       }
-      numberOfHMetrics = i;
+      numberOfHMetrics = i + 1;
     }
     ByteOutputStream out;
     for (uint16_t i = 0; i < numberOfHMetrics; i++) {
