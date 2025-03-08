@@ -32,6 +32,9 @@ public:
       featureOffsets.push_back(make_pair(*tag, offset));
     }
     for (auto [tag, featureOffset] : featureOffsets) {
+      if (!in.seek(featureOffset)) {
+        return nullopt;
+      }
       Offset16 featureParamsOffset;
       if (!in.o16(&featureParamsOffset)) {
         return nullopt;
