@@ -66,8 +66,8 @@ public:
       }
       scriptOffsetList.push_back(make_pair(*scriptTag, scriptOffset));
     }
-    map<Offset16, shared_ptr<LangSys>> langSysList;
     for (auto [scriptTag, scriptOffset] : scriptOffsetList) {
+      map<Offset16, shared_ptr<LangSys>> langSysList;
       if (!in.seek(scriptOffset)) {
         return nullopt;
       }
