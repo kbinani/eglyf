@@ -11,8 +11,7 @@ public:
     } else if (lookupType == 2) {
       return gsub::Multiple::Read(in);
     } else if (lookupType == 3) {
-      // Alternate
-      return nullptr;
+      return gsub::Alternate::Read(in);
     } else if (lookupType == 4) {
       return gsub::Ligature::Read(in);
     } else if (lookupType == 5) {

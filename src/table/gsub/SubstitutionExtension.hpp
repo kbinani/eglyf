@@ -45,7 +45,11 @@ public:
       }
     } else if (r->extensionLookupType == 3) {
       // Alternate
-      return nullptr;
+      if (auto t = gsub::Alternate::Read(sub); t) {
+        r->extension = t;
+      } else {
+        return nullptr;
+      }
     } else if (r->extensionLookupType == 4) {
       // Ligature
       if (auto t = Ligature::Read(sub); t) {

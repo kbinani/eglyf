@@ -89,6 +89,19 @@ public:
     }
     return ret;
   }
+
+  bool u16a(std::vector<uint16_t> &out, size_t count) {
+    out.clear();
+    out.reserve(count);
+    for (size_t i = 0; i < count; i++) {
+      uint16_t v;
+      if (!u16(&v)) {
+        return false;
+      }
+      out.push_back(v);
+    }
+    return true;
+  }
 };
 
 } // namespace eglyf

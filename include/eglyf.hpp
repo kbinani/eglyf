@@ -44,6 +44,7 @@
 #include "table/gsub/Multiple.hpp"
 #include "table/gsub/SequenceLookup.hpp"
 #include "table/gsub/ChainedContextsSubstitution.hpp"
+#include "table/gsub/Alternate.hpp"
 #include "table/gsub/SubstitutionExtension.hpp"
 #include "table/SubtableCollection.hpp"
 #include "table/GlyphSubstitutionTable.hpp"
