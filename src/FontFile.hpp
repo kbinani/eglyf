@@ -59,9 +59,12 @@ public:
     if (holds_alternative<TrueTypeOutlines>(outlines)) {
       auto const &o = get<TrueTypeOutlines>(outlines);
 
-      IndexToLocationTable loca(1);
-      auto encodedGlyf = o.glyf->encode(loca);
+      vector<Offset32> offsets;
+      auto encodedGlyf = o.glyf->encode(offsets);
       if (!encodedGlyf) {
+        return false;
+      }
+      if (offsets.empty()) {
         return false;
       }
 
@@ -78,6 +81,13 @@ public:
       }
       offset += encodedGlyf->data.size();
 
+      Offset32 maxOffset = offsets.back();
+      uint32_t indexToLocationFormat = head->indexToLocFormat;
+      if (indexToLocationFormat == 0 && maxOffset / 2 > (Offset32)numeric_limits<Offset16>::max()) {
+        indexToLocationFormat = 1;
+      }
+      IndexToLocationTable loca(indexToLocationFormat);
+      loca.offsets.swap(offsets);
       auto locaTag = FCC("loca");
       auto encodedLoca = loca.encode();
       if (!encodedLoca) {

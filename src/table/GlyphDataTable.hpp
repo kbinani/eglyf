@@ -394,14 +394,14 @@ public:
     return std::nullopt;
   }
 
-  std::optional<EncodeResult> encode(IndexToLocationTable &loca) const {
+  std::optional<EncodeResult> encode(std::vector<Offset32> &offsets) const {
     using namespace std;
 
-    loca.offsets.clear();
+    offsets.clear();
 
     ByteOutputStream out;
     for (auto const &g : glyphs) {
-      loca.offsets.push_back(out.size());
+      offsets.push_back(out.size());
       if (holds_alternative<EmptyGlyph>(g)) {
         // nop
       } else if (holds_alternative<ReadonlyGlyph>(g)) {
@@ -423,7 +423,7 @@ public:
         }
       }
     }
-    loca.offsets.push_back(out.size());
+    offsets.push_back(out.size());
     return EncodeResult(out.data());
   }
 
@@ -460,7 +460,7 @@ public:
   std::shared_ptr<GlyphDataTable> clone() const {
     using namespace std;
     IndexToLocationTable loca(1);
-    auto encoded = encode(loca);
+    auto encoded = encode(loca.offsets);
     if (!encoded) {
       return nullptr;
     }

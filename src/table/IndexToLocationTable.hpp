@@ -17,7 +17,8 @@ public:
         if (!in.o16(&t)) {
           return nullptr;
         }
-        r->offsets[i] = t * 2;
+        Offset32 v = t;
+        r->offsets[i] = v << 1;
       }
       return r;
     } else if (indexToLocFormat == 1) {
