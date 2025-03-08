@@ -18,42 +18,27 @@ public:
       if (!in.u16(&backtrackGlyphCount)) {
         return nullopt;
       }
-      r.backtrackSequence.reserve(backtrackGlyphCount);
-      for (uint16_t i = 0; i < backtrackGlyphCount; i++) {
-        uint16_t v;
-        if (!in.u16(&v)) {
-          return nullopt;
-        }
-        r.backtrackSequence.push_back(v);
+      if (!in.u16a(r.backtrackSequence, backtrackGlyphCount)) {
+        return nullopt;
       }
 
       uint16_t inputGlyphCount;
       if (!in.u16(&inputGlyphCount)) {
         return nullopt;
       }
-      if (inputGlyphCount < 0) {
+      if (inputGlyphCount < 1) {
         return nullopt;
       }
-      r.inputSequence.reserve(inputGlyphCount - 1);
-      for (uint16_t i = 1; i < inputGlyphCount; i++) {
-        uint16_t v;
-        if (!in.u16(&v)) {
-          return nullopt;
-        }
-        r.inputSequence.push_back(v);
+      if (!in.u16a(r.inputSequence, inputGlyphCount - 1)) {
+        return nullopt;
       }
 
       uint16_t lookaheadGlyphCount;
       if (!in.u16(&lookaheadGlyphCount)) {
         return nullopt;
       }
-      r.lookaheadSequence.reserve(lookaheadGlyphCount);
-      for (uint16_t i = 0; i < lookaheadGlyphCount; i++) {
-        uint16_t v;
-        if (!in.u16(&v)) {
-          return nullopt;
-        }
-        r.lookaheadSequence.push_back(v);
+      if (!in.u16a(r.lookaheadSequence, lookaheadGlyphCount)) {
+        return nullopt;
       }
 
       uint16_t seqLookupCount;
@@ -84,12 +69,8 @@ public:
       ChainedSequenceRuleSet r;
       r.rules.reserve(chainedSeqRuleCount);
       vector<Offset16> offsets;
-      for (uint16_t i = 0; i < chainedSeqRuleCount; i++) {
-        Offset16 v;
-        if (!in.o16(&v)) {
-          return nullopt;
-        }
-        offsets.push_back(v);
+      if (!in.u16a(offsets, chainedSeqRuleCount)) {
+        return nullopt;
       }
       for (uint16_t offset : offsets) {
         if (!in.seek(offset)) {
@@ -119,13 +100,8 @@ public:
       return nullptr;
     }
     vector<Offset16> chainedSeqRuleSetOffsets;
-    chainedSeqRuleSetOffsets.reserve(chainedSeqRuleSetCount);
-    for (uint16_t i = 0; i < chainedSeqRuleSetCount; i++) {
-      Offset16 v;
-      if (!in.o16(&v)) {
-        return nullptr;
-      }
-      chainedSeqRuleSetOffsets.push_back(v);
+    if (!in.u16a(chainedSeqRuleSetOffsets, chainedSeqRuleSetCount)) {
+      return nullptr;
     }
     if (!in.seek(coverageOffset)) {
       return nullptr;
@@ -230,6 +206,9 @@ public:
           return false;
         }
         if (!out.u16a(rule.lookaheadSequence)) {
+          return false;
+        }
+        if (!out.sizeU16(rule.seqLookupRecords.size())) {
           return false;
         }
         for (auto const &seq : rule.seqLookupRecords) {
