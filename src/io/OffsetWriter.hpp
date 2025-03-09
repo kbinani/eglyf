@@ -79,7 +79,7 @@ public:
   Status commit() {
     using namespace std;
     if (offsets.empty()) {
-      return EGLYF_ERROR;
+      return Status::Ok();
     }
     auto pos = upstream.position();
     for (auto const &[position, handle] : offsets) {
