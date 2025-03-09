@@ -72,6 +72,7 @@ public:
       }
       if (v > 0) {
         featureVariationsOffset = v;
+        return EGLYF_ERROR_WHAT("Unimplemented feature: Non-zero featureVariationOffset in GSUB/GPOS");
       }
     }
 
