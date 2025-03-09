@@ -11,7 +11,7 @@ public:
   };
 
 public:
-  bool write(OutputStream &out) {
+  Status write(OutputStream &out) {
     using namespace std;
 
     map<array<uint8_t, 4>, std::shared_ptr<Table>> all;
@@ -32,19 +32,19 @@ public:
     }
 
     if (!out.u32(sfntVersion)) {
-      return false;
+      return EGLYF_ERROR;
     }
     if (!out.u16(numTables)) {
-      return false;
+      return EGLYF_ERROR;
     }
     if (!out.u16(searchRange)) {
-      return false;
+      return EGLYF_ERROR;
     }
     if (!out.u16(entrySelector)) {
-      return false;
+      return EGLYF_ERROR;
     }
     if (!out.u16(rangeShift)) {
-      return false;
+      return EGLYF_ERROR;
     }
 
     int64_t const tableRecordLocation = 12;
@@ -52,7 +52,7 @@ public:
 
     Offset32 offset = tableContentLocation;
     if (!out.seek(tableContentLocation)) {
-      return false;
+      return EGLYF_ERROR;
     }
 
     map<array<uint8_t, 4>, TableRecord> tableRecords;
@@ -62,10 +62,10 @@ public:
       vector<Offset32> offsets;
       auto encodedGlyf = o.glyf->encode(offsets);
       if (!encodedGlyf) {
-        return false;
+        return EGLYF_ERROR;
       }
       if (offsets.empty()) {
-        return false;
+        return EGLYF_ERROR;
       }
 
       auto glyfTag = FCC("glyf");
@@ -77,7 +77,7 @@ public:
       tableRecords[glyfTag] = glyfRecord;
 
       if (!out.write(encodedGlyf->data.data(), encodedGlyf->data.size())) {
-        return false;
+        return EGLYF_ERROR;
       }
       offset += encodedGlyf->data.size();
 
@@ -91,7 +91,7 @@ public:
       auto locaTag = FCC("loca");
       auto encodedLoca = loca.encode();
       if (!encodedLoca) {
-        return false;
+        return EGLYF_ERROR;
       }
       TableRecord locaRecord;
       locaRecord.tag = locaTag;
@@ -101,7 +101,7 @@ public:
       tableRecords[locaTag] = locaRecord;
 
       if (!out.write(encodedLoca->data.data(), encodedLoca->data.size())) {
-        return false;
+        return EGLYF_ERROR;
       }
       offset += encodedLoca->data.size();
     }
@@ -117,19 +117,19 @@ public:
       tableRecords[FCC("hmtx")] = hmtxRecord;
 
       if (!out.write(encoded->data.data(), encoded->data.size())) {
-        return false;
+        return EGLYF_ERROR;
       }
       offset += encoded->data.size();
 
       hhea->numberOfHMetrics = numberOfHMetrics;
     } else {
-      return false;
+      return EGLYF_ERROR;
     }
 
     for (auto &[tag, table] : all) {
       auto encoded = table->encode();
       if (!encoded) {
-        return false;
+        return EGLYF_ERROR;
       }
       TableRecord tr;
       tr.tag = tag;
@@ -139,33 +139,33 @@ public:
       tableRecords[tag] = tr;
 
       if (!out.write(encoded->data.data(), encoded->data.size())) {
-        return false;
+        return EGLYF_ERROR;
       }
       offset += encoded->data.size();
     }
 
     if (!out.seek(tableRecordLocation)) {
-      return false;
+      return EGLYF_ERROR;
     }
     for (auto [_, record] : tableRecords) {
       if (!out.write(record.tag.data(), record.tag.size())) {
-        return false;
+        return EGLYF_ERROR;
       }
       if (!out.u32(record.checksum)) {
-        return false;
+        return EGLYF_ERROR;
       }
       if (!out.o32(record.offset)) {
-        return false;
+        return EGLYF_ERROR;
       }
       if (!out.u32(record.length)) {
-        return false;
+        return EGLYF_ERROR;
       }
     }
-    return true;
+    return Status::Ok();
   }
 
-  std::optional<uint16_t> addEmptyGlyph(std::string const &name, uint16_t advanceWidth, uint16_t lsb) {
-    return addTrueTypeGlyph(name, [&](GlyphDataTable &glyf, HorizontalMetricsTable &hmtx) {
+  Optional<uint16_t> addEmptyGlyph(std::string const &name, uint16_t advanceWidth, uint16_t lsb) {
+    return addTrueTypeGlyph(name, [&](GlyphDataTable &glyf, HorizontalMetricsTable &hmtx) -> Optional<uint16_t> {
       HorizontalMetricsTable::LongHorMetric hm;
       hm.advanceWidth = advanceWidth;
       hm.lsb = lsb;
@@ -174,12 +174,11 @@ public:
     });
   }
 
-  std::optional<uint16_t> addCompositeGlyph(std::string const &name, GlyphDataTable::CompositeGlyph::GlyphRecord child, uint16_t advanceWidth, uint16_t lsb) {
-    using namespace std;
-    return addTrueTypeGlyph(name, [&](GlyphDataTable &glyf, HorizontalMetricsTable &hmtx) -> optional<uint16_t> {
+  Optional<uint16_t> addCompositeGlyph(std::string const &name, GlyphDataTable::CompositeGlyph::GlyphRecord child, uint16_t advanceWidth, uint16_t lsb) {
+    return addTrueTypeGlyph(name, [&](GlyphDataTable &glyf, HorizontalMetricsTable &hmtx) -> Optional<uint16_t> {
       auto gid = glyf.addCompositeGlyph(child);
       if (!gid) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       HorizontalMetricsTable::LongHorMetric hm;
       hm.advanceWidth = advanceWidth;
@@ -189,12 +188,12 @@ public:
     });
   }
 
-  static std::shared_ptr<FontFile> Read(InputStream &in) {
+  static Status Read(InputStream &in, std::shared_ptr<FontFile> &out) {
     using namespace std;
     auto ff = make_shared<FontFile>();
     auto td = TableDirectory::Read(in);
     if (!td) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     ff->sfntVersion = td->sfntVersion;
     ff->numTables = td->numTables;
@@ -208,134 +207,120 @@ public:
     }
 
     if (auto tr = records.find(FCC("head")); tr == records.end()) {
-      return nullptr;
+      return EGLYF_ERROR;
     } else if (auto buffer = tr->second.read(in); buffer) {
       ByteInputStream slice(*buffer);
-      if (auto result = FontHeaderTable::Read(slice); result) {
-        ff->head = result;
-      } else {
-        return nullptr;
+      if (auto st = FontHeaderTable::Read(slice, ff->head); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
       records.erase(tr->first);
     } else {
-      return nullptr;
+      return EGLYF_ERROR;
     }
 
     if (auto tr = records.find(FCC("maxp")); tr == records.end()) {
-      return nullptr;
+      return EGLYF_ERROR;
     } else if (auto buffer = tr->second.read(in); buffer) {
       ByteInputStream slice(*buffer);
-      if (auto result = MaximumProfileTable::Read(slice); result) {
-        ff->maxp = result;
-      } else {
-        return nullptr;
+      if (auto st = MaximumProfileTable::Read(slice, ff->maxp); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
       records.erase(tr->first);
     } else {
-      return nullptr;
+      return EGLYF_ERROR;
     }
 
     if (auto tr = records.find(FCC("cmap")); tr == records.end()) {
-      return nullptr;
+      return EGLYF_ERROR;
     } else if (auto buffer = tr->second.read(in); buffer) {
       ff->cmap = make_shared<ReadonlyTable>(*buffer);
       records.erase(tr->first);
     } else {
-      return nullptr;
+      return EGLYF_ERROR;
     }
 
     if (auto tr = records.find(FCC("hhea")); tr == records.end()) {
-      return nullptr;
+      return EGLYF_ERROR;
     } else if (auto buffer = tr->second.read(in); buffer) {
       ByteInputStream slice(*buffer);
-      if (auto result = HorizontalHeaderTable::Read(slice); result) {
-        ff->hhea = result;
-      } else {
-        return nullptr;
+      if (auto st = HorizontalHeaderTable::Read(slice, ff->hhea); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
       records.erase(tr->first);
     } else {
-      return nullptr;
+      return EGLYF_ERROR;
     }
 
     if (auto tr = records.find(FCC("hmtx")); tr == records.end()) {
-      return nullptr;
+      return EGLYF_ERROR;
     } else if (auto buffer = tr->second.read(in); buffer) {
       ByteInputStream slice(*buffer);
-      if (auto result = HorizontalMetricsTable::Read(slice, ff->maxp->numGlyphs, ff->hhea->numberOfHMetrics); result) {
-        ff->hmtx = result;
-      } else {
-        return nullptr;
+      if (auto st = HorizontalMetricsTable::Read(slice, ff->maxp->numGlyphs, ff->hhea->numberOfHMetrics, ff->hmtx); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
       records.erase(tr->first);
     } else {
-      return nullptr;
+      return EGLYF_ERROR;
     }
 
     if (auto tr = records.find(FCC("name")); tr == records.end()) {
-      return nullptr;
+      return EGLYF_ERROR;
     } else if (auto buffer = tr->second.read(in); buffer) {
       ff->name = make_shared<ReadonlyTable>(*buffer);
       records.erase(tr->first);
     } else {
-      return nullptr;
+      return EGLYF_ERROR;
     }
 
     if (auto tr = records.find(FCC("OS/2")); tr == records.end()) {
-      return nullptr;
+      return EGLYF_ERROR;
     } else if (auto buffer = tr->second.read(in); buffer) {
       ByteInputStream slice(*buffer);
-      if (auto result = OS2AndWindowsMetricsTable::Read(slice); result) {
-        ff->os2 = result;
-      } else {
-        return nullptr;
+      if (auto st = OS2AndWindowsMetricsTable::Read(slice, ff->os2); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
       records.erase(tr->first);
     } else {
-      return nullptr;
+      return EGLYF_ERROR;
     }
 
     if (auto tr = records.find(FCC("post")); tr == records.end()) {
-      return nullptr;
+      return EGLYF_ERROR;
     } else if (auto buffer = tr->second.read(in); buffer) {
       ByteInputStream slice(*buffer);
-      if (auto result = PostScriptTable::Read(slice); result) {
-        ff->post = result;
-      } else {
-        return nullptr;
+      if (auto st = PostScriptTable::Read(slice, ff->post); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
       records.erase(tr->first);
     } else {
-      return nullptr;
+      return EGLYF_ERROR;
     }
 
     if (auto tr0 = records.find(FCC("glyf")); tr0 != records.end()) {
       auto tr1 = records.find(FCC("loca"));
       if (tr1 == records.end()) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
       shared_ptr<IndexToLocationTable> loca;
       {
         auto buffer = tr1->second.read(in);
         if (!buffer) {
-          return nullptr;
+          return EGLYF_ERROR;
         }
         ByteInputStream slice(*buffer);
-        loca = IndexToLocationTable::Read(slice, ff->head->indexToLocFormat, ff->maxp->numGlyphs);
-        if (!loca) {
-          return nullptr;
+        if (auto st = IndexToLocationTable::Read(slice, ff->head->indexToLocFormat, ff->maxp->numGlyphs, loca); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
         }
       }
       shared_ptr<GlyphDataTable> glyf;
       {
         auto buffer = tr0->second.read(in);
         if (!buffer) {
-          return nullptr;
+          return EGLYF_ERROR;
         }
         ByteInputStream slice(*buffer);
-        glyf = GlyphDataTable::Read(slice, *loca);
-        if (!glyf) {
-          return nullptr;
+        if (auto st = GlyphDataTable::Read(slice, *loca, glyf); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
         }
       }
       TrueTypeOutlines o;
@@ -346,21 +331,21 @@ public:
       records.erase(tr1->first);
     } else {
       // TODO:
-      return nullptr;
+      return EGLYF_ERROR;
     }
 
     if (auto tr = records.find(FCC("GSUB")); tr != records.end()) {
       if (auto buffer = tr->second.read(in); buffer) {
         ByteInputStream slice(*buffer);
         auto result = make_shared<GlyphSubstitutionTable>();
-        if (result->read(slice)) {
+        if (auto st = result->read(slice); st.ok()) {
           ff->tables[tr->second.tag] = result;
         } else {
-          return nullptr;
+          return EGLYF_STATUS_PUSH(st);
         }
         records.erase(tr->first);
       } else {
-        return nullptr;
+        return EGLYF_ERROR;
       }
     }
 
@@ -368,54 +353,56 @@ public:
       TableRecord tr = it.second;
       auto buffer = tr.read(in);
       if (!buffer) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
       ff->tables[tr.tag] = make_shared<ReadonlyTable>(*buffer);
     }
-    return ff;
+
+    out.swap(ff);
+    return Status::Ok();
   }
 
 private:
-  std::optional<uint16_t> addTrueTypeGlyph(std::string const &name, std::function<std::optional<uint16_t>(GlyphDataTable &glyf, HorizontalMetricsTable &hmtx)> addOp) {
+  Optional<uint16_t> addTrueTypeGlyph(std::string const &name, std::function<Optional<uint16_t>(GlyphDataTable &glyf, HorizontalMetricsTable &hmtx)> addOp) {
     using namespace std;
     if (!holds_alternative<TrueTypeOutlines>(outlines)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     TrueTypeOutlines &tto = get<TrueTypeOutlines>(outlines);
 
-    auto nGlyph = tto.glyf->clone();
-    if (!nGlyph) {
-      return nullopt;
+    shared_ptr<GlyphDataTable> nGlyf;
+    if (auto st = tto.glyf->clone(nGlyf); !st.ok()) {
+      return EGLYF_NULLOPT_PUSH(st);
     }
-    auto nPost = post->clone();
-    if (!nPost) {
-      return nullopt;
+    shared_ptr<PostScriptTable> nPost;
+    if (auto st = post->clone(nPost); !st.ok()) {
+      return EGLYF_NULLOPT_PUSH(st);
     }
-    auto nMaxp = maxp->clone();
-    if (!nMaxp) {
-      return nullopt;
+    shared_ptr<MaximumProfileTable> nMaxp;
+    if (auto st = maxp->clone(nMaxp); !st.ok()) {
+      return EGLYF_NULLOPT_PUSH(st);
     }
-    auto nHmtx = hmtx->clone();
-    if (!nHmtx) {
-      return nullopt;
+    shared_ptr<HorizontalMetricsTable> nHmtx;
+    if (auto st = hmtx->clone(nHmtx); !st.ok()) {
+      return EGLYF_NULLOPT_PUSH(st);
     }
-    auto nHhea = hhea->clone();
-    if (!nHhea) {
-      return nullopt;
+    shared_ptr<HorizontalHeaderTable> nHhea;
+    if (auto st = hhea->clone(nHhea); !st.ok()) {
+      return EGLYF_NULLOPT_PUSH(st);
     }
 
-    auto gid = addOp(*nGlyph, *nHmtx);
+    auto gid = addOp(*nGlyf, *nHmtx);
     if (!gid) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
-    if (!nPost->addName(name)) {
-      return nullopt;
+    if (auto st = nPost->addName(name); !st.ok()) {
+      return EGLYF_NULLOPT_PUSH(st);
     }
-    if (!nGlyph->updateMaxp(*nMaxp)) {
-      return nullopt;
+    if (auto st = nGlyf->updateMaxp(*nMaxp); !st.ok()) {
+      return EGLYF_NULLOPT_PUSH(st);
     }
 
-    tto.glyf = nGlyph;
+    tto.glyf = nGlyf;
     post = nPost;
     maxp = nMaxp;
     hmtx = nHmtx;

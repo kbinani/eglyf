@@ -5,136 +5,137 @@ namespace eglyf {
 // 'hhea'
 class HorizontalHeaderTable : public Table {
 public:
-  static std::shared_ptr<HorizontalHeaderTable> Read(InputStream &in) {
+  static Status Read(InputStream &in, std::shared_ptr<HorizontalHeaderTable> &out) {
     using namespace std;
-    auto r = make_shared<HorizontalHeaderTable>();
+    auto r = make_unique<HorizontalHeaderTable>();
     if (!in.u16(&r->majorVersion)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->minorVersion)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (r->majorVersion != 1 || r->minorVersion != 0) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->ascender)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->descender)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->lineGap)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->advanceWidthMax)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->minLeftSideBearing)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->minRightSideBearing)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->xMaxExtent)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->caretSlopeRise)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->caretSlopeRun)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->caretOffset)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     int16_t reserved;
     if (!in.i16(&reserved)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&reserved)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&reserved)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&reserved)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->metricDataFormat)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->numberOfHMetrics)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
-    return r;
+    out.reset(r.release());
+    return Status::Ok();
   }
 
-  std::optional<EncodeResult> encode() const override {
+  Optional<EncodeResult> encode() const override {
     using namespace std;
     if (majorVersion != 1 || minorVersion != 0) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     ByteOutputStream out;
     if (!out.u16(majorVersion)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(minorVersion)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(ascender)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(descender)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(lineGap)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(advanceWidthMax)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(minLeftSideBearing)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(minRightSideBearing)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(xMaxExtent)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(caretSlopeRise)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(caretSlopeRun)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(caretOffset)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     int16_t reserved = 0;
     if (!out.i16(reserved)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(reserved)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(reserved)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(reserved)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(metricDataFormat)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(numberOfHMetrics)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     return EncodeResult(out.data());
   }
 
-  std::shared_ptr<HorizontalHeaderTable> clone() const {
-    return defaultClone<HorizontalHeaderTable>();
+  Status clone(std::shared_ptr<HorizontalHeaderTable> &out) const {
+    return EGLYF_STATUS_PUSH(defaultClone<HorizontalHeaderTable>(out));
   }
 
 public:

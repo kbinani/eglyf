@@ -11,24 +11,24 @@ public:
   };
 
 public:
-  static std::shared_ptr<HorizontalMetricsTable> Read(InputStream &in, uint16_t numGlyphs, uint16_t numberOfHMetrics) {
+  static Status Read(InputStream &in, uint16_t numGlyphs, uint16_t numberOfHMetrics, std::shared_ptr<HorizontalMetricsTable> &out) {
     using namespace std;
     if (numGlyphs < numberOfHMetrics) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (numberOfHMetrics == 0) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     uint16_t count = numGlyphs - numberOfHMetrics;
-    auto r = make_shared<HorizontalMetricsTable>();
+    auto r = make_unique<HorizontalMetricsTable>();
     r->metrics.reserve(numGlyphs);
     for (uint16_t i = 0; i < numberOfHMetrics; i++) {
       LongHorMetric m;
       if (!in.u16(&m.advanceWidth)) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
       if (!in.i16(&m.lsb)) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
       r->metrics.push_back(m);
     }
@@ -37,18 +37,19 @@ public:
       LongHorMetric m;
       m.advanceWidth = advanceWidth;
       if (!in.i16(&m.lsb)) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
       r->metrics.push_back(m);
     }
-    return r;
+    out.reset(r.release());
+    return Status::Ok();
   }
 
-  std::optional<EncodeResult> encode() const override {
-    return std::nullopt;
+  Optional<EncodeResult> encode() const override {
+    return EGLYF_NULLOPT;
   }
 
-  std::optional<EncodeResult> encode(uint16_t &numberOfHMetrics) const {
+  Optional<EncodeResult> encode(uint16_t &numberOfHMetrics) const {
     using namespace std;
     if (metrics.empty()) {
       return EncodeResult("");
@@ -66,30 +67,30 @@ public:
     for (uint16_t i = 0; i < numberOfHMetrics; i++) {
       auto const &m = metrics[i];
       if (!out.u16(m.advanceWidth)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       if (!out.i16(m.lsb)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
     }
     for (uint16_t i = numberOfHMetrics; i < metrics.size(); i++) {
       auto const &m = metrics[i];
       if (!out.i16(m.lsb)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
     }
     return EncodeResult(out.data());
   }
 
-  std::shared_ptr<HorizontalMetricsTable> clone() const {
+  Status clone(std::shared_ptr<HorizontalMetricsTable> &out) const {
     uint16_t numberOfHMetrics = 0;
     auto encoded = encode(numberOfHMetrics);
     if (!encoded) {
-      return nullptr;
+      return EGLYF_STATUS_PUSH(encoded.status());
     }
     uint16_t numGlyphs = metrics.size();
     ByteInputStream in(encoded->data);
-    return Read(in, numGlyphs, numberOfHMetrics);
+    return EGLYF_STATUS_PUSH(Read(in, numGlyphs, numberOfHMetrics, out));
   }
 
 public:

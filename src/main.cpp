@@ -2,7 +2,7 @@
 
 int main() {
   using namespace eglyf;
-  FileInputStream fis(juce::File::getCurrentWorkingDirectory().getChildFile("egyptiantext-COLR.ttf"));
+  FileInputStream fis(juce::File::getCurrentWorkingDirectory().getChildFile("eot.ttf")); // egyptiantext-COLR.ttf"));
   auto ff = FontFile::Read(fis);
   if (!ff) {
     return 1;
@@ -15,7 +15,7 @@ int main() {
   if (!gid1) {
     return 1;
   }
-  FileOutputStream fos(juce::File::getCurrentWorkingDirectory().getChildFile("egyptiantext-COLR-out.ttf"));
+  FileOutputStream fos(juce::File::getCurrentWorkingDirectory().getChildFile("out.ttf"));
   if (ff->write(fos)) {
     return 0;
   } else {

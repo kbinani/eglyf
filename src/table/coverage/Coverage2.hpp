@@ -11,50 +11,51 @@ public:
   };
 
 public:
-  static std::shared_ptr<Coverage2> Read(InputStream &in) {
+  static Status Read(InputStream &in, std::shared_ptr<Coverage> &out) {
     using namespace std;
-    auto r = make_shared<Coverage2>();
+    auto r = make_unique<Coverage2>();
     uint16_t rangeCount;
     if (!in.u16(&rangeCount)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     r->rangeRecords.reserve(rangeCount);
     for (uint16_t i = 0; i < rangeCount; i++) {
       RangeRecord rr;
       if (!in.u16(&rr.startGlyphID)) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
       if (!in.u16(&rr.endGlyphID)) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
       if (!in.u16(&rr.startCoverageIndex)) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
       r->rangeRecords.push_back(rr);
     }
-    return r;
+    out.reset(r.release());
+    return Status::Ok();
   }
 
-  bool write(OutputStream &out) override {
+  Status write(OutputStream &out) override {
     using namespace std;
     if (!out.u16(2)) {
-      return false;
+      return EGLYF_ERROR;
     }
     if (!out.sizeU16(rangeRecords.size())) {
-      return false;
+      return EGLYF_ERROR;
     }
     for (auto const &rangeRecord : rangeRecords) {
       if (!out.u16(rangeRecord.startGlyphID)) {
-        return false;
+        return EGLYF_ERROR;
       }
       if (!out.u16(rangeRecord.endGlyphID)) {
-        return false;
+        return EGLYF_ERROR;
       }
       if (!out.u16(rangeRecord.startCoverageIndex)) {
-        return false;
+        return EGLYF_ERROR;
       }
     }
-    return true;
+    return Status::Ok();
   }
 
 public:

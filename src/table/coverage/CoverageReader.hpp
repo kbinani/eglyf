@@ -6,18 +6,18 @@ class CoverageReader {
   CoverageReader() = delete;
 
 public:
-  static std::shared_ptr<Coverage> Read(InputStream &in) {
+  static Status Read(InputStream &in, std::shared_ptr<Coverage> &out) {
     using namespace std;
     uint16_t format;
     if (!in.u16(&format)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (format == 1) {
-      return Coverage1::Read(in);
+      return EGLYF_STATUS_PUSH(Coverage1::Read(in, out));
     } else if (format == 2) {
-      return Coverage2::Read(in);
+      return EGLYF_STATUS_PUSH(Coverage2::Read(in, out));
     } else {
-      return nullptr;
+      return EGLYF_ERROR;
     }
   }
 };

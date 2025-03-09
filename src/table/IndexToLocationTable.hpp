@@ -7,60 +7,59 @@ class IndexToLocationTable : public Table {
 public:
   explicit IndexToLocationTable(int16_t indexToLocFormat) : indexToLocFormat(indexToLocFormat) {}
 
-  static std::shared_ptr<IndexToLocationTable> Read(InputStream &in, int16_t indexToLocFormat, uint16_t numGlyphs) {
+  static Status Read(InputStream &in, int16_t indexToLocFormat, uint16_t numGlyphs, std::shared_ptr<IndexToLocationTable> &out) {
     using namespace std;
     if (indexToLocFormat == 0) {
-      auto r = make_shared<IndexToLocationTable>(indexToLocFormat);
+      auto r = make_unique<IndexToLocationTable>(indexToLocFormat);
       r->offsets.resize(numGlyphs + 1);
       for (uint16_t i = 0; i <= numGlyphs; i++) {
         Offset16 t;
         if (!in.o16(&t)) {
-          return nullptr;
+          return EGLYF_ERROR;
         }
         Offset32 v = t;
         r->offsets[i] = v << 1;
       }
-      return r;
+      out.reset(r.release());
+      return Status::Ok();
     } else if (indexToLocFormat == 1) {
-      auto r = make_shared<IndexToLocationTable>(indexToLocFormat);
-      r->offsets.resize(numGlyphs + 1);
-      for (uint16_t i = 0; i <= numGlyphs; i++) {
-        if (!in.o32(r->offsets.data() + i)) {
-          return nullptr;
-        }
+      auto r = make_unique<IndexToLocationTable>(indexToLocFormat);
+      if (!in.o32a(r->offsets, numGlyphs + 1)) {
+        return EGLYF_ERROR;
       }
-      return r;
+      out.reset(r.release());
+      return Status::Ok();
     } else {
-      return nullptr;
+      return EGLYF_ERROR;
     }
   }
 
-  std::optional<EncodeResult> encode() const override {
+  Optional<EncodeResult> encode() const override {
     using namespace std;
     ByteOutputStream out;
     if (indexToLocFormat == 0) {
       for (Offset32 o : offsets) {
         if (o % 2 != 0) {
-          return nullopt;
+          return EGLYF_NULLOPT;
         }
         o = o >> 1;
         if (static_cast<Offset32>(std::numeric_limits<Offset16>::max()) < o) {
-          return nullopt;
+          return EGLYF_NULLOPT;
         }
         if (!out.o16(static_cast<Offset16>(0xffff & o))) {
-          return nullopt;
+          return EGLYF_NULLOPT;
         }
       }
       return EncodeResult(out.data());
     } else if (indexToLocFormat == 1) {
       for (Offset32 o : offsets) {
         if (!out.o32(o)) {
-          return nullopt;
+          return EGLYF_NULLOPT;
         }
       }
       return EncodeResult(out.data());
     } else {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
   }
 

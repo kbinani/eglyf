@@ -11,14 +11,17 @@ int main(int argc, char *argv[]) {
   fs::path output = fs::absolute(fs::path(argv[2]));
 
   FileInputStream fis(juce::File(input.string()));
-  auto ff = FontFile::Read(fis);
+  shared_ptr<FontFile> ff;
+  auto st = FontFile::Read(fis, ff);
   if (!ff) {
-    return 1;
+    st.print(cout);
+    return 255;
   }
   FileOutputStream fos(juce::File(output.string()));
-  if (ff->write(fos)) {
+  if (auto st = ff->write(fos); st.ok()) {
     return 0;
   } else {
-    return 1;
+    st.print(cout);
+    return 255;
   }
 }

@@ -5,128 +5,129 @@ namespace eglyf {
 // 'head'
 class FontHeaderTable : public Table {
 public:
-  static std::shared_ptr<FontHeaderTable> Read(InputStream &in) {
+  static Status Read(InputStream &in, std::shared_ptr<FontHeaderTable> &out) {
     using namespace std;
-    auto r = make_shared<FontHeaderTable>();
+    auto r = make_unique<FontHeaderTable>();
     if (!in.u16(&r->majorVersion)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->minorVersion)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u32(&r->fontRevision.value)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u32(&r->checksumAdjustment)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u32(&r->magicNumber)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->flags)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->unitsPerEm)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i64(&r->created)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i64(&r->modified)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->xMin)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->yMin)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->xMax)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->yMax)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->macStyle)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->lowestRecPPEM)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->fontDirectionHint)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->indexToLocFormat)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->glyphDataFormat)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
-    return r;
+    out.reset(r.release());
+    return Status::Ok();
   }
 
-  std::optional<EncodeResult> encode() const override {
+  Optional<EncodeResult> encode() const override {
     using namespace std;
     ByteOutputStream out;
     if (!out.u16(majorVersion)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(minorVersion)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u32(fontRevision.value)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u32(checksumAdjustment)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u32(magicNumber)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(flags)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(unitsPerEm)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i64(created)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i64(modified)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(xMin)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(yMin)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(xMax)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(yMax)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(macStyle)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(lowestRecPPEM)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(fontDirectionHint)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(indexToLocFormat)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(glyphDataFormat)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     return EncodeResult(out.data());
   }
 
-  std::shared_ptr<FontHeaderTable> clone() const {
-    return defaultClone<FontHeaderTable>();
+  Status clone(std::shared_ptr<FontHeaderTable> &out) const {
+    return EGLYF_STATUS_PUSH(defaultClone<FontHeaderTable>(out));
   }
 
 public:

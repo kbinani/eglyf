@@ -10,20 +10,15 @@ public:
       return !(('A' <= ch && ch <= 'Z') || ('a' <= ch && ch <= 'z') || ('0' <= ch && ch <= '9') || ch == '.' || ch == '_');
     }
 
-    static std::optional<Version2Data> Read(InputStream &in) {
+    static Optional<Version2Data> Read(InputStream &in) {
       using namespace std;
       Version2Data r;
       if (!in.u16(&r.numGlyphs)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       vector<uint16_t> nameIndex;
-      nameIndex.reserve(r.numGlyphs);
-      for (uint16_t i = 0; i < r.numGlyphs; i++) {
-        uint16_t v;
-        if (!in.u16(&v)) {
-          return nullopt;
-        }
-        nameIndex.push_back(v);
+      if (!in.u16a(nameIndex, r.numGlyphs)) {
+        return EGLYF_NULLOPT;
       }
       vector<string> names;
       while (true) {
@@ -34,10 +29,10 @@ public:
         string s;
         s.resize(bytes);
         if (in.read(s.data(), bytes) != bytes) {
-          return nullopt;
+          return EGLYF_NULLOPT;
         }
         if (ranges::any_of(s, InvalidNameCharacter)) {
-          return nullopt;
+          return EGLYF_NULLOPT;
         }
         names.push_back(s);
       }
@@ -47,7 +42,7 @@ public:
         } else {
           auto offset = index - 258;
           if (offset >= names.size()) {
-            return nullopt;
+            return EGLYF_NULLOPT;
           }
           r.names.push_back(names[offset]);
         }
@@ -55,10 +50,10 @@ public:
       return r;
     }
 
-    bool encode(OutputStream &out) const {
+    Status encode(OutputStream &out) const {
       using namespace std;
       if (!out.u16(numGlyphs)) {
-        return false;
+        return EGLYF_ERROR;
       }
       ByteOutputStream strings;
       uint16_t count = 0;
@@ -66,31 +61,35 @@ public:
         if (holds_alternative<string>(name)) {
           auto const &n = get<string>(name);
           if (!out.u16(count + 258)) {
-            return false;
+            return EGLYF_ERROR;
           }
           if (ranges::any_of(n, InvalidNameCharacter)) {
-            return false;
+            return EGLYF_ERROR;
           }
           uint8_t bytes = n.size();
           if (!strings.u8(bytes)) {
-            return false;
+            return EGLYF_ERROR;
           }
           if (!strings.write((void *)n.data(), bytes)) {
-            return false;
+            return EGLYF_ERROR;
           }
           count++;
         } else if (holds_alternative<uint16_t>(name)) {
           auto n = get<uint16_t>(name);
           if (n > 257) {
-            return false;
+            return EGLYF_ERROR;
           }
           if (!out.u16(n)) {
-            return false;
+            return EGLYF_ERROR;
           }
         }
       }
       string data = strings.data();
-      return out.write(data.data(), data.size());
+      if (out.write(data.data(), data.size())) {
+        return Status::Ok();
+      } else {
+        return EGLYF_ERROR;
+      }
     }
 
     uint16_t numGlyphs;
@@ -98,121 +97,122 @@ public:
   };
 
 public:
-  std::optional<EncodeResult> encode() const override {
+  Optional<EncodeResult> encode() const override {
     using namespace std;
     ByteOutputStream out;
     if (!out.u16(version.major)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(version.minor)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u32(italicAngle.value)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(underlinePosition)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(underlineThickness)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u32(isFixedPitch)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u32(minMemType42)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u32(maxMemType42)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u32(minMemType1)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u32(maxMemType1)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (version.major == 0x0002 && version.minor == 0x0000) {
       if (!holds_alternative<Version2Data>(data)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       auto d = get<Version2Data>(data);
-      if (!d.encode(out)) {
-        return nullopt;
+      if (auto st = d.encode(out); !st.ok()) {
+        return EGLYF_NULLOPT_PUSH(st);
       }
       return EncodeResult(out.data());
     } else {
       if (!holds_alternative<string>(data)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       auto d = get<string>(data);
       if (!out.write(d.data(), d.size())) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       return EncodeResult(out.data());
     }
   }
 
-  static std::shared_ptr<PostScriptTable> Read(InputStream &in) {
+  static Status Read(InputStream &in, std::shared_ptr<PostScriptTable> &out) {
     using namespace std;
-    auto r = make_shared<PostScriptTable>();
+    auto r = make_unique<PostScriptTable>();
     if (!in.u16(&r->version.major)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->version.minor)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u32(&r->italicAngle.value)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->underlinePosition)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->underlineThickness)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u32(&r->isFixedPitch)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u32(&r->minMemType42)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u32(&r->maxMemType42)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u32(&r->minMemType1)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u32(&r->maxMemType1)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (r->version.major == 0x0002 && r->version.minor == 0x0000) {
       if (auto data = Version2Data::Read(in); data) {
         r->data = *data;
       } else {
-        return nullptr;
+        return EGLYF_STATUS_PUSH(data.status());
       }
     } else {
       r->data = in.readUntilEos();
     }
-    return r;
+    out.reset(r.release());
+    return Status::Ok();
   }
 
-  bool addName(std::string const &name) {
+  Status addName(std::string const &name) {
     using namespace std;
     if (!holds_alternative<Version2Data>(data)) {
-      return false;
+      return EGLYF_ERROR;
     }
     if (ranges::any_of(name, Version2Data::InvalidNameCharacter)) {
-      return false;
+      return EGLYF_ERROR;
     }
     auto &d = get<Version2Data>(data);
     d.numGlyphs++;
     d.names.push_back(name);
-    return true;
+    return Status::Ok();
   }
 
-  std::shared_ptr<PostScriptTable> clone() const {
-    return defaultClone<PostScriptTable>();
+  Status clone(std::shared_ptr<PostScriptTable> &out) const {
+    return EGLYF_STATUS_PUSH(defaultClone<PostScriptTable>(out));
   }
 
 public:

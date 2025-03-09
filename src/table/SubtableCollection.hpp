@@ -4,7 +4,7 @@ namespace eglyf {
 
 template <class T>
 concept Subtable = requires(T &t, OutputStream &out, std::map<std::shared_ptr<T>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) {
-  { t.write(out, extensions) } -> std::convertible_to<bool>;
+  { t.write(out, extensions) } -> std::convertible_to<Status>;
 };
 
 template <Subtable T>
@@ -37,38 +37,38 @@ public:
 public:
   virtual ~SubtableCollection() {}
 
-  virtual std::shared_ptr<T> readSubtable(InputStream &in, uint16_t lookupType) = 0;
+  virtual Status readSubtable(InputStream &in, uint16_t lookupType, std::shared_ptr<T> &out) = 0;
 
-  bool read(InputStream &in) {
+  Status read(InputStream &in) {
     using namespace std;
     if (!in.u16(&majorVersion)) {
-      return false;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&minorVersion)) {
-      return false;
+      return EGLYF_ERROR;
     }
     if (majorVersion != 1) {
-      return false;
+      return EGLYF_ERROR;
     }
     if (minorVersion > 1) {
-      return false;
+      return EGLYF_ERROR;
     }
     Offset16 scriptListOffset;
     if (!in.o16(&scriptListOffset)) {
-      return false;
+      return EGLYF_ERROR;
     }
     Offset16 featureListOffset;
     if (!in.o16(&featureListOffset)) {
-      return false;
+      return EGLYF_ERROR;
     }
     Offset16 lookupListOffset;
     if (!in.o16(&lookupListOffset)) {
-      return false;
+      return EGLYF_ERROR;
     }
     if (minorVersion == 1) {
       Offset32 v;
       if (!in.o32(&v)) {
-        return false;
+        return EGLYF_ERROR;
       }
       if (v > 0) {
         featureVariationsOffset = v;
@@ -78,39 +78,39 @@ public:
     ScriptList scriptList;
     {
       if (!in.seek(scriptListOffset)) {
-        return false;
+        return EGLYF_ERROR;
       }
       OffsetInputStream sub(in);
       if (auto sl = ScriptList::Read(sub); sl) {
         scriptList = *sl;
       } else {
-        return false;
+        return EGLYF_STATUS_PUSH(sl.status());
       }
     }
 
     FeatureList featureList;
     {
       if (!in.seek(featureListOffset)) {
-        return false;
+        return EGLYF_ERROR;
       }
       OffsetInputStream sub(in);
       if (auto fl = FeatureList::Read(sub); fl) {
         featureList = *fl;
       } else {
-        return false;
+        return EGLYF_STATUS_PUSH(fl.status());
       }
     }
 
     LookupList lookupList;
     {
       if (!in.seek(lookupListOffset)) {
-        return false;
+        return EGLYF_ERROR;
       }
       OffsetInputStream sub(in);
       if (auto ll = LookupList::Read(sub); ll) {
         lookupList = *ll;
       } else {
-        return false;
+        return EGLYF_STATUS_PUSH(ll.status());
       }
     }
 
@@ -121,13 +121,14 @@ public:
       l->markFilteringSet = it.markFilteringSet;
       for (auto offset : it.subtableOffsets) {
         if (!in.seek(lookupListOffset + offset)) {
-          return false;
+          return EGLYF_ERROR;
         }
         OffsetInputStream sub(in);
-        if (auto t = readSubtable(sub, it.lookupType); t) {
-          l->subtables.push_back(t);
+        shared_ptr<gsub::Subtable> table;
+        if (auto st = readSubtable(sub, it.lookupType, table); st.ok()) {
+          l->subtables.push_back(table);
         } else {
-          return false;
+          return EGLYF_STATUS_PUSH(st);
         }
       }
       lookups.push_back(l);
@@ -139,7 +140,7 @@ public:
       v->featureParamsOffset = f.featureParamsOffset;
       for (uint16_t index : f.lookupListIndices) {
         if (index >= lookups.size()) {
-          return false;
+          return EGLYF_ERROR;
         }
         v->lookups.push_back(lookups[index]);
       }
@@ -170,7 +171,7 @@ public:
         if (auto found = convertedLangSysList.find(s.defaultLangSys); found == convertedLangSysList.end()) {
           auto converted = convertLangSys(*s.defaultLangSys);
           if (!converted) {
-            return false;
+            return EGLYF_ERROR;
           }
           script.defaultLangSys = converted;
           convertedLangSysList[s.defaultLangSys] = converted;
@@ -182,7 +183,7 @@ public:
         if (auto found = convertedLangSysList.find(langSys); found == convertedLangSysList.end()) {
           auto converted = convertLangSys(*langSys);
           if (!converted) {
-            return false;
+            return EGLYF_ERROR;
           }
           script.langSysTable.push_back(make_pair(langSysTag, converted));
           convertedLangSysList[langSys] = converted;
@@ -193,42 +194,42 @@ public:
       scripts.push_back(script);
     }
 
-    return true;
+    return Status::Ok();
   }
 
-  std::optional<EncodeResult> encode() const override {
+  Optional<EncodeResult> encode() const override {
     using namespace std;
     ByteOutputStream out;
     if (majorVersion != 1) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     auto gsubHeader = make_shared<OffsetWriter>(out);
     if (!out.u16(majorVersion)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(minorVersion)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     auto scriptListOffsetHandle = gsubHeader->o16();
     if (!scriptListOffsetHandle) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     auto featureListOffsetHandle = gsubHeader->o16();
     if (!featureListOffsetHandle) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     auto lookupListOffsetHandle = gsubHeader->o16();
     if (!lookupListOffsetHandle) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (minorVersion == 0) {
       // nop
     } else if (minorVersion == 1) {
       if (!out.o32(featureVariationsOffset ? *featureVariationsOffset : 0)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
     } else {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
 
     LookupList lookupList;
@@ -252,11 +253,11 @@ public:
       for (auto const &lookup : feature->lookups) {
         auto found = ranges::find(lookups, lookup);
         if (found == lookups.end()) {
-          return nullopt;
+          return EGLYF_NULLOPT;
         }
         auto index = distance(lookups.begin(), found);
         if (index > numeric_limits<uint16_t>::max()) {
-          return nullopt;
+          return EGLYF_NULLOPT;
         }
         f.lookupListIndices.push_back(index);
       }
@@ -304,45 +305,45 @@ public:
         if (auto converted = convertLangSys(script.defaultLangSys); converted) {
           s.defaultLangSys = converted;
         } else {
-          return nullopt;
+          return EGLYF_NULLOPT;
         }
       }
       for (auto const &[tag, langSys] : script.langSysTable) {
         if (auto converted = convertLangSys(langSys); converted) {
           s.langSysTable.push_back(make_pair(tag, converted));
         } else {
-          return nullopt;
+          return EGLYF_NULLOPT;
         }
       }
       scriptList.scriptTable.push_back(s);
     }
 
     // Write ScriptList
-    if (!scriptListOffsetHandle->mark()) {
-      return nullopt;
+    if (auto st = scriptListOffsetHandle->mark(); !st.ok()) {
+      return EGLYF_NULLOPT_PUSH(st);
     }
-    if (!scriptList.write(out)) {
-      return nullopt;
+    if (auto st = scriptList.write(out); !st.ok()) {
+      return EGLYF_NULLOPT_PUSH(st);
     }
 
     // Write FeatureList
-    if (!featureListOffsetHandle->mark()) {
-      return nullopt;
+    if (auto st = featureListOffsetHandle->mark(); !st.ok()) {
+      return EGLYF_NULLOPT_PUSH(st);
     }
-    if (!featureList.write(out)) {
-      return nullopt;
+    if (auto st = featureList.write(out); !st.ok()) {
+      return EGLYF_NULLOPT_PUSH(st);
     }
 
     // Write LookupList
-    if (!lookupListOffsetHandle->mark()) {
-      return nullopt;
+    if (auto st = lookupListOffsetHandle->mark(); !st.ok()) {
+      return EGLYF_NULLOPT_PUSH(st);
     }
-    if (!lookupList.write<gsub::Subtable>(out, subtables)) {
-      return nullopt;
+    if (auto st = lookupList.write<gsub::Subtable>(out, subtables); !st.ok()) {
+      return EGLYF_NULLOPT_PUSH(st);
     }
 
-    if (!gsubHeader->commit()) {
-      return nullopt;
+    if (auto st = gsubHeader->commit(); !st.ok()) {
+      return EGLYF_NULLOPT_PUSH(st);
     }
     return EncodeResult(out.data());
   }

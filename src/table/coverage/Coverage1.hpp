@@ -4,38 +4,32 @@ namespace eglyf {
 
 class Coverage1 : public Coverage {
 public:
-  static std::shared_ptr<Coverage1> Read(InputStream &in) {
+  static Status Read(InputStream &in, std::shared_ptr<Coverage> &out) {
     using namespace std;
-    auto r = make_shared<Coverage1>();
+    auto r = make_unique<Coverage1>();
     uint16_t glyphCount;
     if (!in.u16(&glyphCount)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
-    r->glyphArray.reserve(glyphCount);
-    for (uint16_t i = 0; i < glyphCount; i++) {
-      uint16_t v;
-      if (!in.u16(&v)) {
-        return nullptr;
-      }
-      r->glyphArray.push_back(v);
+    if (!in.u16a(r->glyphArray, glyphCount)) {
+      return EGLYF_ERROR;
     }
-    return r;
+    out.reset(r.release());
+    return Status::Ok();
   }
 
-  bool write(OutputStream &out) override {
+  Status write(OutputStream &out) override {
     using namespace std;
     if (!out.u16(1)) {
-      return false;
+      return EGLYF_ERROR;
     }
     if (!out.sizeU16(glyphArray.size())) {
-      return false;
+      return EGLYF_ERROR;
     }
-    for (uint16_t glyph : glyphArray) {
-      if (!out.u16(glyph)) {
-        return false;
-      }
+    if (!out.u16a(glyphArray)) {
+      return EGLYF_ERROR;
     }
-    return true;
+    return Status::Ok();
   }
 
 public:

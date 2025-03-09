@@ -64,6 +64,9 @@ list(APPEND src_files
   src/io/OffsetWriter.hpp
   src/table/gsub/Alternate.hpp
   include/eglyf.hpp
+  src/status.hpp
+  src/errno.hpp
+  src/optional.hpp
 )
 
 juce_add_console_app(eglyf)

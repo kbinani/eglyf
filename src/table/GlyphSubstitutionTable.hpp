@@ -4,28 +4,28 @@ namespace eglyf {
 
 class GlyphSubstitutionTable : public SubtableCollection<gsub::Subtable> {
 public:
-  std::shared_ptr<gsub::Subtable> readSubtable(InputStream &in, uint16_t lookupType) override {
+  Status readSubtable(InputStream &in, uint16_t lookupType, std::shared_ptr<gsub::Subtable> &out) override {
     using namespace std;
     if (lookupType == 1) {
-      return gsub::Single::Read(in);
+      return EGLYF_STATUS_PUSH(gsub::Single::Read(in, out));
     } else if (lookupType == 2) {
-      return gsub::Multiple::Read(in);
+      return EGLYF_STATUS_PUSH(gsub::Multiple::Read(in, out));
     } else if (lookupType == 3) {
-      return gsub::Alternate::Read(in);
+      return EGLYF_STATUS_PUSH(gsub::Alternate::Read(in, out));
     } else if (lookupType == 4) {
-      return gsub::Ligature::Read(in);
+      return EGLYF_STATUS_PUSH(gsub::Ligature::Read(in, out));
     } else if (lookupType == 5) {
       // Contextual substitution
-      return nullptr;
+      return EGLYF_ERROR;
     } else if (lookupType == 6) {
-      return gsub::ChainedContextsSubstitution::Read(in);
+      return EGLYF_STATUS_PUSH(gsub::ChainedContextsSubstitution::Read(in, out));
     } else if (lookupType == 7) {
-      return gsub::SubstitutionExtension::Read(in);
+      return EGLYF_STATUS_PUSH(gsub::SubstitutionExtension::Read(in, out));
     } else if (lookupType == 8) {
       // Reverse chaining context single
-      return nullptr;
+      return EGLYF_ERROR;
     } else {
-      return nullptr;
+      return EGLYF_ERROR;
     }
   }
 };

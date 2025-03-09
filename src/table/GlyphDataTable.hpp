@@ -12,41 +12,45 @@ public:
     int16_t xMax;
     int16_t yMax;
 
-    static std::optional<Header> Read(InputStream &in) {
+    static Optional<Header> Read(InputStream &in) {
       using namespace std;
       Header h;
       if (!in.i16(&h.numberOfContours)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       if (!in.i16(&h.xMin)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       if (!in.i16(&h.yMin)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       if (!in.i16(&h.xMax)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       if (!in.i16(&h.yMax)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       return h;
     }
 
-    bool encode(OutputStream &out) const {
+    Status encode(OutputStream &out) const {
       if (!out.i16(numberOfContours)) {
-        return false;
+        return EGLYF_ERROR;
       }
       if (!out.i16(xMin)) {
-        return false;
+        return EGLYF_ERROR;
       }
       if (!out.i16(yMin)) {
-        return false;
+        return EGLYF_ERROR;
       }
       if (!out.i16(xMax)) {
-        return false;
+        return EGLYF_ERROR;
       }
-      return out.i16(yMax);
+      if (out.i16(yMax)) {
+        return Status::Ok();
+      } else {
+        return EGLYF_ERROR;
+      }
     }
   };
 
@@ -54,7 +58,7 @@ public:
   };
 
   struct ReadonlyGlyph {
-    static std::optional<ReadonlyGlyph> Read(Header header, InputStream &in) {
+    static Optional<ReadonlyGlyph> Read(Header header, InputStream &in) {
       using namespace std;
       ReadonlyGlyph r;
       r.header = header;
@@ -65,7 +69,7 @@ public:
         for (uint16_t i = 0; i < header.numberOfContours; i++) {
           uint16_t index;
           if (!in.u16(&index)) {
-            return nullopt;
+            return EGLYF_NULLOPT;
           }
           r.numPoints = (std::max)(r.numPoints, (uint16_t)(index + 1));
         }
@@ -73,11 +77,15 @@ public:
       return r;
     }
 
-    bool encode(OutputStream &out) const {
-      if (!header.encode(out)) {
-        return false;
+    Status encode(OutputStream &out) const {
+      if (auto st = header.encode(out); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
-      return out.write((void *)data.c_str(), data.size());
+      if (out.write((void *)data.c_str(), data.size())) {
+        return Status::Ok();
+      } else {
+        return EGLYF_ERROR;
+      }
     }
 
     Header header;
@@ -121,37 +129,37 @@ public:
       }
     };
 
-    static std::optional<CompositeGlyph> Read(Header h, InputStream &in) {
+    static Optional<CompositeGlyph> Read(Header h, InputStream &in) {
       using namespace std;
       CompositeGlyph ret;
       ret.header = h;
       uint16_t flags;
       do {
         if (!in.u16(&flags)) {
-          return nullopt;
+          return EGLYF_NULLOPT;
         }
         GlyphRecord rec;
         rec.flags = flags;
         if (!in.u16(&rec.glyphIndex)) {
-          return nullopt;
+          return EGLYF_NULLOPT;
         }
         if (flags & ARG_1_AND_2_ARE_WORDS) {
           if (flags & ARGS_ARE_XY_VALUES) {
             Vec<int16_t> offset;
             if (!in.i16(&offset.x)) {
-              return nullopt;
+              return EGLYF_NULLOPT;
             }
             if (!in.i16(&offset.y)) {
-              return nullopt;
+              return EGLYF_NULLOPT;
             }
             rec.offset = offset;
           } else {
             Vec<uint16_t> offset;
             if (!in.u16(&offset.x)) {
-              return nullopt;
+              return EGLYF_NULLOPT;
             }
             if (!in.u16(&offset.y)) {
-              return nullopt;
+              return EGLYF_NULLOPT;
             }
             rec.offset = offset;
           }
@@ -159,19 +167,19 @@ public:
           if (flags & ARGS_ARE_XY_VALUES) {
             Vec<int8_t> offset;
             if (!in.i8(&offset.x)) {
-              return nullopt;
+              return EGLYF_NULLOPT;
             }
             if (!in.i8(&offset.y)) {
-              return nullopt;
+              return EGLYF_NULLOPT;
             }
             rec.offset = offset;
           } else {
             Vec<uint8_t> offset;
             if (!in.u8(&offset.x)) {
-              return nullopt;
+              return EGLYF_NULLOPT;
             }
             if (!in.u8(&offset.y)) {
-              return nullopt;
+              return EGLYF_NULLOPT;
             }
             rec.offset = offset;
           }
@@ -179,35 +187,35 @@ public:
         if (flags & WE_HAVE_A_SCALE) {
           F2DOT14 scale;
           if (!in.f2dot14(&scale)) {
-            return nullopt;
+            return EGLYF_NULLOPT;
           }
           rec.scale = scale;
         } else if (flags & WE_HAVE_AN_X_AND_Y_SCALE) {
           F2DOT14 xscale;
           F2DOT14 yscale;
           if (!in.f2dot14(&xscale)) {
-            return nullopt;
+            return EGLYF_NULLOPT;
           }
           if (!in.f2dot14(&yscale)) {
-            return nullopt;
+            return EGLYF_NULLOPT;
           }
           rec.scale = Vec<F2DOT14>(xscale, yscale);
         } else if (flags & WE_HAVE_A_TWO_BY_TWO) {
           F2DOT14 xscale;
           if (!in.f2dot14(&xscale)) {
-            return nullopt;
+            return EGLYF_NULLOPT;
           }
           F2DOT14 scale01;
           if (!in.f2dot14(&scale01)) {
-            return nullopt;
+            return EGLYF_NULLOPT;
           }
           F2DOT14 scale10;
           if (!in.f2dot14(&scale10)) {
-            return nullopt;
+            return EGLYF_NULLOPT;
           }
           F2DOT14 yscale;
           if (!in.f2dot14(&yscale)) {
-            return nullopt;
+            return EGLYF_NULLOPT;
           }
           rec.scale = Vec<F2DOT14>(xscale, yscale);
           rec.scale2 = Vec<F2DOT14>(scale01, scale10);
@@ -217,20 +225,20 @@ public:
       if (flags & WE_HAVE_INSTRUCTIONS) {
         uint16_t numInstr;
         if (!in.u16(&numInstr)) {
-          return nullopt;
+          return EGLYF_NULLOPT;
         }
         ret.instructions.resize(numInstr);
         if (in.read(ret.instructions.data(), numInstr) != numInstr) {
-          return nullopt;
+          return EGLYF_NULLOPT;
         }
       }
       return ret;
     }
 
-    bool encode(OutputStream &out) const {
+    Status encode(OutputStream &out) const {
       using namespace std;
-      if (!header.encode(out)) {
-        return false;
+      if (auto st = header.encode(out); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
       for (size_t i = 0; i < records.size(); i++) {
         auto const &rec = records[i];
@@ -260,71 +268,71 @@ public:
           flg |= WE_HAVE_INSTRUCTIONS;
         }
         if (!out.u16(rec.flags)) {
-          return false;
+          return EGLYF_ERROR;
         }
         if (!out.u16(rec.glyphIndex)) {
-          return false;
+          return EGLYF_ERROR;
         }
         if (holds_alternative<Vec<int16_t>>(rec.offset)) {
           auto const &o = get<Vec<int16_t>>(rec.offset);
           if (!out.i16(o.x)) {
-            return false;
+            return EGLYF_ERROR;
           }
           if (!out.i16(o.y)) {
-            return false;
+            return EGLYF_ERROR;
           }
         } else if (holds_alternative<Vec<uint16_t>>(rec.offset)) {
           auto const &o = get<Vec<uint16_t>>(rec.offset);
           if (!out.u16(o.x)) {
-            return false;
+            return EGLYF_ERROR;
           }
           if (!out.u16(o.y)) {
-            return false;
+            return EGLYF_ERROR;
           }
         } else if (holds_alternative<Vec<int8_t>>(rec.offset)) {
           auto const &o = get<Vec<int8_t>>(rec.offset);
           if (!out.i8(o.x)) {
-            return false;
+            return EGLYF_ERROR;
           }
           if (!out.i8(o.y)) {
-            return false;
+            return EGLYF_ERROR;
           }
         } else if (holds_alternative<Vec<uint8_t>>(rec.offset)) {
           auto const &o = get<Vec<uint8_t>>(rec.offset);
           if (!out.u8(o.x)) {
-            return false;
+            return EGLYF_ERROR;
           }
           if (!out.u8(o.y)) {
-            return false;
+            return EGLYF_ERROR;
           }
         }
         if (rec.scale) {
           if (holds_alternative<F2DOT14>(*rec.scale)) {
             auto s1 = get<F2DOT14>(*rec.scale);
             if (!out.f2dot14(s1)) {
-              return false;
+              return EGLYF_ERROR;
             }
           } else if (holds_alternative<Vec<F2DOT14>>(*rec.scale)) {
             auto s1 = get<Vec<F2DOT14>>(*rec.scale);
             if (rec.scale2) {
               if (!out.f2dot14(s1.x)) {
-                return false;
+                return EGLYF_ERROR;
               }
               if (!out.f2dot14(rec.scale2->x)) {
-                return false;
+                return EGLYF_ERROR;
               }
               if (!out.f2dot14(rec.scale2->y)) {
-                return false;
+                return EGLYF_ERROR;
               }
               if (!out.f2dot14(s1.y)) {
-                return false;
+                return EGLYF_ERROR;
               }
             } else {
               if (!out.f2dot14(s1.x)) {
-                return false;
+                return EGLYF_ERROR;
               }
               if (!out.f2dot14(s1.y)) {
-                return false;
+                return EGLYF_ERROR;
               }
             }
           }
@@ -332,17 +340,17 @@ public:
       }
       if (instructions.size() > 0) {
         if (instructions.size() > (size_t)numeric_limits<uint16_t>::max()) {
-          return false;
+          return EGLYF_ERROR;
         }
         uint16_t numInstr = static_cast<uint16_t>(instructions.size());
         if (!out.u16(numInstr)) {
-          return false;
+          return EGLYF_ERROR;
         }
         if (!out.write((void *)instructions.data(), instructions.size())) {
-          return false;
+          return EGLYF_ERROR;
         }
       }
-      return true;
+      return Status::Ok();
     }
 
     Header header;
@@ -350,7 +358,7 @@ public:
     std::vector<uint8_t> instructions;
   };
 
-  static std::shared_ptr<GlyphDataTable> Read(InputStream &in, IndexToLocationTable const &loca) {
+  static Status Read(InputStream &in, IndexToLocationTable const &loca, std::shared_ptr<GlyphDataTable> &out) {
     using namespace std;
     auto ret = make_shared<GlyphDataTable>();
     for (size_t i = 1; i < loca.offsets.size(); i++) {
@@ -361,40 +369,41 @@ public:
         continue;
       }
       if (!in.seek(offset)) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
       string buffer;
       buffer.resize(length);
       if (length != in.read(buffer.data(), length)) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
       ByteInputStream slice(buffer);
       auto header = Header::Read(slice);
       if (!header) {
-        return nullptr;
+        return EGLYF_STATUS_PUSH(header.status());
       }
       if (header->numberOfContours < 0) {
         if (auto cg = CompositeGlyph::Read(*header, slice); cg) {
           ret->glyphs.push_back(*cg);
         } else {
-          return nullptr;
+          return EGLYF_STATUS_PUSH(cg.status());
         }
       } else {
         if (auto rg = ReadonlyGlyph::Read(*header, slice); rg) {
           ret->glyphs.push_back(*rg);
         } else {
-          return nullptr;
+          return EGLYF_STATUS_PUSH(rg.status());
         }
       }
     }
-    return ret;
+    out.swap(ret);
+    return Status::Ok();
   }
 
-  std::optional<EncodeResult> encode() const override {
-    return std::nullopt;
+  Optional<EncodeResult> encode() const override {
+    return EGLYF_NULLOPT;
   }
 
-  std::optional<EncodeResult> encode(std::vector<Offset32> &offsets) const {
+  Optional<EncodeResult> encode(std::vector<Offset32> &offsets) const {
     using namespace std;
 
     offsets.clear();
@@ -406,20 +415,20 @@ public:
         // nop
       } else if (holds_alternative<ReadonlyGlyph>(g)) {
         auto rg = get<ReadonlyGlyph>(g);
-        if (!rg.encode(out)) {
-          return nullopt;
+        if (auto st = rg.encode(out); !st.ok()) {
+          return EGLYF_NULLOPT_PUSH(st);
         }
       } else if (holds_alternative<CompositeGlyph>(g)) {
         auto cg = get<CompositeGlyph>(g);
-        if (!cg.encode(out)) {
-          return nullopt;
+        if (auto st = cg.encode(out); !st.ok()) {
+          return EGLYF_NULLOPT_PUSH(st);
         }
       }
       auto size = out.size();
       if (size % 4 != 0) {
         size_t cnt = 4 - size % 4;
         if (!out.write((void *)"\0\0\0\0", cnt)) {
-          return nullopt;
+          return EGLYF_NULLOPT;
         }
       }
     }
@@ -427,17 +436,17 @@ public:
     return EncodeResult(out.data());
   }
 
-  std::optional<uint16_t> addEmptyGlyph() {
+  Optional<uint16_t> addEmptyGlyph() {
     EmptyGlyph add;
     uint16_t gid = glyphs.size();
     glyphs.push_back(add);
     return gid;
   }
 
-  std::optional<uint16_t> addCompositeGlyph(GlyphDataTable::CompositeGlyph::GlyphRecord child) {
+  Optional<uint16_t> addCompositeGlyph(GlyphDataTable::CompositeGlyph::GlyphRecord child) {
     using namespace std;
     if (child.glyphIndex >= glyphs.size()) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     auto g = glyphs[child.glyphIndex];
     uint16_t gid = glyphs.size();
@@ -449,7 +458,7 @@ public:
       auto cg = get<CompositeGlyph>(g);
       add.header = cg.header;
     } else {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     add.header.numberOfContours = -1;
     add.records.push_back(child);
@@ -457,18 +466,24 @@ public:
     return gid;
   }
 
-  std::shared_ptr<GlyphDataTable> clone() const {
+  Status clone(std::shared_ptr<GlyphDataTable> &out) const {
     using namespace std;
     IndexToLocationTable loca(1);
     auto encoded = encode(loca.offsets);
     if (!encoded) {
-      return nullptr;
+      return EGLYF_STATUS_PUSH(encoded.status());
     }
     ByteInputStream in(encoded->data);
-    return Read(in, loca);
+    shared_ptr<GlyphDataTable> ret;
+    if (auto st = Read(in, loca, ret); st.ok()) {
+      ret.swap(out);
+      return Status::Ok();
+    } else {
+      return EGLYF_STATUS_PUSH(st);
+    }
   }
 
-  bool updateMaxp(MaximumProfileTable &out) const {
+  Status updateMaxp(MaximumProfileTable &out) const {
     using namespace std;
     out.numGlyphs = glyphs.size();
     for (uint16_t gid = 0; gid < glyphs.size(); gid++) {
@@ -486,7 +501,7 @@ public:
         uint16_t compositeContours = 0;
         for (auto const &record : cg.records) {
           if (!visit(record, depth, path, out, compositePoints, compositeContours)) {
-            return false;
+            return EGLYF_ERROR;
           }
         }
         out.maxComponentElements = (std::max)(out.maxComponentElements, (uint16_t)cg.records.size());
@@ -494,7 +509,7 @@ public:
         out.maxCompositeContours = (std::max)(out.maxCompositeContours, compositeContours);
       }
     }
-    return true;
+    return Status::Ok();
   }
 
 private:

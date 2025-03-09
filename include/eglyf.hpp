@@ -5,8 +5,13 @@
 #include <deque>
 #include <optional>
 #include <variant>
+#include <filesystem>
+#include <cassert>
 
 #include "defer.hpp"
+#include "errno.hpp"
+#include "status.hpp"
+#include "optional.hpp"
 
 #include "Type.hpp"
 #include "io/InputStream.hpp"

@@ -10,10 +10,10 @@ public:
     }
   }
 
-  std::optional<EncodeResult> encode() const override {
+  Optional<EncodeResult> encode() const override {
     auto checksum = Table::Checksum(content);
     if (!checksum) {
-      return std::nullopt;
+      return EGLYF_NULLOPT;
     }
     return EncodeResult(content, len, *checksum);
   }

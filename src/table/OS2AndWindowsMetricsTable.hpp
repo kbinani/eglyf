@@ -5,292 +5,293 @@ namespace eglyf {
 // 'OS/2'
 class OS2AndWindowsMetricsTable : public Table {
 public:
-  static std::shared_ptr<OS2AndWindowsMetricsTable> Read(InputStream &in) {
+  static Status Read(InputStream &in, std::shared_ptr<OS2AndWindowsMetricsTable> &out) {
     using namespace std;
     uint16_t version;
     if (!in.u16(&version)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
-    auto r = make_shared<OS2AndWindowsMetricsTable>();
+    auto r = make_unique<OS2AndWindowsMetricsTable>();
     r->version = version;
     if (!in.i16(&r->xAvgCharWidth)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->usWeightClass)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->usWidthClass)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->fsType)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->ySubscriptXSize)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->ySubscriptYSize)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->ySubscriptXOffset)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->ySubscriptYOffset)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->ySuperscriptXSize)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->ySuperscriptYSize)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->ySuperscriptXOffset)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->ySuperscriptYOffset)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->yStrikeoutSize)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->yStrikeoutPosition)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->sFamilyClass)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (in.read(r->panose.data(), r->panose.size()) != r->panose.size()) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u32(&r->ulUnicodeRange1)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u32(&r->ulUnicodeRange2)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u32(&r->ulUnicodeRange3)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u32(&r->ulUnicodeRange4)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (auto id = ReadTag(in); id) {
       r->achVendID = *id;
     } else {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->fsSelection)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->usFirstCharIndex)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->usLastCharIndex)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->sTypoAscender)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->sTypoDescender)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.i16(&r->sTypoLineGap)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->usWinAscent)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->usWinDescent)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (version > 0x000) {
       uint32_t v;
       if (!in.u32(&v)) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
       r->ulCodePageRange1 = v;
       if (!in.u32(&v)) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
       r->ulCodePageRange2 = v;
     }
     if (version > 0x0001) {
       FWORD fw;
       if (!in.i16(&fw)) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
       r->sxHeight = fw;
       if (!in.i16(&fw)) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
       r->sCapHeight = fw;
       uint16_t u16;
       if (!in.u16(&u16)) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
       r->usDefaultChar = u16;
       if (!in.u16(&u16)) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
       r->usBreakChar = u16;
       if (!in.u16(&u16)) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
       r->usMaxContext = u16;
     }
     if (version > 0x0004) {
       uint16_t v;
       if (!in.u16(&v)) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
       r->usLowerOpticalPointSize = v;
       if (!in.u16(&v)) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
       r->usUpperOpticalPointSize = v;
     }
     if (version > 0x0005) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
-    return r;
+    out.reset(r.release());
+    return Status::Ok();
   }
 
-  std::optional<EncodeResult> encode() const override {
+  Optional<EncodeResult> encode() const override {
     using namespace std;
     ByteOutputStream out;
     if (!out.u16(version)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(xAvgCharWidth)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(usWeightClass)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(usWidthClass)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(fsType)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(ySubscriptXSize)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(ySubscriptYSize)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(ySubscriptXOffset)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(ySubscriptYOffset)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(ySuperscriptXSize)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(ySuperscriptYSize)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(ySuperscriptXOffset)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(ySuperscriptYOffset)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(yStrikeoutSize)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(yStrikeoutPosition)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(sFamilyClass)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.write(panose.data(), panose.size())) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u32(ulUnicodeRange1)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u32(ulUnicodeRange2)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u32(ulUnicodeRange3)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u32(ulUnicodeRange4)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.write(achVendID.data(), achVendID.size())) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(fsSelection)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(usFirstCharIndex)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(usLastCharIndex)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(sTypoAscender)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(sTypoDescender)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.i16(sTypoLineGap)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(usWinAscent)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(usWinDescent)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (version > 0x0000) {
       if (!ulCodePageRange1 || !ulCodePageRange2) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       if (!out.u32(*ulCodePageRange1)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       if (!out.u32(*ulCodePageRange2)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
     }
     if (version > 0x0001) {
       if (!sxHeight || !sCapHeight || !usDefaultChar || !usBreakChar || !usMaxContext) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       if (!out.i16(*sxHeight)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       if (!out.i16(*sCapHeight)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       if (!out.u16(*usDefaultChar)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       if (!out.u16(*usBreakChar)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       if (!out.u16(*usMaxContext)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
     }
     if (version > 0x0004) {
       if (!usLowerOpticalPointSize || !usUpperOpticalPointSize) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       if (!out.u16(*usLowerOpticalPointSize)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       if (!out.u16(*usUpperOpticalPointSize)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
     }
     if (version > 0x0005) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     return EncodeResult(out.data());
   }

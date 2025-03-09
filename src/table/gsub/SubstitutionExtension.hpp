@@ -4,93 +4,84 @@ namespace eglyf::gsub {
 
 class SubstitutionExtension : public Subtable {
 public:
-  static std::shared_ptr<Subtable> Read(InputStream &in) {
+  static Status Read(InputStream &in, std::shared_ptr<Subtable> &out) {
     using namespace std;
     jassert(in.position() == 0);
     uint16_t format;
     if (!in.u16(&format)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (format != 1) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
-    auto r = make_shared<SubstitutionExtension>();
+    auto r = make_unique<SubstitutionExtension>();
     if (!in.u16(&r->extensionLookupType)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (r->extensionLookupType == 7) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     Offset32 extensionOffset;
     if (!in.o32(&extensionOffset)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.seek(extensionOffset)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     OffsetInputStream sub(in);
     if (r->extensionLookupType == 1) {
       // Single
-      if (auto t = gsub::Single::Read(sub); t) {
-        r->extension = t;
-      } else {
-        return nullptr;
+      if (auto st = gsub::Single::Read(sub, r->extension); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
     } else if (r->extensionLookupType == 2) {
       // Multiple
-      if (auto t = gsub::Multiple::Read(sub); t) {
-        r->extension = t;
-      } else {
-        return nullptr;
+      if (auto st = gsub::Multiple::Read(sub, r->extension); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
     } else if (r->extensionLookupType == 3) {
       // Alternate
-      if (auto t = gsub::Alternate::Read(sub); t) {
-        r->extension = t;
-      } else {
-        return nullptr;
+      if (auto st = gsub::Alternate::Read(sub, r->extension); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
     } else if (r->extensionLookupType == 4) {
       // Ligature
-      if (auto t = Ligature::Read(sub); t) {
-        r->extension = t;
-      } else {
-        return nullptr;
+      if (auto st = Ligature::Read(sub, r->extension); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
     } else if (r->extensionLookupType == 5) {
       // Contextual substitution
-      return nullptr;
+      return EGLYF_ERROR;
     } else if (r->extensionLookupType == 6) {
       // Chained contexts substitution
-      if (auto t = ChainedContextsSubstitution::Read(sub); t) {
-        r->extension = t;
-      } else {
-        return nullptr;
+      if (auto st = ChainedContextsSubstitution::Read(sub, r->extension); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
     } else if (r->extensionLookupType == 8) {
       // Reverse chaining context single
-      return nullptr;
+      return EGLYF_ERROR;
     } else {
-      return nullptr;
+      return EGLYF_ERROR;
     }
-    return r;
+    out.reset(r.release());
+    return Status::Ok();
   }
 
-  bool write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) override {
+  Status write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) override {
     using namespace std;
     auto writer = make_shared<OffsetWriter>(out);
     if (!out.u16(1)) {
-      return false;
+      return EGLYF_ERROR;
     }
     if (!out.u16(extensionLookupType)) {
-      return false;
+      return EGLYF_ERROR;
     }
     auto offset = writer->o32();
     if (!offset) {
-      return false;
+      return EGLYF_ERROR;
     }
     extensions[extension] = make_pair(writer, offset);
-    return true;
+    return Status::Ok();
   }
 
 public:

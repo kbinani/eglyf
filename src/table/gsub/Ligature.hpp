@@ -8,191 +8,179 @@ public:
     uint16_t ligatureGlyph;
     std::vector<uint16_t> componentGlyphIDs;
 
-    static std::optional<LigatureTable> Read(InputStream &in) {
+    static Optional<LigatureTable> Read(InputStream &in) {
       using namespace std;
       LigatureTable r;
       if (!in.u16(&r.ligatureGlyph)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       uint16_t componentCount;
       if (!in.u16(&componentCount)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       if (componentCount < 0) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
-      r.componentGlyphIDs.reserve(componentCount - 1);
-      for (uint16_t i = 1; i < componentCount; i++) {
-        uint16_t v;
-        if (!in.u16(&v)) {
-          return nullopt;
-        }
-        r.componentGlyphIDs.push_back(v);
+      if (!in.u16a(r.componentGlyphIDs, componentCount - 1)) {
+        return EGLYF_NULLOPT;
       }
       return r;
     }
 
-    bool write(OutputStream &out) const {
+    Status write(OutputStream &out) const {
       if (!out.u16(ligatureGlyph)) {
-        return false;
+        return EGLYF_ERROR;
       }
       if (!out.sizeU16(componentGlyphIDs.size() + 1)) {
-        return false;
+        return EGLYF_ERROR;
       }
-      return out.u16a(componentGlyphIDs);
+      if (out.u16a(componentGlyphIDs)) {
+        return Status::Ok();
+      } else {
+        return EGLYF_ERROR;
+      }
     }
   };
 
   struct LigatureSet {
     std::vector<LigatureTable> ligatures;
 
-    static std::optional<LigatureSet> Read(InputStream &in) {
+    static Optional<LigatureSet> Read(InputStream &in) {
       using namespace std;
       jassert(in.position() == 0);
       uint16_t ligatureCount;
       if (!in.u16(&ligatureCount)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       vector<Offset16> ligatureOffsets;
-      ligatureOffsets.reserve(ligatureCount);
-      for (uint16_t i = 0; i < ligatureCount; i++) {
-        Offset16 v;
-        if (!in.o16(&v)) {
-          return nullopt;
-        }
-        ligatureOffsets.push_back(v);
+      if (!in.o16a(ligatureOffsets, ligatureCount)) {
+        return EGLYF_NULLOPT;
       }
       LigatureSet r;
       for (Offset16 offset : ligatureOffsets) {
         if (!in.seek(offset)) {
-          return nullopt;
+          return EGLYF_NULLOPT;
         }
         if (auto l = LigatureTable::Read(in); l) {
           r.ligatures.push_back(*l);
         } else {
-          return nullopt;
+          return EGLYF_NULLOPT_PUSH(l.status());
         }
       }
       return r;
     }
 
-    bool write(OutputStream &out) const {
+    Status write(OutputStream &out) const {
       using namespace std;
       auto beginning = make_shared<OffsetWriter>(out);
       if (!out.sizeU16(ligatures.size())) {
-        return false;
+        return EGLYF_ERROR;
       }
       vector<OffsetWriter::Handle16> ligatureOffsets;
       for (size_t i = 0; i < ligatures.size(); i++) {
         auto offset = beginning->o16();
         if (!offset) {
-          return false;
+          return EGLYF_ERROR;
         }
         ligatureOffsets.push_back(offset);
       }
       for (size_t i = 0; i < ligatures.size(); i++) {
         auto const &ligature = ligatures[i];
         auto offset = ligatureOffsets[i];
-        if (!offset->mark()) {
-          return false;
+        if (auto st = offset->mark(); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
         }
-        if (!ligature.write(out)) {
-          return false;
+        if (auto st = ligature.write(out); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
         }
       }
-      return beginning->commit();
+      return EGLYF_STATUS_PUSH(beginning->commit());
     }
   };
 
 public:
-  static std::shared_ptr<Ligature> Read(InputStream &in) {
+  static Status Read(InputStream &in, std::shared_ptr<Subtable> &out) {
     using namespace std;
     jassert(in.position() == 0);
     uint16_t format;
     if (!in.u16(&format)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (format != 1) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     Offset16 coverageOffset;
     if (!in.o16(&coverageOffset)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     uint16_t ligatureSetCount;
     if (!in.u16(&ligatureSetCount)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     vector<Offset16> ligatureSetOffsets;
-    ligatureSetOffsets.reserve(ligatureSetCount);
-    for (uint16_t i = 0; i < ligatureSetCount; i++) {
-      Offset16 v;
-      if (!in.o16(&v)) {
-        return nullptr;
-      }
-      ligatureSetOffsets.push_back(v);
+    if (!in.o16a(ligatureSetOffsets, ligatureSetCount)) {
+      return EGLYF_ERROR;
     }
-    auto r = make_shared<Ligature>();
+    auto r = make_unique<Ligature>();
     if (!in.seek(coverageOffset)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
-    if (auto cov = CoverageReader::Read(in); cov) {
-      r->coverage = cov;
-    } else {
-      return nullptr;
+    if (auto st = CoverageReader::Read(in, r->coverage); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
     for (Offset16 offset : ligatureSetOffsets) {
       if (!in.seek(offset)) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
       OffsetInputStream sub(in);
       if (auto s = LigatureSet::Read(sub); s) {
         r->ligatureSets.push_back(*s);
       } else {
-        return nullptr;
+        return EGLYF_STATUS_PUSH(s.status());
       }
     }
-    return r;
+    out.reset(r.release());
+    return Status::Ok();
   }
 
-  bool write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &) override {
+  Status write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &) override {
     using namespace std;
     auto beginning = make_shared<OffsetWriter>(out);
     if (!out.u16(1)) {
-      return false;
+      return EGLYF_ERROR;
     }
     auto coverageOffset = beginning->o16();
     if (!coverageOffset) {
-      return false;
+      return EGLYF_ERROR;
     }
     if (!out.sizeU16(ligatureSets.size())) {
-      return false;
+      return EGLYF_ERROR;
     }
     vector<OffsetWriter::Handle16> ligatureSetOffsets;
     for (size_t i = 0; i < ligatureSets.size(); i++) {
       auto h = beginning->o16();
       if (!h) {
-        return false;
+        return EGLYF_ERROR;
       }
       ligatureSetOffsets.push_back(h);
     }
     for (size_t i = 0; i < ligatureSets.size(); i++) {
       auto const &ligatureSet = ligatureSets[i];
       auto offset = ligatureSetOffsets[i];
-      if (!offset->mark()) {
-        return false;
+      if (auto st = offset->mark(); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
-      if (!ligatureSet.write(out)) {
-        return false;
+      if (auto st = ligatureSet.write(out); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
     }
-    if (!coverageOffset->mark()) {
-      return false;
+    if (auto st = coverageOffset->mark(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
-    if (!coverage->write(out)) {
-      return false;
+    if (auto st = coverage->write(out); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
-    return beginning->commit();
+    return EGLYF_STATUS_PUSH(beginning->commit());
   }
 
 public:

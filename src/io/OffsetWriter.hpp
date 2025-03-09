@@ -13,31 +13,31 @@ public:
 
     explicit Handle(int64_t position, std::shared_ptr<OffsetWriter> parent) : position(position), parent(parent) {}
 
-    bool mark() {
+    Status mark() {
       using namespace std;
       if (result) {
-        return false;
+        return EGLYF_ERROR;
       }
       auto p = parent.lock();
       if (!p) {
-        return false;
+        return EGLYF_ERROR;
       }
       int64_t latest = p->upstream.position();
       int64_t offset = latest - p->base;
       if (offset < (int64_t)numeric_limits<T>::lowest() || (int64_t)numeric_limits<T>::max() < offset) {
-        return false;
+        return EGLYF_ERROR;
       }
       result = make_pair(position, (T)offset);
-      return true;
+      return Status::Ok();
     }
 
-    bool null() {
+    Status null() {
       using namespace std;
       if (result) {
-        return false;
+        return EGLYF_ERROR;
       }
       result = make_pair(position, 0);
-      return true;
+      return Status::Ok();
     }
   };
 
@@ -76,40 +76,44 @@ public:
     return handle;
   }
 
-  bool commit() {
+  Status commit() {
     using namespace std;
     if (offsets.empty()) {
-      return true;
+      return EGLYF_ERROR;
     }
     auto pos = upstream.position();
     for (auto const &[position, handle] : offsets) {
       if (holds_alternative<Handle16>(handle)) {
         auto const &h16 = get<Handle16>(handle);
         if (!h16->result) {
-          return false;
+          return EGLYF_ERROR;
         }
         if (!upstream.seek(position)) {
-          return false;
+          return EGLYF_ERROR;
         }
         if (!upstream.o16(h16->result->second)) {
-          return false;
+          return EGLYF_ERROR;
         }
       } else if (holds_alternative<Handle32>(handle)) {
         auto const &h32 = get<Handle32>(handle);
         if (!h32->result) {
-          return false;
+          return EGLYF_ERROR;
         }
         if (!upstream.seek(position)) {
-          return false;
+          return EGLYF_ERROR;
         }
         if (!upstream.o32(h32->result->second)) {
-          return false;
+          return EGLYF_ERROR;
         }
       } else {
-        return false;
+        return EGLYF_ERROR;
       }
     }
-    return upstream.seek(pos);
+    if (upstream.seek(pos)) {
+      return Status::Ok();
+    } else {
+      return EGLYF_ERROR;
+    }
   }
 
 private:

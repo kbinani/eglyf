@@ -5,127 +5,129 @@ namespace eglyf {
 // 'maxp'
 class MaximumProfileTable : public Table {
 public:
-  static std::shared_ptr<MaximumProfileTable> Read(InputStream &in) {
+  static Status Read(InputStream &in, std::shared_ptr<MaximumProfileTable> &out) {
     using namespace std;
-    auto r = make_shared<MaximumProfileTable>();
+    auto r = make_unique<MaximumProfileTable>();
     if (!in.u16(&r->version.major)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->version.minor)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->numGlyphs)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (r->version.major == 0 && r->version.minor == 0x5000) {
-      return r;
+      out.reset(r.release());
+      return Status::Ok();
     }
     if (r->version.major != 0x0001 || r->version.minor != 0) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->maxPoints)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->maxContours)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->maxCompositePoints)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->maxCompositeContours)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->maxZones)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->maxTwilightPoints)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->maxStorage)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->maxFunctionDefs)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->maxInstructionDefs)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->maxStackElements)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->maxSizeOfInstructions)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->maxComponentElements)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (!in.u16(&r->maxComponentDepth)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
-    return r;
+    out.reset(r.release());
+    return Status::Ok();
   }
 
-  std::optional<EncodeResult> encode() const override {
+  Optional<EncodeResult> encode() const override {
     using namespace std;
     ByteOutputStream out;
     if (!out.u16(version.major)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(version.minor)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(numGlyphs)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (version.major == 0 && version.minor == 0x5000) {
       return EncodeResult(out.data());
     } else if (version.major != 0x0001 || version.minor != 0) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(maxPoints)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(maxContours)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(maxCompositePoints)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(maxCompositeContours)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(maxZones)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(maxTwilightPoints)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(maxStorage)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(maxFunctionDefs)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(maxInstructionDefs)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(maxStackElements)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(maxSizeOfInstructions)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(maxComponentElements)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!out.u16(maxComponentDepth)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     return EncodeResult(out.data());
   }
 
-  std::shared_ptr<MaximumProfileTable> clone() const {
-    return defaultClone<MaximumProfileTable>();
+  Status clone(std::shared_ptr<MaximumProfileTable> &out) const {
+    return EGLYF_STATUS_PUSH(defaultClone<MaximumProfileTable>(out));
   }
 
 public:

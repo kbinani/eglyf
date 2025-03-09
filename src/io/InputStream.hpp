@@ -102,6 +102,27 @@ public:
     }
     return true;
   }
+
+  bool o16a(std::vector<Offset16> &out, size_t count) {
+    return u16a(out, count);
+  }
+
+  bool u32a(std::vector<uint32_t> &out, size_t count) {
+    out.clear();
+    out.reserve(count);
+    for (size_t i = 0; i < count; i++) {
+      uint32_t v;
+      if (!u32(&v)) {
+        return false;
+      }
+      out.push_back(v);
+    }
+    return true;
+  }
+
+  bool o32a(std::vector<Offset32> &out, size_t count) {
+    return u32a(out, count);
+  }
 };
 
 } // namespace eglyf

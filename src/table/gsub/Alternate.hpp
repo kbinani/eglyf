@@ -7,110 +7,113 @@ public:
   struct AlternateSet {
     std::vector<uint16_t> alternateGlyphIDs;
 
-    static std::optional<AlternateSet> Read(InputStream &in) {
+    static Optional<AlternateSet> Read(InputStream &in) {
       using namespace std;
       uint16_t glyphCount;
       if (!in.u16(&glyphCount)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       AlternateSet r;
       if (!in.u16a(r.alternateGlyphIDs, glyphCount)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       return r;
     }
 
-    bool write(OutputStream &out) const {
+    Status write(OutputStream &out) const {
       if (!out.sizeU16(alternateGlyphIDs.size())) {
-        return false;
+        return EGLYF_ERROR;
       }
-      return out.u16a(alternateGlyphIDs);
+      if (out.u16a(alternateGlyphIDs)) {
+        return Status::Ok();
+      } else {
+        return EGLYF_ERROR;
+      }
     }
   };
 
 public:
-  static std::shared_ptr<Alternate> Read(InputStream &in) {
+  static Status Read(InputStream &in, std::shared_ptr<Subtable> &out) {
     using namespace std;
     jassert(in.position() == 0);
     uint16_t format;
     if (!in.u16(&format)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (format != 1) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     Offset16 coverageOffset;
     if (!in.o16(&coverageOffset)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     uint16_t alternateSetCount;
     if (!in.u16(&alternateSetCount)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     vector<Offset16> alternateSetOffsets;
-    if (!in.u16a(alternateSetOffsets, alternateSetCount)) {
-      return nullptr;
+    if (!in.o16a(alternateSetOffsets, alternateSetCount)) {
+      return EGLYF_ERROR;
     }
     if (!in.seek(coverageOffset)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
-    auto r = make_shared<Alternate>();
-    if (auto cov = CoverageReader::Read(in); cov) {
-      r->coverage = cov;
-    } else {
-      return nullptr;
+    auto r = make_unique<Alternate>();
+    if (auto st = CoverageReader::Read(in, r->coverage); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
     for (auto offset : alternateSetOffsets) {
       if (!in.seek(offset)) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
       if (auto s = AlternateSet::Read(in); s) {
         r->alternateSets.push_back(*s);
       } else {
-        return nullptr;
+        return EGLYF_STATUS_PUSH(s.status());
       }
     }
-    return r;
+    out.reset(r.release());
+    return Status::Ok();
   }
 
-  bool write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &) override {
+  Status write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &) override {
     using namespace std;
     auto writer = make_shared<OffsetWriter>(out);
     if (!out.u16(1)) {
-      return false;
+      return EGLYF_ERROR;
     }
     auto coverageOffset = writer->o16();
     if (!coverageOffset) {
-      return false;
+      return EGLYF_ERROR;
     }
     if (!out.sizeU16(alternateSets.size())) {
-      return false;
+      return EGLYF_ERROR;
     }
     vector<OffsetWriter::Handle16> alternateSetOffsets;
     for (size_t i = 0; i < alternateSets.size(); i++) {
       auto offset = writer->o16();
       if (!offset) {
-        return false;
+        return EGLYF_ERROR;
       }
       alternateSetOffsets.push_back(offset);
     }
-    if (!coverageOffset->mark()) {
-      return false;
+    if (auto st = coverageOffset->mark(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
-    if (!coverage->write(out)) {
-      return false;
+    if (auto st = coverage->write(out); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
     for (size_t i = 0; i < alternateSets.size(); i++) {
       auto const &alternateSet = alternateSets[i];
       auto offset = alternateSetOffsets[i];
-      if (!offset->mark()) {
-        return false;
+      if (auto st = offset->mark(); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
-      if (!alternateSet.write(out)) {
-        return false;
+      if (auto st = alternateSet.write(out); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
     }
-    return writer->commit();
+    return EGLYF_STATUS_PUSH(writer->commit());
   }
 
 public:

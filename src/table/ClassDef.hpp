@@ -5,44 +5,44 @@ namespace eglyf {
 class ClassDef {
 public:
   virtual ~ClassDef() {}
-  virtual bool write(OutputStream &out) = 0;
+  virtual Status write(OutputStream &out) = 0;
 };
 
 class ClassDef1 : public ClassDef {
 public:
-  static std::shared_ptr<ClassDef1> Read(InputStream &in) {
+  static Status Read(InputStream &in, std::shared_ptr<ClassDef> &out) {
     using namespace std;
-    auto r = make_shared<ClassDef1>();
+    auto r = make_unique<ClassDef1>();
     if (!in.u16(&r->startGlyphID)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     uint16_t glyphCount;
     if (!in.u16(&glyphCount)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
-    r->classValues.reserve(glyphCount);
-    for (uint16_t i = 0; i < glyphCount; i++) {
-      uint16_t v;
-      if (!in.u16(&v)) {
-        return nullptr;
-      }
-      r->classValues.push_back(v);
+    if (!in.u16a(r->classValues, glyphCount)) {
+      return EGLYF_ERROR;
     }
-    return r;
+    out.reset(r.release());
+    return Status::Ok();
   }
 
-  bool write(OutputStream &out) override {
+  Status write(OutputStream &out) override {
     using namespace std;
     if (!out.u16(1)) {
-      return false;
+      return EGLYF_ERROR;
     }
     if (!out.u16(startGlyphID)) {
-      return false;
+      return EGLYF_ERROR;
     }
     if (!out.sizeU16(classValues.size())) {
-      return false;
+      return EGLYF_ERROR;
     }
-    return out.u16a(classValues);
+    if (out.u16a(classValues)) {
+      return Status::Ok();
+    } else {
+      return EGLYF_ERROR;
+    }
   }
 
 public:
@@ -57,65 +57,70 @@ public:
     uint16_t endGlyphID;
     uint16_t classValue;
 
-    static std::optional<ClassRange> Read(InputStream &in) {
+    static Optional<ClassRange> Read(InputStream &in) {
       using namespace std;
       ClassRange r;
       if (!in.u16(&r.startGlyphID)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       if (!in.u16(&r.endGlyphID)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       if (!in.u16(&r.classValue)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       return r;
     }
 
-    bool write(OutputStream &out) const {
+    Status write(OutputStream &out) const {
       if (!out.u16(startGlyphID)) {
-        return false;
+        return EGLYF_ERROR;
       }
       if (!out.u16(endGlyphID)) {
-        return false;
+        return EGLYF_ERROR;
       }
-      return out.u16(classValue);
+      if (out.u16(classValue)) {
+        return Status::Ok();
+      } else {
+        return EGLYF_ERROR;
+      }
     }
   };
 
 public:
-  static std::shared_ptr<ClassDef2> Read(InputStream &in) {
+  static Status Read(InputStream &in, std::shared_ptr<ClassDef> &out) {
     using namespace std;
     uint16_t classRangeCount;
     if (!in.u16(&classRangeCount)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
-    auto r = make_shared<ClassDef2>();
+    auto r = make_unique<ClassDef2>();
     r->classRanges.reserve(classRangeCount);
     for (uint16_t i = 0; i < classRangeCount; i++) {
       if (auto cr = ClassRange::Read(in); cr) {
         r->classRanges.push_back(*cr);
       } else {
-        return nullptr;
+        return EGLYF_STATUS_PUSH(cr.status());
       }
     }
-    return r;
+    out.reset(r.release());
+    return Status::Ok();
   }
 
-  bool write(OutputStream &out) override {
+  Status write(OutputStream &out) override {
     using namespace std;
     if (!out.u16(2)) {
-      return false;
+      return EGLYF_ERROR;
     }
     if (!out.sizeU16(classRanges.size())) {
-      return false;
+      return EGLYF_ERROR;
     }
     for (auto const &range : classRanges) {
-      if (!range.write(out)) {
-        return false;
+      if (auto st = range.write(out); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
     }
-    return true;
+    return Status::Ok();
   }
 
 public:
@@ -126,18 +131,20 @@ class ClassDefReader {
   ClassDefReader() = delete;
 
 public:
-  static std::shared_ptr<ClassDef> Read(InputStream &in) {
+  static Status Read(InputStream &in, std::shared_ptr<ClassDef> &out) {
     using namespace std;
     uint16_t format;
     if (!in.u16(&format)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (format == 1) {
-      return ClassDef1::Read(in);
+      auto st = ClassDef1::Read(in, out);
+      return EGLYF_STATUS_PUSH(st);
     } else if (format == 2) {
-      return ClassDef2::Read(in);
+      auto st = ClassDef2::Read(in, out);
+      return EGLYF_STATUS_PUSH(st);
     } else {
-      return nullptr;
+      return EGLYF_ERROR;
     }
   }
 };

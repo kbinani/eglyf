@@ -7,120 +7,123 @@ public:
   struct Sequence {
     std::vector<uint16_t> substituteGlyphIDs;
 
-    static std::optional<Sequence> Read(InputStream &in) {
+    static Optional<Sequence> Read(InputStream &in) {
       using namespace std;
       uint16_t glyphCount;
       if (!in.u16(&glyphCount)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       Sequence r;
       r.substituteGlyphIDs.reserve(glyphCount);
       for (uint16_t i = 0; i < glyphCount; i++) {
         uint16_t v;
         if (!in.u16(&v)) {
-          return nullopt;
+          return EGLYF_NULLOPT;
         }
         r.substituteGlyphIDs.push_back(v);
       }
       return r;
     }
 
-    bool write(OutputStream &out) const {
+    Status write(OutputStream &out) const {
       if (!out.sizeU16(substituteGlyphIDs.size())) {
-        return false;
+        return EGLYF_ERROR;
       }
-      return out.u16a(substituteGlyphIDs);
+      if (out.u16a(substituteGlyphIDs)) {
+        return Status::Ok();
+      } else {
+        return EGLYF_ERROR;
+      }
     }
   };
 
 public:
-  static std::shared_ptr<Multiple> Read(InputStream &in) {
+  static Status Read(InputStream &in, std::shared_ptr<Subtable> &out) {
     using namespace std;
     jassert(in.position() == 0);
     uint16_t format;
     if (!in.u16(&format)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (format != 1) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     Offset16 coverageOffset;
     if (!in.o16(&coverageOffset)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     uint16_t sequenceCount;
     if (!in.u16(&sequenceCount)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     vector<Offset16> sequenceOffsets;
     sequenceOffsets.reserve(sequenceCount);
     for (uint16_t i = 0; i < sequenceCount; i++) {
       Offset16 v;
       if (!in.o16(&v)) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
       sequenceOffsets.push_back(v);
     }
-    auto r = make_shared<Multiple>();
+    auto r = make_unique<Multiple>();
     if (!in.seek(coverageOffset)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
-    if (auto cov = CoverageReader::Read(in); cov) {
-      r->coverage = cov;
-    } else {
-      return nullptr;
+    if (auto st = CoverageReader::Read(in, r->coverage); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
     for (Offset16 offset : sequenceOffsets) {
       if (!in.seek(offset)) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
       if (auto seq = Sequence::Read(in); seq) {
         r->sequences.push_back(*seq);
       } else {
-        return nullptr;
+        return EGLYF_STATUS_PUSH(seq.status());
       }
     }
-    return r;
+    out.reset(r.release());
+    return Status::Ok();
   }
 
-  bool write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &) override {
+  Status write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &) override {
     using namespace std;
     auto beginning = make_shared<OffsetWriter>(out);
     if (!out.u16(1)) {
-      return false;
+      return EGLYF_ERROR;
     }
     auto coverageOffset = beginning->o16();
     if (!coverageOffset) {
-      return false;
+      return EGLYF_ERROR;
     }
     if (!out.sizeU16(sequences.size())) {
-      return false;
+      return EGLYF_ERROR;
     }
     vector<OffsetWriter::Handle16> sequenceOffsets;
     for (size_t i = 0; i < sequences.size(); i++) {
       auto offset = beginning->o16();
       if (!offset) {
-        return false;
+        return EGLYF_ERROR;
       }
       sequenceOffsets.push_back(offset);
     }
     for (size_t i = 0; i < sequences.size(); i++) {
       auto const &sequence = sequences[i];
       auto offset = sequenceOffsets[i];
-      if (!offset->mark()) {
-        return false;
+      if (auto st = offset->mark(); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
-      if (!sequence.write(out)) {
-        return false;
+      if (auto st = sequence.write(out); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
     }
-    if (!coverageOffset->mark()) {
-      return false;
+    if (auto st = coverageOffset->mark(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
-    if (!coverage->write(out)) {
-      return false;
+    if (auto st = coverage->write(out); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
-    return beginning->commit();
+    return EGLYF_STATUS_PUSH(beginning->commit());
   }
 
 public:

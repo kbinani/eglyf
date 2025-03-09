@@ -10,47 +10,47 @@ public:
     std::vector<uint16_t> lookaheadSequence;
     std::vector<SequenceLookup> seqLookupRecords;
 
-    static std::optional<ChainedSequenceRule> Read(InputStream &in) {
+    static Optional<ChainedSequenceRule> Read(InputStream &in) {
       using namespace std;
       ChainedSequenceRule r;
 
       uint16_t backtrackGlyphCount;
       if (!in.u16(&backtrackGlyphCount)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       if (!in.u16a(r.backtrackSequence, backtrackGlyphCount)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
 
       uint16_t inputGlyphCount;
       if (!in.u16(&inputGlyphCount)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       if (inputGlyphCount < 1) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       if (!in.u16a(r.inputSequence, inputGlyphCount - 1)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
 
       uint16_t lookaheadGlyphCount;
       if (!in.u16(&lookaheadGlyphCount)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       if (!in.u16a(r.lookaheadSequence, lookaheadGlyphCount)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
 
       uint16_t seqLookupCount;
       if (!in.u16(&seqLookupCount)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       r.seqLookupRecords.reserve(seqLookupCount);
       for (uint16_t i = 0; i < seqLookupCount; i++) {
         if (auto l = SequenceLookup::Read(in); l) {
           r.seqLookupRecords.push_back(*l);
         } else {
-          return nullopt;
+          return EGLYF_NULLOPT_PUSH(l.status());
         }
       }
 
@@ -59,27 +59,27 @@ public:
   };
 
   struct ChainedSequenceRuleSet {
-    static std::optional<ChainedSequenceRuleSet> Read(InputStream &in) {
+    static Optional<ChainedSequenceRuleSet> Read(InputStream &in) {
       using namespace std;
       jassert(in.position() == 0);
       uint16_t chainedSeqRuleCount;
       if (!in.u16(&chainedSeqRuleCount)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       ChainedSequenceRuleSet r;
       r.rules.reserve(chainedSeqRuleCount);
       vector<Offset16> offsets;
-      if (!in.u16a(offsets, chainedSeqRuleCount)) {
-        return nullopt;
+      if (!in.o16a(offsets, chainedSeqRuleCount)) {
+        return EGLYF_NULLOPT;
       }
       for (uint16_t offset : offsets) {
         if (!in.seek(offset)) {
-          return nullopt;
+          return EGLYF_NULLOPT;
         }
         if (auto rule = ChainedSequenceRule::Read(in); rule) {
           r.rules.push_back(*rule);
         } else {
-          return nullopt;
+          return EGLYF_NULLOPT_PUSH(rule.status());
         }
       }
       return r;
@@ -89,28 +89,26 @@ public:
   };
 
 public:
-  static std::shared_ptr<ChainedContextsSubstitution1> Read(InputStream &in) {
+  static Status Read(InputStream &in, std::shared_ptr<Subtable> &out) {
     using namespace std;
     Offset16 coverageOffset;
     if (!in.o16(&coverageOffset)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     uint16_t chainedSeqRuleSetCount;
     if (!in.u16(&chainedSeqRuleSetCount)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     vector<Offset16> chainedSeqRuleSetOffsets;
-    if (!in.u16a(chainedSeqRuleSetOffsets, chainedSeqRuleSetCount)) {
-      return nullptr;
+    if (!in.o16a(chainedSeqRuleSetOffsets, chainedSeqRuleSetCount)) {
+      return EGLYF_ERROR;
     }
     if (!in.seek(coverageOffset)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
-    auto r = make_shared<ChainedContextsSubstitution1>();
-    if (auto cov = CoverageReader::Read(in); cov) {
-      r->coverage = cov;
-    } else {
-      return nullptr;
+    auto r = make_unique<ChainedContextsSubstitution1>();
+    if (auto st = CoverageReader::Read(in, r->coverage); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
     for (auto offset : chainedSeqRuleSetOffsets) {
       if (offset == 0) {
@@ -118,46 +116,47 @@ public:
         continue;
       }
       if (!in.seek(offset)) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
       OffsetInputStream sub(in);
       if (auto ruleSet = ChainedSequenceRuleSet::Read(sub); ruleSet) {
         r->ruleSets.push_back(*ruleSet);
       } else {
-        return nullptr;
+        return EGLYF_STATUS_PUSH(ruleSet.status());
       }
     }
 
-    return r;
+    out.reset(r.release());
+    return Status::Ok();
   }
 
-  bool write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &) override {
+  Status write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &) override {
     using namespace std;
     auto beginning = make_shared<OffsetWriter>(out);
     if (!out.u16(1)) {
-      return false;
+      return EGLYF_ERROR;
     }
     auto coverageOffset = beginning->o16();
     if (!coverageOffset) {
-      return false;
+      return EGLYF_ERROR;
     }
     if (!out.sizeU16(ruleSets.size())) {
-      return false;
+      return EGLYF_ERROR;
     }
     vector<OffsetWriter::Handle16> chainedSeqRuleSetOffsets;
     for (auto const &ruleSet : ruleSets) {
       auto h = beginning->o16();
       if (!h) {
-        return false;
+        return EGLYF_ERROR;
       }
       chainedSeqRuleSetOffsets.push_back(h);
     }
 
-    if (!coverageOffset->mark()) {
-      return false;
+    if (auto st = coverageOffset->mark(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
-    if (!coverage->write(out)) {
-      return false;
+    if (auto st = coverage->write(out); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
 
     for (size_t i = 0; i < ruleSets.size(); i++) {
@@ -165,64 +164,64 @@ public:
       auto const &ruleSet = ruleSets[i];
       auto handle = chainedSeqRuleSetOffsets[i];
       if (!ruleSet) {
-        if (!handle->null()) {
-          return false;
+        if (auto st = handle->null(); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
         }
         continue;
       }
-      if (!handle->mark()) {
-        return false;
+      if (auto st = handle->mark(); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
       if (!out.sizeU16(ruleSet->rules.size())) {
-        return false;
+        return EGLYF_ERROR;
       }
       vector<OffsetWriter::Handle16> chainedSeqRuleOffsets;
       for (auto const &rule : ruleSet->rules) {
         auto h = chainedSequenceRuleSetBeginning->o16();
         if (!h) {
-          return false;
+          return EGLYF_ERROR;
         }
         chainedSeqRuleOffsets.push_back(h);
       }
       for (size_t j = 0; j < ruleSet->rules.size(); j++) {
         auto const &rule = ruleSet->rules[j];
         auto h = chainedSeqRuleOffsets[j];
-        if (!h->mark()) {
-          return false;
+        if (auto st = h->mark(); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
         }
         if (!out.sizeU16(rule.backtrackSequence.size())) {
-          return false;
+          return EGLYF_ERROR;
         }
         if (!out.u16a(rule.backtrackSequence)) {
-          return false;
+          return EGLYF_ERROR;
         }
         if (!out.sizeU16(rule.inputSequence.size() + 1)) {
-          return false;
+          return EGLYF_ERROR;
         }
         if (!out.u16a(rule.inputSequence)) {
-          return false;
+          return EGLYF_ERROR;
         }
         if (!out.sizeU16(rule.lookaheadSequence.size())) {
-          return false;
+          return EGLYF_ERROR;
         }
         if (!out.u16a(rule.lookaheadSequence)) {
-          return false;
+          return EGLYF_ERROR;
         }
         if (!out.sizeU16(rule.seqLookupRecords.size())) {
-          return false;
+          return EGLYF_ERROR;
         }
         for (auto const &seq : rule.seqLookupRecords) {
-          if (!seq.write(out)) {
-            return false;
+          if (auto st = seq.write(out); !st.ok()) {
+            return EGLYF_STATUS_PUSH(st);
           }
         }
       }
-      if (!chainedSequenceRuleSetBeginning->commit()) {
-        return false;
+      if (auto st = chainedSequenceRuleSetBeginning->commit(); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
     }
 
-    return beginning->commit();
+    return EGLYF_STATUS_PUSH(beginning->commit());
   }
 
 public:
@@ -232,96 +231,86 @@ public:
 class ChainedContextsSubstitution2 : public Subtable {
 public:
   struct ChainedClassSequenceRule {
-    static std::optional<ChainedClassSequenceRule> Read(InputStream &in) {
+    static Optional<ChainedClassSequenceRule> Read(InputStream &in) {
       using namespace std;
       ChainedClassSequenceRule r;
 
       uint16_t backtrackGlyphCount;
       if (!in.u16(&backtrackGlyphCount)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       r.backtrackSequence.reserve(backtrackGlyphCount);
       for (uint16_t i = 0; i < backtrackGlyphCount; i++) {
         uint16_t v;
         if (!in.u16(&v)) {
-          return nullopt;
+          return EGLYF_NULLOPT;
         }
         r.backtrackSequence.push_back(v);
       }
 
       uint16_t inputGlyphCount;
       if (!in.u16(&inputGlyphCount)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       if (inputGlyphCount == 0) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
-      r.inputSequence.reserve(inputGlyphCount - 1);
-      for (uint16_t i = 1; i < inputGlyphCount; i++) {
-        uint16_t v;
-        if (!in.u16(&v)) {
-          return nullopt;
-        }
-        r.inputSequence.push_back(v);
+      if (!in.u16a(r.inputSequence, inputGlyphCount - 1)) {
+        return EGLYF_NULLOPT;
       }
 
       uint16_t lookaheadGlyphCount;
       if (!in.u16(&lookaheadGlyphCount)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
-      r.lookaheadSequence.reserve(lookaheadGlyphCount);
-      for (uint16_t i = 0; i < lookaheadGlyphCount; i++) {
-        uint16_t v;
-        if (!in.u16(&v)) {
-          return nullopt;
-        }
-        r.lookaheadSequence.push_back(v);
+      if (!in.u16a(r.lookaheadSequence, lookaheadGlyphCount)) {
+        return EGLYF_NULLOPT;
       }
 
       uint16_t seqLookupCount;
       if (!in.u16(&seqLookupCount)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       r.seqLookupRecords.reserve(seqLookupCount);
       for (uint16_t i = 0; i < seqLookupCount; i++) {
         if (auto req = SequenceLookup::Read(in); req) {
           r.seqLookupRecords.push_back(*req);
         } else {
-          return nullopt;
+          return EGLYF_NULLOPT_PUSH(req.status());
         }
       }
       return r;
     }
 
-    bool write(OutputStream &out) const {
+    Status write(OutputStream &out) const {
       using namespace std;
       if (!out.sizeU16(backtrackSequence.size())) {
-        return false;
+        return EGLYF_ERROR;
       }
       if (!out.u16a(backtrackSequence)) {
-        return false;
+        return EGLYF_ERROR;
       }
       if (!out.sizeU16(inputSequence.size() + 1)) {
-        return false;
+        return EGLYF_ERROR;
       }
       if (!out.u16a(inputSequence)) {
-        return false;
+        return EGLYF_ERROR;
       }
       if (!out.sizeU16(lookaheadSequence.size())) {
-        return false;
+        return EGLYF_ERROR;
       }
       if (!out.u16a(lookaheadSequence)) {
-        return false;
+        return EGLYF_ERROR;
       }
       if (!out.sizeU16(seqLookupRecords.size())) {
-        return false;
+        return EGLYF_ERROR;
       }
       for (auto const &seq : seqLookupRecords) {
-        if (!seq.write(out)) {
-          return false;
+        if (auto st = seq.write(out); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
         }
       }
-      return true;
+      return Status::Ok();
     }
 
   public:
@@ -332,123 +321,110 @@ public:
   };
 
   struct ChainedClassSequenceRuleSet {
-    static std::optional<ChainedClassSequenceRuleSet> Read(InputStream &in) {
+    static Optional<ChainedClassSequenceRuleSet> Read(InputStream &in) {
       using namespace std;
       ChainedClassSequenceRuleSet r;
       uint16_t chainedClassSeqRuleCount;
       if (!in.u16(&chainedClassSeqRuleCount)) {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
       r.rules.reserve(chainedClassSeqRuleCount);
       for (uint16_t i = 0; i < chainedClassSeqRuleCount; i++) {
         if (auto v = ChainedClassSequenceRule::Read(in); v) {
           r.rules.push_back(*v);
         } else {
-          return nullopt;
+          return EGLYF_NULLOPT_PUSH(v.status());
         }
       }
       return r;
     }
 
-    bool write(OutputStream &out) const {
+    Status write(OutputStream &out) const {
       using namespace std;
       auto beginning = make_shared<OffsetWriter>(out);
       if (!out.sizeU16(rules.size())) {
-        return false;
+        return EGLYF_ERROR;
       }
       vector<OffsetWriter::Handle16> handles;
       for (auto const &rule : rules) {
         auto h = beginning->o16();
         if (!h) {
-          return false;
+          return EGLYF_ERROR;
         }
         handles.push_back(h);
       }
       for (size_t i = 0; i < rules.size(); i++) {
         auto const &rule = rules[i];
         auto handle = handles[i];
-        if (!handle->mark()) {
-          return false;
+        if (auto st = handle->mark(); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
         }
-        if (!rule.write(out)) {
-          return false;
+        if (auto st = rule.write(out); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
         }
       }
-      return beginning->commit();
+      return EGLYF_STATUS_PUSH(beginning->commit());
     }
 
     std::vector<ChainedClassSequenceRule> rules;
   };
 
 public:
-  static std::shared_ptr<ChainedContextsSubstitution2> Read(InputStream &in) {
+  static Status Read(InputStream &in, std::shared_ptr<Subtable> &out) {
     using namespace std;
     Offset16 coverageOffset;
     if (!in.o16(&coverageOffset)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     Offset16 backtrackClassDefOffset;
     if (!in.o16(&backtrackClassDefOffset)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     Offset16 inputClassDefOffset;
     if (!in.o16(&inputClassDefOffset)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     Offset16 lookaheadClassDefOffset;
     if (!in.o16(&lookaheadClassDefOffset)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     uint16_t chainedClassSeqRuleSetCount;
     if (!in.o16(&chainedClassSeqRuleSetCount)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     vector<Offset16> chainedClassSeqRuleSetOffsets;
-    chainedClassSeqRuleSetOffsets.reserve(chainedClassSeqRuleSetCount);
-    for (uint16_t i = 0; i < chainedClassSeqRuleSetCount; i++) {
-      Offset16 v;
-      if (!in.o16(&v)) {
-        return nullptr;
-      }
-      chainedClassSeqRuleSetOffsets.push_back(v);
+    if (!in.o16a(chainedClassSeqRuleSetOffsets, chainedClassSeqRuleSetCount)) {
+      return EGLYF_ERROR;
     }
 
-    auto r = make_shared<ChainedContextsSubstitution2>();
+    auto r = make_unique<ChainedContextsSubstitution2>();
 
     if (!in.seek(coverageOffset)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
-    if (auto cov = CoverageReader::Read(in); cov) {
-      r->coverage = cov;
-    } else {
-      return nullptr;
+    if (auto st = CoverageReader::Read(in, r->coverage); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
 
     if (!in.seek(backtrackClassDefOffset)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
-    if (auto def = ClassDefReader::Read(in); def) {
-      r->backtrackClassDef = def;
-    } else {
-      return nullptr;
+    if (auto st = ClassDefReader::Read(in, r->backtrackClassDef); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
 
     if (!in.seek(inputClassDefOffset)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
-    if (auto def = ClassDefReader::Read(in); def) {
-      r->inputClassDef = def;
-    } else {
-      return nullptr;
+    if (auto st = ClassDefReader::Read(in, r->inputClassDef); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
 
     if (!in.seek(lookaheadClassDefOffset)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
-    if (auto def = ClassDefReader::Read(in); def) {
-      r->lookaheadClassDef = def;
-    } else {
-      return nullptr;
+    if (auto st = ClassDefReader::Read(in, r->lookaheadClassDef); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
 
     r->ruleSets.reserve(chainedClassSeqRuleSetCount);
@@ -458,98 +434,99 @@ public:
         continue;
       }
       if (!in.seek(offset)) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
       if (auto rule = ChainedClassSequenceRuleSet::Read(in); rule) {
         r->ruleSets.push_back(*rule);
       } else {
-        return nullptr;
+        return EGLYF_STATUS_PUSH(rule.status());
       }
     }
 
-    return r;
+    out.reset(r.release());
+    return Status::Ok();
   }
 
-  bool write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &) override {
+  Status write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &) override {
     using namespace std;
     auto beginning = make_shared<OffsetWriter>(out);
     if (!out.u16(2)) {
-      return false;
+      return EGLYF_ERROR;
     }
     auto coverageOffset = beginning->o16();
     if (!coverageOffset) {
-      return false;
+      return EGLYF_ERROR;
     }
     auto backtrackClassDefOffset = beginning->o16();
     if (!backtrackClassDefOffset) {
-      return false;
+      return EGLYF_ERROR;
     }
     auto inputClassDefOffset = beginning->o16();
     if (!inputClassDefOffset) {
-      return false;
+      return EGLYF_ERROR;
     }
     auto lookaheadClassDefOffset = beginning->o16();
     if (!lookaheadClassDefOffset) {
-      return false;
+      return EGLYF_ERROR;
     }
     if (!out.sizeU16(ruleSets.size())) {
-      return false;
+      return EGLYF_ERROR;
     }
     vector<OffsetWriter::Handle16> chainedClassSeqRuleSetOffsets;
     for (auto const &ruleSet : ruleSets) {
       auto h = beginning->o16();
       if (!h) {
-        return false;
+        return EGLYF_ERROR;
       }
       chainedClassSeqRuleSetOffsets.push_back(h);
     }
 
-    if (!coverageOffset->mark()) {
-      return false;
+    if (auto st = coverageOffset->mark(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
-    if (!coverage->write(out)) {
-      return false;
-    }
-
-    if (!backtrackClassDefOffset->mark()) {
-      return false;
-    }
-    if (!backtrackClassDef->write(out)) {
-      return false;
+    if (auto st = coverage->write(out); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
 
-    if (!inputClassDefOffset->mark()) {
-      return false;
+    if (auto st = backtrackClassDefOffset->mark(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
-    if (!inputClassDef->write(out)) {
-      return false;
+    if (auto st = backtrackClassDef->write(out); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
 
-    if (!lookaheadClassDefOffset->mark()) {
-      return false;
+    if (auto st = inputClassDefOffset->mark(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
-    if (!lookaheadClassDef->write(out)) {
-      return false;
+    if (auto st = inputClassDef->write(out); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+
+    if (auto st = lookaheadClassDefOffset->mark(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    if (auto st = lookaheadClassDef->write(out); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
 
     for (size_t i = 0; i < ruleSets.size(); i++) {
       auto const &ruleSet = ruleSets[i];
       auto offset = chainedClassSeqRuleSetOffsets[i];
       if (!ruleSet) {
-        if (!offset->null()) {
-          return false;
+        if (auto st = offset->null(); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
         }
         continue;
       }
-      if (!offset->mark()) {
-        return false;
+      if (auto st = offset->mark(); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
-      if (!ruleSet->write(out)) {
-        return false;
+      if (auto st = ruleSet->write(out); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
     }
 
-    return beginning->commit();
+    return EGLYF_STATUS_PUSH(beginning->commit());
   }
 
 public:
@@ -561,185 +538,174 @@ public:
 
 class ChainedContextsSubstitution3 : public Subtable {
 public:
-  static std::shared_ptr<ChainedContextsSubstitution3> Read(InputStream &in) {
+  static Status Read(InputStream &in, std::shared_ptr<Subtable> &out) {
     using namespace std;
-    auto r = make_shared<ChainedContextsSubstitution3>();
+    auto r = make_unique<ChainedContextsSubstitution3>();
 
     uint16_t backtrackGlyphCount;
     if (!in.u16(&backtrackGlyphCount)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     vector<Offset16> backtrackCoverageOffsets;
-    backtrackCoverageOffsets.reserve(backtrackGlyphCount);
-    for (uint16_t i = 0; i < backtrackGlyphCount; i++) {
-      Offset16 v;
-      if (!in.o16(&v)) {
-        return nullptr;
-      }
-      backtrackCoverageOffsets.push_back(v);
+    if (!in.o16a(backtrackCoverageOffsets, backtrackGlyphCount)) {
+      return EGLYF_ERROR;
     }
 
     uint16_t inputGlyphCount;
     if (!in.u16(&inputGlyphCount)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     vector<Offset16> inputCoverageOffsets;
-    inputCoverageOffsets.reserve(inputGlyphCount);
-    for (uint16_t i = 0; i < inputGlyphCount; i++) {
-      Offset16 v;
-      if (!in.o16(&v)) {
-        return nullptr;
-      }
-      inputCoverageOffsets.push_back(v);
+    if (!in.o16a(inputCoverageOffsets, inputGlyphCount)) {
+      return EGLYF_ERROR;
     }
 
     uint16_t lookaheadGlyphCount;
     if (!in.u16(&lookaheadGlyphCount)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     vector<Offset16> lookaheadCoverageOffsets;
-    lookaheadCoverageOffsets.reserve(lookaheadGlyphCount);
-    for (uint16_t i = 0; i < lookaheadGlyphCount; i++) {
-      Offset16 v;
-      if (!in.o16(&v)) {
-        return nullptr;
-      }
-      lookaheadCoverageOffsets.push_back(v);
+    if (!in.o16a(lookaheadCoverageOffsets, lookaheadGlyphCount)) {
+      return EGLYF_ERROR;
     }
 
     uint16_t seqLookupCount;
     if (!in.u16(&seqLookupCount)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     r->seqLookups.reserve(seqLookupCount);
     for (uint16_t i = 0; i < seqLookupCount; i++) {
       if (auto seq = SequenceLookup::Read(in); seq) {
         r->seqLookups.push_back(*seq);
       } else {
-        return nullptr;
+        return EGLYF_STATUS_PUSH(seq.status());
       }
     }
 
     for (Offset16 offset : backtrackCoverageOffsets) {
       if (!in.seek(offset)) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
-      if (auto cov = CoverageReader::Read(in); cov) {
+      shared_ptr<Coverage> cov;
+      if (auto st = CoverageReader::Read(in, cov); st.ok()) {
         r->backtrackCoverage.push_back(cov);
       } else {
-        return nullptr;
+        return EGLYF_STATUS_PUSH(st);
       }
     }
     for (Offset16 offset : inputCoverageOffsets) {
       if (!in.seek(offset)) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
-      if (auto cov = CoverageReader::Read(in); cov) {
+      shared_ptr<Coverage> cov;
+      if (auto st = CoverageReader::Read(in, cov); st.ok()) {
         r->inputCoverage.push_back(cov);
       } else {
-        return nullptr;
+        return EGLYF_STATUS_PUSH(st);
       }
     }
     for (Offset16 offset : lookaheadCoverageOffsets) {
       if (!in.seek(offset)) {
-        return nullptr;
+        return EGLYF_ERROR;
       }
-      if (auto cov = CoverageReader::Read(in); cov) {
+      shared_ptr<Coverage> cov;
+      if (auto st = CoverageReader::Read(in, cov); st.ok()) {
         r->lookaheadCoverage.push_back(cov);
       } else {
-        return nullptr;
+        return EGLYF_STATUS_PUSH(st);
       }
     }
 
-    return r;
+    out.reset(r.release());
+    return Status::Ok();
   }
 
-  bool write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &) override {
+  Status write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &) override {
     using namespace std;
     auto beginning = make_shared<OffsetWriter>(out);
     if (!out.u16(3)) {
-      return false;
+      return EGLYF_ERROR;
     }
 
     if (!out.sizeU16(backtrackCoverage.size())) {
-      return false;
+      return EGLYF_ERROR;
     }
     vector<OffsetWriter::Handle16> backtrackCoverageOffsets;
     for (auto const &it : backtrackCoverage) {
       auto h = beginning->o16();
       if (!h) {
-        return false;
+        return EGLYF_ERROR;
       }
       backtrackCoverageOffsets.push_back(h);
     }
 
     if (!out.sizeU16(inputCoverage.size())) {
-      return false;
+      return EGLYF_ERROR;
     }
     vector<OffsetWriter::Handle16> inputCoverageOffsets;
     for (auto const &it : inputCoverage) {
       auto h = beginning->o16();
       if (!h) {
-        return false;
+        return EGLYF_ERROR;
       }
       inputCoverageOffsets.push_back(h);
     }
 
     if (!out.sizeU16(lookaheadCoverage.size())) {
-      return false;
+      return EGLYF_ERROR;
     }
     vector<OffsetWriter::Handle16> lookaheadCoverageOffsets;
     for (auto const &it : lookaheadCoverage) {
       auto h = beginning->o16();
       if (!h) {
-        return false;
+        return EGLYF_ERROR;
       }
       lookaheadCoverageOffsets.push_back(h);
     }
 
     if (!out.sizeU16(seqLookups.size())) {
-      return false;
+      return EGLYF_ERROR;
     }
     for (auto const &seq : seqLookups) {
-      if (!seq.write(out)) {
-        return false;
+      if (auto st = seq.write(out); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
     }
 
     for (size_t i = 0; i < backtrackCoverage.size(); i++) {
       auto const &cov = backtrackCoverage[i];
       auto handle = backtrackCoverageOffsets[i];
-      if (!handle->mark()) {
-        return false;
+      if (auto st = handle->mark(); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
-      if (!cov->write(out)) {
-        return false;
+      if (auto st = cov->write(out); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
     }
 
     for (size_t i = 0; i < inputCoverage.size(); i++) {
       auto const &cov = inputCoverage[i];
       auto handle = inputCoverageOffsets[i];
-      if (!handle->mark()) {
-        return false;
+      if (auto st = handle->mark(); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
-      if (!cov->write(out)) {
-        return false;
+      if (auto st = cov->write(out); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
     }
 
     for (size_t i = 0; i < lookaheadCoverage.size(); i++) {
       auto const &cov = lookaheadCoverage[i];
       auto handle = lookaheadCoverageOffsets[i];
-      if (!handle->mark()) {
-        return false;
+      if (auto st = handle->mark(); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
-      if (!cov->write(out)) {
-        return false;
+      if (auto st = cov->write(out); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
     }
 
-    return beginning->commit();
+    return EGLYF_STATUS_PUSH(beginning->commit());
   }
 
 public:
@@ -751,21 +717,21 @@ public:
 
 class ChainedContextsSubstitution {
 public:
-  static std::shared_ptr<Subtable> Read(InputStream &in) {
+  static Status Read(InputStream &in, std::shared_ptr<Subtable> &out) {
     using namespace std;
     jassert(in.position() == 0);
     uint16_t format;
     if (!in.u16(&format)) {
-      return nullptr;
+      return EGLYF_ERROR;
     }
     if (format == 1) {
-      return ChainedContextsSubstitution1::Read(in);
+      return EGLYF_STATUS_PUSH(ChainedContextsSubstitution1::Read(in, out));
     } else if (format == 2) {
-      return ChainedContextsSubstitution2::Read(in);
+      return EGLYF_STATUS_PUSH(ChainedContextsSubstitution2::Read(in, out));
     } else if (format == 3) {
-      return ChainedContextsSubstitution3::Read(in);
+      return EGLYF_STATUS_PUSH(ChainedContextsSubstitution3::Read(in, out));
     } else {
-      return nullptr;
+      return EGLYF_ERROR;
     }
   }
 };

@@ -19,7 +19,7 @@ public:
 
     EncodeResult(std::string const &data, uint32_t length, uint32_t checksum) : data(data), length(length), checksum(checksum) {}
   };
-  virtual std::optional<EncodeResult> encode() const = 0;
+  virtual Optional<EncodeResult> encode() const = 0;
 
   static std::optional<uint32_t> Checksum(std::string const &table) {
     if (table.size() % 4 != 0) {
@@ -36,14 +36,15 @@ public:
 
 protected:
   template <class T>
-  std::shared_ptr<T> defaultClone() const {
+  Status defaultClone(std::shared_ptr<T> &out) const {
     using namespace std;
     auto encoded = encode();
     if (!encoded) {
-      return nullptr;
+      return EGLYF_STATUS_PUSH(encoded.status());
     }
     ByteInputStream in(encoded->data);
-    return T::Read(in);
+    auto st = T::Read(in, out);
+    return EGLYF_STATUS_PUSH(st);
   }
 };
 
