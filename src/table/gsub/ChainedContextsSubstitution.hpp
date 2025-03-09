@@ -118,7 +118,7 @@ public:
       if (!in.seek(offset)) {
         return EGLYF_ERROR;
       }
-      OffsetInputStream sub(in);
+      OffsetInputStream sub(&in);
       if (auto ruleSet = ChainedSequenceRuleSet::Read(sub); ruleSet) {
         r->ruleSets.push_back(*ruleSet);
       } else {

@@ -132,7 +132,7 @@ public:
       if (!in.seek(offset)) {
         return EGLYF_ERROR;
       }
-      OffsetInputStream sub(in);
+      OffsetInputStream sub(&in);
       if (auto s = LigatureSet::Read(sub); s) {
         r->ligatureSets.push_back(*s);
       } else {

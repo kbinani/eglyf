@@ -28,7 +28,7 @@ public:
     if (!in.seek(extensionOffset)) {
       return EGLYF_ERROR;
     }
-    OffsetInputStream sub(in);
+    OffsetInputStream sub(&in);
     if (r->extensionLookupType == 1) {
       // Single
       if (auto st = gsub::Single::Read(sub, r->extension); !st.ok()) {

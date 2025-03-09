@@ -67,7 +67,7 @@ public:
       if (!in.seek(scriptOffset)) {
         return EGLYF_NULLOPT;
       }
-      OffsetInputStream sub(in);
+      OffsetInputStream sub(&in);
       Script script;
       script.tag = scriptTag;
       Offset16 defaultLangSysOffset;

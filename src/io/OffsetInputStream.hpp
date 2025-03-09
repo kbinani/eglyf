@@ -4,23 +4,26 @@ namespace eglyf {
 
 class OffsetInputStream : public InputStream {
 public:
-  explicit OffsetInputStream(InputStream &upstream) : upstream(upstream), offset(upstream.position()) {}
+  explicit OffsetInputStream(InputStream *up) : upstream(up), offset(up->position()) {
+  }
 
   size_t read(void *buffer, size_t size) override {
-    return upstream.read(buffer, size);
+    return upstream->read(buffer, size);
   }
 
   bool seek(int64_t loc) override {
-    return upstream.seek(offset + loc);
+    auto ok = upstream->seek(offset + loc);
+    jassert(position() == loc);
+    return ok;
   }
 
   int64_t position() override {
-    return upstream.position() - offset;
+    return upstream->position() - offset;
   }
 
 private:
   int64_t const offset;
-  InputStream &upstream;
+  InputStream * const upstream;
 };
 
 } // namespace eglyf
