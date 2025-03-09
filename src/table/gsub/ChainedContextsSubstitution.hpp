@@ -239,13 +239,8 @@ public:
       if (!in.u16(&backtrackGlyphCount)) {
         return EGLYF_NULLOPT;
       }
-      r.backtrackSequence.reserve(backtrackGlyphCount);
-      for (uint16_t i = 0; i < backtrackGlyphCount; i++) {
-        uint16_t v;
-        if (!in.u16(&v)) {
-          return EGLYF_NULLOPT;
-        }
-        r.backtrackSequence.push_back(v);
+      if (!in.u16a(r.backtrackSequence, backtrackGlyphCount)) {
+        return EGLYF_NULLOPT;
       }
 
       uint16_t inputGlyphCount;
@@ -323,13 +318,20 @@ public:
   struct ChainedClassSequenceRuleSet {
     static Optional<ChainedClassSequenceRuleSet> Read(InputStream &in) {
       using namespace std;
+      jassert(in.position() == 0);
       ChainedClassSequenceRuleSet r;
       uint16_t chainedClassSeqRuleCount;
       if (!in.u16(&chainedClassSeqRuleCount)) {
         return EGLYF_NULLOPT;
       }
-      r.rules.reserve(chainedClassSeqRuleCount);
-      for (uint16_t i = 0; i < chainedClassSeqRuleCount; i++) {
+      vector<Offset16> chainedClassSeqRuleOffsets;
+      if (!in.o16a(chainedClassSeqRuleOffsets, chainedClassSeqRuleCount)) {
+        return EGLYF_NULLOPT;
+      }
+      for (auto offset : chainedClassSeqRuleOffsets) {
+        if (!in.seek(offset)) {
+          return EGLYF_NULLOPT;
+        }
         if (auto v = ChainedClassSequenceRule::Read(in); v) {
           r.rules.push_back(*v);
         } else {
@@ -389,7 +391,7 @@ public:
       return EGLYF_ERROR;
     }
     uint16_t chainedClassSeqRuleSetCount;
-    if (!in.o16(&chainedClassSeqRuleSetCount)) {
+    if (!in.u16(&chainedClassSeqRuleSetCount)) {
       return EGLYF_ERROR;
     }
     vector<Offset16> chainedClassSeqRuleSetOffsets;
@@ -436,7 +438,8 @@ public:
       if (!in.seek(offset)) {
         return EGLYF_ERROR;
       }
-      if (auto rule = ChainedClassSequenceRuleSet::Read(in); rule) {
+      OffsetInputStream sub(&in);
+      if (auto rule = ChainedClassSequenceRuleSet::Read(sub); rule) {
         r->ruleSets.push_back(*rule);
       } else {
         return EGLYF_STATUS_PUSH(rule.status());
