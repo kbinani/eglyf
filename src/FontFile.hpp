@@ -62,7 +62,7 @@ public:
       vector<Offset32> offsets;
       auto encodedGlyf = o.glyf->encode(offsets);
       if (!encodedGlyf) {
-        return EGLYF_ERROR;
+        return EGLYF_STATUS_PUSH(encodedGlyf.status());
       }
       if (offsets.empty()) {
         return EGLYF_ERROR;
@@ -91,7 +91,7 @@ public:
       auto locaTag = FCC("loca");
       auto encodedLoca = loca.encode();
       if (!encodedLoca) {
-        return EGLYF_ERROR;
+        return EGLYF_STATUS_PUSH(encodedLoca.status());
       }
       TableRecord locaRecord;
       locaRecord.tag = locaTag;
@@ -123,13 +123,13 @@ public:
 
       hhea->numberOfHMetrics = numberOfHMetrics;
     } else {
-      return EGLYF_ERROR;
+      return EGLYF_STATUS_PUSH(encoded.status());
     }
 
     for (auto &[tag, table] : all) {
       auto encoded = table->encode();
       if (!encoded) {
-        return EGLYF_ERROR;
+        return EGLYF_STATUS_PUSH(encoded.status());
       }
       TableRecord tr;
       tr.tag = tag;
