@@ -58,6 +58,12 @@ public:
     return Status::Ok();
   }
 
+  size_t size() const override {
+    size_t ret = 2 * sizeof(uint16_t);
+    ret += (3 * sizeof(uint16_t)) * rangeRecords.size();
+    return ret;
+  }
+
 public:
   std::vector<RangeRecord> rangeRecords;
 };

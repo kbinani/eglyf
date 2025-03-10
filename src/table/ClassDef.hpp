@@ -6,6 +6,7 @@ class ClassDef {
 public:
   virtual ~ClassDef() {}
   virtual Status write(OutputStream &out) = 0;
+  virtual size_t size() const = 0;
 };
 
 class ClassDef1 : public ClassDef {
@@ -43,6 +44,10 @@ public:
     } else {
       return EGLYF_ERROR;
     }
+  }
+
+  size_t size() const override {
+    return 2 * sizeof(uint16_t) + sizeof(Offset16) + classValues.size() * sizeof(uint16_t);
   }
 
 public:
@@ -121,6 +126,12 @@ public:
       }
     }
     return Status::Ok();
+  }
+
+  size_t size() const override {
+    size_t ret = sizeof(uint16_t) + sizeof(Offset16);
+    ret += 3 * sizeof(uint16_t) * classRanges.size();
+    return ret;
   }
 
 public:

@@ -51,6 +51,10 @@ public:
       }
       return Status::Ok();
     }
+
+    size_t size() const {
+      return sizeof(uint16_t) * 2 + inputSequence.size() * sizeof(uint16_t) + (2 * sizeof(uint16_t)) * seqLookupRecords.size();
+    }
   };
 
   struct SequenceRuleSet {
@@ -106,6 +110,14 @@ public:
         }
       }
       return EGLYF_STATUS_PUSH(writer->commit());
+    }
+
+    size_t size() const {
+      size_t ret = sizeof(uint16_t) + rules.size() * sizeof(Offset16);
+      for (auto const &rule : rules) {
+        ret += rule.size();
+      }
+      return ret;
     }
   };
 
@@ -179,6 +191,15 @@ public:
     return EGLYF_STATUS_PUSH(writer->commit());
   }
 
+  size_t size() const override {
+    size_t ret = sizeof(uint16_t) + sizeof(Offset16) + sizeof(uint16_t) + ruleSets.size() * sizeof(Offset16);
+    ret += coverage->size();
+    for (auto const &ruleSet : ruleSets) {
+      ret += ruleSet.size();
+    }
+    return ret;
+  }
+
 public:
   std::vector<SequenceRuleSet> ruleSets;
 };
@@ -231,6 +252,10 @@ public:
         }
       }
       return Status::Ok();
+    }
+
+    size_t size() const {
+      return 2 * sizeof(uint16_t) + inputSequence.size() * sizeof(uint16_t) + (2 * sizeof(uint16_t)) * seqLookupRecords.size();
     }
   };
 
@@ -286,6 +311,14 @@ public:
         }
       }
       return EGLYF_STATUS_PUSH(writer->commit());
+    }
+
+    size_t size() const {
+      size_t ret = sizeof(uint16_t) + rules.size() * sizeof(Offset16);
+      for (auto const &rule : rules) {
+        ret += rule.size();
+      }
+      return ret;
     }
   };
 
@@ -405,6 +438,18 @@ public:
     return EGLYF_STATUS_PUSH(writer->commit());
   }
 
+  size_t size() const override {
+    size_t ret = sizeof(uint16_t) + 2 * sizeof(Offset16) + sizeof(uint16_t) + ruleSets.size() * sizeof(Offset16);
+    ret += coverage->size();
+    ret += classDef->size();
+    for (auto const &ruleSet : ruleSets) {
+      if (ruleSet) {
+        ret += ruleSet->size();
+      }
+    }
+    return ret;
+  }
+
 public:
   std::shared_ptr<ClassDef> classDef;
   std::vector<std::optional<ClassSeqRuleSet>> ruleSets;
@@ -485,6 +530,15 @@ public:
       }
     }
     return EGLYF_STATUS_PUSH(writer->commit());
+  }
+
+  size_t size() const override {
+    size_t ret = 3 * sizeof(uint16_t) + coverages.size() * sizeof(Offset16);
+    for (auto const &cov : coverages) {
+      ret += cov->size();
+    }
+    ret += (2 * sizeof(uint16_t)) * seqLookupRecords.size();
+    return ret;
   }
 
 public:

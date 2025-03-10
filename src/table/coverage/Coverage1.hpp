@@ -32,6 +32,10 @@ public:
     return Status::Ok();
   }
 
+  size_t size() const override {
+    return (2 + glyphArray.size()) * sizeof(uint16_t);
+  }
+
 public:
   std::vector<uint16_t> glyphArray;
 };

@@ -35,6 +35,10 @@ public:
         return EGLYF_ERROR;
       }
     }
+
+    size_t size() const {
+      return sizeof(uint16_t) * (1 + substituteGlyphIDs.size());
+    }
   };
 
 public:
@@ -124,6 +128,15 @@ public:
       return EGLYF_STATUS_PUSH(st);
     }
     return EGLYF_STATUS_PUSH(beginning->commit());
+  }
+
+  size_t size() const override {
+    size_t ret = 2 * sizeof(uint16_t) + (1 + sequences.size()) * sizeof(Offset16);
+    ret += coverage->size();
+    for (auto const &seq : sequences) {
+      ret += seq.size();
+    }
+    return ret;
   }
 
 public:

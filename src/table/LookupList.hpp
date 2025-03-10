@@ -123,6 +123,9 @@ public:
         return EGLYF_ERROR;
       }
     }
+    ranges::sort(handles, [](pair<shared_ptr<Subtable>, vector<OffsetWriter::Handle16>> const &a, pair<shared_ptr<Subtable>, vector<OffsetWriter::Handle16>> const &b) {
+      return a.first->size() < b.first->size();
+    });
 
     map<shared_ptr<Subtable>, pair<shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> extensions;
     for (auto const &[table, handleList] : handles) {
@@ -131,9 +134,11 @@ public:
           return EGLYF_STATUS_PUSH(st);
         }
       }
+      auto pos = out.position();
       if (auto st = table->write(out, extensions); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
+      jassert(pos + table->size() == out.position());
     }
 
     for (auto [table, p] : extensions) {
@@ -142,9 +147,11 @@ public:
         return EGLYF_STATUS_PUSH(st);
       }
       map<shared_ptr<Subtable>, pair<shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> ex;
+      auto pos = out.position();
       if (auto st = table->write(out, ex); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
+      jassert(pos + table->size() == out.position());
       if (!ex.empty()) {
         return EGLYF_ERROR;
       }
