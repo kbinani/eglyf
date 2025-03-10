@@ -13,8 +13,12 @@ if (MSVC)
     /we4828
     /wd4100 # Suppress "unreferenced formal parameter" warnings
   )
-elseif (APPLE)
-  add_compile_options(-Wno-shorten-64-to-32)
+  add_compile_options(/d1trimfile:${CMAKE_SOURCE_DIR}/)
+else()
+  add_compile_options(
+    -Wno-shorten-64-to-32
+    -ffile-prefix-map=${CMAKE_SOURCE_DIR}/=
+  )
 endif()
 
 add_subdirectory(deps/JUCE)
