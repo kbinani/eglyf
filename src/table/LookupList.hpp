@@ -7,6 +7,7 @@ public:
   struct Lookup {
     uint16_t lookupType;
     uint16_t lookupFlag;
+    Offset16 lookupOffset;
     std::vector<Offset16> subtableOffsets;
     uint16_t markFilteringSet;
   };
@@ -26,6 +27,7 @@ public:
     }
     for (uint16_t lookupOffset : lookupOffsets) {
       Lookup l;
+      l.lookupOffset = lookupOffset;
       if (!in.seek(lookupOffset)) {
         return EGLYF_NULLOPT;
       }
@@ -41,9 +43,6 @@ public:
       }
       if (!in.o16a(l.subtableOffsets, subTableCount)) {
         return EGLYF_NULLOPT;
-      }
-      for (size_t i = 0; i < l.subtableOffsets.size(); i++) {
-        l.subtableOffsets[i] += lookupOffset;
       }
       if (!in.u16(&l.markFilteringSet)) {
         return EGLYF_NULLOPT;
