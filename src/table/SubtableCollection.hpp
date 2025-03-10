@@ -19,7 +19,7 @@ public:
 
   struct Feature {
     Tag tag;
-    std::optional<Offset16> featureParamsOffset;
+    std::optional<std::string> featureParams;
     std::vector<std::shared_ptr<Lookup>> lookups;
   };
 
@@ -115,7 +115,8 @@ public:
       }
     }
 
-    for (auto const &it : lookupList.lookupTable) {
+    for (size_t i = 0; i < lookupList.lookupTable.size(); i++) {
+      auto const &it = lookupList.lookupTable[i];
       auto l = make_shared<Lookup>();
       l->lookupType = it.lookupType;
       l->lookupFlag = it.lookupFlag;
@@ -138,7 +139,7 @@ public:
     for (auto const &f : featureList.featureTable) {
       auto v = make_shared<Feature>();
       v->tag = f.tag;
-      v->featureParamsOffset = f.featureParamsOffset;
+      v->featureParams = f.featureParams;
       for (uint16_t index : f.lookupListIndices) {
         if (index >= lookups.size()) {
           return EGLYF_ERROR;
@@ -250,7 +251,7 @@ public:
     for (auto const &feature : features) {
       FeatureList::Feature f;
       f.tag = feature->tag;
-      f.featureParamsOffset = feature->featureParamsOffset;
+      f.featureParams = feature->featureParams;
       for (auto const &lookup : feature->lookups) {
         auto found = ranges::find(lookups, lookup);
         if (found == lookups.end()) {

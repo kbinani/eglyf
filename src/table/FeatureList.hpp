@@ -6,7 +6,7 @@ class FeatureList {
 public:
   struct Feature {
     Tag tag;
-    std::optional<Offset16> featureParamsOffset;
+    std::optional<std::string> featureParams;
     std::vector<uint16_t> lookupListIndices;
   };
 
@@ -45,11 +45,31 @@ public:
       }
       Feature f;
       f.tag = tag;
-      if (featureParamsOffset != 0) {
-        f.featureParamsOffset = featureParamsOffset;
-      }
       if (!in.u16a(f.lookupListIndices, lookupIndexCount)) {
         return EGLYF_NULLOPT;
+      }
+      if (featureParamsOffset != 0) {
+        auto pos = in.position();
+        if (!in.seek(featureOffset + featureParamsOffset)) {
+          return EGLYF_NULLOPT;
+        }
+        string data;
+        if (FCC("cv01") <= tag && tag <= FCC("cv99")) {
+          data.resize(17);
+        } else if (FCC("size") == tag) {
+          data.resize(10);
+        } else if (FCC("ss01") <= tag && tag <= FCC("ss20")) {
+          data.resize(4);
+        } else {
+          return EGLYF_NULLOPT_WHAT("Unexpected feature params offset");
+        }
+        if (!in.read(data.data(), data.size())) {
+          return EGLYF_NULLOPT;
+        }
+        if (!in.seek(pos)) {
+          return EGLYF_NULLOPT;
+        }
+        f.featureParams = data;
       }
       featureList.featureTable.push_back(f);
     }
@@ -73,16 +93,20 @@ public:
       }
       featureOffsets.push_back(handle);
     }
+    vector<tuple<string, shared_ptr<OffsetWriter>, OffsetWriter::Handle16>> featureParamsOffsets;
     for (size_t i = 0; i < featureTable.size(); i++) {
       auto const &feature = featureTable[i];
       auto handle = featureOffsets[i];
       if (auto st = handle->mark(); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
-      if (feature.featureParamsOffset) {
-        if (!out.o16(*feature.featureParamsOffset)) {
+      auto writer = make_shared<OffsetWriter>(out);
+      if (feature.featureParams) {
+        auto offset = writer->o16();
+        if (!offset) {
           return EGLYF_ERROR;
         }
+        featureParamsOffsets.push_back(make_tuple(*feature.featureParams, writer, offset));
       } else {
         if (!out.o16(0)) {
           return EGLYF_ERROR;
@@ -93,6 +117,17 @@ public:
       }
       if (!out.u16a(feature.lookupListIndices)) {
         return EGLYF_ERROR;
+      }
+    }
+    for (auto &[data, writer, offset] : featureParamsOffsets) {
+      if (auto st = offset->mark(); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+      if (!out.write(data.data(), data.size())) {
+        return EGLYF_ERROR;
+      }
+      if (auto st = writer->commit(); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
     }
     return EGLYF_STATUS_PUSH(featureTableBeginning->commit());

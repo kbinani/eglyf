@@ -5,9 +5,10 @@ namespace eglyf {
 class Nullopt final {
 public:
   std::vector<Status::Where> fTrace;
+  std::string fWhat;
 
-  Nullopt(char const *file, int line) : fTrace({Status::Where(file, line)}) {}
-  explicit Nullopt(std::vector<Status::Where> const &trace) : fTrace(trace) {}
+  Nullopt(char const *file, int line, char const *what) : fTrace({Status::Where(file, line)}), fWhat(what) {}
+  Nullopt(std::vector<Status::Where> const &trace, std::string const &what) : fTrace(trace), fWhat(what) {}
 
   Nullopt pushed(char const *file, int line) {
     Nullopt r = *this;
@@ -23,7 +24,7 @@ public:
 
   Optional() : fStorage(Status::Where(__FILE__, __LINE__)) {}
 
-  explicit Optional(std::vector<Status::Where> trace, std::string what) : fStorage(Status(Status::ErrorData(trace, what))) {
+  Optional(std::vector<Status::Where> trace, std::string what) : fStorage(Status(Status::ErrorData(trace, what))) {
   }
 
   Optional(Nullopt null) : fStorage(Status(Status::ErrorData(null.fTrace))) {}
@@ -57,11 +58,10 @@ private:
 template <>
 Optional<Status>::Optional(Status v) = delete;
 
-Optional<int> f = Optional<int>({Status::Where("", 1)}, "");
-
 } // namespace eglyf
 
-#define _EGLYF_NULLOPT_HELPER(file, line) eglyf::Nullopt(file, line)
-#define EGLYF_NULLOPT _EGLYF_NULLOPT_HELPER(__FILE__, __LINE__)
+#define _EGLYF_NULLOPT_HELPER(file, line, what) eglyf::Nullopt(file, line, what)
+#define EGLYF_NULLOPT _EGLYF_NULLOPT_HELPER(__FILE__, __LINE__, "")
+#define EGLYF_NULLOPT_WHAT(what) _EGLYF_NULLOPT_HELPER(__FILE__, __LINE__, (what))
 
-#define EGLYF_NULLOPT_PUSH(st) (st.error() ? eglyf::Nullopt(st.error()->pushed(__FILE__, __LINE__).fTrace) : _EGLYF_NULLOPT_HELPER(__FILE__, __LINE__))
+#define EGLYF_NULLOPT_PUSH(st) (st.error() ? eglyf::Nullopt(st.error()->pushed(__FILE__, __LINE__).fTrace, st.error()->fWhat) : _EGLYF_NULLOPT_HELPER(__FILE__, __LINE__, ""))
