@@ -115,6 +115,7 @@ public:
       }
     }
 
+    map<int64_t, shared_ptr<gsub::Subtable>> subtables;
     for (size_t i = 0; i < lookupList.lookupTable.size(); i++) {
       auto const &it = lookupList.lookupTable[i];
       auto l = make_shared<Lookup>();
@@ -122,15 +123,23 @@ public:
       l->lookupFlag = it.lookupFlag;
       l->markFilteringSet = it.markFilteringSet;
       for (auto offset : it.subtableOffsets) {
-        if (!in.seek(lookupListOffset + offset)) {
-          return EGLYF_ERROR;
-        }
-        OffsetInputStream sub(&in);
-        shared_ptr<gsub::Subtable> table;
-        if (auto st = readSubtable(sub, it.lookupType, table); st.ok()) {
-          l->subtables.push_back(table);
+        int64_t pos = lookupListOffset;
+        pos += it.lookupOffset;
+        pos += offset;
+        if (auto found = subtables.find(pos); found == subtables.end()) {
+          if (!in.seek(pos)) {
+            return EGLYF_ERROR;
+          }
+          OffsetInputStream sub(&in);
+          shared_ptr<gsub::Subtable> table;
+          if (auto st = readSubtable(sub, it.lookupType, table); st.ok()) {
+            l->subtables.push_back(table);
+          } else {
+            return EGLYF_STATUS_PUSH(st);
+          }
+          subtables[pos] = table;
         } else {
-          return EGLYF_STATUS_PUSH(st);
+          l->subtables.push_back(found->second);
         }
       }
       lookups.push_back(l);

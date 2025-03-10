@@ -68,7 +68,7 @@ public:
       }
     }
 
-    map<shared_ptr<Subtable>, vector<OffsetWriter::Handle16>> handles;
+    vector<pair<shared_ptr<Subtable>, vector<OffsetWriter::Handle16>>> handles;
     vector<shared_ptr<OffsetWriter>> writers;
 
     auto lookupListBeginning = make_shared<OffsetWriter>(out);
@@ -110,7 +110,14 @@ public:
         if (!h) {
           return EGLYF_ERROR;
         }
-        handles[table].push_back(h);
+        auto found = ranges::find_if(handles, [&table](auto const &it) { return it.first == table; });
+        if (found == handles.end()) {
+          vector<OffsetWriter::Handle16> hs;
+          hs.push_back(h);
+          handles.push_back(make_pair(table, hs));
+        } else {
+          found->second.push_back(h);
+        }
       }
       if (!out.u16(lookup.markFilteringSet)) {
         return EGLYF_ERROR;
