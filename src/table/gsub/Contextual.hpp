@@ -154,7 +154,8 @@ public:
         return EGLYF_STATUS_PUSH(ruleSet.status());
       }
     }
-    return EGLYF_ERROR;
+    out.reset(ret.release());
+    return Status::Ok();
   }
 
   Status write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) override {
@@ -177,6 +178,12 @@ public:
         return EGLYF_ERROR;
       }
       seqRuleSetOffsets.push_back(offset);
+    }
+    if (auto st = coverageOffset->mark(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    if (auto st = coverage->write(out); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
     for (size_t i = 0; i < ruleSets.size(); i++) {
       auto const &ruleSet = ruleSets[i];
