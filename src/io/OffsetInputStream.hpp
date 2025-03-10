@@ -23,7 +23,7 @@ public:
 
 private:
   int64_t const offset;
-  InputStream * const upstream;
+  InputStream *const upstream;
 };
 
 } // namespace eglyf

@@ -67,6 +67,7 @@ list(APPEND src_files
   src/status.hpp
   src/errno.hpp
   src/optional.hpp
+  src/table/gsub/Contextual.hpp
 )
 
 juce_add_console_app(eglyf)

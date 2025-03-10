@@ -15,8 +15,7 @@ public:
     } else if (lookupType == 4) {
       return EGLYF_STATUS_PUSH(gsub::Ligature::Read(in, out));
     } else if (lookupType == 5) {
-      // Contextual substitution
-      return EGLYF_ERROR;
+      return EGLYF_STATUS_PUSH(gsub::ContextualReader::Read(in, out));
     } else if (lookupType == 6) {
       return EGLYF_STATUS_PUSH(gsub::ChainedContextsSubstitution::Read(in, out));
     } else if (lookupType == 7) {

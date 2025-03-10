@@ -51,7 +51,9 @@ public:
       }
     } else if (r->extensionLookupType == 5) {
       // Contextual substitution
-      return EGLYF_ERROR;
+      if (auto st = gsub::ContextualReader::Read(sub, r->extension); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
     } else if (r->extensionLookupType == 6) {
       // Chained contexts substitution
       if (auto st = ChainedContextsSubstitution::Read(sub, r->extension); !st.ok()) {

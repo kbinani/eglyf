@@ -48,6 +48,7 @@
 #include "table/gsub/Ligature.hpp"
 #include "table/gsub/Multiple.hpp"
 #include "table/gsub/SequenceLookup.hpp"
+#include "table/gsub/Contextual.hpp"
 #include "table/gsub/ChainedContextsSubstitution.hpp"
 #include "table/gsub/Alternate.hpp"
 #include "table/gsub/SubstitutionExtension.hpp"
