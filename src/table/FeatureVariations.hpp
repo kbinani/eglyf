@@ -29,6 +29,23 @@ public:
       }
       return ret;
     }
+
+    Status write(OutputStream &out) const {
+      if (!out.u16(1)) {
+        return EGLYF_ERROR;
+      }
+      if (!out.u16(axisIndex)) {
+        return EGLYF_ERROR;
+      }
+      if (!out.f2dot14(filterRangeMinValue)) {
+        return EGLYF_ERROR;
+      }
+      if (out.f2dot14(filterRangeMaxValue)) {
+        return Status::Ok();
+      } else {
+        return EGLYF_ERROR;
+      }
+    }
   };
 
   struct ConditionSet {
@@ -55,6 +72,33 @@ public:
         }
       }
       return ret;
+    }
+
+    Status write(OutputStream &out) const {
+      using namespace std;
+      auto writer = make_shared<OffsetWriter>(out);
+      if (!out.sizeU16(conditions.size())) {
+        return EGLYF_ERROR;
+      }
+      vector<OffsetWriter::Handle32> conditionOffsets;
+      for (size_t i = 0; i < conditions.size(); i++) {
+        auto offset = writer->o32();
+        if (!offset) {
+          return EGLYF_ERROR;
+        }
+        conditionOffsets.push_back(offset);
+      }
+      for (size_t i = 0; i < conditions.size(); i++) {
+        auto const &condition = conditions[i];
+        auto offset = conditionOffsets[i];
+        if (auto st = offset->mark(); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
+        if (auto st = condition.write(out); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
+      }
+      return EGLYF_STATUS_PUSH(writer->commit());
     }
 
     std::vector<Condition> conditions;

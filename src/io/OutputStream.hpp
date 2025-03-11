@@ -50,12 +50,20 @@ public:
     return i16(v.data);
   }
 
+  bool sizeU32(size_t v) {
+    if ((size_t)std::numeric_limits<uint32_t>::max() < v) {
+      return false;
+    }
+    uint32_t u = (uint32_t)v;
+    return u32(u);
+  }
+
   bool sizeU16(size_t v) {
     if ((size_t)std::numeric_limits<uint16_t>::max() < v) {
       return false;
     }
     uint16_t u = (uint16_t)v;
-    return u16(v);
+    return u16(u);
   }
 
   bool u16a(std::vector<uint16_t> const &a) {

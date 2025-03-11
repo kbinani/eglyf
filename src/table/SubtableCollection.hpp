@@ -41,7 +41,7 @@ public:
 
   struct FeatureVariationRecord {
     eglyf::FeatureVariations::ConditionSet conditionSet;
-    FeatureTableSubstitution featureTableSubstitution;
+    std::vector<FeatureTableSubstitution> substitutions;
   };
 
   struct FeatureVariations {
@@ -205,7 +205,7 @@ public:
             v->lookups.push_back(lookups[index]);
           }
           substitution.alternateFeature = v;
-          record.featureTableSubstitution = substitution;
+          record.substitutions.push_back(substitution);
         }
         featureVariations.featureVariationRecords.push_back(record);
       }
@@ -413,6 +413,124 @@ public:
     }
     if (auto st = lookupList.write<gsub::Subtable>(out, subtables); !st.ok()) {
       return EGLYF_NULLOPT_PUSH(st);
+    }
+
+    // Write feature variations
+    if (featureVariationOffset) {
+      if (auto st = featureVariationOffset->mark(); !st.ok()) {
+        return EGLYF_NULLOPT_PUSH(st);
+      }
+      auto writer = make_shared<OffsetWriter>(out);
+      // majorVersion
+      if (!out.u16(1)) {
+        return EGLYF_NULLOPT;
+      }
+      // minorVersion
+      if (!out.u16(0)) {
+        return EGLYF_NULLOPT;
+      }
+      if (!out.sizeU32(featureVariations->featureVariationRecords.size())) {
+        return EGLYF_NULLOPT;
+      }
+      vector<tuple<FeatureVariationRecord, OffsetWriter::Handle32, OffsetWriter::Handle32>> handles;
+      for (auto const &rawRecord : featureVariations->featureVariationRecords) {
+        auto conditionSetOffset = writer->o32();
+        if (!conditionSetOffset) {
+          return EGLYF_NULLOPT;
+        }
+        auto featureTableSubstitutionOffset = writer->o32();
+        if (!featureTableSubstitutionOffset) {
+          return EGLYF_NULLOPT;
+        }
+        handles.push_back(make_tuple(rawRecord, conditionSetOffset, featureTableSubstitutionOffset));
+      }
+      for (auto const &[rawRecord, conditionSetOffset, featureTableSubstitutionOffset] : handles) {
+        if (auto st = conditionSetOffset->mark(); !st.ok()) {
+          return EGLYF_NULLOPT_PUSH(st);
+        }
+        if (auto st = rawRecord.conditionSet.write(out); !st.ok()) {
+          return EGLYF_NULLOPT_PUSH(st);
+        }
+        if (auto st = featureTableSubstitutionOffset->mark(); !st.ok()) {
+          return EGLYF_NULLOPT_PUSH(st);
+        }
+        auto w = make_shared<OffsetWriter>(out);
+        if (!out.u16(1)) {
+          return EGLYF_NULLOPT;
+        }
+        if (!out.u16(0)) {
+          return EGLYF_NULLOPT;
+        }
+        if (!out.sizeU16(rawRecord.substitutions.size())) {
+          return EGLYF_NULLOPT;
+        }
+        vector<OffsetWriter::Handle32> alternateFeatureOffsets;
+        for (auto const &substitution : rawRecord.substitutions) {
+          auto found = ranges::find_if(features, [&](auto const &it) { return it == substitution.feature; });
+          if (found == features.end()) {
+            return EGLYF_NULLOPT;
+          }
+          auto index = distance(features.begin(), found);
+          if (!out.sizeU16(index)) {
+            return EGLYF_NULLOPT;
+          }
+          auto alternateFeatureOffset = w->o32();
+          if (!alternateFeatureOffset) {
+            return EGLYF_NULLOPT;
+          }
+          alternateFeatureOffsets.push_back(alternateFeatureOffset);
+        }
+        vector<tuple<string, OffsetWriter::Handle16, shared_ptr<OffsetWriter>>> featureParamsWriters;
+        for (size_t i = 0; i < rawRecord.substitutions.size(); i++) {
+          auto const &substitution = rawRecord.substitutions[i];
+          auto offset = alternateFeatureOffsets[i];
+          if (auto st = offset->mark(); !st.ok()) {
+            return EGLYF_NULLOPT_PUSH(st);
+          }
+          auto w2 = make_shared<OffsetWriter>(out);
+          if (substitution.alternateFeature->featureParams) {
+            auto featureParamsOffset = w2->o16();
+            if (!featureParamsOffset) {
+              return EGLYF_NULLOPT;
+            }
+            featureParamsWriters.push_back(make_tuple(*substitution.alternateFeature->featureParams, featureParamsOffset, w2));
+          } else {
+            if (!out.o16(0)) {
+              return EGLYF_NULLOPT;
+            }
+          }
+          if (!out.sizeU16(substitution.alternateFeature->lookups.size())) {
+            return EGLYF_NULLOPT;
+          }
+          for (auto const &lookup : substitution.alternateFeature->lookups) {
+            auto found = ranges::find_if(lookups, [&](auto const &it) { return it == lookup; });
+            if (found == lookups.end()) {
+              return EGLYF_NULLOPT;
+            }
+            auto index = distance(lookups.begin(), found);
+            if (!out.sizeU16(index)) {
+              return EGLYF_NULLOPT;
+            }
+          }
+        }
+        if (auto st = w->commit(); !st.ok()) {
+          return EGLYF_NULLOPT_PUSH(st);
+        }
+        for (auto const &[featureParams, featureParamsOffset, w2] : featureParamsWriters) {
+          if (auto st = featureParamsOffset->mark(); !st.ok()) {
+            return EGLYF_NULLOPT_PUSH(st);
+          }
+          if (!out.write(featureParams.data(), featureParams.size())) {
+            return EGLYF_NULLOPT;
+          }
+          if (auto st = w2->commit(); !st.ok()) {
+            return EGLYF_NULLOPT_PUSH(st);
+          }
+        }
+      }
+      if (auto st = writer->commit(); !st.ok()) {
+        return EGLYF_NULLOPT_PUSH(st);
+      }
     }
 
     if (auto st = gsubHeader->commit(); !st.ok()) {

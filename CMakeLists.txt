@@ -24,7 +24,6 @@ endif()
 add_subdirectory(deps/JUCE)
 
 list(APPEND src_files
-  src/main.cpp
   src/defer.hpp
   src/Type.hpp
   src/Tag.hpp
@@ -76,7 +75,7 @@ list(APPEND src_files
 )
 
 juce_add_console_app(eglyf)
-target_sources(eglyf PRIVATE ${src_files})
+target_sources(eglyf PRIVATE ${src_files} src/main.cpp)
 target_include_directories(eglyf PRIVATE src include)
 target_link_libraries(eglyf
   PRIVATE
@@ -94,7 +93,7 @@ if (MSVC)
 endif()
 
 juce_add_console_app(resave)
-target_sources(resave PRIVATE test/resave.cpp)
+target_sources(resave PRIVATE ${src_files} test/resave.cpp)
 target_include_directories(resave PRIVATE src include)
 target_link_libraries(resave
   PRIVATE
