@@ -60,8 +60,8 @@ Optional<Status>::Optional(Status v) = delete;
 
 } // namespace eglyf
 
-#define _EGLYF_NULLOPT_HELPER(file, line, what) eglyf::Nullopt(file, line, what)
+#define _EGLYF_NULLOPT_HELPER(file, line, what) eglyf::Nullopt((file), (line), (what))
 #define EGLYF_NULLOPT _EGLYF_NULLOPT_HELPER(__FILE__, __LINE__, "")
 #define EGLYF_NULLOPT_WHAT(what) _EGLYF_NULLOPT_HELPER(__FILE__, __LINE__, (what))
 
-#define EGLYF_NULLOPT_PUSH(st) (st.error() ? eglyf::Nullopt(st.error()->pushed(__FILE__, __LINE__).fTrace, st.error()->fWhat) : _EGLYF_NULLOPT_HELPER(__FILE__, __LINE__, ""))
+#define EGLYF_NULLOPT_PUSH(st) ((st).error() ? eglyf::Nullopt((st).error()->pushed(__FILE__, __LINE__).fTrace, (st).error()->fWhat) : _EGLYF_NULLOPT_HELPER(__FILE__, __LINE__, ""))

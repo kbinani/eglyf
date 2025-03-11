@@ -34,6 +34,20 @@ public:
     std::vector<std::pair<Tag, std::shared_ptr<LangSys>>> langSysTable;
   };
 
+  struct FeatureTableSubstitution {
+    std::shared_ptr<Feature> feature;
+    std::shared_ptr<Feature> alternateFeature;
+  };
+
+  struct FeatureVariationRecord {
+    eglyf::FeatureVariations::ConditionSet conditionSet;
+    FeatureTableSubstitution featureTableSubstitution;
+  };
+
+  struct FeatureVariations {
+    std::vector<FeatureVariationRecord> featureVariationRecords;
+  };
+
 public:
   virtual ~SubtableCollection() {}
 
@@ -65,14 +79,10 @@ public:
     if (!in.o16(&lookupListOffset)) {
       return EGLYF_ERROR;
     }
+    Offset32 featureVariationsOffset = 0;
     if (minorVersion == 1) {
-      Offset32 v;
-      if (!in.o32(&v)) {
+      if (!in.o32(&featureVariationsOffset)) {
         return EGLYF_ERROR;
-      }
-      if (v > 0) {
-        featureVariationsOffset = v;
-        return EGLYF_ERROR_WHAT("Unimplemented feature: Non-zero featureVariationOffset in GSUB/GPOS");
       }
     }
 
@@ -158,6 +168,50 @@ public:
       features.push_back(v);
     }
 
+    if (featureVariationsOffset) {
+      FeatureVariations featureVariations;
+      if (!in.seek(featureVariationsOffset)) {
+        return EGLYF_ERROR;
+      }
+      OffsetInputStream sub(&in);
+      auto raw = ::eglyf::FeatureVariations::Read(sub);
+      if (!raw) {
+        return EGLYF_STATUS_PUSH(raw.status());
+      }
+      for (auto const &rawRecord : raw->featureVariationRecords) {
+        FeatureVariationRecord record;
+        record.conditionSet = rawRecord.conditionSet;
+        for (auto const &rawSubstitution : rawRecord.featureTableSubstitution.substitutions) {
+          FeatureTableSubstitution substitution;
+          if (rawSubstitution.featureIndex >= features.size()) {
+            return EGLYF_ERROR;
+          }
+          substitution.feature = features[rawSubstitution.featureIndex];
+          if (!sub.seek(rawRecord.featureTableSubstitution.featureTableSubstitutionOffset + rawSubstitution.alternateFeatureOffset)) {
+            return EGLYF_ERROR;
+          }
+          OffsetInputStream sub2(&sub);
+          auto f = FeatureList::Feature::Read(sub2, substitution.feature->tag);
+          if (!f) {
+            return EGLYF_STATUS_PUSH(f.status());
+          }
+          auto v = make_shared<Feature>();
+          v->tag = f->tag;
+          v->featureParams = f->featureParams;
+          for (uint16_t index : f->lookupListIndices) {
+            if (index >= lookups.size()) {
+              return EGLYF_ERROR;
+            }
+            v->lookups.push_back(lookups[index]);
+          }
+          substitution.alternateFeature = v;
+          record.featureTableSubstitution = substitution;
+        }
+        featureVariations.featureVariationRecords.push_back(record);
+      }
+      this->featureVariations = featureVariations;
+    }
+
     map<shared_ptr<ScriptList::LangSys>, shared_ptr<LangSys>> convertedLangSysList;
     auto convertLangSys = [&](ScriptList::LangSys const &from) -> shared_ptr<LangSys> {
       auto converted = make_shared<LangSys>();
@@ -233,11 +287,19 @@ public:
     if (!lookupListOffsetHandle) {
       return EGLYF_NULLOPT;
     }
+    OffsetWriter::Handle32 featureVariationOffset;
     if (minorVersion == 0) {
       // nop
     } else if (minorVersion == 1) {
-      if (!out.o32(featureVariationsOffset ? *featureVariationsOffset : 0)) {
-        return EGLYF_NULLOPT;
+      if (featureVariations) {
+        featureVariationOffset = gsubHeader->o32();
+        if (!featureVariationOffset) {
+          return EGLYF_NULLOPT;
+        }
+      } else {
+        if (!out.o32(0)) {
+          return EGLYF_NULLOPT;
+        }
       }
     } else {
       return EGLYF_NULLOPT;
@@ -362,7 +424,7 @@ public:
 public:
   uint16_t majorVersion;
   uint16_t minorVersion;
-  std::optional<Offset32> featureVariationsOffset;
+  std::optional<FeatureVariations> featureVariations;
 
   std::vector<Script> scripts;
   std::vector<std::shared_ptr<Feature>> features;

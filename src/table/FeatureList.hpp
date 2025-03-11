@@ -8,6 +8,48 @@ public:
     Tag tag;
     std::optional<std::string> featureParams;
     std::vector<uint16_t> lookupListIndices;
+
+    static Optional<Feature> Read(InputStream &in, Tag tag) {
+      using namespace std;
+      jassert(in.position() == 0);
+      Offset16 featureParamsOffset;
+      if (!in.o16(&featureParamsOffset)) {
+        return EGLYF_NULLOPT;
+      }
+      uint16_t lookupIndexCount;
+      if (!in.u16(&lookupIndexCount)) {
+        return EGLYF_NULLOPT;
+      }
+      Feature f;
+      f.tag = tag;
+      if (!in.u16a(f.lookupListIndices, lookupIndexCount)) {
+        return EGLYF_NULLOPT;
+      }
+      if (featureParamsOffset != 0) {
+        auto pos = in.position();
+        if (!in.seek(featureParamsOffset)) {
+          return EGLYF_NULLOPT;
+        }
+        string data;
+        if (FCC("cv01") <= tag && tag <= FCC("cv99")) {
+          data.resize(17);
+        } else if (FCC("size") == tag) {
+          data.resize(10);
+        } else if (FCC("ss01") <= tag && tag <= FCC("ss20")) {
+          data.resize(4);
+        } else {
+          return EGLYF_NULLOPT_WHAT("Unexpected feature params offset");
+        }
+        if (!in.read(data.data(), data.size())) {
+          return EGLYF_NULLOPT;
+        }
+        if (!in.seek(pos)) {
+          return EGLYF_NULLOPT;
+        }
+        f.featureParams = data;
+      }
+      return f;
+    }
   };
 
 public:
@@ -35,43 +77,12 @@ public:
       if (!in.seek(featureOffset)) {
         return EGLYF_NULLOPT;
       }
-      Offset16 featureParamsOffset;
-      if (!in.o16(&featureParamsOffset)) {
-        return EGLYF_NULLOPT;
+      OffsetInputStream sub(&in);
+      if (auto feature = Feature::Read(sub, tag); feature) {
+        featureList.featureTable.push_back(*feature);
+      } else {
+        return EGLYF_NULLOPT_PUSH(feature.status());
       }
-      uint16_t lookupIndexCount;
-      if (!in.u16(&lookupIndexCount)) {
-        return EGLYF_NULLOPT;
-      }
-      Feature f;
-      f.tag = tag;
-      if (!in.u16a(f.lookupListIndices, lookupIndexCount)) {
-        return EGLYF_NULLOPT;
-      }
-      if (featureParamsOffset != 0) {
-        auto pos = in.position();
-        if (!in.seek(featureOffset + featureParamsOffset)) {
-          return EGLYF_NULLOPT;
-        }
-        string data;
-        if (FCC("cv01") <= tag && tag <= FCC("cv99")) {
-          data.resize(17);
-        } else if (FCC("size") == tag) {
-          data.resize(10);
-        } else if (FCC("ss01") <= tag && tag <= FCC("ss20")) {
-          data.resize(4);
-        } else {
-          return EGLYF_NULLOPT_WHAT("Unexpected feature params offset");
-        }
-        if (!in.read(data.data(), data.size())) {
-          return EGLYF_NULLOPT;
-        }
-        if (!in.seek(pos)) {
-          return EGLYF_NULLOPT;
-        }
-        f.featureParams = data;
-      }
-      featureList.featureTable.push_back(f);
     }
     return featureList;
   }

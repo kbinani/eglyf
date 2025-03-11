@@ -38,6 +38,7 @@
 #include "table/ScriptList.hpp"
 #include "table/FeatureList.hpp"
 #include "table/LookupList.hpp"
+#include "table/FeatureVariations.hpp"
 #include "table/coverage/Coverage.hpp"
 #include "table/coverage/Coverage1.hpp"
 #include "table/coverage/Coverage2.hpp"

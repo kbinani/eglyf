@@ -94,7 +94,7 @@ public:
       return;
     }
     if (!fError->fWhat.empty()) {
-      out << "waht: " << fError->fWhat << endl;
+      out << "what: " << fError->fWhat << endl;
     }
     cout << "trace: " << endl;
     for (auto const &where : fError->fTrace) {

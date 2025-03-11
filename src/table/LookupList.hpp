@@ -89,7 +89,7 @@ public:
       writers.push_back(lookupTableBeginning);
 
       auto const &lookup = lookupTable[i];
-      auto tables = subtables[i];
+      auto const &tables = subtables[i];
 
       auto handle = lookupOffsets[i];
       if (auto st = handle->mark(); !st.ok()) {

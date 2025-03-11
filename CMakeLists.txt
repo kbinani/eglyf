@@ -72,6 +72,7 @@ list(APPEND src_files
   src/errno.hpp
   src/optional.hpp
   src/table/gsub/Contextual.hpp
+  src/table/FeatureVariations.hpp
 )
 
 juce_add_console_app(eglyf)
