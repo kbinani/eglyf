@@ -73,6 +73,7 @@ list(APPEND src_files
   src/optional.hpp
   src/table/gsub/Contextual.hpp
   src/table/FeatureVariations.hpp
+  src/SharedListWriter.hpp
 )
 
 juce_add_console_app(eglyf)
