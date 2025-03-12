@@ -12,12 +12,20 @@ input_ttx="$dir/$name.ttx"
 output_ttx="$dir/$name-out.ttx"
 
 ttx -q -o "$input_ttx" "$input" &
+pid_ttx=$!
 
 "$resave" "$input" "$output" &
+pid_resave=$!
 
-wait
+wait $pid_ttx
+if [ $? -ne 0 ]; then
+  echo "ttx failed"
+  wait
+  exit 0
+fi
 
-if [ ! -f "$output" ]; then
+wait $pid_resave
+if [ $? -ne 0 ]; then
   exit 255
 fi
 
@@ -50,6 +58,6 @@ for pid in ${pids[@]}; do
   wait $pid
   if [ $? -ne 0 ]; then
     wait
-    exit 3
+    exit 255
   fi
 done
