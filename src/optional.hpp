@@ -27,7 +27,7 @@ public:
   Optional(std::vector<Status::Where> trace, std::string what) : fStorage(Status(Status::ErrorData(trace, what))) {
   }
 
-  Optional(Nullopt null) : fStorage(Status(Status::ErrorData(null.fTrace))) {}
+  Optional(Nullopt null) : fStorage(Status(Status::ErrorData(null.fTrace, null.fWhat))) {}
 
   explicit operator bool() const {
     return fStorage.index() == 0;
