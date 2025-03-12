@@ -63,7 +63,8 @@ list(APPEND src_files
   src/table/gsub/Ligature.hpp
   src/table/gsub/Multiple.hpp
   src/table/gsub/SequenceLookup.hpp
-  src/table/gsub/ChainedContextsSubstitution.hpp
+  src/table/gsub/ChainedContexts.hpp
+  src/table/gsub/ReverseChainedContextsSingle.hpp
   src/io/OffsetWriter.hpp
   src/table/gsub/Alternate.hpp
   include/eglyf.hpp

@@ -56,12 +56,14 @@ public:
       }
     } else if (r->extensionLookupType == 6) {
       // Chained contexts substitution
-      if (auto st = ChainedContextsSubstitution::Read(sub, r->extension); !st.ok()) {
+      if (auto st = ChainedContexts::Read(sub, r->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     } else if (r->extensionLookupType == 8) {
       // Reverse chaining context single
-      return EGLYF_ERROR;
+      if (auto st = ReverseChainedContextsSingle::Read(sub, r->extension); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
     } else {
       return EGLYF_ERROR;
     }

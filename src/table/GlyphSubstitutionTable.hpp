@@ -17,12 +17,11 @@ public:
     } else if (lookupType == 5) {
       return EGLYF_STATUS_PUSH(gsub::ContextualReader::Read(in, out));
     } else if (lookupType == 6) {
-      return EGLYF_STATUS_PUSH(gsub::ChainedContextsSubstitution::Read(in, out));
+      return EGLYF_STATUS_PUSH(gsub::ChainedContexts::Read(in, out));
     } else if (lookupType == 7) {
       return EGLYF_STATUS_PUSH(gsub::SubstitutionExtension::Read(in, out));
     } else if (lookupType == 8) {
-      // Reverse chaining context single
-      return EGLYF_ERROR;
+      return EGLYF_STATUS_PUSH(gsub::ReverseChainedContextsSingle::Read(in, out));
     } else {
       return EGLYF_ERROR;
     }

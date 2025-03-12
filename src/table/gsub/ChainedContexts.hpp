@@ -2,7 +2,7 @@
 
 namespace eglyf::gsub {
 
-class ChainedContextsSubstitution1 : public Subtable {
+class ChainedContexts1 : public Subtable {
 public:
   struct ChainedSequenceRule {
     std::vector<uint16_t> backtrackSequence;
@@ -122,7 +122,7 @@ public:
     if (!in.seek(coverageOffset)) {
       return EGLYF_ERROR;
     }
-    auto r = make_unique<ChainedContextsSubstitution1>();
+    auto r = make_unique<ChainedContexts1>();
     if (auto st = CoverageReader::Read(in, r->coverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
@@ -255,7 +255,7 @@ public:
   std::vector<std::optional<ChainedSequenceRuleSet>> ruleSets;
 };
 
-class ChainedContextsSubstitution2 : public Subtable {
+class ChainedContexts2 : public Subtable {
 public:
   struct ChainedClassSequenceRule {
     static Optional<ChainedClassSequenceRule> Read(InputStream &in) {
@@ -442,7 +442,7 @@ public:
       return EGLYF_ERROR;
     }
 
-    auto r = make_unique<ChainedContextsSubstitution2>();
+    auto r = make_unique<ChainedContexts2>();
 
     if (!in.seek(coverageOffset)) {
       return EGLYF_ERROR;
@@ -596,11 +596,11 @@ public:
   std::vector<std::optional<ChainedClassSequenceRuleSet>> ruleSets;
 };
 
-class ChainedContextsSubstitution3 : public Subtable {
+class ChainedContexts3 : public Subtable {
 public:
   static Status Read(InputStream &in, std::shared_ptr<Subtable> &out) {
     using namespace std;
-    auto r = make_unique<ChainedContextsSubstitution3>();
+    auto r = make_unique<ChainedContexts3>();
 
     uint16_t backtrackGlyphCount;
     if (!in.u16(&backtrackGlyphCount)) {
@@ -793,7 +793,7 @@ public:
   std::vector<SequenceLookup> seqLookups;
 };
 
-class ChainedContextsSubstitution {
+class ChainedContexts {
 public:
   static Status Read(InputStream &in, std::shared_ptr<Subtable> &out) {
     using namespace std;
@@ -803,11 +803,11 @@ public:
       return EGLYF_ERROR;
     }
     if (format == 1) {
-      return EGLYF_STATUS_PUSH(ChainedContextsSubstitution1::Read(in, out));
+      return EGLYF_STATUS_PUSH(ChainedContexts1::Read(in, out));
     } else if (format == 2) {
-      return EGLYF_STATUS_PUSH(ChainedContextsSubstitution2::Read(in, out));
+      return EGLYF_STATUS_PUSH(ChainedContexts2::Read(in, out));
     } else if (format == 3) {
-      return EGLYF_STATUS_PUSH(ChainedContextsSubstitution3::Read(in, out));
+      return EGLYF_STATUS_PUSH(ChainedContexts3::Read(in, out));
     } else {
       return EGLYF_ERROR;
     }
