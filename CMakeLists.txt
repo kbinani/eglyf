@@ -89,6 +89,12 @@ if (MSVC)
     PRIVATE
       NOMINMAX
       WIN32_LEAN_AND_MEAN
+      JUCE_DISABLE_JUCE_VERSION_PRINTING=1
+  )
+else()
+  target_compile_definitions(eglyf
+    PRIVATE
+      JUCE_DISABLE_JUCE_VERSION_PRINTING=1
   )
 endif()
 
@@ -107,6 +113,12 @@ if (MSVC)
     PRIVATE
       NOMINMAX
       WIN32_LEAN_AND_MEAN
+      JUCE_DISABLE_JUCE_VERSION_PRINTING=1
+  )
+else()
+  target_compile_definitions(resave
+    PRIVATE
+      JUCE_DISABLE_JUCE_VERSION_PRINTING=1
   )
 endif()
 
