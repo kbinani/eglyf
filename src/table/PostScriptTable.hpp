@@ -13,14 +13,13 @@ public:
     static Optional<Version2Data> Read(InputStream &in) {
       using namespace std;
       Version2Data r;
-      if (!in.u16(&r.numGlyphs)) {
+      uint16_t numGlyphs;
+      if (!in.u16(&numGlyphs)) {
         return EGLYF_NULLOPT;
       }
-      vector<uint16_t> nameIndex;
-      if (!in.u16a(nameIndex, r.numGlyphs)) {
+      if (!in.u16a(r.glyphNameIndex, numGlyphs)) {
         return EGLYF_NULLOPT;
       }
-      vector<string> names;
       while (true) {
         uint8_t bytes;
         if (!in.u8(&bytes)) {
@@ -31,69 +30,32 @@ public:
         if (in.read(s.data(), bytes) != bytes) {
           return EGLYF_NULLOPT;
         }
-        if (ranges::any_of(s, InvalidNameCharacter)) {
-          return EGLYF_NULLOPT;
-        }
-        names.push_back(s);
-      }
-      for (auto index : nameIndex) {
-        if (index <= 257) {
-          r.names.push_back(index);
-        } else {
-          auto offset = index - 258;
-          if (offset >= names.size()) {
-            return EGLYF_NULLOPT;
-          }
-          r.names.push_back(names[offset]);
-        }
+        r.nameStrings.push_back(s);
       }
       return r;
     }
 
     Status encode(OutputStream &out) const {
       using namespace std;
-      if (!out.u16(numGlyphs)) {
+      if (!out.sizeU16(glyphNameIndex.size())) {
         return EGLYF_ERROR;
       }
-      ByteOutputStream strings;
-      uint16_t count = 0;
-      for (auto const &name : names) {
-        if (holds_alternative<string>(name)) {
-          auto const &n = get<string>(name);
-          if (!out.u16(count + 258)) {
-            return EGLYF_ERROR;
-          }
-          if (ranges::any_of(n, InvalidNameCharacter)) {
-            return EGLYF_ERROR;
-          }
-          uint8_t bytes = n.size();
-          if (!strings.u8(bytes)) {
-            return EGLYF_ERROR;
-          }
-          if (!strings.write((void *)n.data(), bytes)) {
-            return EGLYF_ERROR;
-          }
-          count++;
-        } else if (holds_alternative<uint16_t>(name)) {
-          auto n = get<uint16_t>(name);
-          if (n > 257) {
-            return EGLYF_ERROR;
-          }
-          if (!out.u16(n)) {
-            return EGLYF_ERROR;
-          }
+      if (!out.u16a(glyphNameIndex)) {
+        return EGLYF_ERROR;
+      }
+      for (auto const &name : nameStrings) {
+        if (!out.sizeU8(name.size())) {
+          return EGLYF_ERROR;
+        }
+        if (!out.write(name.data(), name.size())) {
+          return EGLYF_ERROR;
         }
       }
-      string data = strings.data();
-      if (out.write(data.data(), data.size())) {
-        return Status::Ok();
-      } else {
-        return EGLYF_ERROR;
-      }
+      return Status::Ok();
     }
 
-    uint16_t numGlyphs;
-    std::vector<std::variant<uint16_t, std::string>> names;
+    std::vector<uint16_t> glyphNameIndex;
+    std::vector<std::string> nameStrings;
   };
 
 public:
@@ -206,8 +168,12 @@ public:
       return EGLYF_ERROR;
     }
     auto &d = get<Version2Data>(data);
-    d.numGlyphs++;
-    d.names.push_back(name);
+    size_t index = d.glyphNameIndex.size() + 258;
+    if (index >= (size_t)numeric_limits<uint16_t>::max()) {
+      return EGLYF_ERROR;
+    }
+    d.glyphNameIndex.push_back(index);
+    d.nameStrings.push_back(name);
     return Status::Ok();
   }
 

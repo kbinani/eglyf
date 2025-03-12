@@ -66,6 +66,14 @@ public:
     return u16(u);
   }
 
+  bool sizeU8(size_t v) {
+    if ((size_t)std::numeric_limits<uint8_t>::max() < v) {
+      return false;
+    }
+    uint8_t u = (uint8_t)v;
+    return u8(u);
+  }
+
   bool u16a(std::vector<uint16_t> const &a) {
     for (uint16_t v : a) {
       if (!u16(v)) {
