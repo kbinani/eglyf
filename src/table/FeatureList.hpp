@@ -38,7 +38,7 @@ public:
         } else if (FCC("ss01") <= tag && tag <= FCC("ss20")) {
           data.resize(4);
         } else {
-          return EGLYF_NULLOPT_WHAT("Unexpected feature params offset");
+          return EGLYF_NULLOPT_WHAT(Status::Error::UnexpectedFeatureParamsOffset());
         }
         if (!in.read(data.data(), data.size())) {
           return EGLYF_NULLOPT;

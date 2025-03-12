@@ -340,6 +340,8 @@ public:
         auto result = make_shared<GlyphSubstitutionTable>();
         if (auto st = result->read(slice); st.ok()) {
           ff->tables[tr->second.tag] = result;
+        } else if (st.error()->fWhat == Status::Error::UnexpectedFeatureParamsOffset()) {
+          ff->tables[tr->second.tag] = make_shared<ReadonlyTable>(*buffer);
         } else {
           return EGLYF_STATUS_PUSH(st);
         }

@@ -7,7 +7,7 @@ public:
   std::vector<Status::Where> fTrace;
   std::string fWhat;
 
-  Nullopt(char const *file, int line, char const *what) : fTrace({Status::Where(file, line)}), fWhat(what) {}
+  Nullopt(char const *file, int line, std::string const &what) : fTrace({Status::Where(file, line)}), fWhat(what) {}
   Nullopt(std::vector<Status::Where> const &trace, std::string const &what) : fTrace(trace), fWhat(what) {}
 
   Nullopt pushed(char const *file, int line) {

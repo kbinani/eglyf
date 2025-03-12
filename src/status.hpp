@@ -102,6 +102,15 @@ public:
     }
   }
 
+  class Error {
+    Error() = delete;
+
+  public:
+    static std::string UnexpectedFeatureParamsOffset() {
+      return "Unexpected feature params offset";
+    }
+  };
+
 private:
   std::optional<ErrorData> fError;
 };
