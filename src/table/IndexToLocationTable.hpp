@@ -63,6 +63,24 @@ public:
     }
   }
 
+  static uint16_t RecommendFormat(std::vector<Offset32> const &offsets) {
+    using namespace std;
+    if (offsets.empty()) {
+      return 0;
+    }
+    Offset32 maxOffset = offsets.back();
+    if (maxOffset / 2 > (Offset32)numeric_limits<Offset16>::max()) {
+      return 1;
+    } else {
+      for (auto offset : offsets) {
+        if (offset % 2 != 0) {
+          return 1;
+        }
+      }
+    }
+    return 0;
+  }
+
 public:
   int16_t const indexToLocFormat;
   std::vector<Offset32> offsets;

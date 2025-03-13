@@ -83,10 +83,10 @@ public:
 
       Offset32 maxOffset = offsets.back();
       uint32_t indexToLocationFormat = head->indexToLocFormat;
-      if (indexToLocationFormat == 0 && maxOffset / 2 > (Offset32)numeric_limits<Offset16>::max()) {
-        indexToLocationFormat = 1;
-        head->indexToLocFormat = indexToLocationFormat;
+      if (indexToLocationFormat == 0) {
+        indexToLocationFormat = IndexToLocationTable::RecommendFormat(offsets);
       }
+      head->indexToLocFormat = indexToLocationFormat;
       IndexToLocationTable loca(indexToLocationFormat);
       loca.offsets.swap(offsets);
       auto locaTag = FCC("loca");
