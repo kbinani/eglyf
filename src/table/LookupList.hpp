@@ -25,28 +25,35 @@ public:
     if (!in.o16a(lookupOffsets, lookupCount)) {
       return EGLYF_NULLOPT;
     }
+    map<Offset16, shared_ptr<Lookup>> lookups;
     for (uint16_t lookupOffset : lookupOffsets) {
-      Lookup l;
-      l.lookupOffset = lookupOffset;
+      auto found = lookups.find(lookupOffset);
+      if (found != lookups.end()) {
+        ret.lookupTable.push_back(found->second);
+        continue;
+      }
+      auto l = make_shared<Lookup>();
+      l->lookupOffset = lookupOffset;
       if (!in.seek(lookupOffset)) {
         return EGLYF_NULLOPT;
       }
-      if (!in.u16(&l.lookupType)) {
+      if (!in.u16(&l->lookupType)) {
         return EGLYF_NULLOPT;
       }
-      if (!in.u16(&l.lookupFlag)) {
+      if (!in.u16(&l->lookupFlag)) {
         return EGLYF_NULLOPT;
       }
       uint16_t subTableCount;
       if (!in.u16(&subTableCount)) {
         return EGLYF_NULLOPT;
       }
-      if (!in.o16a(l.subtableOffsets, subTableCount)) {
+      if (!in.o16a(l->subtableOffsets, subTableCount)) {
         return EGLYF_NULLOPT;
       }
-      if (!in.u16(&l.markFilteringSet)) {
+      if (!in.u16(&l->markFilteringSet)) {
         return EGLYF_NULLOPT;
       }
+      lookups[lookupOffset] = l;
       ret.lookupTable.push_back(l);
     }
     return ret;
@@ -63,7 +70,7 @@ public:
       return EGLYF_ERROR;
     }
     for (size_t i = 0; i < lookupTable.size(); i++) {
-      if (lookupTable[i].subtableOffsets.size() != subtables[i].size()) {
+      if (lookupTable[i]->subtableOffsets.size() != subtables[i].size()) {
         return EGLYF_ERROR;
       }
     }
@@ -75,31 +82,45 @@ public:
     if (!out.sizeU16(lookupTable.size())) {
       return EGLYF_ERROR;
     }
-    vector<OffsetWriter::Handle16> lookupOffsets;
-    for (auto const &lookup : lookupTable) {
+    map<shared_ptr<Lookup>, pair<vector<shared_ptr<Subtable>>, vector<OffsetWriter::Handle16>>> lookupOffsets;
+    for (size_t i = 0; i < lookupTable.size(); i++) {
+      auto const &lookup = lookupTable[i];
+      auto const &tables = subtables[i];
       auto handle = lookupListBeginning->o16();
       if (!handle) {
         return EGLYF_ERROR;
       }
-      lookupOffsets.push_back(handle);
+      if (lookupOffsets[lookup].first.empty()) {
+        lookupOffsets[lookup].first = tables;
+      } else {
+        if (lookupOffsets[lookup].first.size() != tables.size()) {
+          return EGLYF_ERROR;
+        }
+        for (size_t j = 0; j < tables.size(); j++) {
+          if (tables[j] != lookupOffsets[lookup].first[j]) {
+            return EGLYF_ERROR;
+          }
+        }
+      }
+      lookupOffsets[lookup].second.push_back(handle);
     }
 
-    for (size_t i = 0; i < lookupTable.size(); i++) {
+    for (auto [lookup, tableAndOffsets] : lookupOffsets) {
       auto lookupTableBeginning = make_shared<OffsetWriter>(out);
       writers.push_back(lookupTableBeginning);
 
-      auto const &lookup = lookupTable[i];
-      auto const &tables = subtables[i];
+      auto [tables, offsets] = tableAndOffsets;
 
-      auto handle = lookupOffsets[i];
-      if (auto st = handle->mark(); !st.ok()) {
-        return EGLYF_STATUS_PUSH(st);
+      for (auto offset : offsets) {
+        if (auto st = offset->mark(); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
       }
 
-      if (!out.u16(lookup.lookupType)) {
+      if (!out.u16(lookup->lookupType)) {
         return EGLYF_ERROR;
       }
-      if (!out.u16(lookup.lookupFlag)) {
+      if (!out.u16(lookup->lookupFlag)) {
         return EGLYF_ERROR;
       }
       if (!out.sizeU16(tables.size())) {
@@ -119,16 +140,30 @@ public:
           found->second.push_back(h);
         }
       }
-      if (!out.u16(lookup.markFilteringSet)) {
+      if (!out.u16(lookup->markFilteringSet)) {
         return EGLYF_ERROR;
       }
     }
-    ranges::sort(handles, [](pair<shared_ptr<Subtable>, vector<OffsetWriter::Handle16>> const &a, pair<shared_ptr<Subtable>, vector<OffsetWriter::Handle16>> const &b) {
-      return a.first->size() < b.first->size();
-    });
 
     map<shared_ptr<Subtable>, pair<shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> extensions;
-    for (auto const &[table, handleList] : handles) {
+    while (!handles.empty()) {
+      ranges::sort(handles, [](auto const &a, auto const &b) -> bool {
+        static auto Distance = [](pair<shared_ptr<Subtable>, vector<OffsetWriter::Handle16>> const &it) -> int64_t {
+          int64_t maxOffset = 0;
+          for (auto const &offset : it.second) {
+            auto current = offset->current();
+            if (current) {
+              maxOffset = (std::max)(maxOffset, *current);
+            }
+          }
+          return maxOffset;
+        };
+        int64_t distanceA = Distance(a);
+        int64_t distanceB = Distance(b);
+        return distanceA < distanceB;
+      });
+      auto [table, handleList] = handles.back();
+
       for (auto handle : handleList) {
         if (auto st = handle->mark(); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
@@ -139,6 +174,8 @@ public:
         return EGLYF_STATUS_PUSH(st);
       }
       jassert(pos + table->size() == out.position());
+
+      handles.pop_back();
     }
 
     for (auto [table, p] : extensions) {
@@ -176,7 +213,7 @@ public:
   }
 
 public:
-  std::vector<Lookup> lookupTable;
+  std::vector<std::shared_ptr<Lookup>> lookupTable;
 };
 
 } // namespace eglyf

@@ -10,11 +10,15 @@ concept Subtable = requires(T &t, OutputStream &out, std::map<std::shared_ptr<T>
 template <Subtable T>
 class SubtableCollection : public Table {
 public:
-  struct Lookup {
+  struct LookupData {
     uint16_t lookupType;
     uint16_t lookupFlag;
     uint16_t markFilteringSet;
     std::vector<std::shared_ptr<T>> subtables;
+  };
+
+  struct Lookup {
+    std::shared_ptr<LookupData> data;
   };
 
   struct Feature {
@@ -126,15 +130,24 @@ public:
     }
 
     map<int64_t, shared_ptr<gsub::Subtable>> subtables;
+    map<shared_ptr<LookupList::Lookup>, shared_ptr<LookupData>> convertedLookupDataList;
     for (size_t i = 0; i < lookupList.lookupTable.size(); i++) {
-      auto const &it = lookupList.lookupTable[i];
+      shared_ptr<LookupList::Lookup> it = lookupList.lookupTable[i];
       auto l = make_shared<Lookup>();
-      l->lookupType = it.lookupType;
-      l->lookupFlag = it.lookupFlag;
-      l->markFilteringSet = it.markFilteringSet;
-      for (auto offset : it.subtableOffsets) {
+
+      auto fnd = convertedLookupDataList.find(it);
+      if (fnd != convertedLookupDataList.end()) {
+        l->data = fnd->second;
+        lookups.push_back(l);
+        continue;
+      }
+      auto data = make_shared<LookupData>();
+      data->lookupType = it->lookupType;
+      data->lookupFlag = it->lookupFlag;
+      data->markFilteringSet = it->markFilteringSet;
+      for (auto offset : it->subtableOffsets) {
         int64_t pos = lookupListOffset;
-        pos += it.lookupOffset;
+        pos += it->lookupOffset;
         pos += offset;
         if (auto found = subtables.find(pos); found == subtables.end()) {
           if (!in.seek(pos)) {
@@ -142,16 +155,18 @@ public:
           }
           OffsetInputStream sub(&in);
           shared_ptr<gsub::Subtable> table;
-          if (auto st = readSubtable(sub, it.lookupType, table); st.ok()) {
-            l->subtables.push_back(table);
+          if (auto st = readSubtable(sub, it->lookupType, table); st.ok()) {
+            data->subtables.push_back(table);
           } else {
             return EGLYF_STATUS_PUSH(st);
           }
           subtables[pos] = table;
         } else {
-          l->subtables.push_back(found->second);
+          data->subtables.push_back(found->second);
         }
       }
+      l->data = data;
+      convertedLookupDataList[it] = data;
       lookups.push_back(l);
     }
 
@@ -307,19 +322,27 @@ public:
 
     LookupList lookupList;
     vector<vector<shared_ptr<gsub::Subtable>>> subtables;
+    map<shared_ptr<LookupData>, shared_ptr<LookupList::Lookup>> convertedLookups;
     for (auto const &lookup : lookups) {
-      LookupList::Lookup l;
-      l.lookupType = lookup->lookupType;
-      l.lookupFlag = lookup->lookupFlag;
-      l.subtableOffsets.resize(lookup->subtables.size());
-      l.markFilteringSet = lookup->markFilteringSet;
-      lookupList.lookupTable.push_back(l);
+      subtables.push_back(lookup->data->subtables);
 
-      subtables.push_back(lookup->subtables);
+      auto found = convertedLookups.find(lookup->data);
+      if (found != convertedLookups.end()) {
+        lookupList.lookupTable.push_back(found->second);
+        continue;
+      }
+      auto l = make_shared<LookupList::Lookup>();
+      l->lookupType = lookup->data->lookupType;
+      l->lookupFlag = lookup->data->lookupFlag;
+      l->subtableOffsets.resize(lookup->data->subtables.size());
+      l->markFilteringSet = lookup->data->markFilteringSet;
+      lookupList.lookupTable.push_back(l);
+      convertedLookups[lookup->data] = l;
     }
 
     FeatureList featureList;
-    for (auto const &feature : features) {
+    for (size_t i = 0; i < features.size(); i++) {
+      auto const &feature = features[i];
       FeatureList::Feature f;
       f.tag = feature->tag;
       f.featureParams = feature->featureParams;
@@ -328,7 +351,7 @@ public:
         if (found == lookups.end()) {
           return EGLYF_NULLOPT;
         }
-        auto index = distance(lookups.begin(), found);
+        size_t index = distance(lookups.begin(), found);
         if (index > numeric_limits<uint16_t>::max()) {
           return EGLYF_NULLOPT;
         }

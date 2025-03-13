@@ -39,6 +39,16 @@ public:
       result = make_pair(position, 0);
       return Status::Ok();
     }
+
+    std::optional<int64_t> current() const {
+      using namespace std;
+      auto p = parent.lock();
+      if (!p) {
+        return nullopt;
+      }
+      int64_t latest = p->upstream.position();
+      return latest - p->base;
+    }
   };
 
   using Handle16 = std::shared_ptr<Handle<Offset16>>;
