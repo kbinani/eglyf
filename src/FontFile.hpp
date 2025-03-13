@@ -60,7 +60,7 @@ public:
       auto const &o = get<TrueTypeOutlines>(outlines);
 
       vector<Offset32> offsets;
-      auto encodedGlyf = o.glyf->encode(offsets);
+      auto encodedGlyf = o.glyf->encode(offsets, head->indexToLocFormat == 0 ? 2 : 1);
       if (!encodedGlyf) {
         return EGLYF_STATUS_PUSH(encodedGlyf.status());
       }

@@ -401,12 +401,13 @@ public:
     return EGLYF_NULLOPT;
   }
 
-  Optional<EncodeResult> encode(std::vector<Offset32> &offsets) const {
+  Optional<EncodeResult> encode(std::vector<Offset32> &offsets, size_t padding) const {
     using namespace std;
 
     offsets.clear();
 
     ByteOutputStream out;
+    string pad;
     for (auto const &g : glyphs) {
       offsets.push_back(out.size());
       if (holds_alternative<EmptyGlyph>(g)) {
@@ -420,6 +421,18 @@ public:
         auto cg = get<CompositeGlyph>(g);
         if (auto st = cg.encode(out); !st.ok()) {
           return EGLYF_NULLOPT_PUSH(st);
+        }
+      }
+      if (padding > 1) {
+        if (pad.size() != padding) {
+          pad = string(padding, '\0');
+        }
+        auto size = out.size();
+        if (size % padding != 0) {
+          size_t cnt = padding - size % padding;
+          if (!out.write(pad.data(), cnt)) {
+            return EGLYF_NULLOPT;
+          }
         }
       }
     }
@@ -460,7 +473,7 @@ public:
   Status clone(std::shared_ptr<GlyphDataTable> &out) const {
     using namespace std;
     IndexToLocationTable loca(1);
-    auto encoded = encode(loca.offsets);
+    auto encoded = encode(loca.offsets, 1);
     if (!encoded) {
       return EGLYF_STATUS_PUSH(encoded.status());
     }
