@@ -227,10 +227,12 @@ public:
         if (!in.u16(&numInstr)) {
           return EGLYF_NULLOPT;
         }
-        ret.instructions.resize(numInstr);
-        if (in.read(ret.instructions.data(), numInstr) != numInstr) {
+        string instructions;
+        instructions.resize(numInstr);
+        if (in.read(instructions.data(), numInstr) != numInstr) {
           return EGLYF_NULLOPT;
         }
+        ret.instructions = instructions;
       }
       return ret;
     }
@@ -264,7 +266,7 @@ public:
         }
         if (i + 1 < records.size()) {
           flg |= MORE_COMPONENTS;
-        } else if (instructions.size() > 0) {
+        } else if (instructions) {
           flg |= WE_HAVE_INSTRUCTIONS;
         }
         if (!out.u16(rec.flags)) {
@@ -338,15 +340,11 @@ public:
           }
         }
       }
-      if (instructions.size() > 0) {
-        if (instructions.size() > (size_t)numeric_limits<uint16_t>::max()) {
+      if (instructions) {
+        if (!out.sizeU16(instructions->size())) {
           return EGLYF_ERROR;
         }
-        uint16_t numInstr = static_cast<uint16_t>(instructions.size());
-        if (!out.u16(numInstr)) {
-          return EGLYF_ERROR;
-        }
-        if (!out.write((void *)instructions.data(), instructions.size())) {
+        if (!out.write(instructions->data(), instructions->size())) {
           return EGLYF_ERROR;
         }
       }
@@ -355,7 +353,7 @@ public:
 
     Header header;
     std::vector<GlyphRecord> records;
-    std::vector<uint8_t> instructions;
+    std::optional<std::string> instructions;
   };
 
   static Status Read(InputStream &in, IndexToLocationTable const &loca, std::shared_ptr<GlyphDataTable> &out) {
