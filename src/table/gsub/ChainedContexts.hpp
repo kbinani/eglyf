@@ -454,11 +454,13 @@ public:
       return EGLYF_STATUS_PUSH(st);
     }
 
-    if (!in.seek(backtrackClassDefOffset)) {
-      return EGLYF_ERROR;
-    }
-    if (auto st = ClassDefReader::Read(in, r->backtrackClassDef); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
+    if (backtrackClassDefOffset > 0) {
+      if (!in.seek(backtrackClassDefOffset)) {
+        return EGLYF_ERROR;
+      }
+      if (auto st = ClassDefReader::Read(in, r->backtrackClassDef); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
     }
 
     if (!in.seek(inputClassDefOffset)) {
@@ -537,11 +539,17 @@ public:
       return EGLYF_STATUS_PUSH(st);
     }
 
-    if (auto st = backtrackClassDefOffset->mark(); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
-    }
-    if (auto st = backtrackClassDef->write(out); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
+    if (backtrackClassDef) {
+      if (auto st = backtrackClassDefOffset->mark(); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+      if (auto st = backtrackClassDef->write(out); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+    } else {
+      if (auto st = backtrackClassDefOffset->null(); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
     }
 
     if (auto st = inputClassDefOffset->mark(); !st.ok()) {
@@ -581,7 +589,9 @@ public:
   size_t size() const override {
     size_t ret = sizeof(uint16_t) + 4 * sizeof(Offset16) + sizeof(uint16_t) + ruleSets.size() * sizeof(Offset16);
     ret += coverage->size();
-    ret += backtrackClassDef->size();
+    if (backtrackClassDef) {
+      ret += backtrackClassDef->size();
+    }
     ret += inputClassDef->size();
     ret += lookaheadClassDef->size();
     for (auto const &ruleSet : ruleSets) {
@@ -593,6 +603,8 @@ public:
   }
 
 public:
+  // NOTE: backtrackClassDef is not mentioned as nullable in the reference, but some fonts does not have backtrackClassDef
+  //  https://learn.microsoft.com/en-us/typography/opentype/spec/chapter2#chained-sequence-context-format-2-class-based-glyph-contexts
   std::shared_ptr<ClassDef> backtrackClassDef;
   std::shared_ptr<ClassDef> inputClassDef;
   std::shared_ptr<ClassDef> lookaheadClassDef;
