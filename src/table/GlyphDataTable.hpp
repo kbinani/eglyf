@@ -424,13 +424,6 @@ public:
           return EGLYF_NULLOPT_PUSH(st);
         }
       }
-      auto size = out.size();
-      if (size % 4 != 0) {
-        size_t cnt = 4 - size % 4;
-        if (!out.write((void *)"\0\0\0\0", cnt)) {
-          return EGLYF_NULLOPT;
-        }
-      }
     }
     offsets.push_back(out.size());
     return EncodeResult(out.data());
