@@ -21,10 +21,14 @@ public:
     std::shared_ptr<LookupData> data;
   };
 
-  struct Feature {
-    Tag tag;
+  struct FeatureData {
     std::optional<std::string> featureParams;
     std::vector<std::shared_ptr<Lookup>> lookups;
+  };
+
+  struct Feature {
+    Tag tag;
+    std::shared_ptr<FeatureData> data;
   };
 
   struct LangSys {
@@ -170,17 +174,28 @@ public:
       lookups.push_back(l);
     }
 
+    map<shared_ptr<FeatureList::FeatureData>, shared_ptr<FeatureData>> convertedFeatureDataList;
     for (auto const &f : featureList.featureTable) {
       auto v = make_shared<Feature>();
-      v->tag = f.tag;
-      v->featureParams = f.featureParams;
-      for (uint16_t index : f.lookupListIndices) {
+      v->tag = f->tag;
+
+      auto found = convertedFeatureDataList.find(f->data);
+      if (found != convertedFeatureDataList.end()) {
+        v->data = found->second;
+        features.push_back(v);
+        continue;
+      }
+      auto data = make_shared<FeatureData>();
+      data->featureParams = f->data->featureParams;
+      for (uint16_t index : f->data->lookupListIndices) {
         if (index >= lookups.size()) {
           return EGLYF_ERROR;
         }
-        v->lookups.push_back(lookups[index]);
+        data->lookups.push_back(lookups[index]);
       }
+      v->data = data;
       features.push_back(v);
+      convertedFeatureDataList[f->data] = data;
     }
 
     if (featureVariationsOffset) {
@@ -206,19 +221,21 @@ public:
             return EGLYF_ERROR;
           }
           OffsetInputStream sub2(&sub);
-          auto f = FeatureList::Feature::Read(sub2, substitution.feature->tag);
-          if (!f) {
-            return EGLYF_STATUS_PUSH(f.status());
+          shared_ptr<FeatureList::FeatureData> fdata;
+          if (auto st = FeatureList::FeatureData::Read(sub2, substitution.feature->tag, fdata); !st.ok()) {
+            return EGLYF_STATUS_PUSH(st);
           }
           auto v = make_shared<Feature>();
-          v->tag = f->tag;
-          v->featureParams = f->featureParams;
-          for (uint16_t index : f->lookupListIndices) {
+          v->tag = substitution.feature->tag;
+          auto data = make_shared<FeatureData>();
+          data->featureParams = fdata->featureParams;
+          for (uint16_t index : fdata->lookupListIndices) {
             if (index >= lookups.size()) {
               return EGLYF_ERROR;
             }
-            v->lookups.push_back(lookups[index]);
+            data->lookups.push_back(lookups[index]);
           }
+          v->data = data;
           substitution.alternateFeature = v;
           record.substitutions.push_back(substitution);
         }
@@ -341,12 +358,22 @@ public:
     }
 
     FeatureList featureList;
+    map<shared_ptr<FeatureData>, shared_ptr<FeatureList::FeatureData>> convertedFeatures;
     for (size_t i = 0; i < features.size(); i++) {
       auto const &feature = features[i];
-      FeatureList::Feature f;
-      f.tag = feature->tag;
-      f.featureParams = feature->featureParams;
-      for (auto const &lookup : feature->lookups) {
+      auto f = make_shared<FeatureList::Feature>();
+      f->tag = feature->tag;
+
+      auto found = convertedFeatures.find(feature->data);
+      if (found != convertedFeatures.end()) {
+        f->data = found->second;
+        featureList.featureTable.push_back(f);
+        continue;
+      }
+
+      auto data = make_shared<FeatureList::FeatureData>();
+      data->featureParams = feature->data->featureParams;
+      for (auto const &lookup : feature->data->lookups) {
         auto found = ranges::find(lookups, lookup);
         if (found == lookups.end()) {
           return EGLYF_NULLOPT;
@@ -355,9 +382,11 @@ public:
         if (index > numeric_limits<uint16_t>::max()) {
           return EGLYF_NULLOPT;
         }
-        f.lookupListIndices.push_back(index);
+        data->lookupListIndices.push_back(index);
       }
+      f->data = data;
       featureList.featureTable.push_back(f);
+      convertedFeatures[feature->data] = data;
     }
 
     ScriptList scriptList;
@@ -511,21 +540,21 @@ public:
             return EGLYF_NULLOPT_PUSH(st);
           }
           auto w2 = make_shared<OffsetWriter>(out);
-          if (substitution.alternateFeature->featureParams) {
+          if (substitution.alternateFeature->data->featureParams) {
             auto featureParamsOffset = w2->o16();
             if (!featureParamsOffset) {
               return EGLYF_NULLOPT;
             }
-            featureParamsWriters.push_back(make_tuple(*substitution.alternateFeature->featureParams, featureParamsOffset, w2));
+            featureParamsWriters.push_back(make_tuple(*substitution.alternateFeature->data->featureParams, featureParamsOffset, w2));
           } else {
             if (!out.o16(0)) {
               return EGLYF_NULLOPT;
             }
           }
-          if (!out.sizeU16(substitution.alternateFeature->lookups.size())) {
+          if (!out.sizeU16(substitution.alternateFeature->data->lookups.size())) {
             return EGLYF_NULLOPT;
           }
-          for (auto const &lookup : substitution.alternateFeature->lookups) {
+          for (auto const &lookup : substitution.alternateFeature->data->lookups) {
             auto found = ranges::find_if(lookups, [&](auto const &it) { return it == lookup; });
             if (found == lookups.end()) {
               return EGLYF_NULLOPT;

@@ -4,7 +4,7 @@ namespace eglyf {
 
 class OffsetWriter : public std::enable_shared_from_this<OffsetWriter> {
 public:
-  template <class T>
+  template <std::unsigned_integral T>
   class Handle {
   public:
     int64_t const position;

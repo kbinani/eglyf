@@ -4,31 +4,29 @@ namespace eglyf {
 
 class FeatureList {
 public:
-  struct Feature {
-    Tag tag;
+  struct FeatureData {
     std::optional<std::string> featureParams;
     std::vector<uint16_t> lookupListIndices;
 
-    static Optional<Feature> Read(InputStream &in, Tag tag) {
+    static Status Read(InputStream &in, Tag tag, std::shared_ptr<FeatureData> &out) {
       using namespace std;
       jassert(in.position() == 0);
       Offset16 featureParamsOffset;
       if (!in.o16(&featureParamsOffset)) {
-        return EGLYF_NULLOPT;
+        return EGLYF_ERROR;
       }
       uint16_t lookupIndexCount;
       if (!in.u16(&lookupIndexCount)) {
-        return EGLYF_NULLOPT;
+        return EGLYF_ERROR;
       }
-      Feature f;
-      f.tag = tag;
-      if (!in.u16a(f.lookupListIndices, lookupIndexCount)) {
-        return EGLYF_NULLOPT;
+      auto f = make_unique<FeatureData>();
+      if (!in.u16a(f->lookupListIndices, lookupIndexCount)) {
+        return EGLYF_ERROR;
       }
       if (featureParamsOffset != 0) {
         auto pos = in.position();
         if (!in.seek(featureParamsOffset)) {
-          return EGLYF_NULLOPT;
+          return EGLYF_ERROR;
         }
         string data;
         if (FCC("cv01") <= tag && tag <= FCC("cv99")) {
@@ -38,18 +36,24 @@ public:
         } else if (FCC("ss01") <= tag && tag <= FCC("ss20")) {
           data.resize(4);
         } else {
-          return EGLYF_NULLOPT_WHAT(Status::Error::UnexpectedFeatureParamsOffset());
+          return EGLYF_ERROR_WHAT(Status::Error::UnexpectedFeatureParamsOffset());
         }
         if (!in.read(data.data(), data.size())) {
-          return EGLYF_NULLOPT;
+          return EGLYF_ERROR;
         }
         if (!in.seek(pos)) {
-          return EGLYF_NULLOPT;
+          return EGLYF_ERROR;
         }
-        f.featureParams = data;
+        f->featureParams = data;
       }
-      return f;
+      out.reset(f.release());
+      return Status::Ok();
     }
+  };
+
+  struct Feature {
+    Tag tag;
+    std::shared_ptr<FeatureData> data;
   };
 
 public:
@@ -62,6 +66,7 @@ public:
       return EGLYF_NULLOPT;
     }
     vector<pair<Tag, Offset16>> featureOffsets;
+    set<Offset16> o;
     for (uint16_t i = 0; i < featureCount; i++) {
       auto tag = ReadTag(in);
       if (!tag) {
@@ -72,16 +77,30 @@ public:
         return EGLYF_NULLOPT;
       }
       featureOffsets.push_back(make_pair(*tag, offset));
+      o.insert(offset);
     }
+    map<Offset16, shared_ptr<FeatureData>> convertedFeatureDataList;
     for (auto [tag, featureOffset] : featureOffsets) {
+      auto feature = make_shared<Feature>();
+      feature->tag = tag;
+
+      auto found = convertedFeatureDataList.find(featureOffset);
+      if (found != convertedFeatureDataList.end()) {
+        feature->data = found->second;
+        featureList.featureTable.push_back(feature);
+        continue;
+      }
       if (!in.seek(featureOffset)) {
         return EGLYF_NULLOPT;
       }
       OffsetInputStream sub(&in);
-      if (auto feature = Feature::Read(sub, tag); feature) {
-        featureList.featureTable.push_back(*feature);
+      shared_ptr<FeatureData> data;
+      if (auto st = FeatureData::Read(sub, tag, data); st.ok()) {
+        feature->data = data;
+        featureList.featureTable.push_back(feature);
+        convertedFeatureDataList[featureOffset] = data;
       } else {
-        return EGLYF_NULLOPT_PUSH(feature.status());
+        return EGLYF_NULLOPT_PUSH(st);
       }
     }
     return featureList;
@@ -93,40 +112,40 @@ public:
     if (!out.sizeU16(featureTable.size())) {
       return EGLYF_ERROR;
     }
-    vector<OffsetWriter::Handle16> featureOffsets;
+    map<shared_ptr<FeatureData>, vector<OffsetWriter::Handle16>> featureOffsets;
     for (auto const &feature : featureTable) {
-      if (!out.write(feature.tag.data(), feature.tag.size())) {
+      if (!out.write(feature->tag.data(), feature->tag.size())) {
         return EGLYF_ERROR;
       }
       auto handle = featureTableBeginning->o16();
       if (!handle) {
         return EGLYF_ERROR;
       }
-      featureOffsets.push_back(handle);
+      featureOffsets[feature->data].push_back(handle);
     }
     vector<tuple<string, shared_ptr<OffsetWriter>, OffsetWriter::Handle16>> featureParamsOffsets;
-    for (size_t i = 0; i < featureTable.size(); i++) {
-      auto const &feature = featureTable[i];
-      auto handle = featureOffsets[i];
-      if (auto st = handle->mark(); !st.ok()) {
-        return EGLYF_STATUS_PUSH(st);
+    for (auto const &[data, offsets] : featureOffsets) {
+      for (auto offset : offsets) {
+        if (auto st = offset->mark(); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
       }
       auto writer = make_shared<OffsetWriter>(out);
-      if (feature.featureParams) {
+      if (data->featureParams) {
         auto offset = writer->o16();
         if (!offset) {
           return EGLYF_ERROR;
         }
-        featureParamsOffsets.push_back(make_tuple(*feature.featureParams, writer, offset));
+        featureParamsOffsets.push_back(make_tuple(*data->featureParams, writer, offset));
       } else {
         if (!out.o16(0)) {
           return EGLYF_ERROR;
         }
       }
-      if (!out.sizeU16(feature.lookupListIndices.size())) {
+      if (!out.sizeU16(data->lookupListIndices.size())) {
         return EGLYF_ERROR;
       }
-      if (!out.u16a(feature.lookupListIndices)) {
+      if (!out.u16a(data->lookupListIndices)) {
         return EGLYF_ERROR;
       }
     }
@@ -145,7 +164,7 @@ public:
   }
 
 public:
-  std::vector<Feature> featureTable;
+  std::vector<std::shared_ptr<Feature>> featureTable;
 };
 
 } // namespace eglyf

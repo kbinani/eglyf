@@ -75,7 +75,7 @@ public:
       }
     }
 
-    vector<pair<shared_ptr<Subtable>, vector<OffsetWriter::Handle16>>> handles;
+    deque<pair<shared_ptr<Subtable>, vector<OffsetWriter::Handle16>>> handles;
     vector<shared_ptr<OffsetWriter>> writers;
 
     auto lookupListBeginning = make_shared<OffsetWriter>(out);
@@ -149,20 +149,21 @@ public:
     while (!handles.empty()) {
       ranges::sort(handles, [](auto const &a, auto const &b) -> bool {
         static auto Distance = [](pair<shared_ptr<Subtable>, vector<OffsetWriter::Handle16>> const &it) -> int64_t {
-          int64_t maxOffset = 0;
+          int64_t minOffset = numeric_limits<uint32_t>::max();
           for (auto const &offset : it.second) {
             auto current = offset->current();
             if (current) {
-              maxOffset = (std::max)(maxOffset, *current);
+              minOffset = (std::min)(minOffset, *current);
             }
           }
-          return maxOffset;
+          size_t size = it.first->size();
+          return minOffset + size;
         };
         int64_t distanceA = Distance(a);
         int64_t distanceB = Distance(b);
         return distanceA < distanceB;
       });
-      auto [table, handleList] = handles.back();
+      auto [table, handleList] = handles.front();
 
       for (auto handle : handleList) {
         if (auto st = handle->mark(); !st.ok()) {
@@ -175,7 +176,7 @@ public:
       }
       jassert(pos + table->size() == out.position());
 
-      handles.pop_back();
+      handles.pop_front();
     }
 
     for (auto [table, p] : extensions) {
