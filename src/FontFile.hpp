@@ -352,6 +352,21 @@ public:
       }
     }
 
+    if (auto tr = records.find(FCC("GPOS")); tr != records.end()) {
+      if (auto buffer = tr->second.read(in); buffer) {
+        ByteInputStream slice(*buffer);
+        auto result = make_shared<GlyphPositioningTable>();
+        if (auto st = result->read(slice); st.ok()) {
+          ff->tables[tr->second.tag] = result;
+        } else {
+          return EGLYF_STATUS_PUSH(st);
+        }
+        records.erase(tr->first);
+      } else {
+        return EGLYF_ERROR;
+      }
+    }
+
     for (auto const &it : records) {
       TableRecord tr = it.second;
       auto buffer = tr.read(in);

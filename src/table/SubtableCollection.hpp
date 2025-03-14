@@ -133,7 +133,7 @@ public:
       }
     }
 
-    map<int64_t, shared_ptr<gsub::Subtable>> subtables;
+    map<int64_t, shared_ptr<T>> subtables;
     map<shared_ptr<LookupList::Lookup>, shared_ptr<LookupData>> convertedLookupDataList;
     for (size_t i = 0; i < lookupList.lookupTable.size(); i++) {
       shared_ptr<LookupList::Lookup> it = lookupList.lookupTable[i];
@@ -158,7 +158,7 @@ public:
             return EGLYF_ERROR;
           }
           OffsetInputStream sub(&in);
-          shared_ptr<gsub::Subtable> table;
+          shared_ptr<T> table;
           if (auto st = readSubtable(sub, it->lookupType, table); st.ok()) {
             data->subtables.push_back(table);
           } else {
@@ -338,7 +338,7 @@ public:
     }
 
     LookupList lookupList;
-    vector<vector<shared_ptr<gsub::Subtable>>> subtables;
+    vector<vector<shared_ptr<T>>> subtables;
     map<shared_ptr<LookupData>, shared_ptr<LookupList::Lookup>> convertedLookups;
     for (auto const &lookup : lookups) {
       subtables.push_back(lookup->data->subtables);
@@ -463,7 +463,7 @@ public:
     if (auto st = lookupListOffsetHandle->mark(); !st.ok()) {
       return EGLYF_NULLOPT_PUSH(st);
     }
-    if (auto st = lookupList.write<gsub::Subtable>(out, subtables); !st.ok()) {
+    if (auto st = lookupList.write<T>(out, subtables); !st.ok()) {
       return EGLYF_NULLOPT_PUSH(st);
     }
 

@@ -74,6 +74,9 @@ list(APPEND src_files
   src/table/gsub/Contextual.hpp
   src/table/FeatureVariations.hpp
   src/SharedListWriter.hpp
+  src/table/gpos/SingleAdjustment.hpp
+  src/table/gpos/Subtable.hpp
+  src/table/GlyphPositioningTable.hpp
 )
 
 juce_add_console_app(eglyf)
