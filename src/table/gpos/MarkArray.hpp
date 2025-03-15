@@ -12,6 +12,7 @@ class MarkArray {
 public:
   static Status Read(InputStream &in, MarkArray &out) {
     using namespace std;
+    jassert(in.position() == 0);
     uint16_t markCount;
     if (!in.u16(&markCount)) {
       return EGLYF_ERROR;

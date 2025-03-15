@@ -43,7 +43,10 @@ public:
       }
       break;
     case 6:
-      return EGLYF_ERROR;
+      if (auto st = MarkToMarkAttachmentPositioning::Read(sub, ret->extension); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+      break;
     case 7:
       return EGLYF_ERROR;
     case 8:

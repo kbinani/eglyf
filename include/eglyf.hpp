@@ -62,6 +62,7 @@
 #include "table/gpos/SingleAdjustment.hpp"
 #include "table/gpos/MarkToBaseAttachment.hpp"
 #include "table/gpos/MarkToLigatureAttachmentPositioning.hpp"
+#include "table/gpos/MarkToMarkAttachmentPositioning.hpp"
 #include "table/gpos/PositioningExtension.hpp"
 #include "table/GlyphSubstitutionTable.hpp"
 #include "table/GlyphPositioningTable.hpp"
