@@ -77,6 +77,7 @@ list(APPEND src_files
   src/table/gpos/SingleAdjustment.hpp
   src/table/gpos/Subtable.hpp
   src/table/GlyphPositioningTable.hpp
+  src/table/gpos/PositioningExtension.hpp
 )
 
 juce_add_console_app(eglyf)

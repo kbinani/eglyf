@@ -8,14 +8,23 @@ public:
     using namespace std;
     switch (lookupType) {
     case 1:
+      return EGLYF_ERROR;
     case 2:
+      return EGLYF_ERROR;
     case 3:
+      return EGLYF_ERROR;
     case 4:
+      return EGLYF_ERROR;
     case 5:
+      return EGLYF_ERROR;
     case 6:
+      return EGLYF_ERROR;
     case 7:
+      return EGLYF_ERROR;
     case 8:
+      return EGLYF_ERROR;
     case 9:
+      return gpos::PositioningExtension::Read(in, out);
     default:
       return EGLYF_ERROR;
     }
