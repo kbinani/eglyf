@@ -27,7 +27,7 @@ public:
     OffsetInputStream sub(&in);
     switch (ret->extensionLookupType) {
     case 1:
-      if (auto st = SingleAdjustmentReader::Read(sub, ret->extension); !st.ok()) {
+      if (auto st = SingleAdjustment::Read(sub, ret->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
       break;
@@ -51,7 +51,7 @@ public:
       }
       break;
     case 7:
-      if (auto st = ContextualReader::Read(sub, ret->extension); !st.ok()) {
+      if (auto st = Contextual::Read(sub, ret->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
       break;

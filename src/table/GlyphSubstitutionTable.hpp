@@ -16,7 +16,7 @@ public:
     case 4:
       return EGLYF_STATUS_PUSH(gsub::Ligature::Read(in, out));
     case 5:
-      return EGLYF_STATUS_PUSH(ContextualReader::Read(in, out));
+      return EGLYF_STATUS_PUSH(Contextual::Read(in, out));
     case 6:
       return EGLYF_STATUS_PUSH(ChainedContexts::Read(in, out));
     case 7:

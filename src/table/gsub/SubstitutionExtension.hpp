@@ -51,7 +51,7 @@ public:
       }
     } else if (r->extensionLookupType == 5) {
       // Contextual substitution
-      if (auto st = ContextualReader::Read(sub, r->extension); !st.ok()) {
+      if (auto st = Contextual::Read(sub, r->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     } else if (r->extensionLookupType == 6) {

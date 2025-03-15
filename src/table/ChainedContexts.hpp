@@ -809,6 +809,8 @@ public:
 };
 
 class ChainedContexts {
+  ChainedContexts() = delete;
+
 public:
   static Status Read(InputStream &in, std::shared_ptr<Subtable> &out) {
     using namespace std;

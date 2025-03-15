@@ -8,7 +8,7 @@ public:
     using namespace std;
     switch (lookupType) {
     case 1:
-      return EGLYF_STATUS_PUSH(gpos::SingleAdjustmentReader::Read(in, out));
+      return EGLYF_STATUS_PUSH(gpos::SingleAdjustment::Read(in, out));
     case 2:
       return EGLYF_ERROR;
     case 3:
@@ -20,7 +20,7 @@ public:
     case 6:
       return EGLYF_STATUS_PUSH(gpos::MarkToMarkAttachmentPositioning::Read(in, out));
     case 7:
-      return EGLYF_STATUS_PUSH(ContextualReader::Read(in, out));
+      return EGLYF_STATUS_PUSH(Contextual::Read(in, out));
     case 8:
       return EGLYF_STATUS_PUSH(ChainedContexts::Read(in, out));
     case 9:

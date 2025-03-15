@@ -2,11 +2,6 @@
 
 namespace eglyf::gpos {
 
-class SingleAdjustment {
-public:
-  virtual ~SingleAdjustment() {}
-};
-
 class SingleAdjustment1 : public Subtable {
 public:
   static Status Read(InputStream &in, std::shared_ptr<Subtable> &out) {
@@ -93,8 +88,8 @@ public:
   std::vector<ValueRecord> valueRecords;
 };
 
-class SingleAdjustmentReader {
-  SingleAdjustmentReader() = delete;
+class SingleAdjustment {
+  SingleAdjustment() = delete;
 
 public:
   static Status Read(InputStream &in, std::shared_ptr<Subtable> &out) {

@@ -553,8 +553,8 @@ public:
   std::vector<SequenceLookup> seqLookupRecords;
 };
 
-class ContextualReader {
-  ContextualReader() = delete;
+class Contextual {
+  Contextual() = delete;
 
 public:
   static Status Read(InputStream &in, std::shared_ptr<Subtable> &out) {
