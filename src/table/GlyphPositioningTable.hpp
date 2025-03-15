@@ -8,7 +8,7 @@ public:
     using namespace std;
     switch (lookupType) {
     case 1:
-      return EGLYF_ERROR;
+      return EGLYF_STATUS_PUSH(gpos::SingleAdjustmentReader::Read(in, out));
     case 2:
       return EGLYF_ERROR;
     case 3:
