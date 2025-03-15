@@ -3,11 +3,11 @@
 namespace eglyf {
 
 template <class T>
-concept Subtable = requires(T &t, OutputStream &out, std::map<std::shared_ptr<T>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) {
+concept subtable = requires(T &t, OutputStream &out, std::map<std::shared_ptr<T>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) {
   { t.write(out, extensions) } -> std::convertible_to<Status>;
 };
 
-template <Subtable T>
+template <subtable T>
 class SubtableCollection : public Table {
 public:
   struct LookupData {

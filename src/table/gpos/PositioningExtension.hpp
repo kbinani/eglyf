@@ -48,9 +48,15 @@ public:
       }
       break;
     case 7:
-      return EGLYF_ERROR;
+      if (auto st = ContextualReader::Read(sub, ret->extension); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+      break;
     case 8:
-      return EGLYF_ERROR;
+      if (auto st = ChainedContexts::Read(sub, ret->extension); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+      break;
     case 9:
       return EGLYF_ERROR;
     default:

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace eglyf::gsub {
+namespace eglyf {
 
 class Contextual1 : public Subtable {
 public:
@@ -574,4 +574,4 @@ public:
   }
 };
 
-} // namespace eglyf::gsub
+} // namespace eglyf

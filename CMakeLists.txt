@@ -57,13 +57,13 @@ list(APPEND src_files
   src/table/coverage/Coverage.hpp
   src/table/coverage/CoverageReader.hpp
   src/table/ClassDef.hpp
-  src/table/gsub/Subtable.hpp
+  src/table/Subtable.hpp
   src/table/gsub/Single.hpp
   src/table/gsub/SubstitutionExtension.hpp
   src/table/gsub/Ligature.hpp
   src/table/gsub/Multiple.hpp
-  src/table/gsub/SequenceLookup.hpp
-  src/table/gsub/ChainedContexts.hpp
+  src/table/SequenceLookup.hpp
+  src/table/ChainedContexts.hpp
   src/table/gsub/ReverseChainedContextsSingle.hpp
   src/io/OffsetWriter.hpp
   src/table/gsub/Alternate.hpp
@@ -71,11 +71,10 @@ list(APPEND src_files
   src/status.hpp
   src/errno.hpp
   src/optional.hpp
-  src/table/gsub/Contextual.hpp
+  src/table/Contextual.hpp
   src/table/FeatureVariations.hpp
   src/SharedListWriter.hpp
   src/table/gpos/SingleAdjustment.hpp
-  src/table/gpos/Subtable.hpp
   src/table/GlyphPositioningTable.hpp
   src/table/gpos/PositioningExtension.hpp
   src/table/gpos/MarkToBaseAttachment.hpp

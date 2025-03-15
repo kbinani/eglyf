@@ -1,6 +1,6 @@
 #pragma once
 
-namespace eglyf::gsub {
+namespace eglyf {
 
 class ChainedContexts1 : public Subtable {
 public:
@@ -829,4 +829,4 @@ public:
   }
 };
 
-} // namespace eglyf::gsub
+} // namespace eglyf

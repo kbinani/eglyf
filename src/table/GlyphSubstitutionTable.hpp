@@ -2,9 +2,9 @@
 
 namespace eglyf {
 
-class GlyphSubstitutionTable : public SubtableCollection<gsub::Subtable> {
+class GlyphSubstitutionTable : public SubtableCollection<Subtable> {
 public:
-  Status readSubtable(InputStream &in, uint16_t lookupType, std::shared_ptr<gsub::Subtable> &out) override {
+  Status readSubtable(InputStream &in, uint16_t lookupType, std::shared_ptr<Subtable> &out) override {
     using namespace std;
     switch (lookupType) {
     case 1:
@@ -16,9 +16,9 @@ public:
     case 4:
       return EGLYF_STATUS_PUSH(gsub::Ligature::Read(in, out));
     case 5:
-      return EGLYF_STATUS_PUSH(gsub::ContextualReader::Read(in, out));
+      return EGLYF_STATUS_PUSH(ContextualReader::Read(in, out));
     case 6:
-      return EGLYF_STATUS_PUSH(gsub::ChainedContexts::Read(in, out));
+      return EGLYF_STATUS_PUSH(ChainedContexts::Read(in, out));
     case 7:
       return EGLYF_STATUS_PUSH(gsub::SubstitutionExtension::Read(in, out));
     case 8:

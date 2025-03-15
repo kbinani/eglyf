@@ -1,6 +1,6 @@
 #pragma once
 
-namespace eglyf::gsub {
+namespace eglyf {
 
 class Subtable {
 public:
@@ -11,4 +11,4 @@ public:
   std::shared_ptr<Coverage> coverage;
 };
 
-} // namespace eglyf::gsub
+} // namespace eglyf

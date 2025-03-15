@@ -1,6 +1,6 @@
 #pragma once
 
-namespace eglyf::gsub {
+namespace eglyf {
 
 struct SequenceLookup {
   uint16_t sequenceIndex;
@@ -30,4 +30,4 @@ struct SequenceLookup {
   }
 };
 
-} // namespace eglyf::gsub
+} // namespace eglyf

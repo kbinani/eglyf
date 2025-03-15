@@ -46,12 +46,12 @@ public:
       }
     } else if (r->extensionLookupType == 4) {
       // Ligature
-      if (auto st = Ligature::Read(sub, r->extension); !st.ok()) {
+      if (auto st = gsub::Ligature::Read(sub, r->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     } else if (r->extensionLookupType == 5) {
       // Contextual substitution
-      if (auto st = gsub::ContextualReader::Read(sub, r->extension); !st.ok()) {
+      if (auto st = ContextualReader::Read(sub, r->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     } else if (r->extensionLookupType == 6) {
@@ -61,7 +61,7 @@ public:
       }
     } else if (r->extensionLookupType == 8) {
       // Reverse chaining context single
-      if (auto st = ReverseChainedContextsSingle::Read(sub, r->extension); !st.ok()) {
+      if (auto st = gsub::ReverseChainedContextsSingle::Read(sub, r->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     } else {
