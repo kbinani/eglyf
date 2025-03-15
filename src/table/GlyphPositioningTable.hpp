@@ -16,7 +16,7 @@ public:
     case 4:
       return EGLYF_STATUS_PUSH(gpos::MarkToBaseAttachment::Read(in, out));
     case 5:
-      return EGLYF_ERROR;
+      return EGLYF_STATUS_PUSH(gpos::MarkToLigatureAttachmentPositioning::Read(in, out));
     case 6:
       return EGLYF_ERROR;
     case 7:

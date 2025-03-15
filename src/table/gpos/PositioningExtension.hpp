@@ -36,8 +36,12 @@ public:
       if (auto st = MarkToBaseAttachment::Read(sub, ret->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
+      break;
     case 5:
-      return EGLYF_ERROR;
+      if (auto st = MarkToLigatureAttachmentPositioning::Read(sub, ret->extension); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+      break;
     case 6:
       return EGLYF_ERROR;
     case 7:

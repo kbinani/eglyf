@@ -81,6 +81,7 @@ list(APPEND src_files
   src/table/gpos/MarkToBaseAttachment.hpp
   src/table/gpos/Anchor.hpp
   src/table/gpos/MarkArray.hpp
+  src/table/gpos/MarkToLigatureAttachmentPositioning.hpp
 )
 
 juce_add_console_app(eglyf)
