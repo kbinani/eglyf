@@ -78,6 +78,9 @@ list(APPEND src_files
   src/table/gpos/Subtable.hpp
   src/table/GlyphPositioningTable.hpp
   src/table/gpos/PositioningExtension.hpp
+  src/table/gpos/MarkToBaseAttachment.hpp
+  src/table/gpos/Anchor.hpp
+  src/table/gpos/MarkArray.hpp
 )
 
 juce_add_console_app(eglyf)

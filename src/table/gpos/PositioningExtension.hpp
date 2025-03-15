@@ -24,6 +24,7 @@ public:
     if (!in.seek(extensionOffset)) {
       return EGLYF_ERROR;
     }
+    OffsetInputStream sub(&in);
     switch (ret->extensionLookupType) {
     case 1:
       return EGLYF_ERROR;
@@ -32,7 +33,9 @@ public:
     case 3:
       return EGLYF_ERROR;
     case 4:
-      return EGLYF_ERROR;
+      if (auto st = MarkToBaseAttachment::Read(sub, ret->extension); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
     case 5:
       return EGLYF_ERROR;
     case 6:

@@ -14,7 +14,7 @@ public:
     case 3:
       return EGLYF_ERROR;
     case 4:
-      return EGLYF_ERROR;
+      return EGLYF_STATUS_PUSH(gpos::MarkToBaseAttachment::Read(in, out));
     case 5:
       return EGLYF_ERROR;
     case 6:
@@ -24,7 +24,7 @@ public:
     case 8:
       return EGLYF_ERROR;
     case 9:
-      return gpos::PositioningExtension::Read(in, out);
+      return EGLYF_STATUS_PUSH(gpos::PositioningExtension::Read(in, out));
     default:
       return EGLYF_ERROR;
     }
