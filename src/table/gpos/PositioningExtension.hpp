@@ -32,7 +32,10 @@ public:
       }
       break;
     case 2:
-      return EGLYF_ERROR;
+      if (auto st = PairAdjustmentPositioning::Read(sub, ret->extension); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+      break;
     case 3:
       return EGLYF_ERROR;
     case 4:

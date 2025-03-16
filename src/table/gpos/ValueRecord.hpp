@@ -164,6 +164,35 @@ public:
     }
     return ret;
   }
+
+  static size_t Size(uint16_t format) {
+    size_t ret = 0;
+    if (format & X_PLACEMENT) {
+      ret += sizeof(int16_t);
+    }
+    if (format & Y_PLACEMENT) {
+      ret += sizeof(int16_t);
+    }
+    if (format & X_ADVANCE) {
+      ret += sizeof(int16_t);
+    }
+    if (format & Y_ADVANCE) {
+      ret += sizeof(int16_t);
+    }
+    if (format & X_PLACEMENT_DEVICE) {
+      ret += sizeof(Offset16);
+    }
+    if (format & Y_PLACEMENT_DEVICE) {
+      ret += sizeof(Offset16);
+    }
+    if (format & X_ADVANCE_DEVICE) {
+      ret += sizeof(Offset16);
+    }
+    if (format & Y_ADVANCE_DEVICE) {
+      ret += sizeof(Offset16);
+    }
+    return ret;
+  }
 };
 
 } // namespace eglyf::gpos

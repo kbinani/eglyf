@@ -10,7 +10,7 @@ public:
     case 1:
       return EGLYF_STATUS_PUSH(gpos::SingleAdjustment::Read(in, out));
     case 2:
-      return EGLYF_ERROR;
+      return EGLYF_STATUS_PUSH(gpos::PairAdjustmentPositioning::Read(in, out));
     case 3:
       return EGLYF_ERROR;
     case 4:
