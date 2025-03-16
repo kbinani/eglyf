@@ -9,10 +9,14 @@ public:
   };
 
   struct BaseArray {
+    uint16_t markClassCount;
     std::vector<BaseRecord> baseRecords;
 
     static Status Read(InputStream &in, BaseArray &out, uint16_t markClassCount) {
       using namespace std;
+      out.markClassCount = markClassCount;
+      out.baseRecords.clear();
+
       uint16_t baseCount;
       jassert(in.position() == 0);
       if (!in.u16(&baseCount)) {
@@ -29,6 +33,10 @@ public:
       for (auto const &offsets : baseAnchorOffsets) {
         BaseRecord record;
         for (auto offset : offsets) {
+          if (offset == 0) {
+            record.baseAnchors.push_back(nullptr);
+            continue;
+          }
           if (!in.seek(offset)) {
             return EGLYF_ERROR;
           }
@@ -41,6 +49,63 @@ public:
         out.baseRecords.push_back(record);
       }
       return Status::Ok();
+    }
+
+    Status write(OutputStream &out) const {
+      using namespace std;
+      auto writer = make_shared<OffsetWriter>(out);
+      if (!out.sizeU16(baseRecords.size())) {
+        return EGLYF_ERROR;
+      }
+      vector<vector<OffsetWriter::Handle16>> baseAnchorOffsetsList;
+      for (auto const &record : baseRecords) {
+        if (record.baseAnchors.size() != markClassCount) {
+          return EGLYF_ERROR;
+        }
+        vector<OffsetWriter::Handle16> offsets;
+        for (size_t i = 0; i < record.baseAnchors.size(); i++) {
+          auto offset = writer->o16();
+          if (!offset) {
+            return EGLYF_ERROR;
+          }
+          offsets.push_back(offset);
+        }
+        baseAnchorOffsetsList.push_back(offsets);
+      }
+      for (size_t i = 0; i < baseRecords.size(); i++) {
+        auto const &record = baseRecords[i];
+        auto const &offsets = baseAnchorOffsetsList[i];
+        for (size_t j = 0; j < record.baseAnchors.size(); j++) {
+          auto const &anchor = record.baseAnchors[j];
+          auto offset = offsets[j];
+          if (anchor) {
+            if (auto st = offset->mark(); !st.ok()) {
+              return EGLYF_STATUS_PUSH(st);
+            }
+            if (auto st = anchor->write(out); !st.ok()) {
+              return EGLYF_STATUS_PUSH(st);
+            }
+          } else {
+            if (auto st = offset->null(); !st.ok()) {
+              return EGLYF_STATUS_PUSH(st);
+            }
+          }
+        }
+      }
+      return EGLYF_STATUS_PUSH(writer->commit());
+    }
+
+    size_t size() const {
+      size_t ret = sizeof(uint16_t);
+      for (auto const &record : baseRecords) {
+        ret += record.baseAnchors.size() * sizeof(Offset16);
+        for (auto const &anchor : record.baseAnchors) {
+          if (anchor) {
+            ret += anchor->size();
+          }
+        }
+      }
+      return ret;
     }
   };
 
@@ -117,11 +182,68 @@ public:
   }
 
   Status write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) override {
-    return EGLYF_ERROR;
+    using namespace std;
+    auto writer = make_shared<OffsetWriter>(out);
+    if (!out.u16(1)) {
+      return EGLYF_ERROR;
+    }
+    auto markCoverageOffset = writer->o16();
+    if (!markCoverageOffset) {
+      return EGLYF_ERROR;
+    }
+    auto baseCoverageOffset = writer->o16();
+    if (!baseCoverageOffset) {
+      return EGLYF_ERROR;
+    }
+    if (!out.u16(baseArray.markClassCount)) {
+      return EGLYF_ERROR;
+    }
+    auto markArrayOffset = writer->o16();
+    if (!markArrayOffset) {
+      return EGLYF_ERROR;
+    }
+    auto baseArrayOffset = writer->o16();
+    if (!baseArrayOffset) {
+      return EGLYF_ERROR;
+    }
+
+    if (auto st = markCoverageOffset->mark(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    if (auto st = markCoverage->write(out); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+
+    if (auto st = baseCoverageOffset->mark(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    if (auto st = baseCoverage->write(out); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+
+    if (auto st = markArrayOffset->mark(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    if (auto st = markArray.write(out); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+
+    if (auto st = baseArrayOffset->mark(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    if (auto st = baseArray.write(out); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    return EGLYF_STATUS_PUSH(writer->commit());
   }
 
   size_t size() const override {
-    return 0;
+    size_t ret = 2 * sizeof(uint16_t) + 4 * sizeof(Offset16);
+    ret += markCoverage->size();
+    ret += baseCoverage->size();
+    ret += markArray.size();
+    ret += baseArray.size();
+    return ret;
   }
 
 public:
