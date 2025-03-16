@@ -9,11 +9,13 @@ public:
   };
 
   struct Mark2Array {
+    uint16_t markClassCount;
     std::vector<Mark2> mark2Records;
 
     static Status Read(InputStream &in, Mark2Array &out, uint16_t markClassCount) {
       using namespace std;
       jassert(in.position() == 0);
+      out.markClassCount = markClassCount;
       uint16_t mark2Count;
       if (!in.u16(&mark2Count)) {
         return EGLYF_ERROR;
@@ -41,6 +43,54 @@ public:
         out.mark2Records.push_back(mark2);
       }
       return Status::Ok();
+    }
+
+    Status write(OutputStream &out) const {
+      using namespace std;
+      auto writer = make_shared<OffsetWriter>(out);
+      if (!out.sizeU16(mark2Records.size())) {
+        return EGLYF_ERROR;
+      }
+      vector<vector<OffsetWriter::Handle16>> mark2AnchorOffsetsList;
+      for (Mark2 const &mark : mark2Records) {
+        if (mark.mark2Anchors.size() != markClassCount) {
+          return EGLYF_ERROR;
+        }
+        vector<OffsetWriter::Handle16> mark2AnchorOffsets;
+        for (size_t i = 0; i < mark.mark2Anchors.size(); i++) {
+          auto offset = writer->o16();
+          if (!offset) {
+            return EGLYF_ERROR;
+          }
+          mark2AnchorOffsets.push_back(offset);
+        }
+        mark2AnchorOffsetsList.push_back(mark2AnchorOffsets);
+      }
+      for (size_t i = 0; i < mark2Records.size(); i++) {
+        Mark2 const &mark = mark2Records[i];
+        auto const &offsets = mark2AnchorOffsetsList[i];
+        for (size_t j = 0; j < mark.mark2Anchors.size(); j++) {
+          auto const &anchor = mark.mark2Anchors[j];
+          auto offset = offsets[j];
+          if (auto st = offset->mark(); !st.ok()) {
+            return EGLYF_STATUS_PUSH(st);
+          }
+          if (auto st = anchor->write(out); !st.ok()) {
+            return EGLYF_STATUS_PUSH(st);
+          }
+        }
+      }
+      return EGLYF_STATUS_PUSH(writer->commit());
+    }
+
+    size_t size() const {
+      size_t ret = sizeof(uint16_t) + mark2Records.size() * markClassCount * sizeof(Offset16);
+      for (auto const &record : mark2Records) {
+        for (auto const &anchor : record.mark2Anchors) {
+          ret += anchor->size();
+        }
+      }
+      return ret;
     }
   };
 
@@ -116,11 +166,68 @@ public:
   }
 
   Status write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) override {
-    return EGLYF_ERROR;
+    using namespace std;
+    auto writer = make_shared<OffsetWriter>(out);
+    if (!out.u16(1)) {
+      return EGLYF_ERROR;
+    }
+    auto mark1CoverageOffset = writer->o16();
+    if (!mark1CoverageOffset) {
+      return EGLYF_ERROR;
+    }
+    auto mark2CoverageOffset = writer->o16();
+    if (!mark2CoverageOffset) {
+      return EGLYF_ERROR;
+    }
+    if (!out.u16(mark2Array.markClassCount)) {
+      return EGLYF_ERROR;
+    }
+    auto mark1ArrayOffset = writer->o16();
+    if (!mark1ArrayOffset) {
+      return EGLYF_ERROR;
+    }
+    auto mark2ArrayOffset = writer->o16();
+    if (!mark2ArrayOffset) {
+      return EGLYF_ERROR;
+    }
+
+    if (auto st = mark1CoverageOffset->mark(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    if (auto st = mark1Coverage->write(out); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+
+    if (auto st = mark2CoverageOffset->mark(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    if (auto st = mark2Coverage->write(out); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+
+    if (auto st = mark1ArrayOffset->mark(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    if (auto st = mark1Array.write(out); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+
+    if (auto st = mark2ArrayOffset->mark(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    if (auto st = mark2Array.write(out); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    return EGLYF_STATUS_PUSH(writer->commit());
   }
 
   size_t size() const override {
-    return 0;
+    size_t ret = 2 * sizeof(uint16_t) + 4 * sizeof(Offset16);
+    ret += mark1Coverage->size();
+    ret += mark2Coverage->size();
+    ret += mark1Array.size();
+    ret += mark2Array.size();
+    return ret;
   }
 
 public:

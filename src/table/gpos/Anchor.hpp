@@ -5,6 +5,8 @@ namespace eglyf::gpos {
 class Anchor {
 public:
   virtual ~Anchor() {}
+  virtual Status write(OutputStream &out) const = 0;
+  virtual size_t size() const = 0;
 };
 
 class Anchor1 : public Anchor {
@@ -20,6 +22,23 @@ public:
     }
     out.reset(ret.release());
     return Status::Ok();
+  }
+
+  Status write(OutputStream &out) const override {
+    if (!out.u16(1)) {
+      return EGLYF_ERROR;
+    }
+    if (!out.i16(xCoordinate)) {
+      return EGLYF_ERROR;
+    }
+    if (!out.i16(yCoordinate)) {
+      return EGLYF_ERROR;
+    }
+    return Status::Ok();
+  }
+
+  size_t size() const override {
+    return sizeof(uint16_t) + 2 * sizeof(int16_t);
   }
 
 public:
@@ -43,6 +62,26 @@ public:
     }
     out.reset(ret.release());
     return Status::Ok();
+  }
+
+  Status write(OutputStream &out) const override {
+    if (!out.u16(2)) {
+      return EGLYF_ERROR;
+    }
+    if (!out.i16(xCoordinate)) {
+      return EGLYF_ERROR;
+    }
+    if (!out.i16(yCoordinate)) {
+      return EGLYF_ERROR;
+    }
+    if (!out.u16(anchorPoint)) {
+      return EGLYF_ERROR;
+    }
+    return Status::Ok();
+  }
+
+  size_t size() const override {
+    return 2 * sizeof(uint16_t) + 2 * sizeof(int16_t);
   }
 
 public:

@@ -45,6 +45,44 @@ public:
     return Status::Ok();
   }
 
+  Status write(OutputStream &out) const {
+    using namespace std;
+    auto writer = make_shared<OffsetWriter>(out);
+    if (!out.sizeU16(markRecords.size())) {
+      return EGLYF_ERROR;
+    }
+    vector<OffsetWriter::Handle16> markAnchorOffsets;
+    for (MarkRecord const &record : markRecords) {
+      if (!out.u16(record.markClass)) {
+        return EGLYF_ERROR;
+      }
+      auto markAnchorOffset = writer->o16();
+      if (!markAnchorOffset) {
+        return EGLYF_ERROR;
+      }
+      markAnchorOffsets.push_back(markAnchorOffset);
+    }
+    for (size_t i = 0; i < markRecords.size(); i++) {
+      auto const &record = markRecords[i];
+      auto offset = markAnchorOffsets[i];
+      if (auto st = offset->mark(); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+      if (auto st = record.markAnchor->write(out); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+    }
+    return EGLYF_STATUS_PUSH(writer->commit());
+  }
+
+  size_t size() const {
+    size_t ret = sizeof(uint16_t) + markRecords.size() * (sizeof(uint16_t) + sizeof(Offset16));
+    for (auto const &record : markRecords) {
+      ret += record.markAnchor->size();
+    }
+    return ret;
+  }
+
 public:
   std::vector<MarkRecord> markRecords;
 };
