@@ -423,8 +423,8 @@ class PairAdjustmentPositioning {
   PairAdjustmentPositioning() = delete;
 
 public:
-  static Status Read(InputStream &in, std::shared_ptr<Subtable> &out) {
-    jassert(in.position() == 0);
+  static Status Read(InputStream &stream, std::shared_ptr<Subtable> &out) {
+    OffsetInputStream in(&stream);
     uint16_t format;
     if (!in.u16(&format)) {
       return EGLYF_ERROR;

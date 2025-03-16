@@ -12,13 +12,14 @@ public:
     uint16_t markClassCount;
     std::vector<BaseRecord> baseRecords;
 
-    static Status Read(InputStream &in, BaseArray &out, uint16_t markClassCount) {
+    static Status Read(InputStream &stream, BaseArray &out, uint16_t markClassCount) {
       using namespace std;
       out.markClassCount = markClassCount;
       out.baseRecords.clear();
 
+      OffsetInputStream in(&stream);
+
       uint16_t baseCount;
-      jassert(in.position() == 0);
       if (!in.u16(&baseCount)) {
         return EGLYF_ERROR;
       }
@@ -110,9 +111,9 @@ public:
   };
 
 public:
-  static Status Read(InputStream &in, std::shared_ptr<Subtable> &out) {
+  static Status Read(InputStream &stream, std::shared_ptr<Subtable> &out) {
     using namespace std;
-    jassert(in.position() == 0);
+    OffsetInputStream in(&stream);
     uint16_t format;
     if (!in.u16(&format)) {
       return EGLYF_ERROR;
@@ -161,8 +162,7 @@ public:
       if (!in.seek(markArrayOffset)) {
         return EGLYF_ERROR;
       }
-      OffsetInputStream sub(&in);
-      if (auto st = MarkArray::Read(sub, ret->markArray); !st.ok()) {
+      if (auto st = MarkArray::Read(in, ret->markArray); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     }
@@ -171,8 +171,7 @@ public:
       if (!in.seek(baseArrayOffset)) {
         return EGLYF_ERROR;
       }
-      OffsetInputStream sub(&in);
-      if (auto st = BaseArray::Read(sub, ret->baseArray, markClassCount); !st.ok()) {
+      if (auto st = BaseArray::Read(in, ret->baseArray, markClassCount); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     }

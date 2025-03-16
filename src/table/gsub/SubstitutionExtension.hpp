@@ -4,9 +4,9 @@ namespace eglyf::gsub {
 
 class SubstitutionExtension : public Subtable {
 public:
-  static Status Read(InputStream &in, std::shared_ptr<Subtable> &out) {
+  static Status Read(InputStream &stream, std::shared_ptr<Subtable> &out) {
     using namespace std;
-    jassert(in.position() == 0);
+    OffsetInputStream in(&stream);
     uint16_t format;
     if (!in.u16(&format)) {
       return EGLYF_ERROR;
@@ -28,40 +28,39 @@ public:
     if (!in.seek(extensionOffset)) {
       return EGLYF_ERROR;
     }
-    OffsetInputStream sub(&in);
     if (r->extensionLookupType == 1) {
       // Single
-      if (auto st = gsub::Single::Read(sub, r->extension); !st.ok()) {
+      if (auto st = gsub::Single::Read(in, r->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     } else if (r->extensionLookupType == 2) {
       // Multiple
-      if (auto st = gsub::Multiple::Read(sub, r->extension); !st.ok()) {
+      if (auto st = gsub::Multiple::Read(in, r->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     } else if (r->extensionLookupType == 3) {
       // Alternate
-      if (auto st = gsub::Alternate::Read(sub, r->extension); !st.ok()) {
+      if (auto st = gsub::Alternate::Read(in, r->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     } else if (r->extensionLookupType == 4) {
       // Ligature
-      if (auto st = gsub::Ligature::Read(sub, r->extension); !st.ok()) {
+      if (auto st = gsub::Ligature::Read(in, r->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     } else if (r->extensionLookupType == 5) {
       // Contextual substitution
-      if (auto st = Contextual::Read(sub, r->extension); !st.ok()) {
+      if (auto st = Contextual::Read(in, r->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     } else if (r->extensionLookupType == 6) {
       // Chained contexts substitution
-      if (auto st = ChainedContexts::Read(sub, r->extension); !st.ok()) {
+      if (auto st = ChainedContexts::Read(in, r->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     } else if (r->extensionLookupType == 8) {
       // Reverse chaining context single
-      if (auto st = gsub::ReverseChainedContextsSingle::Read(sub, r->extension); !st.ok()) {
+      if (auto st = gsub::ReverseChainedContextsSingle::Read(in, r->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     } else {

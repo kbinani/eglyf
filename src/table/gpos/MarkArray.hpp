@@ -10,9 +10,9 @@ public:
 
 class MarkArray {
 public:
-  static Status Read(InputStream &in, MarkArray &out) {
+  static Status Read(InputStream &stream, MarkArray &out) {
     using namespace std;
-    jassert(in.position() == 0);
+    OffsetInputStream in(&stream);
     uint16_t markCount;
     if (!in.u16(&markCount)) {
       return EGLYF_ERROR;

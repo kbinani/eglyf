@@ -24,42 +24,41 @@ public:
     if (!in.seek(extensionOffset)) {
       return EGLYF_ERROR;
     }
-    OffsetInputStream sub(&in);
     switch (ret->extensionLookupType) {
     case 1:
-      if (auto st = SingleAdjustment::Read(sub, ret->extension); !st.ok()) {
+      if (auto st = SingleAdjustment::Read(in, ret->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
       break;
     case 2:
-      if (auto st = PairAdjustmentPositioning::Read(sub, ret->extension); !st.ok()) {
+      if (auto st = PairAdjustmentPositioning::Read(in, ret->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
       break;
     case 3:
       return EGLYF_ERROR;
     case 4:
-      if (auto st = MarkToBaseAttachment::Read(sub, ret->extension); !st.ok()) {
+      if (auto st = MarkToBaseAttachment::Read(in, ret->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
       break;
     case 5:
-      if (auto st = MarkToLigatureAttachmentPositioning::Read(sub, ret->extension); !st.ok()) {
+      if (auto st = MarkToLigatureAttachmentPositioning::Read(in, ret->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
       break;
     case 6:
-      if (auto st = MarkToMarkAttachmentPositioning::Read(sub, ret->extension); !st.ok()) {
+      if (auto st = MarkToMarkAttachmentPositioning::Read(in, ret->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
       break;
     case 7:
-      if (auto st = Contextual::Read(sub, ret->extension); !st.ok()) {
+      if (auto st = Contextual::Read(in, ret->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
       break;
     case 8:
-      if (auto st = ChainedContexts::Read(sub, ret->extension); !st.ok()) {
+      if (auto st = ChainedContexts::Read(in, ret->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
       break;

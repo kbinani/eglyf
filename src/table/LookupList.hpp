@@ -13,9 +13,9 @@ public:
   };
 
 public:
-  static Optional<LookupList> Read(InputStream &in) {
+  static Optional<LookupList> Read(InputStream &stream) {
     using namespace std;
-    jassert(in.position() == 0);
+    OffsetInputStream in(&stream);
     LookupList ret;
     uint16_t lookupCount;
     if (!in.u16(&lookupCount)) {

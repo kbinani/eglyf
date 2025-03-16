@@ -41,9 +41,9 @@ public:
   };
 
 public:
-  static Optional<ScriptList> Read(InputStream &in) {
+  static Optional<ScriptList> Read(InputStream &stream) {
     using namespace std;
-    jassert(in.position() == 0);
+    OffsetInputStream in(&stream);
 
     ScriptList scriptList;
     uint16_t scriptCount;

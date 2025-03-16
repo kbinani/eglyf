@@ -8,9 +8,9 @@ public:
     std::optional<std::string> featureParams;
     std::vector<uint16_t> lookupListIndices;
 
-    static Status Read(InputStream &in, Tag tag, std::shared_ptr<FeatureData> &out) {
+    static Status Read(InputStream &stream, Tag tag, std::shared_ptr<FeatureData> &out) {
       using namespace std;
-      jassert(in.position() == 0);
+      OffsetInputStream in(&stream);
       Offset16 featureParamsOffset;
       if (!in.o16(&featureParamsOffset)) {
         return EGLYF_ERROR;
@@ -57,9 +57,9 @@ public:
   };
 
 public:
-  static Optional<FeatureList> Read(InputStream &in) {
+  static Optional<FeatureList> Read(InputStream &stream) {
     using namespace std;
-    jassert(in.position() == 0);
+    OffsetInputStream in(&stream);
     FeatureList featureList;
     uint16_t featureCount;
     if (!in.u16(&featureCount)) {
@@ -93,9 +93,8 @@ public:
       if (!in.seek(featureOffset)) {
         return EGLYF_NULLOPT;
       }
-      OffsetInputStream sub(&in);
       shared_ptr<FeatureData> data;
-      if (auto st = FeatureData::Read(sub, tag, data); st.ok()) {
+      if (auto st = FeatureData::Read(in, tag, data); st.ok()) {
         feature->data = data;
         featureList.featureTable.push_back(feature);
         convertedFeatureDataList[featureOffset] = data;

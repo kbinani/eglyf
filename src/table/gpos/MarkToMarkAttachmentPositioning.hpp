@@ -12,9 +12,9 @@ public:
     uint16_t markClassCount;
     std::vector<Mark2> mark2Records;
 
-    static Status Read(InputStream &in, Mark2Array &out, uint16_t markClassCount) {
+    static Status Read(InputStream &stream, Mark2Array &out, uint16_t markClassCount) {
       using namespace std;
-      jassert(in.position() == 0);
+      OffsetInputStream in(&stream);
       out.markClassCount = markClassCount;
       uint16_t mark2Count;
       if (!in.u16(&mark2Count)) {
@@ -95,8 +95,9 @@ public:
   };
 
 public:
-  static Status Read(InputStream &in, std::shared_ptr<Subtable> &out) {
+  static Status Read(InputStream &stream, std::shared_ptr<Subtable> &out) {
     using namespace std;
+    OffsetInputStream in(&stream);
     uint16_t format;
     if (!in.u16(&format)) {
       return EGLYF_ERROR;
@@ -145,8 +146,7 @@ public:
       if (!in.seek(mark1ArrayOffset)) {
         return EGLYF_ERROR;
       }
-      OffsetInputStream sub(&in);
-      if (auto st = MarkArray::Read(sub, ret->mark1Array); !st.ok()) {
+      if (auto st = MarkArray::Read(in, ret->mark1Array); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     }
@@ -155,8 +155,7 @@ public:
       if (!in.seek(mark2ArrayOffset)) {
         return EGLYF_ERROR;
       }
-      OffsetInputStream sub(&in);
-      if (auto st = Mark2Array::Read(sub, ret->mark2Array, markClassCount); !st.ok()) {
+      if (auto st = Mark2Array::Read(in, ret->mark2Array, markClassCount); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     }

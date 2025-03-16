@@ -97,9 +97,9 @@ public:
   };
 
   struct ChainedSequenceRuleSet {
-    static Status Read(InputStream &in, std::shared_ptr<ChainedSequenceRuleSet> &out) {
+    static Status Read(InputStream &stream, std::shared_ptr<ChainedSequenceRuleSet> &out) {
       using namespace std;
-      jassert(in.position() == 0);
+      OffsetInputStream in(&stream);
       uint16_t chainedSeqRuleCount;
       if (!in.u16(&chainedSeqRuleCount)) {
         return EGLYF_ERROR;
@@ -354,9 +354,9 @@ public:
   };
 
   struct ChainedClassSequenceRuleSet {
-    static Optional<ChainedClassSequenceRuleSet> Read(InputStream &in) {
+    static Optional<ChainedClassSequenceRuleSet> Read(InputStream &stream) {
       using namespace std;
-      jassert(in.position() == 0);
+      OffsetInputStream in(&stream);
       ChainedClassSequenceRuleSet r;
       uint16_t chainedClassSeqRuleCount;
       if (!in.u16(&chainedClassSeqRuleCount)) {
@@ -486,8 +486,7 @@ public:
       if (!in.seek(offset)) {
         return EGLYF_ERROR;
       }
-      OffsetInputStream sub(&in);
-      if (auto rule = ChainedClassSequenceRuleSet::Read(sub); rule) {
+      if (auto rule = ChainedClassSequenceRuleSet::Read(in); rule) {
         r->ruleSets.push_back(*rule);
       } else {
         return EGLYF_STATUS_PUSH(rule.status());
@@ -812,9 +811,9 @@ class ChainedContexts {
   ChainedContexts() = delete;
 
 public:
-  static Status Read(InputStream &in, std::shared_ptr<Subtable> &out) {
+  static Status Read(InputStream &stream, std::shared_ptr<Subtable> &out) {
     using namespace std;
-    jassert(in.position() == 0);
+    OffsetInputStream in(&stream);
     uint16_t format;
     if (!in.u16(&format)) {
       return EGLYF_ERROR;

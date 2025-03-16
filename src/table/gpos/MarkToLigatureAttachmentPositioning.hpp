@@ -11,9 +11,9 @@ public:
   struct LigatureAttach {
     std::vector<ComponentRecord> componentRecords;
 
-    static Status Read(InputStream &in, LigatureAttach &out, uint16_t markClassCount) {
+    static Status Read(InputStream &stream, LigatureAttach &out, uint16_t markClassCount) {
       using namespace std;
-      jassert(in.position() == 0);
+      OffsetInputStream in(&stream);
       uint16_t componentCount;
       if (!in.u16(&componentCount)) {
         return EGLYF_ERROR;
@@ -47,9 +47,9 @@ public:
   struct LigatureArray {
     std::vector<LigatureAttach> ligatureAttaches;
 
-    static Status Read(InputStream &in, LigatureArray &out, uint16_t markClassCount) {
+    static Status Read(InputStream &stream, LigatureArray &out, uint16_t markClassCount) {
       using namespace std;
-      jassert(in.position() == 0);
+      OffsetInputStream in(&stream);
       uint16_t ligatureCount;
       if (!in.u16(&ligatureCount)) {
         return EGLYF_ERROR;
@@ -62,9 +62,8 @@ public:
         if (!in.seek(offset)) {
           return EGLYF_ERROR;
         }
-        OffsetInputStream sub(&in);
         LigatureAttach ligatureAttach;
-        if (auto st = LigatureAttach::Read(sub, ligatureAttach, markClassCount); !st.ok()) {
+        if (auto st = LigatureAttach::Read(in, ligatureAttach, markClassCount); !st.ok()) {
           return EGLYF_ERROR;
         }
         out.ligatureAttaches.push_back(ligatureAttach);
@@ -74,9 +73,9 @@ public:
   };
 
 public:
-  static Status Read(InputStream &in, std::shared_ptr<Subtable> &out) {
+  static Status Read(InputStream &stream, std::shared_ptr<Subtable> &out) {
     using namespace std;
-    jassert(in.position() == 0);
+    OffsetInputStream in(&stream);
     uint16_t format;
     if (!in.u16(&format)) {
       return EGLYF_ERROR;
@@ -125,7 +124,6 @@ public:
       if (!in.seek(markArrayOffset)) {
         return EGLYF_ERROR;
       }
-      OffsetInputStream sub(&in);
       if (auto st = MarkArray::Read(in, ret->markArray); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
@@ -134,7 +132,6 @@ public:
       if (!in.seek(ligatureArrayOffset)) {
         return EGLYF_ERROR;
       }
-      OffsetInputStream sub(&in);
       if (auto st = LigatureArray::Read(in, ret->ligatureArray, markClassCount); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }

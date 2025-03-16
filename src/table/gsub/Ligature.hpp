@@ -49,9 +49,9 @@ public:
   struct LigatureSet {
     std::vector<LigatureTable> ligatures;
 
-    static Optional<LigatureSet> Read(InputStream &in) {
+    static Optional<LigatureSet> Read(InputStream &stream) {
       using namespace std;
-      jassert(in.position() == 0);
+      OffsetInputStream in(&stream);
       uint16_t ligatureCount;
       if (!in.u16(&ligatureCount)) {
         return EGLYF_NULLOPT;
@@ -111,9 +111,9 @@ public:
   };
 
 public:
-  static Status Read(InputStream &in, std::shared_ptr<Subtable> &out) {
+  static Status Read(InputStream &stream, std::shared_ptr<Subtable> &out) {
     using namespace std;
-    jassert(in.position() == 0);
+    OffsetInputStream in(&stream);
     uint16_t format;
     if (!in.u16(&format)) {
       return EGLYF_ERROR;
@@ -144,8 +144,7 @@ public:
       if (!in.seek(offset)) {
         return EGLYF_ERROR;
       }
-      OffsetInputStream sub(&in);
-      if (auto s = LigatureSet::Read(sub); s) {
+      if (auto s = LigatureSet::Read(in); s) {
         r->ligatureSets.push_back(*s);
       } else {
         return EGLYF_STATUS_PUSH(s.status());

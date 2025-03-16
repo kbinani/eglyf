@@ -60,9 +60,9 @@ public:
   struct SequenceRuleSet {
     std::vector<SequenceRule> rules;
 
-    static Optional<SequenceRuleSet> Read(InputStream &in) {
+    static Optional<SequenceRuleSet> Read(InputStream &stream) {
       using namespace std;
-      jassert(in.position() == 0);
+      OffsetInputStream in(&stream);
       uint16_t seqRuleCount;
       if (!in.u16(&seqRuleCount)) {
         return EGLYF_NULLOPT;
@@ -147,8 +147,7 @@ public:
       if (!in.seek(offset)) {
         return EGLYF_ERROR;
       }
-      OffsetInputStream sub(&in);
-      if (auto ruleSet = SequenceRuleSet::Read(sub); ruleSet) {
+      if (auto ruleSet = SequenceRuleSet::Read(in); ruleSet) {
         ret->ruleSets.push_back(*ruleSet);
       } else {
         return EGLYF_STATUS_PUSH(ruleSet.status());
@@ -371,8 +370,7 @@ public:
       if (!in.seek(offset)) {
         return EGLYF_ERROR;
       }
-      OffsetInputStream sub(&in);
-      if (auto ruleSet = ClassSeqRuleSet::Read(sub); ruleSet) {
+      if (auto ruleSet = ClassSeqRuleSet::Read(in); ruleSet) {
         ret->ruleSets.push_back(*ruleSet);
       } else {
         return EGLYF_STATUS_PUSH(ruleSet.status());

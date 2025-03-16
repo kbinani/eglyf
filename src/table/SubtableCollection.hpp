@@ -99,8 +99,7 @@ public:
       if (!in.seek(scriptListOffset)) {
         return EGLYF_ERROR;
       }
-      OffsetInputStream sub(&in);
-      if (auto sl = ScriptList::Read(sub); sl) {
+      if (auto sl = ScriptList::Read(in); sl) {
         scriptList = *sl;
       } else {
         return EGLYF_STATUS_PUSH(sl.status());
@@ -112,8 +111,7 @@ public:
       if (!in.seek(featureListOffset)) {
         return EGLYF_ERROR;
       }
-      OffsetInputStream sub(&in);
-      if (auto fl = FeatureList::Read(sub); fl) {
+      if (auto fl = FeatureList::Read(in); fl) {
         featureList = *fl;
       } else {
         return EGLYF_STATUS_PUSH(fl.status());
@@ -125,8 +123,7 @@ public:
       if (!in.seek(lookupListOffset)) {
         return EGLYF_ERROR;
       }
-      OffsetInputStream sub(&in);
-      if (auto ll = LookupList::Read(sub); ll) {
+      if (auto ll = LookupList::Read(in); ll) {
         lookupList = *ll;
       } else {
         return EGLYF_STATUS_PUSH(ll.status());
@@ -157,9 +154,8 @@ public:
           if (!in.seek(pos)) {
             return EGLYF_ERROR;
           }
-          OffsetInputStream sub(&in);
           shared_ptr<T> table;
-          if (auto st = readSubtable(sub, it->lookupType, table); st.ok()) {
+          if (auto st = readSubtable(in, it->lookupType, table); st.ok()) {
             data->subtables.push_back(table);
           } else {
             return EGLYF_STATUS_PUSH(st);

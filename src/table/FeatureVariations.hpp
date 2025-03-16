@@ -49,10 +49,10 @@ public:
   };
 
   struct ConditionSet {
-    static Optional<ConditionSet> Read(InputStream &in) {
+    static Optional<ConditionSet> Read(InputStream &stream) {
       using namespace std;
+      OffsetInputStream in(&stream);
       uint16_t conditionCount;
-      jassert(in.position() == 0);
       if (!in.u16(&conditionCount)) {
         return EGLYF_NULLOPT;
       }
@@ -158,11 +158,11 @@ public:
   };
 
 public:
-  static Optional<FeatureVariations> Read(InputStream &in) {
+  static Optional<FeatureVariations> Read(InputStream &stream) {
     using namespace std;
+    OffsetInputStream in(&stream);
     uint16_t majorVersion;
     uint16_t minorVersion;
-    jassert(in.position() == 0);
     if (!in.u16(&majorVersion)) {
       return EGLYF_NULLOPT;
     }
@@ -195,8 +195,7 @@ public:
       }
       FeatureVariationRecord record;
 
-      OffsetInputStream sub(&in);
-      if (auto conditionSet = ConditionSet::Read(sub); conditionSet) {
+      if (auto conditionSet = ConditionSet::Read(in); conditionSet) {
         record.conditionSet = *conditionSet;
       } else {
         return EGLYF_NULLOPT_PUSH(conditionSet.status());
