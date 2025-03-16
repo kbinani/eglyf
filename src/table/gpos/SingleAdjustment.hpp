@@ -78,17 +78,16 @@ public:
     if (!in.o16(&coverageOffset)) {
       return EGLYF_ERROR;
     }
-    uint16_t valueFormat;
-    if (!in.u16(&valueFormat)) {
+    auto ret = make_unique<SingleAdjustment2>();
+    if (!in.u16(&ret->valueFormat)) {
       return EGLYF_ERROR;
     }
     uint16_t valueCount;
     if (!in.u16(&valueCount)) {
       return EGLYF_ERROR;
     }
-    auto ret = make_unique<SingleAdjustment2>();
     for (uint16_t i = 0; i < valueCount; i++) {
-      if (auto record = ValueRecord::Read(in, valueFormat); record) {
+      if (auto record = ValueRecord::Read(in, ret->valueFormat); record) {
         ret->valueRecords.push_back(*record);
       } else {
         return EGLYF_STATUS_PUSH(record.status());
@@ -114,14 +113,7 @@ public:
     if (!coverageOffset) {
       return EGLYF_ERROR;
     }
-    if (valueRecords.empty()) {
-      return EGLYF_ERROR;
-    }
-    auto valueFormat = valueRecords.front().format();
-    if (!valueFormat) {
-      return EGLYF_STATUS_PUSH(valueFormat.status());
-    }
-    if (!out.u16(*valueFormat)) {
+    if (!out.u16(valueFormat)) {
       return EGLYF_ERROR;
     }
     if (!out.sizeU16(valueRecords.size())) {
@@ -132,7 +124,7 @@ public:
       if (!fmt) {
         return EGLYF_STATUS_PUSH(fmt.status());
       }
-      if (*valueFormat != *fmt) {
+      if (valueFormat != *fmt) {
         return EGLYF_ERROR;
       }
       if (auto st = record.write(out); !st.ok()) {
@@ -158,6 +150,7 @@ public:
   }
 
 public:
+  uint16_t valueFormat;
   std::vector<ValueRecord> valueRecords;
 };
 
