@@ -126,7 +126,7 @@ public:
         }
         LigatureAttach ligatureAttach;
         if (auto st = LigatureAttach::Read(in, ligatureAttach, markClassCount); !st.ok()) {
-          return EGLYF_ERROR;
+          return EGLYF_STATUS_PUSH(st);
         }
         out.ligatureAttaches.push_back(ligatureAttach);
       }
