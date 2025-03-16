@@ -30,6 +30,7 @@ public:
       if (!in.o16(&record.markAnchorOffset)) {
         return EGLYF_ERROR;
       }
+      markRecords.push_back(record);
     }
     for (auto const &record : markRecords) {
       if (!in.seek(record.markAnchorOffset)) {
