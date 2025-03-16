@@ -70,6 +70,100 @@ public:
     return record;
     return EGLYF_NULLOPT;
   }
+
+  Status write(OutputStream &out) const {
+    if (xPlacement) {
+      if (!out.i16(*xPlacement)) {
+        return EGLYF_ERROR;
+      }
+    }
+    if (yPlacement) {
+      if (!out.i16(*yPlacement)) {
+        return EGLYF_ERROR;
+      }
+    }
+    if (xAdvance) {
+      if (!out.i16(*xAdvance)) {
+        return EGLYF_ERROR;
+      }
+    }
+    if (yAdvance) {
+      if (!out.i16(*yAdvance)) {
+        return EGLYF_ERROR;
+      }
+    }
+    if (xPlaDeviceOffset) {
+      return EGLYF_ERROR_WHAT("Unsupported property xPlaDeviceOffset");
+    }
+    if (yPlaDeviceOffset) {
+      return EGLYF_ERROR_WHAT("Unsupported property yPlaDeviceOffset");
+    }
+    if (xAdvDeviceOffset) {
+      return EGLYF_ERROR_WHAT("Unsupported property xAdvDeviceOffset");
+    }
+    if (yAdvDeviceOffset) {
+      return EGLYF_ERROR_WHAT("Unsupported property yAdvDeviceOffset");
+    }
+    return Status::Ok();
+  }
+
+  Optional<uint16_t> format() const {
+    uint16_t ret = 0;
+    if (xPlacement) {
+      ret |= X_PLACEMENT;
+    }
+    if (yPlacement) {
+      ret |= Y_PLACEMENT;
+    }
+    if (xAdvance) {
+      ret |= X_ADVANCE;
+    }
+    if (yAdvance) {
+      ret |= Y_ADVANCE;
+    }
+    if (xPlaDeviceOffset) {
+      return EGLYF_NULLOPT_WHAT("Unsupported property xPlaDeviceOffset");
+    }
+    if (yPlaDeviceOffset) {
+      return EGLYF_NULLOPT_WHAT("Unsupported property yPlaDeviceOffset");
+    }
+    if (xAdvDeviceOffset) {
+      return EGLYF_NULLOPT_WHAT("Unsupported property xAdvDeviceOffset");
+    }
+    if (yAdvDeviceOffset) {
+      return EGLYF_NULLOPT_WHAT("Unsupported property yAdvDeviceOffset");
+    }
+    return ret;
+  }
+
+  size_t size() const {
+    size_t ret = 0;
+    if (xPlacement) {
+      ret += sizeof(int16_t);
+    }
+    if (yPlacement) {
+      ret += sizeof(int16_t);
+    }
+    if (xAdvance) {
+      ret += sizeof(int16_t);
+    }
+    if (yAdvance) {
+      ret += sizeof(int16_t);
+    }
+    if (xPlaDeviceOffset) {
+      ret += sizeof(Offset16);
+    }
+    if (yPlaDeviceOffset) {
+      ret += sizeof(Offset16);
+    }
+    if (xAdvDeviceOffset) {
+      ret += sizeof(Offset16);
+    }
+    if (yAdvDeviceOffset) {
+      ret += sizeof(Offset16);
+    }
+    return ret;
+  }
 };
 
 } // namespace eglyf::gpos

@@ -31,11 +31,39 @@ public:
   }
 
   Status write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) override {
-    return EGLYF_ERROR;
+    using namespace std;
+    auto writer = make_shared<OffsetWriter>(out);
+    if (!out.u16(1)) {
+      return EGLYF_ERROR;
+    }
+    auto coverageOffset = writer->o16();
+    if (!coverageOffset) {
+      return EGLYF_ERROR;
+    }
+    auto valueFormat = valueRecord.format();
+    if (valueFormat) {
+      if (!out.u16(*valueFormat)) {
+        return EGLYF_ERROR;
+      }
+    } else {
+      return EGLYF_STATUS_PUSH(valueFormat.status());
+    }
+    if (auto st = valueRecord.write(out); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    if (auto st = coverageOffset->mark(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    if (auto st = coverage->write(out); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    return EGLYF_STATUS_PUSH(writer->commit());
   }
 
   size_t size() const override {
-    return 0;
+    size_t ret = 2 * sizeof(uint16_t) + sizeof(Offset16) + valueRecord.size();
+    ret += coverage->size();
+    return ret;
   }
 
 public:
@@ -77,11 +105,56 @@ public:
   }
 
   Status write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) override {
-    return EGLYF_ERROR;
+    using namespace std;
+    auto writer = make_shared<OffsetWriter>(out);
+    if (!out.u16(2)) {
+      return EGLYF_ERROR;
+    }
+    auto coverageOffset = writer->o16();
+    if (!coverageOffset) {
+      return EGLYF_ERROR;
+    }
+    if (valueRecords.empty()) {
+      return EGLYF_ERROR;
+    }
+    auto valueFormat = valueRecords.front().format();
+    if (!valueFormat) {
+      return EGLYF_STATUS_PUSH(valueFormat.status());
+    }
+    if (!out.u16(*valueFormat)) {
+      return EGLYF_ERROR;
+    }
+    if (!out.sizeU16(valueRecords.size())) {
+      return EGLYF_ERROR;
+    }
+    for (auto const &record : valueRecords) {
+      auto fmt = record.format();
+      if (!fmt) {
+        return EGLYF_STATUS_PUSH(fmt.status());
+      }
+      if (*valueFormat != *fmt) {
+        return EGLYF_ERROR;
+      }
+      if (auto st = record.write(out); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+    }
+    if (auto st = coverageOffset->mark(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    if (auto st = coverage->write(out); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    return EGLYF_STATUS_PUSH(writer->commit());
   }
 
   size_t size() const override {
-    return 0;
+    size_t ret = 3 * sizeof(uint16_t) + sizeof(Offset16);
+    for (auto const &record : valueRecords) {
+      ret += record.size();
+    }
+    ret += coverage->size();
+    return ret;
   }
 
 public:
