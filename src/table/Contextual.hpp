@@ -268,8 +268,9 @@ public:
   struct ClassSeqRuleSet {
     std::vector<ClassSeqRule> rules;
 
-    static Optional<ClassSeqRuleSet> Read(InputStream &in) {
+    static Optional<ClassSeqRuleSet> Read(InputStream &stream) {
       using namespace std;
+      OffsetInputStream in(&stream);
       uint16_t classSeqRuleCount;
       if (!in.u16(&classSeqRuleCount)) {
         return EGLYF_NULLOPT;
@@ -555,8 +556,9 @@ class Contextual {
   Contextual() = delete;
 
 public:
-  static Status Read(InputStream &in, std::shared_ptr<Subtable> &out) {
+  static Status Read(InputStream &stream, std::shared_ptr<Subtable> &out) {
     uint16_t format;
+    OffsetInputStream in(&stream);
     if (!in.u16(&format)) {
       return EGLYF_ERROR;
     }
