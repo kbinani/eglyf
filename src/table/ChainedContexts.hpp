@@ -470,11 +470,13 @@ public:
       return EGLYF_STATUS_PUSH(st);
     }
 
-    if (!in.seek(lookaheadClassDefOffset)) {
-      return EGLYF_ERROR;
-    }
-    if (auto st = ClassDefReader::Read(in, r->lookaheadClassDef); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
+    if (lookaheadClassDefOffset > 0) {
+      if (!in.seek(lookaheadClassDefOffset)) {
+        return EGLYF_ERROR;
+      }
+      if (auto st = ClassDefReader::Read(in, r->lookaheadClassDef); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
     }
 
     r->ruleSets.reserve(chainedClassSeqRuleSetCount);
@@ -558,11 +560,17 @@ public:
       return EGLYF_STATUS_PUSH(st);
     }
 
-    if (auto st = lookaheadClassDefOffset->mark(); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
-    }
-    if (auto st = lookaheadClassDef->write(out); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
+    if (lookaheadClassDef) {
+      if (auto st = lookaheadClassDefOffset->mark(); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+      if (auto st = lookaheadClassDef->write(out); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+    } else {
+      if (auto st = lookaheadClassDefOffset->null(); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
     }
 
     for (size_t i = 0; i < ruleSets.size(); i++) {
@@ -592,7 +600,9 @@ public:
       ret += backtrackClassDef->size();
     }
     ret += inputClassDef->size();
-    ret += lookaheadClassDef->size();
+    if (lookaheadClassDef) {
+      ret += lookaheadClassDef->size();
+    }
     for (auto const &ruleSet : ruleSets) {
       if (ruleSet) {
         ret += ruleSet->size();
@@ -602,8 +612,6 @@ public:
   }
 
 public:
-  // NOTE: backtrackClassDef is not mentioned as nullable in the reference, but some fonts does not have backtrackClassDef
-  //  https://learn.microsoft.com/en-us/typography/opentype/spec/chapter2#chained-sequence-context-format-2-class-based-glyph-contexts
   std::shared_ptr<ClassDef> backtrackClassDef;
   std::shared_ptr<ClassDef> inputClassDef;
   std::shared_ptr<ClassDef> lookaheadClassDef;
