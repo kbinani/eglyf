@@ -31,6 +31,10 @@ public:
       for (auto const &offsets : mark2AnchorsOffsets) {
         Mark2 mark2;
         for (auto offset : offsets) {
+          if (offset == 0) {
+            mark2.mark2Anchors.push_back(nullptr);
+            continue;
+          }
           if (!in.seek(offset)) {
             return EGLYF_ERROR;
           }
@@ -72,11 +76,17 @@ public:
         for (size_t j = 0; j < mark.mark2Anchors.size(); j++) {
           auto const &anchor = mark.mark2Anchors[j];
           auto offset = offsets[j];
-          if (auto st = offset->mark(); !st.ok()) {
-            return EGLYF_STATUS_PUSH(st);
-          }
-          if (auto st = anchor->write(out); !st.ok()) {
-            return EGLYF_STATUS_PUSH(st);
+          if (anchor) {
+            if (auto st = offset->mark(); !st.ok()) {
+              return EGLYF_STATUS_PUSH(st);
+            }
+            if (auto st = anchor->write(out); !st.ok()) {
+              return EGLYF_STATUS_PUSH(st);
+            }
+          } else {
+            if (auto st = offset->null(); !st.ok()) {
+              return EGLYF_STATUS_PUSH(st);
+            }
           }
         }
       }
@@ -87,7 +97,9 @@ public:
       size_t ret = sizeof(uint16_t) + mark2Records.size() * markClassCount * sizeof(Offset16);
       for (auto const &record : mark2Records) {
         for (auto const &anchor : record.mark2Anchors) {
-          ret += anchor->size();
+          if (anchor) {
+            ret += anchor->size();
+          }
         }
       }
       return ret;
