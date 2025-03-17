@@ -12,7 +12,7 @@ public:
     case 2:
       return EGLYF_STATUS_PUSH(gpos::PairAdjustmentPositioning::Read(in, out));
     case 3:
-      return EGLYF_ERROR;
+      return EGLYF_STATUS_PUSH(gpos::CursiveAttachmentPositioning::Read(in, out));
     case 4:
       return EGLYF_STATUS_PUSH(gpos::MarkToBaseAttachment::Read(in, out));
     case 5:

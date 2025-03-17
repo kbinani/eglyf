@@ -61,6 +61,7 @@
 #include "table/gpos/ValueRecord.hpp"
 #include "table/gpos/SingleAdjustment.hpp"
 #include "table/gpos/PairAdjustmentPositioning.hpp"
+#include "table/gpos/CursiveAttachmentPositioning.hpp"
 #include "table/gpos/MarkToBaseAttachment.hpp"
 #include "table/gpos/MarkToLigatureAttachmentPositioning.hpp"
 #include "table/gpos/MarkToMarkAttachmentPositioning.hpp"

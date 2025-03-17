@@ -84,6 +84,7 @@ list(APPEND src_files
   src/table/gpos/MarkToMarkAttachmentPositioning.hpp
   src/table/gpos/ValueRecord.hpp
   src/table/gpos/PairAdjustmentPositioning.hpp
+  src/table/gpos/CursiveAttachmentPositioning.hpp
 )
 
 juce_add_console_app(eglyf)

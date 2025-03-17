@@ -37,7 +37,10 @@ public:
       }
       break;
     case 3:
-      return EGLYF_ERROR;
+      if (auto st = CursiveAttachmentPositioning::Read(in, ret->extension); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+      break;
     case 4:
       if (auto st = MarkToBaseAttachment::Read(in, ret->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
