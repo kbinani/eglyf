@@ -39,6 +39,10 @@ public:
       for (auto const &offsets : ligatureAnchorsOffsets) {
         ComponentRecord record;
         for (auto offset : offsets) {
+          if (offset == 0) {
+            record.ligatureAnchors.push_back(nullptr);
+            continue;
+          }
           if (!in.seek(offset)) {
             return EGLYF_ERROR;
           }
