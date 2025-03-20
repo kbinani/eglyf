@@ -48,13 +48,13 @@ public:
 
   Status write(OutputStream &out) const {
     using namespace std;
-    auto writer = make_shared<OffsetWriter>(out);
-    if (!out.sizeU16(markRecords.size())) {
+    auto writer = make_shared<DataFragmentWriter>(&out);
+    if (!writer->sizeU16(markRecords.size())) {
       return EGLYF_ERROR;
     }
-    vector<OffsetWriter::Handle16> markAnchorOffsets;
+    vector<DataFragmentWriter::Marker16> markAnchorOffsets;
     for (MarkRecord const &record : markRecords) {
-      if (!out.u16(record.markClass)) {
+      if (!writer->u16(record.markClass)) {
         return EGLYF_ERROR;
       }
       auto markAnchorOffset = writer->o16();
@@ -66,10 +66,7 @@ public:
     for (size_t i = 0; i < markRecords.size(); i++) {
       auto const &record = markRecords[i];
       auto offset = markAnchorOffsets[i];
-      if (auto st = offset->mark(); !st.ok()) {
-        return EGLYF_STATUS_PUSH(st);
-      }
-      if (auto st = record.markAnchor->write(out); !st.ok()) {
+      if (auto st = writer->writeDataFragment({offset}, *record.markAnchor); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     }

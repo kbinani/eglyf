@@ -180,60 +180,46 @@ public:
     return Status::Ok();
   }
 
-  Status write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) override {
+  Status write(OutputStream &stream, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) override {
     using namespace std;
-    auto writer = make_shared<OffsetWriter>(out);
-    if (!out.u16(1)) {
+    auto out = make_shared<DataFragmentWriter>(&stream);
+    if (!out->u16(1)) {
       return EGLYF_ERROR;
     }
-    auto markCoverageOffset = writer->o16();
+    auto markCoverageOffset = out->o16();
     if (!markCoverageOffset) {
       return EGLYF_ERROR;
     }
-    auto baseCoverageOffset = writer->o16();
+    auto baseCoverageOffset = out->o16();
     if (!baseCoverageOffset) {
       return EGLYF_ERROR;
     }
-    if (!out.u16(baseArray.markClassCount)) {
+    if (!out->u16(baseArray.markClassCount)) {
       return EGLYF_ERROR;
     }
-    auto markArrayOffset = writer->o16();
+    auto markArrayOffset = out->o16();
     if (!markArrayOffset) {
       return EGLYF_ERROR;
     }
-    auto baseArrayOffset = writer->o16();
+    auto baseArrayOffset = out->o16();
     if (!baseArrayOffset) {
       return EGLYF_ERROR;
     }
 
-    if (auto st = markCoverageOffset->mark(); !st.ok()) {
+    if (auto st = out->writeDataFragment({markCoverageOffset}, *markCoverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
-    if (auto st = markCoverage->write(out); !st.ok()) {
+    if (auto st = out->writeDataFragment({baseCoverageOffset}, *baseCoverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
-
-    if (auto st = baseCoverageOffset->mark(); !st.ok()) {
+    if (auto st = out->writeDataFragment({markArrayOffset}, markArray); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
-    if (auto st = baseCoverage->write(out); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
-    }
-
-    if (auto st = markArrayOffset->mark(); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
-    }
-    if (auto st = markArray.write(out); !st.ok()) {
+    if (auto st = out->writeDataFragment({baseArrayOffset}, baseArray); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
 
-    if (auto st = baseArrayOffset->mark(); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
-    }
-    if (auto st = baseArray.write(out); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
-    }
-    return EGLYF_STATUS_PUSH(writer->commit());
+    return EGLYF_STATUS_PUSH(out->commit());
   }
 
   size_t size() const override {

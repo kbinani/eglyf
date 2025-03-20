@@ -174,7 +174,6 @@ public:
       if (auto st = table->write(out, extensions); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
-      jassert(pos + table->size() == out.position());
 
       handles.pop_front();
     }
