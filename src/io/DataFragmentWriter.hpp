@@ -144,25 +144,25 @@ public:
 
   Status endDataFragment() {
     using namespace std;
-    if (holds_alternative<ActiveHeaderFragment>(active)) {
-      return EGLYF_ERROR;
-    } else if (holds_alternative<ActiveDataFragment>(active)) {
-      auto &a = get<ActiveDataFragment>(active);
-      auto data = a.stream.data();
-      if (auto found = lut.find(data); found == lut.end()) {
-        auto f = make_shared<DataFragment>();
-        f->data = data;
-        ranges::copy(a.markers, back_inserter(f->markers));
-        fragments.push_back(f);
-        lut[data] = f;
-      } else {
-        auto &f = found->second;
-        ranges::copy(a.markers, back_inserter(f->markers));
-        fragments.push_back(f);
-      }
-    } else {
+    if (!holds_alternative<ActiveDataFragment>(active)) {
       return EGLYF_ERROR;
     }
+    auto &a = get<ActiveDataFragment>(active);
+    auto data = a.stream.data();
+    if (auto found = lut.find(data); found == lut.end()) {
+      assert(!data.empty());
+      auto f = make_shared<DataFragment>();
+      f->data = data;
+      ranges::copy(a.markers, back_inserter(f->markers));
+      fragments.push_back(f);
+      lut[data] = f;
+    } else {
+      auto &f = found->second;
+      assert(f->data == data);
+      ranges::copy(a.markers, back_inserter(f->markers));
+      fragments.push_back(f);
+    }
+
     ActiveHeaderFragment next;
     active = next;
     return Status::Ok();
@@ -200,8 +200,7 @@ public:
     }
 
     int64_t const begin = upstream->position();
-    assert(begin == base);
-    map<shared_ptr<DataFragment>, int> usage;
+    map<DataFragmentPtr, int> usage;
     for (auto const &f : fragments) {
       if (holds_alternative<DataFragmentPtr>(f)) {
         auto const &df = get<DataFragmentPtr>(f);
@@ -228,7 +227,7 @@ public:
               if (found == markers16.end()) {
                 return EGLYF_ERROR;
               }
-              int64_t offset = pos - found->second;
+              int64_t offset = pos - base;
               if (offset < 0 || offset > numeric_limits<Offset16>::max()) {
                 return EGLYF_ERROR;
               }
@@ -241,7 +240,7 @@ public:
               if (found == markers32.end()) {
                 return EGLYF_ERROR;
               }
-              int64_t offset = pos - found->second;
+              int64_t offset = pos - base;
               if (offset < 0 || offset > numeric_limits<Offset32>::max()) {
                 return EGLYF_ERROR;
               }
