@@ -136,26 +136,26 @@ public:
     return Status::Ok();
   }
 
-  Status write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) override {
+  Status write(OutputStream &stream, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) override {
     using namespace std;
-    auto writer = make_shared<OffsetWriter>(out);
-    if (!out.u16(1)) {
+    auto writer = make_shared<DataFragmentWriter>(&stream);
+    if (!writer->u16(1)) {
       return EGLYF_ERROR;
     }
     auto coverageOffset = writer->o16();
     if (!coverageOffset) {
       return EGLYF_ERROR;
     }
-    if (!out.u16(valueFormat1)) {
+    if (!writer->u16(valueFormat1)) {
       return EGLYF_ERROR;
     }
-    if (!out.u16(valueFormat2)) {
+    if (!writer->u16(valueFormat2)) {
       return EGLYF_ERROR;
     }
-    if (!out.sizeU16(pairSets.size())) {
+    if (!writer->sizeU16(pairSets.size())) {
       return EGLYF_ERROR;
     }
-    vector<OffsetWriter::Handle16> pairSetOffsets;
+    vector<DataFragmentWriter::Marker16> pairSetOffsets;
     for (auto const &pairSet : pairSets) {
       auto offset = writer->o16();
       if (!offset) {
@@ -164,20 +164,17 @@ public:
       pairSetOffsets.push_back(offset);
     }
 
-    if (auto st = coverageOffset->mark(); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
-    }
-    if (auto st = coverage->write(out); !st.ok()) {
+    if (auto st = writer->writeDataFragment({coverageOffset}, *coverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
 
     for (size_t i = 0; i < pairSets.size(); i++) {
       auto const &pairSet = pairSets[i];
       auto offset = pairSetOffsets[i];
-      if (auto st = offset->mark(); !st.ok()) {
-        return EGLYF_STATUS_PUSH(st);
-      }
-      if (auto st = pairSet.write(out, valueFormat1, valueFormat2); !st.ok()) {
+      auto st = writer->writeDataFragment({offset}, [&](OutputStream &o) {
+        return EGLYF_STATUS_PUSH(pairSet.write(o, valueFormat1, valueFormat2));
+      });
+      if (!st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     }

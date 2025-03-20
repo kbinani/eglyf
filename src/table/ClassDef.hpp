@@ -5,7 +5,7 @@ namespace eglyf {
 class ClassDef {
 public:
   virtual ~ClassDef() {}
-  virtual Status write(OutputStream &out) = 0;
+  virtual Status write(OutputStream &out) const = 0;
   virtual size_t size() const = 0;
 };
 
@@ -28,7 +28,7 @@ public:
     return Status::Ok();
   }
 
-  Status write(OutputStream &out) override {
+  Status write(OutputStream &out) const override {
     using namespace std;
     if (!out.u16(1)) {
       return EGLYF_ERROR;
@@ -112,7 +112,7 @@ public:
     return Status::Ok();
   }
 
-  Status write(OutputStream &out) override {
+  Status write(OutputStream &out) const override {
     using namespace std;
     if (!out.u16(2)) {
       return EGLYF_ERROR;

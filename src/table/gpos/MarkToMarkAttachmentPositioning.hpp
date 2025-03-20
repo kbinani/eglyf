@@ -49,18 +49,18 @@ public:
       return Status::Ok();
     }
 
-    Status write(OutputStream &out) const {
+    Status write(OutputStream &stream) const {
       using namespace std;
-      auto writer = make_shared<OffsetWriter>(out);
-      if (!out.sizeU16(mark2Records.size())) {
+      auto writer = make_shared<DataFragmentWriter>(&stream);
+      if (!writer->sizeU16(mark2Records.size())) {
         return EGLYF_ERROR;
       }
-      vector<vector<OffsetWriter::Handle16>> mark2AnchorOffsetsList;
+      vector<vector<DataFragmentWriter::Marker16>> mark2AnchorOffsetsList;
       for (Mark2 const &mark : mark2Records) {
         if (mark.mark2Anchors.size() != markClassCount) {
           return EGLYF_ERROR;
         }
-        vector<OffsetWriter::Handle16> mark2AnchorOffsets;
+        vector<DataFragmentWriter::Marker16> mark2AnchorOffsets;
         for (size_t i = 0; i < mark.mark2Anchors.size(); i++) {
           auto offset = writer->o16();
           if (!offset) {
@@ -77,14 +77,7 @@ public:
           auto const &anchor = mark.mark2Anchors[j];
           auto offset = offsets[j];
           if (anchor) {
-            if (auto st = offset->mark(); !st.ok()) {
-              return EGLYF_STATUS_PUSH(st);
-            }
-            if (auto st = anchor->write(out); !st.ok()) {
-              return EGLYF_STATUS_PUSH(st);
-            }
-          } else {
-            if (auto st = offset->null(); !st.ok()) {
+            if (auto st = writer->writeDataFragment({offset}, *anchor); !st.ok()) {
               return EGLYF_STATUS_PUSH(st);
             }
           }

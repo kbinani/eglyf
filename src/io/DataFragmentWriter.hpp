@@ -182,6 +182,16 @@ public:
     return EGLYF_STATUS_PUSH(endDataFragment());
   }
 
+  Status writeDataFragment(std::vector<Marker16> const &markers, std::function<Status(OutputStream &out)> w) {
+    if (auto st = startDataFragment(markers); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    if (Status st = w(*this); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    return EGLYF_STATUS_PUSH(endDataFragment());
+  }
+
   Status commit() {
     using namespace std;
     if (holds_alternative<ActiveHeaderFragment>(active)) {
@@ -270,13 +280,6 @@ public:
           }
         }
       }
-    }
-
-    if (!markers16.empty()) {
-      return EGLYF_ERROR;
-    }
-    if (!markers32.empty()) {
-      return EGLYF_ERROR;
     }
 
     int64_t end = upstream->position();

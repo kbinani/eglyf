@@ -72,20 +72,20 @@ public:
     return Status::Ok();
   }
 
-  Status write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) override {
+  Status write(OutputStream &stream, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) override {
     using namespace std;
-    auto writer = make_shared<OffsetWriter>(out);
-    if (!out.u16(1)) {
+    auto writer = make_shared<DataFragmentWriter>(&stream);
+    if (!writer->u16(1)) {
       return EGLYF_ERROR;
     }
     auto coverageOffset = writer->o16();
     if (!coverageOffset) {
       return EGLYF_ERROR;
     }
-    if (!out.sizeU16(backtrackCoverages.size())) {
+    if (!writer->sizeU16(backtrackCoverages.size())) {
       return EGLYF_ERROR;
     }
-    vector<OffsetWriter::Handle16> backtrackCoverageOffsets;
+    vector<DataFragmentWriter::Marker16> backtrackCoverageOffsets;
     for (size_t i = 0; i < backtrackCoverages.size(); i++) {
       auto offset = writer->o16();
       if (!offset) {
@@ -93,10 +93,10 @@ public:
       }
       backtrackCoverageOffsets.push_back(offset);
     }
-    if (!out.sizeU16(lookaheadCoverages.size())) {
+    if (!writer->sizeU16(lookaheadCoverages.size())) {
       return EGLYF_ERROR;
     }
-    vector<OffsetWriter::Handle16> lookaheadCoverageOffsets;
+    vector<DataFragmentWriter::Marker16> lookaheadCoverageOffsets;
     for (size_t i = 0; i < lookaheadCoverages.size(); i++) {
       auto offset = writer->o16();
       if (!offset) {
@@ -104,27 +104,21 @@ public:
       }
       lookaheadCoverageOffsets.push_back(offset);
     }
-    if (!out.sizeU16(substituteGlyphIDs.size())) {
+    if (!writer->sizeU16(substituteGlyphIDs.size())) {
       return EGLYF_ERROR;
     }
-    if (!out.u16a(substituteGlyphIDs)) {
+    if (!writer->u16a(substituteGlyphIDs)) {
       return EGLYF_ERROR;
     }
 
-    if (auto st = coverageOffset->mark(); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
-    }
-    if (auto st = coverage->write(out); !st.ok()) {
+    if (auto st = writer->writeDataFragment({coverageOffset}, *coverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
 
     for (size_t i = 0; i < backtrackCoverages.size(); i++) {
       auto const &cov = backtrackCoverages[i];
       auto offset = backtrackCoverageOffsets[i];
-      if (auto st = offset->mark(); !st.ok()) {
-        return EGLYF_STATUS_PUSH(st);
-      }
-      if (auto st = cov->write(out); !st.ok()) {
+      if (auto st = writer->writeDataFragment({offset}, *cov); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     }
@@ -132,10 +126,7 @@ public:
     for (size_t i = 0; i < lookaheadCoverages.size(); i++) {
       auto const &cov = lookaheadCoverages[i];
       auto offset = lookaheadCoverageOffsets[i];
-      if (auto st = offset->mark(); !st.ok()) {
-        return EGLYF_STATUS_PUSH(st);
-      }
-      if (auto st = cov->write(out); !st.ok()) {
+      if (auto st = writer->writeDataFragment({offset}, *cov); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     }

@@ -57,15 +57,15 @@ public:
       return Status::Ok();
     }
 
-    Status write(OutputStream &out, uint16_t markClassCount) const {
+    Status write(OutputStream &stream, uint16_t markClassCount) const {
       using namespace std;
-      auto writer = make_shared<OffsetWriter>(out);
-      if (!out.sizeU16(componentRecords.size())) {
+      auto writer = make_shared<DataFragmentWriter>(&stream);
+      if (!writer->sizeU16(componentRecords.size())) {
         return EGLYF_ERROR;
       }
-      vector<vector<OffsetWriter::Handle16>> ligatureAnchorOffsetsList;
+      vector<vector<DataFragmentWriter::Marker16>> ligatureAnchorOffsetsList;
       for (auto const &record : componentRecords) {
-        vector<OffsetWriter::Handle16> offsets;
+        vector<DataFragmentWriter::Marker16> offsets;
         if (record.ligatureAnchors.size() != markClassCount) {
           return EGLYF_ERROR;
         }
@@ -85,14 +85,7 @@ public:
           auto const &anchor = record.ligatureAnchors[j];
           auto offset = offsets[j];
           if (anchor) {
-            if (auto st = offset->mark(); !st.ok()) {
-              return EGLYF_STATUS_PUSH(st);
-            }
-            if (auto st = anchor->write(out); !st.ok()) {
-              return EGLYF_STATUS_PUSH(st);
-            }
-          } else {
-            if (auto st = offset->null(); !st.ok()) {
+            if (auto st = writer->writeDataFragment({offset}, *anchor); !st.ok()) {
               return EGLYF_STATUS_PUSH(st);
             }
           }
@@ -137,13 +130,13 @@ public:
       return Status::Ok();
     }
 
-    Status write(OutputStream &out, uint16_t markClassCount) const {
+    Status write(OutputStream &stream, uint16_t markClassCount) const {
       using namespace std;
-      auto writer = make_shared<OffsetWriter>(out);
-      if (!out.sizeU16(ligatureAttaches.size())) {
+      auto writer = make_shared<DataFragmentWriter>(&stream);
+      if (!writer->sizeU16(ligatureAttaches.size())) {
         return EGLYF_ERROR;
       }
-      vector<OffsetWriter::Handle16> ligatureAttachOffsets;
+      vector<DataFragmentWriter::Marker16> ligatureAttachOffsets;
       for (size_t i = 0; i < ligatureAttaches.size(); i++) {
         auto offset = writer->o16();
         if (!offset) {
@@ -154,10 +147,10 @@ public:
       for (size_t i = 0; i < ligatureAttaches.size(); i++) {
         auto const &ligatureAttach = ligatureAttaches[i];
         auto offset = ligatureAttachOffsets[i];
-        if (auto st = offset->mark(); !st.ok()) {
-          return EGLYF_STATUS_PUSH(st);
-        }
-        if (auto st = ligatureAttach.write(out, markClassCount); !st.ok()) {
+        auto st = writer->writeDataFragment({offset}, [&](OutputStream &o) {
+          return EGLYF_STATUS_PUSH(ligatureAttach.write(o, markClassCount));
+        });
+        if (!st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
       }

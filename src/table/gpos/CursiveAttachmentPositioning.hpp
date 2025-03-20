@@ -68,20 +68,20 @@ public:
     return Status::Ok();
   }
 
-  Status write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) override {
+  Status write(OutputStream &stream, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) override {
     using namespace std;
-    auto writer = make_shared<OffsetWriter>(out);
-    if (!out.u16(1)) {
+    auto writer = make_shared<DataFragmentWriter>(&stream);
+    if (!writer->u16(1)) {
       return EGLYF_ERROR;
     }
     auto coverageOffset = writer->o16();
     if (!coverageOffset) {
       return EGLYF_ERROR;
     }
-    if (!out.sizeU16(entryExitRecords.size())) {
+    if (!writer->sizeU16(entryExitRecords.size())) {
       return EGLYF_ERROR;
     }
-    vector<pair<OffsetWriter::Handle16, OffsetWriter::Handle16>> offsets;
+    vector<pair<DataFragmentWriter::Marker16, DataFragmentWriter::Marker16>> offsets;
     for (auto const &record : entryExitRecords) {
       auto entry = writer->o16();
       if (!entry) {
@@ -97,34 +97,17 @@ public:
       auto const &record = entryExitRecords[i];
       auto [entry, exit] = offsets[i];
       if (record.entryAnchor) {
-        if (auto st = entry->mark(); !st.ok()) {
-          return EGLYF_STATUS_PUSH(st);
-        }
-        if (auto st = record.entryAnchor->write(out); !st.ok()) {
-          return EGLYF_STATUS_PUSH(st);
-        }
-      } else {
-        if (auto st = entry->null(); !st.ok()) {
+        if (auto st = writer->writeDataFragment({entry}, *record.entryAnchor); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
       }
       if (record.exitAnchor) {
-        if (auto st = exit->mark(); !st.ok()) {
-          return EGLYF_STATUS_PUSH(st);
-        }
-        if (auto st = record.exitAnchor->write(out); !st.ok()) {
-          return EGLYF_STATUS_PUSH(st);
-        }
-      } else {
-        if (auto st = exit->null(); !st.ok()) {
+        if (auto st = writer->writeDataFragment({exit}, *record.exitAnchor); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
       }
     }
-    if (auto st = coverageOffset->mark(); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
-    }
-    if (auto st = coverage->write(out); !st.ok()) {
+    if (auto st = writer->writeDataFragment({coverageOffset}, *coverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
     return EGLYF_STATUS_PUSH(writer->commit());

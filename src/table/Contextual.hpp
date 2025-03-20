@@ -85,13 +85,13 @@ public:
       return ret;
     }
 
-    Status write(OutputStream &out) const {
+    Status write(OutputStream &stream) const {
       using namespace std;
-      auto writer = make_shared<OffsetWriter>(out);
-      if (!out.sizeU16(rules.size())) {
+      auto writer = make_shared<DataFragmentWriter>(&stream);
+      if (!writer->sizeU16(rules.size())) {
         return EGLYF_ERROR;
       }
-      vector<OffsetWriter::Handle16> seqRuleOffsets;
+      vector<DataFragmentWriter::Marker16> seqRuleOffsets;
       for (size_t i = 0; i < rules.size(); i++) {
         auto offset = writer->o16();
         if (!offset) {
@@ -102,10 +102,7 @@ public:
       for (size_t i = 0; i < rules.size(); i++) {
         auto const &rule = rules[i];
         auto offset = seqRuleOffsets[i];
-        if (auto st = offset->mark(); !st.ok()) {
-          return EGLYF_STATUS_PUSH(st);
-        }
-        if (auto st = rule.write(out); !st.ok()) {
+        if (auto st = writer->writeDataFragment({offset}, rule); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
       }
@@ -157,20 +154,20 @@ public:
     return Status::Ok();
   }
 
-  Status write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) override {
+  Status write(OutputStream &stream, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) override {
     using namespace std;
-    auto writer = make_shared<OffsetWriter>(out);
-    if (!out.u16(1)) {
+    auto writer = make_shared<DataFragmentWriter>(&stream);
+    if (!writer->u16(1)) {
       return EGLYF_ERROR;
     }
     auto coverageOffset = writer->o16();
     if (!coverageOffset) {
       return EGLYF_ERROR;
     }
-    if (!out.sizeU16(ruleSets.size())) {
+    if (!writer->sizeU16(ruleSets.size())) {
       return EGLYF_ERROR;
     }
-    vector<OffsetWriter::Handle16> seqRuleSetOffsets;
+    vector<DataFragmentWriter::Marker16> seqRuleSetOffsets;
     for (size_t i = 0; i < ruleSets.size(); i++) {
       auto offset = writer->o16();
       if (!offset) {
@@ -178,19 +175,13 @@ public:
       }
       seqRuleSetOffsets.push_back(offset);
     }
-    if (auto st = coverageOffset->mark(); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
-    }
-    if (auto st = coverage->write(out); !st.ok()) {
+    if (auto st = writer->writeDataFragment({coverageOffset}, *coverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
     for (size_t i = 0; i < ruleSets.size(); i++) {
       auto const &ruleSet = ruleSets[i];
       auto offset = seqRuleSetOffsets[i];
-      if (auto st = offset->mark(); !st.ok()) {
-        return EGLYF_STATUS_PUSH(st);
-      }
-      if (auto st = ruleSet.write(out); !st.ok()) {
+      if (auto st = writer->writeDataFragment({offset}, ruleSet); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     }
@@ -293,13 +284,13 @@ public:
       return ret;
     }
 
-    Status write(OutputStream &out) const {
+    Status write(OutputStream &stream) const {
       using namespace std;
-      auto writer = make_shared<OffsetWriter>(out);
-      if (!out.sizeU16(rules.size())) {
+      auto writer = make_shared<DataFragmentWriter>(&stream);
+      if (!writer->sizeU16(rules.size())) {
         return EGLYF_ERROR;
       }
-      vector<OffsetWriter::Handle16> classSeqRuleOffsets;
+      vector<DataFragmentWriter::Marker16> classSeqRuleOffsets;
       for (size_t i = 0; i < rules.size(); i++) {
         auto offset = writer->o16();
         if (!offset) {
@@ -310,10 +301,7 @@ public:
       for (size_t i = 0; i < rules.size(); i++) {
         auto const &rule = rules[i];
         auto offset = classSeqRuleOffsets[i];
-        if (auto st = offset->mark(); !st.ok()) {
-          return EGLYF_STATUS_PUSH(st);
-        }
-        if (auto st = rule.write(out); !st.ok()) {
+        if (auto st = writer->writeDataFragment({offset}, rule); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
       }
@@ -381,10 +369,10 @@ public:
     return Status::Ok();
   }
 
-  Status write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) override {
+  Status write(OutputStream &stream, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) override {
     using namespace std;
-    auto writer = make_shared<OffsetWriter>(out);
-    if (!out.u16(2)) {
+    auto writer = make_shared<DataFragmentWriter>(&stream);
+    if (!writer->u16(2)) {
       return EGLYF_ERROR;
     }
     auto coverageOffset = writer->o16();
@@ -395,10 +383,10 @@ public:
     if (!classDefOffset) {
       return EGLYF_ERROR;
     }
-    if (!out.sizeU16(ruleSets.size())) {
+    if (!writer->sizeU16(ruleSets.size())) {
       return EGLYF_ERROR;
     }
-    vector<OffsetWriter::Handle16> classSeqRuleSetOffsets;
+    vector<DataFragmentWriter::Marker16> classSeqRuleSetOffsets;
     for (size_t i = 0; i < ruleSets.size(); i++) {
       auto offset = writer->o16();
       if (!offset) {
@@ -410,17 +398,11 @@ public:
     if (!coverage) {
       return EGLYF_ERROR;
     }
-    if (auto st = coverageOffset->mark(); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
-    }
-    if (auto st = coverage->write(out); !st.ok()) {
+    if (auto st = writer->writeDataFragment({coverageOffset}, *coverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
 
-    if (auto st = classDefOffset->mark(); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
-    }
-    if (auto st = classDef->write(out); !st.ok()) {
+    if (auto st = writer->writeDataFragment({classDefOffset}, *classDef); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
 
@@ -428,14 +410,7 @@ public:
       auto const &ruleSet = ruleSets[i];
       auto offset = classSeqRuleSetOffsets[i];
       if (ruleSet) {
-        if (auto st = offset->mark(); !st.ok()) {
-          return EGLYF_STATUS_PUSH(st);
-        }
-        if (auto st = ruleSet->write(out); !st.ok()) {
-          return EGLYF_STATUS_PUSH(st);
-        }
-      } else {
-        if (auto st = offset->null(); !st.ok()) {
+        if (auto st = writer->writeDataFragment({offset}, *ruleSet); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
       }
@@ -500,19 +475,19 @@ public:
     return Status::Ok();
   }
 
-  Status write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) override {
+  Status write(OutputStream &stream, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) override {
     using namespace std;
-    auto writer = make_shared<OffsetWriter>(out);
-    if (!out.u16(3)) {
+    auto writer = make_shared<DataFragmentWriter>(&stream);
+    if (!writer->u16(3)) {
       return EGLYF_ERROR;
     }
-    if (!out.sizeU16(coverages.size())) {
+    if (!writer->sizeU16(coverages.size())) {
       return EGLYF_ERROR;
     }
-    if (!out.sizeU16(seqLookupRecords.size())) {
+    if (!writer->sizeU16(seqLookupRecords.size())) {
       return EGLYF_ERROR;
     }
-    vector<OffsetWriter::Handle16> coverageOffsets;
+    vector<DataFragmentWriter::Marker16> coverageOffsets;
     for (size_t i = 0; i < coverages.size(); i++) {
       auto offset = writer->o16();
       if (!offset) {
@@ -521,17 +496,14 @@ public:
       coverageOffsets.push_back(offset);
     }
     for (auto const &lookup : seqLookupRecords) {
-      if (auto st = lookup.write(out); !st.ok()) {
+      if (auto st = lookup.write(*writer); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     }
     for (size_t i = 0; i < coverages.size(); i++) {
       auto const &cov = coverages[i];
       auto offset = coverageOffsets[i];
-      if (auto st = offset->mark(); !st.ok()) {
-        return EGLYF_STATUS_PUSH(st);
-      }
-      if (auto st = cov->write(out); !st.ok()) {
+      if (auto st = writer->writeDataFragment({offset}, *cov); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     }

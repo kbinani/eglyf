@@ -123,13 +123,13 @@ public:
       return Status::Ok();
     }
 
-    Status write(OutputStream &out) const {
+    Status write(OutputStream &stream) const {
       using namespace std;
-      auto writer = make_shared<OffsetWriter>(out);
-      if (!out.sizeU16(rules.size())) {
+      auto writer = make_shared<DataFragmentWriter>(&stream);
+      if (!writer->sizeU16(rules.size())) {
         return EGLYF_ERROR;
       }
-      vector<OffsetWriter::Handle16> chainedSeqRuleOffsets;
+      vector<DataFragmentWriter::Marker16> chainedSeqRuleOffsets;
       for (size_t i = 0; i < rules.size(); i++) {
         auto offset = writer->o16();
         if (!offset) {
@@ -140,10 +140,7 @@ public:
       for (size_t i = 0; i < rules.size(); i++) {
         auto const &rule = rules[i];
         auto offset = chainedSeqRuleOffsets[i];
-        if (auto st = offset->mark(); !st.ok()) {
-          return EGLYF_STATUS_PUSH(st);
-        }
-        if (auto st = rule.write(out); !st.ok()) {
+        if (auto st = writer->writeDataFragment({offset}, rule); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
       }

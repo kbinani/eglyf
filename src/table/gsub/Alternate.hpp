@@ -80,20 +80,20 @@ public:
     return Status::Ok();
   }
 
-  Status write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &) override {
+  Status write(OutputStream &stream, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &) override {
     using namespace std;
-    auto writer = make_shared<OffsetWriter>(out);
-    if (!out.u16(1)) {
+    auto writer = make_shared<DataFragmentWriter>(&stream);
+    if (!writer->u16(1)) {
       return EGLYF_ERROR;
     }
     auto coverageOffset = writer->o16();
     if (!coverageOffset) {
       return EGLYF_ERROR;
     }
-    if (!out.sizeU16(alternateSets.size())) {
+    if (!writer->sizeU16(alternateSets.size())) {
       return EGLYF_ERROR;
     }
-    vector<OffsetWriter::Handle16> alternateSetOffsets;
+    vector<DataFragmentWriter::Marker16> alternateSetOffsets;
     for (size_t i = 0; i < alternateSets.size(); i++) {
       auto offset = writer->o16();
       if (!offset) {
@@ -101,19 +101,13 @@ public:
       }
       alternateSetOffsets.push_back(offset);
     }
-    if (auto st = coverageOffset->mark(); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
-    }
-    if (auto st = coverage->write(out); !st.ok()) {
+    if (auto st = writer->writeDataFragment({coverageOffset}, *coverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
     for (size_t i = 0; i < alternateSets.size(); i++) {
       auto const &alternateSet = alternateSets[i];
       auto offset = alternateSetOffsets[i];
-      if (auto st = offset->mark(); !st.ok()) {
-        return EGLYF_STATUS_PUSH(st);
-      }
-      if (auto st = alternateSet.write(out); !st.ok()) {
+      if (auto st = writer->writeDataFragment({offset}, alternateSet); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     }
