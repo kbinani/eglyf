@@ -36,7 +36,7 @@ public:
     return Status::Ok();
   }
 
-  Status write(OutputStream &out) override {
+  Status write(OutputStream &out) const override {
     using namespace std;
     if (!out.u16(2)) {
       return EGLYF_ERROR;

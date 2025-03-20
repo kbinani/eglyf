@@ -5,7 +5,7 @@ namespace eglyf {
 class Coverage {
 public:
   virtual ~Coverage() {}
-  virtual Status write(OutputStream &out) = 0;
+  virtual Status write(OutputStream &out) const = 0;
   virtual size_t size() const = 0;
 };
 
