@@ -85,6 +85,8 @@ list(APPEND src_files
   src/table/gpos/PairAdjustmentPositioning.hpp
   src/table/gpos/CursiveAttachmentPositioning.hpp
   src/io/DataFragmentWriter.hpp
+  src/table/GlyphDefinitionTable.hpp
+  src/table/MarkGlyphSets.hpp
 )
 
 juce_add_console_app(eglyf)

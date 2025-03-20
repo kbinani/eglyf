@@ -48,6 +48,7 @@
 #include "table/SubtableCollection.hpp"
 #include "table/Subtable.hpp"
 #include "table/SequenceLookup.hpp"
+#include "table/MarkGlyphSets.hpp"
 #include "table/Contextual.hpp"
 #include "table/ChainedContexts.hpp"
 #include "table/gsub/Single.hpp"
@@ -68,4 +69,5 @@
 #include "table/gpos/PositioningExtension.hpp"
 #include "table/GlyphSubstitutionTable.hpp"
 #include "table/GlyphPositioningTable.hpp"
+#include "table/GlyphDefinitionTable.hpp"
 #include "FontFile.hpp"
