@@ -73,7 +73,6 @@ list(APPEND src_files
   src/optional.hpp
   src/table/Contextual.hpp
   src/table/FeatureVariations.hpp
-  src/SharedListWriter.hpp
   src/table/gpos/SingleAdjustment.hpp
   src/table/GlyphPositioningTable.hpp
   src/table/gpos/PositioningExtension.hpp
@@ -85,6 +84,7 @@ list(APPEND src_files
   src/table/gpos/ValueRecord.hpp
   src/table/gpos/PairAdjustmentPositioning.hpp
   src/table/gpos/CursiveAttachmentPositioning.hpp
+  src/io/DataFragmentWriter.hpp
 )
 
 juce_add_console_app(eglyf)

@@ -210,32 +210,40 @@ public:
     return Status::Ok();
   }
 
-  Status write(OutputStream &out, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &) override {
+  Status write(OutputStream &stream, std::map<std::shared_ptr<Subtable>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &) override {
     using namespace std;
-    auto beginning = make_shared<OffsetWriter>(out);
-    if (!out.u16(1)) {
+    auto writer = make_shared<DataFragmentWriter>(&stream);
+    if (!writer->u16(1)) {
       return EGLYF_ERROR;
     }
-    auto coverageOffset = beginning->o16();
+    auto coverageOffset = writer->o16();
     if (!coverageOffset) {
       return EGLYF_ERROR;
     }
-    if (!out.sizeU16(ruleSets.size())) {
+    if (!writer->sizeU16(ruleSets.size())) {
       return EGLYF_ERROR;
     }
-    auto chainedSeqRuleSetWriter = SharedListWriter<ChainedSequenceRuleSet>::WriteOffsets16(out, beginning, ruleSets);
-    if (auto st = chainedSeqRuleSetWriter->writeList(out); !st.ok()) {
+    vector<DataFragmentWriter::Marker16> chainedSeqRuleSetOffsets;
+    for (size_t i = 0; i < ruleSets.size(); i++) {
+      auto offset = writer->o16();
+      if (!offset) {
+        return EGLYF_ERROR;
+      }
+      chainedSeqRuleSetOffsets.push_back(offset);
+    }
+    for (size_t i = 0; i < ruleSets.size(); i++) {
+      auto const &ruleSet = ruleSets[i];
+      auto offset = chainedSeqRuleSetOffsets[i];
+      if (auto st = writer->writeDataFragment({offset}, *ruleSet); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+    }
+
+    if (auto st = writer->writeDataFragment({coverageOffset}, *coverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
 
-    if (auto st = coverageOffset->mark(); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
-    }
-    if (auto st = coverage->write(out); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
-    }
-
-    return EGLYF_STATUS_PUSH(beginning->commit());
+    return EGLYF_STATUS_PUSH(writer->commit());
   }
 
   size_t size() const override {

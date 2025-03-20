@@ -22,7 +22,7 @@
 #include "io/ByteInputStream.hpp"
 #include "io/ByteOutputStream.hpp"
 #include "io/OffsetWriter.hpp"
-#include "SharedListWriter.hpp"
+#include "io/DataFragmentWriter.hpp"
 #include "Tag.hpp"
 #include "TableRecord.hpp"
 #include "TableDirectory.hpp"
