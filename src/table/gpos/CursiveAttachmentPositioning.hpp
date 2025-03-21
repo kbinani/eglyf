@@ -97,17 +97,17 @@ public:
       auto const &record = entryExitRecords[i];
       auto [entry, exit] = offsets[i];
       if (record.entryAnchor) {
-        if (auto st = writer->writeDataFragment({entry}, *record.entryAnchor); !st.ok()) {
+        if (auto st = writer->writeDataFragment(entry, *record.entryAnchor); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
       }
       if (record.exitAnchor) {
-        if (auto st = writer->writeDataFragment({exit}, *record.exitAnchor); !st.ok()) {
+        if (auto st = writer->writeDataFragment(exit, *record.exitAnchor); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
       }
     }
-    if (auto st = writer->writeDataFragment({coverageOffset}, *coverage); !st.ok()) {
+    if (auto st = writer->writeDataFragment(coverageOffset, *coverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
     return EGLYF_STATUS_PUSH(writer->commit());

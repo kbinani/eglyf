@@ -101,13 +101,13 @@ public:
       }
       alternateSetOffsets.push_back(offset);
     }
-    if (auto st = writer->writeDataFragment({coverageOffset}, *coverage); !st.ok()) {
+    if (auto st = writer->writeDataFragment(coverageOffset, *coverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
     for (size_t i = 0; i < alternateSets.size(); i++) {
       auto const &alternateSet = alternateSets[i];
       auto offset = alternateSetOffsets[i];
-      if (auto st = writer->writeDataFragment({offset}, alternateSet); !st.ok()) {
+      if (auto st = writer->writeDataFragment(offset, alternateSet); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     }

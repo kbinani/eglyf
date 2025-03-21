@@ -102,7 +102,7 @@ public:
       for (size_t i = 0; i < rules.size(); i++) {
         auto const &rule = rules[i];
         auto offset = seqRuleOffsets[i];
-        if (auto st = writer->writeDataFragment({offset}, rule); !st.ok()) {
+        if (auto st = writer->writeDataFragment(offset, rule); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
       }
@@ -175,13 +175,13 @@ public:
       }
       seqRuleSetOffsets.push_back(offset);
     }
-    if (auto st = writer->writeDataFragment({coverageOffset}, *coverage); !st.ok()) {
+    if (auto st = writer->writeDataFragment(coverageOffset, *coverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
     for (size_t i = 0; i < ruleSets.size(); i++) {
       auto const &ruleSet = ruleSets[i];
       auto offset = seqRuleSetOffsets[i];
-      if (auto st = writer->writeDataFragment({offset}, ruleSet); !st.ok()) {
+      if (auto st = writer->writeDataFragment(offset, ruleSet); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     }
@@ -301,7 +301,7 @@ public:
       for (size_t i = 0; i < rules.size(); i++) {
         auto const &rule = rules[i];
         auto offset = classSeqRuleOffsets[i];
-        if (auto st = writer->writeDataFragment({offset}, rule); !st.ok()) {
+        if (auto st = writer->writeDataFragment(offset, rule); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
       }
@@ -398,11 +398,11 @@ public:
     if (!coverage) {
       return EGLYF_ERROR;
     }
-    if (auto st = writer->writeDataFragment({coverageOffset}, *coverage); !st.ok()) {
+    if (auto st = writer->writeDataFragment(coverageOffset, *coverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
 
-    if (auto st = writer->writeDataFragment({classDefOffset}, *classDef); !st.ok()) {
+    if (auto st = writer->writeDataFragment(classDefOffset, *classDef); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
 
@@ -410,7 +410,7 @@ public:
       auto const &ruleSet = ruleSets[i];
       auto offset = classSeqRuleSetOffsets[i];
       if (ruleSet) {
-        if (auto st = writer->writeDataFragment({offset}, *ruleSet); !st.ok()) {
+        if (auto st = writer->writeDataFragment(offset, *ruleSet); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
       }
@@ -503,7 +503,7 @@ public:
     for (size_t i = 0; i < coverages.size(); i++) {
       auto const &cov = coverages[i];
       auto offset = coverageOffsets[i];
-      if (auto st = writer->writeDataFragment({offset}, *cov); !st.ok()) {
+      if (auto st = writer->writeDataFragment(offset, *cov); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     }

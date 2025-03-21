@@ -66,7 +66,7 @@ public:
     for (size_t i = 0; i < markRecords.size(); i++) {
       auto const &record = markRecords[i];
       auto offset = markAnchorOffsets[i];
-      if (auto st = writer->writeDataFragment({offset}, *record.markAnchor); !st.ok()) {
+      if (auto st = writer->writeDataFragment(offset, *record.markAnchor); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     }

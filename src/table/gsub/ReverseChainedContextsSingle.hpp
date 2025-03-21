@@ -111,14 +111,14 @@ public:
       return EGLYF_ERROR;
     }
 
-    if (auto st = writer->writeDataFragment({coverageOffset}, *coverage); !st.ok()) {
+    if (auto st = writer->writeDataFragment(coverageOffset, *coverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
 
     for (size_t i = 0; i < backtrackCoverages.size(); i++) {
       auto const &cov = backtrackCoverages[i];
       auto offset = backtrackCoverageOffsets[i];
-      if (auto st = writer->writeDataFragment({offset}, *cov); !st.ok()) {
+      if (auto st = writer->writeDataFragment(offset, *cov); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     }
@@ -126,7 +126,7 @@ public:
     for (size_t i = 0; i < lookaheadCoverages.size(); i++) {
       auto const &cov = lookaheadCoverages[i];
       auto offset = lookaheadCoverageOffsets[i];
-      if (auto st = writer->writeDataFragment({offset}, *cov); !st.ok()) {
+      if (auto st = writer->writeDataFragment(offset, *cov); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     }

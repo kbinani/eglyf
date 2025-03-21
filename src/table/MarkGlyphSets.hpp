@@ -18,8 +18,8 @@ public:
     if (!in.u16(&markGlyphSetCount)) {
       return EGLYF_NULLOPT;
     }
-    vector<Offset16> coverageOffsets;
-    if (!in.o16a(coverageOffsets, markGlyphSetCount)) {
+    vector<Offset32> coverageOffsets;
+    if (!in.o32a(coverageOffsets, markGlyphSetCount)) {
       return EGLYF_NULLOPT;
     }
     MarkGlyphSets ret;
@@ -34,6 +34,33 @@ public:
       ret.coverages.push_back(cov);
     }
     return ret;
+  }
+
+  Status write(OutputStream &stream) const {
+    using namespace std;
+    auto writer = make_shared<DataFragmentWriter>(&stream);
+    if (!writer->u16(1)) {
+      return EGLYF_ERROR;
+    }
+    if (!writer->sizeU16(coverages.size())) {
+      return EGLYF_ERROR;
+    }
+    vector<DataFragmentWriter::Marker32> coverageOffsets;
+    for (size_t i = 0; i < coverages.size(); i++) {
+      auto offset = writer->o32();
+      if (!offset) {
+        return EGLYF_ERROR;
+      }
+      coverageOffsets.push_back(offset);
+    }
+    for (size_t i = 0; i < coverages.size(); i++) {
+      auto const &coverage = coverages[i];
+      auto offset = coverageOffsets[i];
+      if (auto st = writer->writeDataFragment(offset, *coverage); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+    }
+    return EGLYF_STATUS_PUSH(writer->commit());
   }
 
 public:

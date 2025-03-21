@@ -19,6 +19,16 @@ public:
       }
       return ret;
     }
+
+    Status write(OutputStream &out) const {
+      if (!out.sizeU16(pointIndices.size())) {
+        return EGLYF_ERROR;
+      }
+      if (!out.u16a(pointIndices)) {
+        return EGLYF_ERROR;
+      }
+      return Status::Ok();
+    }
   };
 
   struct AttachList {
@@ -59,11 +69,49 @@ public:
       }
       return ret;
     }
+
+    Status write(OutputStream &out) const {
+      using namespace std;
+      auto writer = make_shared<OffsetWriter>(out);
+      auto coverageOffset = writer->o16();
+      if (!coverageOffset) {
+        return EGLYF_ERROR;
+      }
+      if (!out.sizeU16(attachPoints.size())) {
+        return EGLYF_ERROR;
+      }
+      vector<OffsetWriter::Handle16> attachPointOffsets;
+      for (size_t i = 0; i < attachPoints.size(); i++) {
+        auto offset = writer->o16();
+        if (!offset) {
+          return EGLYF_ERROR;
+        }
+        attachPointOffsets.push_back(offset);
+      }
+      if (auto st = coverageOffset->mark(); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+      if (auto st = coverage->write(out); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+      for (size_t i = 0; i < attachPoints.size(); i++) {
+        auto const &attachPoint = attachPoints[i];
+        auto offset = attachPointOffsets[i];
+        if (auto st = offset->mark(); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
+        if (auto st = attachPoint.write(out); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
+      }
+      return EGLYF_STATUS_PUSH(writer->commit());
+    }
   };
 
   class CaretValue {
   public:
     virtual ~CaretValue() {}
+    virtual Status write(OutputStream &) const = 0;
   };
 
   class CaretValue1 : public CaretValue {
@@ -75,6 +123,16 @@ public:
         return EGLYF_ERROR;
       }
       out.reset(ret.release());
+      return Status::Ok();
+    }
+
+    Status write(OutputStream &out) const override {
+      if (!out.u16(1)) {
+        return EGLYF_ERROR;
+      }
+      if (!out.i16(coordinate)) {
+        return EGLYF_ERROR;
+      }
       return Status::Ok();
     }
 
@@ -91,6 +149,16 @@ public:
         return EGLYF_ERROR;
       }
       out.reset(ret.release());
+      return Status::Ok();
+    }
+
+    Status write(OutputStream &out) const override {
+      if (!out.u16(2)) {
+        return EGLYF_ERROR;
+      }
+      if (!out.u16(caretValuePointIndex)) {
+        return EGLYF_ERROR;
+      }
       return Status::Ok();
     }
 
@@ -148,6 +216,30 @@ public:
       }
       return ret;
     }
+
+    Status write(OutputStream &stream) const {
+      using namespace std;
+      auto writer = make_shared<DataFragmentWriter>(&stream);
+      if (!writer->sizeU16(caretValues.size())) {
+        return EGLYF_ERROR;
+      }
+      vector<DataFragmentWriter::Marker16> caretValueOffsets;
+      for (size_t i = 0; i < caretValues.size(); i++) {
+        auto offset = writer->o16();
+        if (!offset) {
+          return EGLYF_ERROR;
+        }
+        caretValueOffsets.push_back(offset);
+      }
+      for (size_t i = 0; i < caretValues.size(); i++) {
+        auto const &caretValue = caretValues[i];
+        auto offset = caretValueOffsets[i];
+        if (auto st = writer->writeDataFragment(offset, *caretValue); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
+      }
+      return EGLYF_STATUS_PUSH(writer->commit());
+    }
   };
 
   struct LigCaretList {
@@ -188,6 +280,37 @@ public:
       }
       return ret;
     }
+
+    Status write(OutputStream &stream) const {
+      using namespace std;
+      auto writer = make_shared<DataFragmentWriter>(&stream);
+      auto coverageOffset = writer->o16();
+      if (!coverageOffset) {
+        return EGLYF_ERROR;
+      }
+      if (!writer->sizeU16(ligGlyphs.size())) {
+        return EGLYF_ERROR;
+      }
+      vector<DataFragmentWriter::Marker16> ligGlyphOffsets;
+      for (size_t i = 0; i < ligGlyphs.size(); i++) {
+        auto offset = writer->o16();
+        if (!offset) {
+          return EGLYF_ERROR;
+        }
+        ligGlyphOffsets.push_back(offset);
+      }
+      if (auto st = writer->writeDataFragment(coverageOffset, *coverage); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+      for (size_t i = 0; i < ligGlyphs.size(); i++) {
+        auto const &ligGlyph = ligGlyphs[i];
+        auto offset = ligGlyphOffsets[i];
+        if (auto st = writer->writeDataFragment(offset, ligGlyph); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
+      }
+      return EGLYF_STATUS_PUSH(writer->commit());
+    }
   };
 
 public:
@@ -204,7 +327,7 @@ public:
     if (!in.u16(&ret->minorVersion)) {
       return EGLYF_ERROR;
     }
-    if (ret->minorVersion < 1 || 3 < ret->minorVersion) {
+    if (ret->minorVersion != 0 && ret->minorVersion != 2 && ret->minorVersion != 3) {
       return EGLYF_ERROR;
     }
     Offset16 glyphClassDefOffset;
@@ -256,7 +379,7 @@ public:
       }
     }
 
-    if (ligCaretListOffset) {
+    if (ligCaretListOffset > 0) {
       if (!in.seek(ligCaretListOffset)) {
         return EGLYF_ERROR;
       }
@@ -296,7 +419,123 @@ public:
   }
 
   Optional<EncodeResult> encode() const override {
-    return EGLYF_NULLOPT;
+    using namespace std;
+    if (majorVersion != 1) {
+      return EGLYF_NULLOPT;
+    }
+    if (minorVersion != 0 && minorVersion != 2 && minorVersion != 3) {
+      return EGLYF_NULLOPT;
+    }
+    ByteOutputStream out;
+    auto writer = make_shared<OffsetWriter>(out);
+    if (!out.u16(majorVersion)) {
+      return EGLYF_NULLOPT;
+    }
+    if (!out.u16(minorVersion)) {
+      return EGLYF_NULLOPT;
+    }
+    auto glyphClassDefOffset = writer->o16();
+    if (!glyphClassDefOffset) {
+      return EGLYF_NULLOPT;
+    }
+    auto attachListOffset = writer->o16();
+    if (!attachListOffset) {
+      return EGLYF_NULLOPT;
+    }
+    auto ligCaretListOffset = writer->o16();
+    if (!ligCaretListOffset) {
+      return EGLYF_NULLOPT;
+    }
+    auto markAttachClassDefOffset = writer->o16();
+    if (!markAttachClassDefOffset) {
+      return EGLYF_NULLOPT;
+    }
+    OffsetWriter::Handle16 markGlyphSetsDefOffset;
+    if (minorVersion > 1) {
+      markGlyphSetsDefOffset = writer->o16();
+      if (!markGlyphSetsDefOffset) {
+        return EGLYF_NULLOPT;
+      }
+    }
+    OffsetWriter::Handle16 itemVarStoreOffset;
+    if (minorVersion > 2) {
+      itemVarStoreOffset = writer->o16();
+      if (!itemVarStoreOffset) {
+        return EGLYF_NULLOPT;
+      }
+    }
+    if (glyphClassDef) {
+      if (auto st = glyphClassDefOffset->mark(); !st.ok()) {
+        return EGLYF_NULLOPT_PUSH(st);
+      }
+      if (auto st = glyphClassDef->write(out); !st.ok()) {
+        return EGLYF_NULLOPT_PUSH(st);
+      }
+    } else {
+      if (auto st = glyphClassDefOffset->null(); !st.ok()) {
+        return EGLYF_NULLOPT_PUSH(st);
+      }
+    }
+    if (attachList) {
+      if (auto st = attachListOffset->mark(); !st.ok()) {
+        return EGLYF_NULLOPT_PUSH(st);
+      }
+      if (auto st = attachList->write(out); !st.ok()) {
+        return EGLYF_NULLOPT_PUSH(st);
+      }
+    } else {
+      if (auto st = attachListOffset->null(); !st.ok()) {
+        return EGLYF_NULLOPT_PUSH(st);
+      }
+    }
+    if (ligCaretList) {
+      if (auto st = ligCaretListOffset->mark(); !st.ok()) {
+        return EGLYF_NULLOPT_PUSH(st);
+      }
+      if (auto st = ligCaretList->write(out); !st.ok()) {
+        return EGLYF_NULLOPT_PUSH(st);
+      }
+    } else {
+      if (auto st = ligCaretListOffset->null(); !st.ok()) {
+        return EGLYF_NULLOPT_PUSH(st);
+      }
+    }
+    if (markAttachClassDef) {
+      if (auto st = markAttachClassDefOffset->mark(); !st.ok()) {
+        return EGLYF_NULLOPT_PUSH(st);
+      }
+      if (auto st = markAttachClassDef->write(out); !st.ok()) {
+        return EGLYF_NULLOPT_PUSH(st);
+      }
+    } else {
+      if (auto st = markAttachClassDefOffset->null(); !st.ok()) {
+        return EGLYF_NULLOPT_PUSH(st);
+      }
+    }
+    if (minorVersion > 1) {
+      if (markGlyphSets) {
+        if (auto st = markGlyphSetsDefOffset->mark(); !st.ok()) {
+          return EGLYF_NULLOPT_PUSH(st);
+        }
+        if (auto st = markGlyphSets->write(out); !st.ok()) {
+          return EGLYF_NULLOPT_PUSH(st);
+        }
+      } else {
+        if (auto st = markGlyphSetsDefOffset->null(); !st.ok()) {
+          return EGLYF_NULLOPT_PUSH(st);
+        }
+      }
+    }
+    if (minorVersion > 2) {
+      if (auto st = itemVarStoreOffset->null(); !st.ok()) {
+        return EGLYF_NULLOPT_PUSH(st);
+      }
+    }
+    if (auto st = writer->commit(); !st.ok()) {
+      return EGLYF_NULLOPT_PUSH(st);
+    }
+
+    return EncodeResult(out.data());
   }
 
 public:

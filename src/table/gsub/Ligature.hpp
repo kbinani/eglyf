@@ -178,11 +178,11 @@ public:
     for (size_t i = 0; i < ligatureSets.size(); i++) {
       auto const &ligatureSet = ligatureSets[i];
       auto offset = ligatureSetOffsets[i];
-      if (auto st = writer->writeDataFragment({offset}, ligatureSet); !st.ok()) {
+      if (auto st = writer->writeDataFragment(offset, ligatureSet); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     }
-    if (auto st = writer->writeDataFragment({coverageOffset}, *coverage); !st.ok()) {
+    if (auto st = writer->writeDataFragment(coverageOffset, *coverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
     return EGLYF_STATUS_PUSH(writer->commit());

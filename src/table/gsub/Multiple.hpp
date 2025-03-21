@@ -114,11 +114,11 @@ public:
     for (size_t i = 0; i < sequences.size(); i++) {
       auto const &sequence = sequences[i];
       auto offset = sequenceOffsets[i];
-      if (auto st = writer->writeDataFragment({offset}, sequence); !st.ok()) {
+      if (auto st = writer->writeDataFragment(offset, sequence); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     }
-    if (auto st = writer->writeDataFragment({coverageOffset}, *coverage); !st.ok()) {
+    if (auto st = writer->writeDataFragment(coverageOffset, *coverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
     return EGLYF_STATUS_PUSH(writer->commit());

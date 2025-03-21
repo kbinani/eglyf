@@ -140,7 +140,7 @@ public:
       for (size_t i = 0; i < rules.size(); i++) {
         auto const &rule = rules[i];
         auto offset = chainedSeqRuleOffsets[i];
-        if (auto st = writer->writeDataFragment({offset}, rule); !st.ok()) {
+        if (auto st = writer->writeDataFragment(offset, rule); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
       }
@@ -231,12 +231,12 @@ public:
     for (size_t i = 0; i < ruleSets.size(); i++) {
       auto const &ruleSet = ruleSets[i];
       auto offset = chainedSeqRuleSetOffsets[i];
-      if (auto st = writer->writeDataFragment({offset}, *ruleSet); !st.ok()) {
+      if (auto st = writer->writeDataFragment(offset, *ruleSet); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     }
 
-    if (auto st = writer->writeDataFragment({coverageOffset}, *coverage); !st.ok()) {
+    if (auto st = writer->writeDataFragment(coverageOffset, *coverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
 

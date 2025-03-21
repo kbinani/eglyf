@@ -206,16 +206,16 @@ public:
       return EGLYF_ERROR;
     }
 
-    if (auto st = out->writeDataFragment({markCoverageOffset}, *markCoverage); !st.ok()) {
+    if (auto st = out->writeDataFragment(markCoverageOffset, *markCoverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
-    if (auto st = out->writeDataFragment({baseCoverageOffset}, *baseCoverage); !st.ok()) {
+    if (auto st = out->writeDataFragment(baseCoverageOffset, *baseCoverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
-    if (auto st = out->writeDataFragment({markArrayOffset}, markArray); !st.ok()) {
+    if (auto st = out->writeDataFragment(markArrayOffset, markArray); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
-    if (auto st = out->writeDataFragment({baseArrayOffset}, baseArray); !st.ok()) {
+    if (auto st = out->writeDataFragment(baseArrayOffset, baseArray); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
 

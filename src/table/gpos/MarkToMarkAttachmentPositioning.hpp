@@ -77,7 +77,7 @@ public:
           auto const &anchor = mark.mark2Anchors[j];
           auto offset = offsets[j];
           if (anchor) {
-            if (auto st = writer->writeDataFragment({offset}, *anchor); !st.ok()) {
+            if (auto st = writer->writeDataFragment(offset, *anchor); !st.ok()) {
               return EGLYF_STATUS_PUSH(st);
             }
           }

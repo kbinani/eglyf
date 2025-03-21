@@ -164,14 +164,14 @@ public:
       pairSetOffsets.push_back(offset);
     }
 
-    if (auto st = writer->writeDataFragment({coverageOffset}, *coverage); !st.ok()) {
+    if (auto st = writer->writeDataFragment(coverageOffset, *coverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
 
     for (size_t i = 0; i < pairSets.size(); i++) {
       auto const &pairSet = pairSets[i];
       auto offset = pairSetOffsets[i];
-      auto st = writer->writeDataFragment({offset}, [&](OutputStream &o) {
+      auto st = writer->writeDataFragment(offset, [&](OutputStream &o) {
         return EGLYF_STATUS_PUSH(pairSet.write(o, valueFormat1, valueFormat2));
       });
       if (!st.ok()) {

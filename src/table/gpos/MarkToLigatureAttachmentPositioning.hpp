@@ -85,7 +85,7 @@ public:
           auto const &anchor = record.ligatureAnchors[j];
           auto offset = offsets[j];
           if (anchor) {
-            if (auto st = writer->writeDataFragment({offset}, *anchor); !st.ok()) {
+            if (auto st = writer->writeDataFragment(offset, *anchor); !st.ok()) {
               return EGLYF_STATUS_PUSH(st);
             }
           }
@@ -147,7 +147,7 @@ public:
       for (size_t i = 0; i < ligatureAttaches.size(); i++) {
         auto const &ligatureAttach = ligatureAttaches[i];
         auto offset = ligatureAttachOffsets[i];
-        auto st = writer->writeDataFragment({offset}, [&](OutputStream &o) {
+        auto st = writer->writeDataFragment(offset, [&](OutputStream &o) {
           return EGLYF_STATUS_PUSH(ligatureAttach.write(o, markClassCount));
         });
         if (!st.ok()) {

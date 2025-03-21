@@ -114,7 +114,9 @@ public:
     return handle;
   }
 
-  Status startDataFragment(std::vector<Marker16> const &markers) {
+  template <class Marker>
+    requires std::same_as<Marker, Marker16> || std::same_as<Marker, Marker32>
+  Status startDataFragment(Marker marker) {
     using namespace std;
     if (holds_alternative<ActiveDataFragment>(active)) {
       auto &df = get<ActiveDataFragment>(active);
@@ -137,7 +139,7 @@ public:
     }
 
     ActiveDataFragment next;
-    ranges::copy(markers, back_inserter(next.markers));
+    next.markers.push_back(marker);
     active = next;
     return Status::Ok();
   }
@@ -168,12 +170,12 @@ public:
     return Status::Ok();
   }
 
-  template <class T>
-    requires requires(T const &data, OutputStream &out) {
+  template <class Marker, class T>
+    requires(std::same_as<Marker, Marker16> || std::same_as<Marker, Marker32>) && requires(T const &data, OutputStream &out) {
       { data.write(out) } -> std::convertible_to<Status>;
     }
-  Status writeDataFragment(std::vector<Marker16> const &markers, T const &data) {
-    if (auto st = startDataFragment(markers); !st.ok()) {
+  Status writeDataFragment(Marker marker, T const &data) {
+    if (auto st = startDataFragment<Marker>(marker); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
     if (Status st = data.write(*this); !st.ok()) {
@@ -182,8 +184,10 @@ public:
     return EGLYF_STATUS_PUSH(endDataFragment());
   }
 
-  Status writeDataFragment(std::vector<Marker16> const &markers, std::function<Status(OutputStream &out)> w) {
-    if (auto st = startDataFragment(markers); !st.ok()) {
+  template <class Marker>
+    requires std::same_as<Marker, Marker16> || std::same_as<Marker, Marker32>
+  Status writeDataFragment(Marker marker, std::function<Status(OutputStream &out)> w) {
+    if (auto st = startDataFragment<Marker>(marker); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
     if (Status st = w(*this); !st.ok()) {
