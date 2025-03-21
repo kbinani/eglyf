@@ -72,4 +72,5 @@
 #include "table/GlyphDefinitionTable.hpp"
 #include "table/VerticalHeaderTable.hpp"
 #include "table/VerticalMetricsTable.hpp"
+#include "table/CharacterToGlyphIndexMappingTable.hpp"
 #include "FontFile.hpp"

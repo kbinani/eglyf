@@ -89,6 +89,7 @@ list(APPEND src_files
   src/table/MarkGlyphSets.hpp
   src/table/VerticalHeaderTable.hpp
   src/table/VerticalMetricsTable.hpp
+  src/table/CharacterToGlyphIndexMappingTable.hpp
 )
 
 juce_add_console_app(eglyf)

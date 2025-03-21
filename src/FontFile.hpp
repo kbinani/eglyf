@@ -281,15 +281,6 @@ public:
       return EGLYF_ERROR;
     }
 
-    if (auto tr = records.find(FCC("cmap")); tr == records.end()) {
-      return EGLYF_ERROR;
-    } else if (auto buffer = tr->second.read(in); buffer) {
-      ff->cmap = make_shared<ReadonlyTable>(*buffer);
-      records.erase(tr);
-    } else {
-      return EGLYF_ERROR;
-    }
-
     if (auto tr = records.find(FCC("hhea")); tr == records.end()) {
       return EGLYF_ERROR;
     } else if (auto buffer = tr->second.read(in); buffer) {
@@ -468,6 +459,18 @@ public:
       records.erase(vmtxRecord);
     }
 
+    if (auto tr = records.find(FCC("cmap")); tr == records.end()) {
+      return EGLYF_ERROR;
+    } else if (auto buffer = tr->second.read(in); buffer) {
+      ByteInputStream slice(*buffer);
+      if (auto st = CharacterToGlyphIndexMappingTable::Read(slice, ff->cmap); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+      records.erase(tr);
+    } else {
+      return EGLYF_ERROR;
+    }
+
     for (auto const &it : records) {
       TableRecord tr = it.second;
       auto buffer = tr.read(in);
@@ -536,7 +539,7 @@ public:
   uint16_t entrySelector;
   uint16_t rangeShift;
 
-  std::shared_ptr<ReadonlyTable> cmap;
+  std::shared_ptr<CharacterToGlyphIndexMappingTable> cmap;
   std::shared_ptr<FontHeaderTable> head;
   std::shared_ptr<HorizontalHeaderTable> hhea;
   std::shared_ptr<HorizontalMetricsTable> hmtx;
