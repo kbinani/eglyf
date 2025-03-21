@@ -70,4 +70,5 @@
 #include "table/GlyphSubstitutionTable.hpp"
 #include "table/GlyphPositioningTable.hpp"
 #include "table/GlyphDefinitionTable.hpp"
+#include "table/VerticalHeaderTable.hpp"
 #include "FontFile.hpp"

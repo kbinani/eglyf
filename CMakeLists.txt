@@ -87,6 +87,7 @@ list(APPEND src_files
   src/io/DataFragmentWriter.hpp
   src/table/GlyphDefinitionTable.hpp
   src/table/MarkGlyphSets.hpp
+  src/table/VerticalHeaderTable.hpp
 )
 
 juce_add_console_app(eglyf)
