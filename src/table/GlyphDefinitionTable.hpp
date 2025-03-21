@@ -352,9 +352,9 @@ public:
         return EGLYF_ERROR;
       }
     }
-    Offset16 itemVarStoreOffset = 0;
+    Offset32 itemVarStoreOffset = 0;
     if (ret->minorVersion > 2) {
-      if (!in.o16(&itemVarStoreOffset)) {
+      if (!in.o32(&itemVarStoreOffset)) {
         return EGLYF_ERROR;
       }
     }
@@ -457,9 +457,9 @@ public:
         return EGLYF_NULLOPT;
       }
     }
-    OffsetWriter::Handle16 itemVarStoreOffset;
+    OffsetWriter::Handle32 itemVarStoreOffset;
     if (minorVersion > 2) {
-      itemVarStoreOffset = writer->o16();
+      itemVarStoreOffset = writer->o32();
       if (!itemVarStoreOffset) {
         return EGLYF_NULLOPT;
       }
