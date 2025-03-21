@@ -288,6 +288,26 @@ public:
     return EncodeResult(out.data());
   }
 
+  uint16_t numOfLongVerMetrics() const {
+    using namespace std;
+    if (holds_alternative<Data10>(data)) {
+      return get<Data10>(data).numOfLongVerMetrics;
+    } else if (holds_alternative<Data11>(data)) {
+      return get<Data11>(data).numOfLongVerMetrics;
+    } else {
+      return 0;
+    }
+  }
+
+  void setNumOfLongVerMetrics(uint16_t v) {
+    using namespace std;
+    if (holds_alternative<Data10>(data)) {
+      get<Data10>(data).numOfLongVerMetrics = v;
+    } else if (holds_alternative<Data11>(data)) {
+      get<Data11>(data).numOfLongVerMetrics = v;
+    }
+  }
+
 public:
   std::variant<Data10, Data11> data;
 };

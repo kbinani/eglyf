@@ -127,6 +127,56 @@ public:
       return EGLYF_STATUS_PUSH(encoded.status());
     }
 
+    if (auto vmtxEntry = all.find(FCC("vmtx")); vmtxEntry != all.end()) {
+      auto vmtx = dynamic_pointer_cast<VerticalMetricsTable>(vmtxEntry->second);
+      if (!vmtx) {
+        return EGLYF_ERROR;
+      }
+      uint16_t numOfLongVerMetrics = 0;
+      auto vmtxEncoded = vmtx->encode(numOfLongVerMetrics);
+      if (!vmtxEncoded) {
+        return EGLYF_STATUS_PUSH(vmtxEncoded.status());
+      }
+      TableRecord vmtxRecord;
+      vmtxRecord.tag = FCC("vmtx");
+      vmtxRecord.checksum = vmtxEncoded->checksum;
+      vmtxRecord.offset = offset;
+      vmtxRecord.length = vmtxEncoded->length;
+      tableRecords[FCC("vmtx")] = vmtxRecord;
+      if (!out.write(vmtxEncoded->data.data(), vmtxEncoded->data.size())) {
+        return EGLYF_ERROR;
+      }
+      offset += vmtxEncoded->data.size();
+
+      auto vheaEntry = all.find(FCC("vhea"));
+      if (vheaEntry == all.end()) {
+        return EGLYF_ERROR;
+      }
+      auto vhea = dynamic_pointer_cast<VerticalHeaderTable>(vheaEntry->second);
+      if (!vhea) {
+        return EGLYF_ERROR;
+      }
+      vhea->setNumOfLongVerMetrics(numOfLongVerMetrics);
+
+      auto vheaEncoded = vhea->encode();
+      if (!vheaEncoded) {
+        return EGLYF_STATUS_PUSH(vheaEncoded.status());
+      }
+      TableRecord vheaRecord;
+      vheaRecord.tag = FCC("vhea");
+      vheaRecord.checksum = vheaEncoded->checksum;
+      vheaRecord.offset = offset;
+      vheaRecord.length = vheaEncoded->length;
+      tableRecords[FCC("vhea")] = vheaRecord;
+      if (!out.write(vheaEncoded->data.data(), vheaEncoded->data.size())) {
+        return EGLYF_ERROR;
+      }
+      offset += vheaEncoded->data.size();
+
+      all.erase(vheaEntry);
+      all.erase(vmtxEntry);
+    }
+
     for (auto &[tag, table] : all) {
       auto encoded = table->encode();
       if (!encoded) {
@@ -214,7 +264,7 @@ public:
       if (auto st = FontHeaderTable::Read(slice, ff->head); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
-      records.erase(tr->first);
+      records.erase(tr);
     } else {
       return EGLYF_ERROR;
     }
@@ -226,7 +276,7 @@ public:
       if (auto st = MaximumProfileTable::Read(slice, ff->maxp); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
-      records.erase(tr->first);
+      records.erase(tr);
     } else {
       return EGLYF_ERROR;
     }
@@ -235,7 +285,7 @@ public:
       return EGLYF_ERROR;
     } else if (auto buffer = tr->second.read(in); buffer) {
       ff->cmap = make_shared<ReadonlyTable>(*buffer);
-      records.erase(tr->first);
+      records.erase(tr);
     } else {
       return EGLYF_ERROR;
     }
@@ -247,7 +297,7 @@ public:
       if (auto st = HorizontalHeaderTable::Read(slice, ff->hhea); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
-      records.erase(tr->first);
+      records.erase(tr);
     } else {
       return EGLYF_ERROR;
     }
@@ -259,7 +309,7 @@ public:
       if (auto st = HorizontalMetricsTable::Read(slice, ff->maxp->numGlyphs, ff->hhea->numberOfHMetrics, ff->hmtx); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
-      records.erase(tr->first);
+      records.erase(tr);
     } else {
       return EGLYF_ERROR;
     }
@@ -268,7 +318,7 @@ public:
       return EGLYF_ERROR;
     } else if (auto buffer = tr->second.read(in); buffer) {
       ff->name = make_shared<ReadonlyTable>(*buffer);
-      records.erase(tr->first);
+      records.erase(tr);
     } else {
       return EGLYF_ERROR;
     }
@@ -280,7 +330,7 @@ public:
       if (auto st = OS2AndWindowsMetricsTable::Read(slice, ff->os2); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
-      records.erase(tr->first);
+      records.erase(tr);
     } else {
       return EGLYF_ERROR;
     }
@@ -292,7 +342,7 @@ public:
       if (auto st = PostScriptTable::Read(slice, ff->post); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
-      records.erase(tr->first);
+      records.erase(tr);
     } else {
       return EGLYF_ERROR;
     }
@@ -328,8 +378,8 @@ public:
       o.glyf = glyf;
       ff->outlines = o;
 
-      records.erase(tr0->first);
-      records.erase(tr1->first);
+      records.erase(tr0);
+      records.erase(tr1);
     } else {
       // TODO:
       return EGLYF_ERROR;
@@ -346,7 +396,7 @@ public:
         } else {
           return EGLYF_STATUS_PUSH(st);
         }
-        records.erase(tr->first);
+        records.erase(tr);
       } else {
         return EGLYF_ERROR;
       }
@@ -361,7 +411,7 @@ public:
         } else {
           return EGLYF_STATUS_PUSH(st);
         }
-        records.erase(tr->first);
+        records.erase(tr);
       } else {
         return EGLYF_ERROR;
       }
@@ -376,25 +426,46 @@ public:
         } else {
           return EGLYF_STATUS_PUSH(st);
         }
-        records.erase(tr->first);
+        records.erase(tr);
       } else {
         return EGLYF_ERROR;
       }
     }
 
-    if (auto tr = records.find(FCC("vhea")); tr != records.end()) {
-      if (auto buffer = tr->second.read(in); buffer) {
-        ByteInputStream slice(*buffer);
-        shared_ptr<VerticalHeaderTable> result;
-        if (auto st = VerticalHeaderTable::Read(slice, result); st.ok()) {
-          ff->tables[tr->second.tag] = result;
-        } else {
-          return EGLYF_STATUS_PUSH(st);
-        }
-        records.erase(tr->first);
-      } else {
+    if (auto vmtxRecord = records.find(FCC("vmtx")); vmtxRecord != records.end()) {
+      auto vheaRecord = records.find(FCC("vhea"));
+      if (vheaRecord == records.end()) {
         return EGLYF_ERROR;
       }
+
+      shared_ptr<VerticalHeaderTable> vhea;
+      {
+        auto vheaBuffer = vheaRecord->second.read(in);
+        if (!vheaBuffer) {
+          return EGLYF_ERROR;
+        }
+        ByteInputStream vheaSlice(*vheaBuffer);
+        if (auto st = VerticalHeaderTable::Read(vheaSlice, vhea); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
+      }
+
+      shared_ptr<VerticalMetricsTable> vmtx;
+      {
+        auto vmtxBuffer = vmtxRecord->second.read(in);
+        if (!vmtxBuffer) {
+          return EGLYF_ERROR;
+        }
+        ByteInputStream vmtxSlice(*vmtxBuffer);
+        if (auto st = VerticalMetricsTable::Read(vmtxSlice, ff->maxp->numGlyphs, vhea->numOfLongVerMetrics(), vmtx); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
+      }
+
+      ff->tables[vheaRecord->second.tag] = vhea;
+      ff->tables[vmtxRecord->second.tag] = vmtx;
+      records.erase(vheaRecord);
+      records.erase(vmtxRecord);
     }
 
     for (auto const &it : records) {
