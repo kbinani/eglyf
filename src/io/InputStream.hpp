@@ -103,6 +103,19 @@ public:
     return true;
   }
 
+  bool i16a(std::vector<int16_t> &out, size_t count) {
+    out.clear();
+    out.reserve(count);
+    for (size_t i = 0; i < count; i++) {
+      int16_t v;
+      if (!i16(&v)) {
+        return false;
+      }
+      out.push_back(v);
+    }
+    return true;
+  }
+
   bool o16a(std::vector<Offset16> &out, size_t count) {
     return u16a(out, count);
   }
