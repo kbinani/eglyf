@@ -78,6 +78,12 @@ public:
         } else {
           return EGLYF_STATUS_PUSH(st);
         }
+      case 6:
+        if (auto st = cmap::TrimmedTableMapping::Read(sub, r.subtable); st.ok()) {
+          break;
+        } else {
+          return EGLYF_STATUS_PUSH(st);
+        }
       case 12:
         if (auto st = cmap::SegmentedCoverage::Read(sub, r.subtable); st.ok()) {
           break;

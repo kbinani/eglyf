@@ -75,6 +75,7 @@
 #include "table/cmap/CmapSubtable.hpp"
 #include "table/cmap/ByteEncoding.hpp"
 #include "table/cmap/SegmentMappingToDeltaValues.hpp"
+#include "table/cmap/TrimmedTableMapping.hpp"
 #include "table/cmap/SegmentedCoverage.hpp"
 #include "table/cmap/UnicodeVariationSequences.hpp"
 #include "table/CharacterToGlyphIndexMappingTable.hpp"
