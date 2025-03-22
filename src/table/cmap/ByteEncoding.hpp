@@ -8,6 +8,10 @@ public:
   static Status Read(InputStream &stream, std::shared_ptr<CmapSubtable> &out) {
     return EGLYF_ERROR;
   }
+
+  Status write(OutputStream &out) const override {
+    return EGLYF_ERROR;
+  }
 };
 
 } // namespace eglyf::cmap

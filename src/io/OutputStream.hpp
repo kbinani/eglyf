@@ -82,6 +82,15 @@ public:
     }
     return true;
   }
+
+  bool i16a(std::vector<int16_t> const &a) {
+    for (int16_t v : a) {
+      if (!i16(v)) {
+        return false;
+      }
+    }
+    return true;
+  }
 };
 
 } // namespace eglyf

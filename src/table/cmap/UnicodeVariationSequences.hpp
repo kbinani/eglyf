@@ -148,6 +148,10 @@ public:
     return Status::Ok();
   }
 
+  Status write(OutputStream &out) const override {
+    return EGLYF_ERROR;
+  }
+
 public:
   std::vector<VariationSelector> varSelectors;
 };

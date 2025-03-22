@@ -29,6 +29,10 @@ public:
     return Status::Ok();
   }
 
+  Status write(OutputStream &out) const override {
+    return EGLYF_ERROR;
+  }
+
 public:
   uint16_t language;
   uint16_t firstCode;

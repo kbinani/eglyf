@@ -33,20 +33,28 @@ public:
     }
     uint16_t segCount = segCountX2 / 2;
     ret->segCount = segCount;
-    uint16_t entrySector;
-    if (!in.u16(&entrySector)) {
+    uint16_t searchRange;
+    if (!in.u16(&searchRange)) {
       return EGLYF_ERROR;
     }
-    uint16_t expectedEntrySector = (uint16_t)2 << (int)(floor(log2(segCount)) + 0.01f);
-    if (entrySector != expectedEntrySector) {
+    uint16_t const expectedSearchRange = (uint16_t)2 << (int)(floor(log2(segCount)) + 0.01f);
+    if (searchRange != expectedSearchRange) {
+      return EGLYF_ERROR;
+    }
+    uint16_t entrySelector;
+    if (!in.u16(&entrySelector)) {
+      return EGLYF_ERROR;
+    }
+    uint16_t const expectedEntrySelector = (uint16_t)(floor(log2(segCount)) + 0.01f);
+    if (entrySelector != expectedEntrySelector) {
       return EGLYF_ERROR;
     }
     uint16_t rangeShift;
     if (!in.u16(&rangeShift)) {
       return EGLYF_ERROR;
     }
-    uint16_t expectedRangeShift = (uint16_t)(floor(log2(segCount)) + 0.01f);
-    if (rangeShift != expectedRangeShift) {
+    uint16_t const expectedRangeShift = (segCount * 2) - searchRange;
+    if (searchRange != expectedSearchRange) {
       return EGLYF_ERROR;
     }
     if (!in.u16a(ret->endCode, segCount)) {
@@ -73,6 +81,78 @@ public:
       ret->glyphIdArray.push_back(glyphId);
     }
     out.reset(ret.release());
+    return Status::Ok();
+  }
+
+  Status write(OutputStream &out) const override {
+    using namespace std;
+    auto beginPos = out.position();
+    if (!out.u16(4)) {
+      return EGLYF_ERROR;
+    }
+    auto lengthPos = out.position();
+    if (!out.u16(0)) {
+      return EGLYF_ERROR;
+    }
+    if (!out.u16(language)) {
+      return EGLYF_ERROR;
+    }
+    if (!out.sizeU16(2 * (size_t)segCount)) {
+      return EGLYF_ERROR;
+    }
+    uint16_t const searchRange = (uint16_t)2 << (int)(floor(log2(segCount)) + 0.01f);
+    if (!out.u16(searchRange)) {
+      return EGLYF_ERROR;
+    }
+    uint16_t const entrySelector = (uint16_t)(floor(log2(segCount)) + 0.01f);
+    if (!out.u16(entrySelector)) {
+      return EGLYF_ERROR;
+    }
+    uint16_t const rangeShift = (segCount * 2) - searchRange;
+    if (!out.u16(rangeShift)) {
+      return EGLYF_ERROR;
+    }
+    if (endCode.size() != segCount) {
+      return EGLYF_ERROR;
+    }
+    if (!out.u16a(endCode)) {
+      return EGLYF_ERROR;
+    }
+    // reservedPad
+    if (!out.u16(0)) {
+      return EGLYF_ERROR;
+    }
+    if (startCode.size() != segCount) {
+      return EGLYF_ERROR;
+    }
+    if (!out.u16a(startCode)) {
+      return EGLYF_ERROR;
+    }
+    if (idDelta.size() != segCount) {
+      return EGLYF_ERROR;
+    }
+    if (!out.i16a(idDelta)) {
+      return EGLYF_ERROR;
+    }
+    if (idRangeOffset.size() != segCount) {
+      return EGLYF_ERROR;
+    }
+    if (!out.u16a(idRangeOffset)) {
+      return EGLYF_ERROR;
+    }
+    if (!out.u16a(glyphIdArray)) {
+      return EGLYF_ERROR;
+    }
+    auto endPos = out.position();
+    if (!out.seek(lengthPos)) {
+      return EGLYF_ERROR;
+    }
+    if (!out.sizeU16(endPos - beginPos)) {
+      return EGLYF_ERROR;
+    }
+    if (!out.seek(endPos)) {
+      return EGLYF_ERROR;
+    }
     return Status::Ok();
   }
 

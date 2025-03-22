@@ -107,7 +107,40 @@ public:
   }
 
   Optional<EncodeResult> encode() const override {
-    return EGLYF_NULLOPT;
+    using namespace std;
+    ByteOutputStream out;
+    auto writer = make_unique<DataFragmentWriter>(&out);
+    if (!writer->u16(0)) {
+      return EGLYF_NULLOPT;
+    }
+    if (!writer->sizeU16(encodingRecords.size())) {
+      return EGLYF_NULLOPT;
+    }
+    vector<DataFragmentWriter::Marker16> subtableOffsets;
+    for (auto const &record : encodingRecords) {
+      if (!writer->u16(record.platformID)) {
+        return EGLYF_NULLOPT;
+      }
+      if (!writer->u16(record.encodingID)) {
+        return EGLYF_NULLOPT;
+      }
+      auto offset = writer->o16();
+      if (!offset) {
+        return EGLYF_NULLOPT;
+      }
+      subtableOffsets.push_back(offset);
+    }
+    for (size_t i = 0; i < encodingRecords.size(); i++) {
+      auto const &record = encodingRecords[i];
+      auto offset = subtableOffsets[i];
+      if (auto st = writer->writeDataFragment(offset, *record.subtable); !st.ok()) {
+        return EGLYF_NULLOPT_PUSH(st);
+      }
+    }
+    if (auto st = writer->commit(); !st.ok()) {
+      return EGLYF_NULLOPT_PUSH(st);
+    }
+    return EncodeResult(out.data());
   }
 
 public:
