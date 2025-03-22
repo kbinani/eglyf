@@ -57,7 +57,47 @@ public:
   }
 
   Status write(OutputStream &out) const override {
-    return EGLYF_ERROR;
+    using namespace std;
+    auto const beginPos = out.position();
+    if (!out.u16(12)) {
+      return EGLYF_ERROR;
+    }
+    // reserved
+    if (!out.u16(0)) {
+      return EGLYF_ERROR;
+    }
+    auto const lengthPos = out.position();
+    if (!out.u32(0)) {
+      return EGLYF_ERROR;
+    }
+    if (!out.u32(language)) {
+      return EGLYF_ERROR;
+    }
+    if (!out.sizeU32(groups.size())) {
+      return EGLYF_ERROR;
+    }
+    for (auto const &group : groups) {
+      if (!out.u32(group.startCharCode)) {
+        return EGLYF_ERROR;
+      }
+      if (!out.u32(group.endCharCode)) {
+        return EGLYF_ERROR;
+      }
+      if (!out.u32(group.startGlyphID)) {
+        return EGLYF_ERROR;
+      }
+    }
+    auto const endPos = out.position();
+    if (!out.seek(lengthPos)) {
+      return EGLYF_ERROR;
+    }
+    if (!out.sizeU32(endPos - beginPos)) {
+      return EGLYF_ERROR;
+    }
+    if (!out.seek(endPos)) {
+      return EGLYF_ERROR;
+    }
+    return Status::Ok();
   }
 
 public:
