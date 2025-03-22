@@ -90,6 +90,11 @@ list(APPEND src_files
   src/table/VerticalHeaderTable.hpp
   src/table/VerticalMetricsTable.hpp
   src/table/CharacterToGlyphIndexMappingTable.hpp
+  src/table/cmap/CmapSubtable.hpp
+  src/table/cmap/ByteEncoding.hpp
+  src/table/cmap/SegmentMappingToDeltaValues.hpp
+  src/table/cmap/SegmentedCoverage.hpp
+  src/table/cmap/UnicodeVariationSequences.hpp
 )
 
 juce_add_console_app(eglyf)
