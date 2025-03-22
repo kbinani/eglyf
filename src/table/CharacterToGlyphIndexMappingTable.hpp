@@ -67,11 +67,9 @@ public:
       }
       switch (fmt) {
       case 0:
-        if (auto st = cmap::ByteEncoding::Read(sub, r.subtable); st.ok()) {
-          break;
-        } else {
-          return EGLYF_STATUS_PUSH(st);
-        }
+        return EGLYF_ERROR_WHAT("Unsupported cmap subtable format: 0");
+      case 2:
+        return EGLYF_ERROR_WHAT("Unsupported cmap subtable format: 2");
       case 4:
         if (auto st = cmap::SegmentMappingToDeltaValues::Read(sub, r.subtable); st.ok()) {
           break;
@@ -84,12 +82,18 @@ public:
         } else {
           return EGLYF_STATUS_PUSH(st);
         }
+      case 8:
+        return EGLYF_ERROR_WHAT("Unsupported cmap subtable format: 8");
+      case 10:
+        return EGLYF_ERROR_WHAT("Unsupported cmap subtable format: 10");
       case 12:
         if (auto st = cmap::SegmentedCoverage::Read(sub, r.subtable); st.ok()) {
           break;
         } else {
           return EGLYF_STATUS_PUSH(st);
         }
+      case 13:
+        return EGLYF_ERROR_WHAT("Unsupported cmap subtable format: 13");
       case 14:
         if (auto st = cmap::UnicodeVariationSequences::Read(sub, r.subtable); st.ok()) {
           break;
