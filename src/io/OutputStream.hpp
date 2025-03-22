@@ -25,6 +25,10 @@ public:
     return write(&x, sizeof(x));
   }
 
+  bool u24(uint24 v) {
+    return write(v.data(), v.size());
+  }
+
   bool u16(uint16_t v) {
     int16_t x = juce::ByteOrder::bigEndianShort(&v);
     return write(&x, sizeof(v));

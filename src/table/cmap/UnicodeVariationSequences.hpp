@@ -39,6 +39,21 @@ public:
       }
       return ret;
     }
+
+    Status write(OutputStream &out) const {
+      if (!out.sizeU32(ranges.size())) {
+        return EGLYF_ERROR;
+      }
+      for (auto const &range : ranges) {
+        if (!out.u24(range.startUnicodeValue)) {
+          return EGLYF_ERROR;
+        }
+        if (!out.u8(range.additionalCount)) {
+          return EGLYF_ERROR;
+        }
+      }
+      return Status::Ok();
+    }
   };
 
   struct UVSMapping {
@@ -74,6 +89,21 @@ public:
         }
       }
       return ret;
+    }
+
+    Status write(OutputStream &out) const {
+      if (!out.sizeU32(uvsMappings.size())) {
+        return EGLYF_ERROR;
+      }
+      for (auto const &m : uvsMappings) {
+        if (!out.u24(m.unicodeValue)) {
+          return EGLYF_ERROR;
+        }
+        if (!out.u16(m.glyphID)) {
+          return EGLYF_ERROR;
+        }
+      }
+      return Status::Ok();
     }
   };
 
@@ -149,7 +179,76 @@ public:
   }
 
   Status write(OutputStream &out) const override {
-    return EGLYF_ERROR;
+    using namespace std;
+    auto writer = make_shared<OffsetWriter>(out);
+    auto const beginPos = out.position();
+    if (!out.u16(14)) {
+      return EGLYF_ERROR;
+    }
+    auto const lengthPos = out.position();
+    if (!out.u32(0)) {
+      return EGLYF_ERROR;
+    }
+    if (!out.sizeU32(varSelectors.size())) {
+      return EGLYF_ERROR;
+    }
+    vector<pair<OffsetWriter::Handle32, OffsetWriter::Handle32>> offsets;
+    for (auto const &selector : varSelectors) {
+      if (!out.u24(selector.varSelector)) {
+        return EGLYF_ERROR;
+      }
+      auto defaultUVSOffset = writer->o32();
+      if (!defaultUVSOffset) {
+        return EGLYF_ERROR;
+      }
+      auto nonDefaultUVSOffset = writer->o32();
+      if (!nonDefaultUVSOffset) {
+        return EGLYF_ERROR;
+      }
+      offsets.push_back(make_pair(defaultUVSOffset, nonDefaultUVSOffset));
+    }
+    for (size_t i = 0; i < varSelectors.size(); i++) {
+      auto const &selector = varSelectors[i];
+      auto [defaultUVSOffset, nonDefaultUVSOffset] = offsets[i];
+      if (selector.defaultUVS) {
+        if (auto st = defaultUVSOffset->mark(); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
+        if (auto st = selector.defaultUVS->write(out); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
+      } else {
+        if (auto st = defaultUVSOffset->null(); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
+      }
+      if (selector.nonDefaultUVS) {
+        if (auto st = nonDefaultUVSOffset->mark(); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
+        if (auto st = selector.nonDefaultUVS->write(out); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
+      } else {
+        if (auto st = nonDefaultUVSOffset->null(); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
+      }
+    }
+    if (auto st = writer->commit(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    auto const endPos = out.position();
+    if (!out.seek(lengthPos)) {
+      return EGLYF_ERROR;
+    }
+    if (!out.sizeU32(endPos - beginPos)) {
+      return EGLYF_ERROR;
+    }
+    if (!out.seek(endPos)) {
+      return EGLYF_ERROR;
+    }
+    return Status::Ok();
   }
 
 public:
