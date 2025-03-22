@@ -30,7 +30,31 @@ public:
   }
 
   Status write(OutputStream &out) const override {
-    return EGLYF_ERROR;
+    using namespace std;
+    auto writer = make_shared<OffsetWriter>(out);
+    if (!out.u16(6)) {
+      return EGLYF_ERROR;
+    }
+    auto const lengthPos = writer->o16();
+    if (!lengthPos) {
+      return EGLYF_ERROR;
+    }
+    if (!out.u16(language)) {
+      return EGLYF_ERROR;
+    }
+    if (!out.u16(firstCode)) {
+      return EGLYF_ERROR;
+    }
+    if (!out.sizeU16(glyphIdArray.size())) {
+      return EGLYF_ERROR;
+    }
+    if (!out.u16a(glyphIdArray)) {
+      return EGLYF_ERROR;
+    }
+    if (auto st = lengthPos->mark(); !st.ok()) {
+      return EGLYF_ERROR;
+    }
+    return EGLYF_STATUS_PUSH(writer->commit());
   }
 
 public:

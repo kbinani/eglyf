@@ -86,12 +86,12 @@ public:
 
   Status write(OutputStream &out) const override {
     using namespace std;
-    auto beginPos = out.position();
+    auto writer = make_shared<OffsetWriter>(out);
     if (!out.u16(4)) {
       return EGLYF_ERROR;
     }
-    auto lengthPos = out.position();
-    if (!out.u16(0)) {
+    auto lengthPos = writer->o16();
+    if (!lengthPos) {
       return EGLYF_ERROR;
     }
     if (!out.u16(language)) {
@@ -143,17 +143,10 @@ public:
     if (!out.u16a(glyphIdArray)) {
       return EGLYF_ERROR;
     }
-    auto endPos = out.position();
-    if (!out.seek(lengthPos)) {
-      return EGLYF_ERROR;
+    if (auto st = lengthPos->mark(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
-    if (!out.sizeU16(endPos - beginPos)) {
-      return EGLYF_ERROR;
-    }
-    if (!out.seek(endPos)) {
-      return EGLYF_ERROR;
-    }
-    return Status::Ok();
+    return EGLYF_STATUS_PUSH(writer->commit());
   }
 
 public:

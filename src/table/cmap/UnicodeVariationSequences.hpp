@@ -185,8 +185,8 @@ public:
     if (!out.u16(14)) {
       return EGLYF_ERROR;
     }
-    auto const lengthPos = out.position();
-    if (!out.u32(0)) {
+    auto const lengthPos = writer->o32();
+    if (!lengthPos) {
       return EGLYF_ERROR;
     }
     if (!out.sizeU32(varSelectors.size())) {
@@ -235,20 +235,10 @@ public:
         }
       }
     }
-    if (auto st = writer->commit(); !st.ok()) {
+    if (auto st = lengthPos->mark(); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
-    auto const endPos = out.position();
-    if (!out.seek(lengthPos)) {
-      return EGLYF_ERROR;
-    }
-    if (!out.sizeU32(endPos - beginPos)) {
-      return EGLYF_ERROR;
-    }
-    if (!out.seek(endPos)) {
-      return EGLYF_ERROR;
-    }
-    return Status::Ok();
+    return EGLYF_STATUS_PUSH(writer->commit());
   }
 
 public:

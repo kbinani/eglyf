@@ -58,7 +58,7 @@ public:
 
   Status write(OutputStream &out) const override {
     using namespace std;
-    auto const beginPos = out.position();
+    auto writer = make_shared<OffsetWriter>(out);
     if (!out.u16(12)) {
       return EGLYF_ERROR;
     }
@@ -66,8 +66,8 @@ public:
     if (!out.u16(0)) {
       return EGLYF_ERROR;
     }
-    auto const lengthPos = out.position();
-    if (!out.u32(0)) {
+    auto const lengthPos = writer->o32();
+    if (!lengthPos) {
       return EGLYF_ERROR;
     }
     if (!out.u32(language)) {
@@ -87,17 +87,10 @@ public:
         return EGLYF_ERROR;
       }
     }
-    auto const endPos = out.position();
-    if (!out.seek(lengthPos)) {
-      return EGLYF_ERROR;
+    if (auto st = lengthPos->mark(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
-    if (!out.sizeU32(endPos - beginPos)) {
-      return EGLYF_ERROR;
-    }
-    if (!out.seek(endPos)) {
-      return EGLYF_ERROR;
-    }
-    return Status::Ok();
+    return EGLYF_STATUS_PUSH(writer->commit());
   }
 
 public:
