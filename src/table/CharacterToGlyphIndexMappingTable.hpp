@@ -120,7 +120,7 @@ public:
     if (!writer->sizeU16(encodingRecords.size())) {
       return EGLYF_NULLOPT;
     }
-    vector<DataFragmentWriter::Marker16> subtableOffsets;
+    vector<DataFragmentWriter::Marker32> subtableOffsets;
     for (auto const &record : encodingRecords) {
       if (!writer->u16(record.platformID)) {
         return EGLYF_NULLOPT;
@@ -128,7 +128,7 @@ public:
       if (!writer->u16(record.encodingID)) {
         return EGLYF_NULLOPT;
       }
-      auto offset = writer->o16();
+      auto offset = writer->o32();
       if (!offset) {
         return EGLYF_NULLOPT;
       }
