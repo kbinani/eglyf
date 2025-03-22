@@ -67,7 +67,11 @@ public:
       }
       switch (fmt) {
       case 0:
-        return EGLYF_ERROR_WHAT("Unsupported cmap subtable format: 0");
+        if (auto st = cmap::ByteEncoding::Read(sub, r.subtable); st.ok()) {
+          break;
+        } else {
+          return EGLYF_STATUS_PUSH(st);
+        }
       case 2:
         return EGLYF_ERROR_WHAT("Unsupported cmap subtable format: 2");
       case 4:
