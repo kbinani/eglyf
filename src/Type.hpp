@@ -13,6 +13,8 @@ using LONGDATETIME = int64_t;
 using FWORD = int16_t;
 using UFWORD = uint16_t;
 
+using uint24 = std::array<uint8_t, 3>;
+
 struct Version16Dot16 {
   uint16_t major;
   uint16_t minor;
