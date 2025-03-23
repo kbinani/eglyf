@@ -151,6 +151,33 @@ public:
     return EncodeResult(out.data());
   }
 
+  Optional<uint16_t> getGlyphID(uint32_t codepoint) const {
+    using namespace std;
+    auto p0e4 = find_if(encodingRecords.rbegin(), encodingRecords.rend(), [](EncodingRecord const &r) {
+      return r.platformID == 0 && (r.encodingID == 4 || r.encodingID == 6);
+    });
+    if (p0e4 == encodingRecords.rend()) {
+      return 0;
+    }
+    auto const &subtable = p0e4->subtable;
+    if (auto format12 = dynamic_pointer_cast<cmap::SegmentedCoverage>(subtable); format12) {
+      if (auto gid = format12->getGlyphID(codepoint); gid) {
+        return *gid;
+      } else {
+        return EGLYF_NULLOPT_PUSH(gid.status());
+      }
+    } else if (auto format4 = dynamic_pointer_cast<cmap::SegmentMappingToDeltaValues>(subtable); format4) {
+      if (auto gid = format4->getGlyphID(codepoint); gid) {
+        return *gid;
+      } else {
+        return EGLYF_NULLOPT_PUSH(gid.status());
+      }
+    } else {
+      return 0;
+    }
+    return 0;
+  }
+
 public:
   std::vector<EncodingRecord> encodingRecords;
 };

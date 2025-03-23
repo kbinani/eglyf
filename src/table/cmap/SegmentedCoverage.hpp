@@ -93,6 +93,22 @@ public:
     return EGLYF_STATUS_PUSH(writer->commit());
   }
 
+  Optional<uint16_t> getGlyphID(uint32_t codepoint) const {
+    using namespace std;
+    auto found = ranges::find_if(groups, [=](auto const &group) {
+      return group.startCharCode <= codepoint && group.endCharCode <= codepoint;
+    });
+    if (found == groups.end()) {
+      return 0;
+    }
+    uint32_t r = found->startGlyphID + codepoint - found->startCharCode;
+    if (r > (uint32_t)numeric_limits<uint16_t>::max()) {
+      return EGLYF_NULLOPT;
+    } else {
+      return static_cast<uint16_t>(r);
+    }
+  }
+
 public:
   uint32_t language;
   std::vector<SequentialMapGroup> groups;

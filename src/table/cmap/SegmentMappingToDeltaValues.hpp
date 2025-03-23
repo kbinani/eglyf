@@ -149,6 +149,46 @@ public:
     return EGLYF_STATUS_PUSH(writer->commit());
   }
 
+  Optional<uint16_t> getGlyphID(uint32_t codepoint) const {
+    using namespace std;
+    if (codepoint > 0xffff) {
+      return 0;
+    }
+    auto found = ranges::find_if(endCode, [=](uint16_t ec) { return codepoint <= ec; });
+    if (found == endCode.end()) {
+      return 0;
+    }
+    size_t const i = distance(endCode.begin(), found);
+    if (endCode.size() != startCode.size()) {
+      return EGLYF_NULLOPT;
+    }
+    uint16_t const sc = startCode[i];
+    if (codepoint < sc) {
+      return 0;
+    }
+    if (idDelta.size() != startCode.size()) {
+      return EGLYF_NULLOPT;
+    }
+    uint16_t const iD = idDelta[i];
+    if (idRangeOffset.size() != startCode.size()) {
+      return EGLYF_NULLOPT;
+    }
+    uint16_t const iRO = idRangeOffset[i];
+    if (iRO == 0) {
+      return (codepoint + (uint32_t)iD) & 0xffff;
+    }
+    size_t offset = iRO / 2;
+    if (iRO != 2 * offset) {
+      return EGLYF_NULLOPT;
+    }
+    size_t index = offset + (codepoint - sc);
+    if (index < glyphIdArray.size()) {
+      return glyphIdArray[index];
+    } else {
+      return EGLYF_NULLOPT;
+    }
+  }
+
 public:
   uint16_t language;
   uint16_t segCount;

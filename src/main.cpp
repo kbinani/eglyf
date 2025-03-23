@@ -2,6 +2,12 @@
 
 #include <juce_core/juce_core.h>
 
+static void Fail(eglyf::Status st) {
+  std::stringstream out;
+  st.print(out);
+  juce::ConsoleApplication::fail(juce::String(out.str()));
+}
+
 static void Run(juce::ArgumentList const &args) {
   using namespace std;
   using namespace eglyf;
@@ -12,9 +18,7 @@ static void Run(juce::ArgumentList const &args) {
   FileInputStream fis(input);
   shared_ptr<FontFile> ff;
   if (auto st = FontFile::Read(fis, ff); !st.ok()) {
-    stringstream out;
-    st.print(out);
-    juce::ConsoleApplication::fail(juce::String(out.str()));
+    Fail(st);
     return;
   }
   auto gid0 = ff->addEmptyGlyph("foo", 0, 0);
@@ -27,11 +31,10 @@ static void Run(juce::ArgumentList const &args) {
     juce::ConsoleApplication::fail(juce::String("addCompositeGlyph failed"));
     return;
   }
+  auto vj = ff->getGlyphID(78896);
   FileOutputStream fos(output);
   if (auto st = ff->write(fos); !st.ok()) {
-    stringstream out;
-    st.print(out);
-    juce::ConsoleApplication::fail(juce::String(out.str()));
+    Fail(st);
   }
 }
 

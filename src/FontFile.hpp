@@ -484,6 +484,14 @@ public:
     return Status::Ok();
   }
 
+  Optional<uint16_t> getGlyphID(uint32_t codepoint) const {
+    if (auto gid = cmap->getGlyphID(codepoint); gid) {
+      return *gid;
+    } else {
+      return EGLYF_NULLOPT_PUSH(gid.status());
+    }
+  }
+
 private:
   Optional<uint16_t> addTrueTypeGlyph(std::string const &name, std::function<Optional<uint16_t>(GlyphDataTable &glyf, HorizontalMetricsTable &hmtx)> addOp) {
     using namespace std;
