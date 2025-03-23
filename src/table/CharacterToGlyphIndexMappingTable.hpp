@@ -66,44 +66,59 @@ public:
         return EGLYF_ERROR;
       }
       switch (fmt) {
-      case 0:
-        if (auto st = cmap::ByteEncoding::Read(sub, r.subtable); st.ok()) {
+      case 0: {
+        shared_ptr<cmap::ByteEncoding> subtable;
+        if (auto st = cmap::ByteEncoding::Read(sub, subtable); st.ok()) {
+          r.subtable = subtable;
           break;
         } else {
           return EGLYF_STATUS_PUSH(st);
         }
+      }
       case 2:
         return EGLYF_ERROR_WHAT("Unsupported cmap subtable format: 2");
-      case 4:
-        if (auto st = cmap::SegmentMappingToDeltaValues::Read(sub, r.subtable); st.ok()) {
+      case 4: {
+        shared_ptr<cmap::SegmentMappingToDeltaValues> subtable;
+        if (auto st = cmap::SegmentMappingToDeltaValues::Read(sub, subtable); st.ok()) {
+          r.subtable = subtable;
           break;
         } else {
           return EGLYF_STATUS_PUSH(st);
         }
-      case 6:
-        if (auto st = cmap::TrimmedTableMapping::Read(sub, r.subtable); st.ok()) {
+      }
+      case 6: {
+        shared_ptr<cmap::TrimmedTableMapping> subtable;
+        if (auto st = cmap::TrimmedTableMapping::Read(sub, subtable); st.ok()) {
+          r.subtable = subtable;
           break;
         } else {
           return EGLYF_STATUS_PUSH(st);
         }
+      }
       case 8:
         return EGLYF_ERROR_WHAT("Unsupported cmap subtable format: 8");
       case 10:
         return EGLYF_ERROR_WHAT("Unsupported cmap subtable format: 10");
-      case 12:
-        if (auto st = cmap::SegmentedCoverage::Read(sub, r.subtable); st.ok()) {
+      case 12: {
+        shared_ptr<cmap::SegmentedCoverage> subtable;
+        if (auto st = cmap::SegmentedCoverage::Read(sub, subtable); st.ok()) {
+          r.subtable = subtable;
           break;
         } else {
           return EGLYF_STATUS_PUSH(st);
         }
+      }
       case 13:
         return EGLYF_ERROR_WHAT("Unsupported cmap subtable format: 13");
-      case 14:
-        if (auto st = cmap::UnicodeVariationSequences::Read(sub, r.subtable); st.ok()) {
+      case 14: {
+        shared_ptr<cmap::UnicodeVariationSequences> subtable;
+        if (auto st = cmap::UnicodeVariationSequences::Read(sub, subtable); st.ok()) {
+          r.subtable = subtable;
           break;
         } else {
           return EGLYF_STATUS_PUSH(st);
         }
+      }
       default:
         return EGLYF_ERROR;
       }

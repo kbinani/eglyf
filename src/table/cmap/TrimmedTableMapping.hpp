@@ -5,7 +5,7 @@ namespace eglyf::cmap {
 // format 6
 class TrimmedTableMapping : public CmapSubtable {
 public:
-  static Status Read(InputStream &in, std::shared_ptr<CmapSubtable> &out) {
+  static Status Read(InputStream &in, std::shared_ptr<TrimmedTableMapping> &out) {
     using namespace std;
     uint16_t length;
     if (!in.u16(&length)) {

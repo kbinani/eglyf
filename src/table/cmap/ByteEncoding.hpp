@@ -5,7 +5,7 @@ namespace eglyf::cmap {
 // format 0
 class ByteEncoding : public CmapSubtable {
 public:
-  static Status Read(InputStream &in, std::shared_ptr<CmapSubtable> &out) {
+  static Status Read(InputStream &in, std::shared_ptr<ByteEncoding> &out) {
     using namespace std;
     auto ret = make_unique<ByteEncoding>();
     uint16_t length;

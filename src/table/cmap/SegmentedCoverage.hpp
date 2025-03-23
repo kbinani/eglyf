@@ -12,7 +12,7 @@ public:
   };
 
 public:
-  static Status Read(InputStream &stream, std::shared_ptr<CmapSubtable> &out) {
+  static Status Read(InputStream &stream, std::shared_ptr<SegmentedCoverage> &out) {
     using namespace std;
     uint16_t reserved;
     if (!stream.u16(&reserved)) {

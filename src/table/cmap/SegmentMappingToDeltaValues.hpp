@@ -5,7 +5,7 @@ namespace eglyf::cmap {
 // format 4
 class SegmentMappingToDeltaValues : public CmapSubtable {
 public:
-  static Status Read(InputStream &stream, std::shared_ptr<CmapSubtable> &out) {
+  static Status Read(InputStream &stream, std::shared_ptr<SegmentMappingToDeltaValues> &out) {
     using namespace std;
     uint16_t length;
     if (!stream.u16(&length)) {
