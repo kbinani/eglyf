@@ -169,19 +169,19 @@ public:
     if (idDelta.size() != startCode.size()) {
       return EGLYF_NULLOPT;
     }
-    uint16_t const iD = idDelta[i];
+    int16_t const iD = idDelta[i];
     if (idRangeOffset.size() != startCode.size()) {
       return EGLYF_NULLOPT;
     }
     uint16_t const iRO = idRangeOffset[i];
     if (iRO == 0) {
-      return (codepoint + (uint32_t)iD) & 0xffff;
+      return (codepoint + (int32_t)iD) & 0xffff;
     }
     size_t offset = iRO / 2;
     if (iRO != 2 * offset) {
       return EGLYF_NULLOPT;
     }
-    size_t index = offset + (codepoint - sc);
+    size_t index = offset + (codepoint - sc) - i;
     if (index < glyphIdArray.size()) {
       return glyphIdArray[index];
     } else {

@@ -56,6 +56,71 @@ public:
     return Status::Ok();
   }
 
+  static Status FromSegmentMappingToDeltaValues(SegmentMappingToDeltaValues const &in, std::shared_ptr<SegmentedCoverage> &out) {
+    using namespace std;
+    if (in.segCount != in.startCode.size()) {
+      return EGLYF_ERROR;
+    }
+    if (in.segCount != in.endCode.size()) {
+      return EGLYF_ERROR;
+    }
+    if (in.segCount != in.idDelta.size()) {
+      return EGLYF_ERROR;
+    }
+    if (in.segCount != in.idRangeOffset.size()) {
+      return EGLYF_ERROR;
+    }
+
+    auto ret = make_unique<SegmentedCoverage>();
+    ret->language = in.language;
+
+    optional<SequentialMapGroup> last;
+    for (uint16_t i = 0; i < in.segCount; i++) {
+      uint16_t startCode = in.startCode[i];
+      uint16_t endCode = in.endCode[i];
+      int16_t idDelta = in.idDelta[i];
+      uint16_t idRangeOffset = in.idRangeOffset[i];
+      if (endCode < startCode) {
+        return EGLYF_ERROR;
+      }
+      for (uint32_t code = startCode; code <= endCode; code++) {
+        uint16_t gid;
+        if (idRangeOffset == 0) {
+          gid = ((int32_t)code + (int32_t)idDelta) & 0xffff;
+        } else {
+          size_t offset = idRangeOffset / 2;
+          if (offset * 2 != idRangeOffset) {
+            return EGLYF_ERROR;
+          }
+          size_t index = offset + (code - startCode) - i;
+          if (index < in.glyphIdArray.size()) {
+            gid = in.glyphIdArray[index];
+          } else {
+            return EGLYF_ERROR;
+          }
+        }
+        if (last) {
+          if (gid == last->startGlyphID + code - last->startCharCode) {
+            last->endCharCode = code;
+            continue;
+          } else {
+            ret->groups.push_back(*last);
+          }
+        }
+        SequentialMapGroup group;
+        group.startCharCode = code;
+        group.endCharCode = code;
+        group.startGlyphID = gid;
+        last = group;
+      }
+    }
+    if (last) {
+      ret->groups.push_back(*last);
+    }
+    out.reset(ret.release());
+    return Status::Ok();
+  }
+
   Status write(OutputStream &out) const override {
     using namespace std;
     auto writer = make_shared<OffsetWriter>(out);
