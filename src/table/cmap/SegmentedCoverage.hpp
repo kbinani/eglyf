@@ -75,45 +75,22 @@ public:
     ret->language = in.language;
 
     optional<SequentialMapGroup> last;
-    for (uint16_t i = 0; i < in.segCount; i++) {
-      uint16_t startCode = in.startCode[i];
-      uint16_t endCode = in.endCode[i];
-      int16_t idDelta = in.idDelta[i];
-      uint16_t idRangeOffset = in.idRangeOffset[i];
-      if (endCode < startCode) {
-        return EGLYF_ERROR;
-      }
-      for (uint32_t code = startCode; code <= endCode; code++) {
-        uint16_t gid;
-        if (idRangeOffset == 0) {
-          gid = ((int32_t)code + (int32_t)idDelta) & 0xffff;
+    in.enumerate([&](uint32_t codepoint, uint16_t glyphId) {
+      if (last) {
+        if (glyphId == last->startGlyphID + codepoint - last->startCharCode) {
+          last->endCharCode = codepoint;
+          return Status::Ok();
         } else {
-          size_t offset = idRangeOffset / 2;
-          if (offset * 2 != idRangeOffset) {
-            return EGLYF_ERROR;
-          }
-          size_t index = offset + (code - startCode) - i;
-          if (index < in.glyphIdArray.size()) {
-            gid = in.glyphIdArray[index];
-          } else {
-            return EGLYF_ERROR;
-          }
+          ret->groups.push_back(*last);
         }
-        if (last) {
-          if (gid == last->startGlyphID + code - last->startCharCode) {
-            last->endCharCode = code;
-            continue;
-          } else {
-            ret->groups.push_back(*last);
-          }
-        }
-        SequentialMapGroup group;
-        group.startCharCode = code;
-        group.endCharCode = code;
-        group.startGlyphID = gid;
-        last = group;
       }
-    }
+      SequentialMapGroup group;
+      group.startCharCode = codepoint;
+      group.endCharCode = codepoint;
+      group.startGlyphID = glyphId;
+      last = group;
+      return Status::Ok();
+    });
     if (last) {
       ret->groups.push_back(*last);
     }

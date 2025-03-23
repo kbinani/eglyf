@@ -52,9 +52,29 @@ public:
       return EGLYF_ERROR;
     }
     if (auto st = lengthPos->mark(); !st.ok()) {
-      return EGLYF_ERROR;
+      return EGLYF_STATUS_PUSH(st);
     }
     return EGLYF_STATUS_PUSH(writer->commit());
+  }
+
+  static Status FromSegmentMappingToDeltaValues(SegmentMappingToDeltaValues const &in, std::shared_ptr<TrimmedTableMapping> &out) {
+    using namespace std;
+    auto ret = make_unique<TrimmedTableMapping>();
+    ret->language = in.language;
+    ret->firstCode = 0;
+    ret->glyphIdArray.resize(0xffff, 0);
+    uint32_t maximum = 0;
+    in.enumerate([&](uint32_t codepoint, uint16_t glyphId) {
+      if (codepoint >= 0xffff) {
+        return EGLYF_ERROR;
+      }
+      ret->glyphIdArray[codepoint] = glyphId;
+      maximum = (std::max)(maximum, codepoint);
+      return Status::Ok();
+    });
+    ret->glyphIdArray.resize(maximum + 1);
+    out.reset(ret.release());
+    return Status::Ok();
   }
 
 public:
