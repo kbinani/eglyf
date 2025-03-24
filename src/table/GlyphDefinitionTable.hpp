@@ -5,6 +5,13 @@ namespace eglyf {
 // 'GDEF'
 class GlyphDefinitionTable : public Table {
 public:
+  enum class Class : uint16_t {
+    Base = 1,
+    Ligature = 2,
+    Mark = 3,
+    Component = 4,
+  };
+
   struct AttachPoint {
     std::vector<uint16_t> pointIndices;
 

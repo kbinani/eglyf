@@ -80,3 +80,4 @@
 #include "table/cmap/UnicodeVariationSequences.hpp"
 #include "table/CharacterToGlyphIndexMappingTable.hpp"
 #include "FontFile.hpp"
+#include "editor/Editor.hpp"

@@ -96,6 +96,7 @@ list(APPEND src_files
   src/table/cmap/SegmentedCoverage.hpp
   src/table/cmap/UnicodeVariationSequences.hpp
   src/table/cmap/TrimmedTableMapping.hpp
+  src/editor/Editor.hpp
 )
 
 juce_add_console_app(eglyf)

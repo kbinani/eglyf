@@ -21,17 +21,12 @@ static void Run(juce::ArgumentList const &args) {
     Fail(st);
     return;
   }
-  auto gid0 = ff->addEmptyGlyph("foo", 0, 0);
-  if (!gid0) {
-    juce::ConsoleApplication::fail(juce::String("addEmptyGlyph failed"));
+  auto editor = make_unique<Editor>(ff);
+  // DEF_GLYPH ".notdef" ID 0 TYPE MARK END_GLYPH
+  if (auto st = editor->defineGlyph(".notdef", nullopt, GlyphDefinitionTable::Class::Mark); !st.ok()) {
+    Fail(st);
     return;
   }
-  auto gid1 = ff->addCompositeGlyph("baz", GlyphDataTable::CompositeGlyph::GlyphRecord::New(1, 0, 0), 0, 0);
-  if (!gid1) {
-    juce::ConsoleApplication::fail(juce::String("addCompositeGlyph failed"));
-    return;
-  }
-  auto vj = ff->getGlyphID(78896);
   FileOutputStream fos(output);
   if (auto st = ff->write(fos); !st.ok()) {
     Fail(st);

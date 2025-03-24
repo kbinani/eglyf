@@ -525,8 +525,12 @@ private:
     if (!gid) {
       return EGLYF_NULLOPT;
     }
-    if (auto st = nPost->addName(name); !st.ok()) {
-      return EGLYF_NULLOPT_PUSH(st);
+    if (auto postGid = nPost->addName(name); postGid) {
+      if (*gid != *postGid) {
+        return EGLYF_NULLOPT;
+      }
+    } else {
+      return EGLYF_NULLOPT_PUSH(postGid.status());
     }
     if (auto st = nGlyf->updateMaxp(*nMaxp); !st.ok()) {
       return EGLYF_NULLOPT_PUSH(st);
