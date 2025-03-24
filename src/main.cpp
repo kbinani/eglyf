@@ -22,8 +22,7 @@ static void Run(juce::ArgumentList const &args) {
     return;
   }
   auto editor = make_unique<Editor>(ff);
-  // DEF_GLYPH ".notdef" ID 0 TYPE MARK END_GLYPH
-  if (auto st = editor->defineGlyph(".notdef", nullopt, GlyphDefinitionTable::Class::Mark); !st.ok()) {
+  if (auto st = editor->run(); !st.ok()) {
     Fail(st);
     return;
   }

@@ -57,6 +57,10 @@ public:
     return EGLYF_STATUS_PUSH(writer->commit());
   }
 
+  Status map(uint32_t codepoint, uint16_t glyphId) {
+    return EGLYF_ERROR;
+  }
+
 public:
   uint16_t language;
   uint16_t firstCode;

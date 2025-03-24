@@ -109,6 +109,11 @@ public:
     }
   }
 
+  Status map(uint32_t codepoint, uint16_t glyphId) {
+    // TODO:
+    return EGLYF_ERROR;
+  }
+
 public:
   uint32_t language;
   std::vector<SequentialMapGroup> groups;

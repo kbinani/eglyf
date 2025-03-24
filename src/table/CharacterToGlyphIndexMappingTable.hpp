@@ -46,7 +46,7 @@ public:
       }
       encodingRecords.push_back(r);
     }
-    map<Offset32, shared_ptr<cmap::CmapSubtable>> tables;
+    std::map<Offset32, shared_ptr<cmap::CmapSubtable>> tables;
     auto ret = make_unique<CharacterToGlyphIndexMappingTable>();
     for (auto const &record : encodingRecords) {
       EncodingRecord r;
@@ -191,6 +191,31 @@ public:
       return 0;
     }
     return 0;
+  }
+
+  Status map(uint32_t codepoint, uint16_t glyphId) {
+    using namespace std;
+    set<shared_ptr<cmap::CmapSubtable>> done;
+    for (auto const &r : encodingRecords) {
+      if (done.find(r.subtable) != done.end()) {
+        continue;
+      }
+      done.insert(r.subtable);
+      if (auto format4 = dynamic_pointer_cast<cmap::SegmentMappingToDeltaValues>(r.subtable); format4 && codepoint <= 0xffff) {
+        if (auto st = format4->map((uint16_t)codepoint, glyphId); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
+      } else if (auto format6 = dynamic_pointer_cast<cmap::TrimmedTableMapping>(r.subtable); format6 && codepoint <= 0xffff) {
+        if (auto st = format6->map((uint16_t)codepoint, glyphId); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
+      } else if (auto format12 = dynamic_pointer_cast<cmap::SegmentedCoverage>(r.subtable); format12) {
+        if (auto st = format12->map(codepoint, glyphId); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
+      }
+    }
+    return Status::Ok();
   }
 
 public:
