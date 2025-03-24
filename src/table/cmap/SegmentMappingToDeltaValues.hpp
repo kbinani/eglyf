@@ -189,41 +189,6 @@ public:
     }
   }
 
-  Status enumerate(std::function<Status(uint32_t codepoint, uint16_t glyphId)> callback) const {
-    for (uint16_t i = 0; i < segCount; i++) {
-      uint16_t startCode = this->startCode[i];
-      uint16_t endCode = this->endCode[i];
-      int16_t idDelta = this->idDelta[i];
-      uint16_t idRangeOffset = this->idRangeOffset[i];
-      if (endCode < startCode) {
-        return EGLYF_ERROR;
-      }
-      for (uint32_t code = startCode; code <= endCode; code++) {
-        if (idRangeOffset == 0) {
-          uint16_t gid = ((int32_t)code + (int32_t)idDelta) & 0xffff;
-          if (auto st = callback(code, gid); !st.ok()) {
-            return EGLYF_STATUS_PUSH(st);
-          }
-        } else {
-          size_t offset = idRangeOffset / 2;
-          if (offset * 2 != idRangeOffset) {
-            return EGLYF_ERROR;
-          }
-          size_t index = offset + (code - startCode) - i;
-          if (index < this->glyphIdArray.size()) {
-            uint16_t gid = this->glyphIdArray[index];
-            if (auto st = callback(code, gid); !st.ok()) {
-              return EGLYF_STATUS_PUSH(st);
-            }
-          } else {
-            return EGLYF_ERROR;
-          }
-        }
-      }
-    }
-    return Status::Ok();
-  }
-
 public:
   uint16_t language;
   uint16_t segCount;

@@ -56,48 +56,6 @@ public:
     return Status::Ok();
   }
 
-  static Status FromSegmentMappingToDeltaValues(SegmentMappingToDeltaValues const &in, std::shared_ptr<SegmentedCoverage> &out) {
-    using namespace std;
-    if (in.segCount != in.startCode.size()) {
-      return EGLYF_ERROR;
-    }
-    if (in.segCount != in.endCode.size()) {
-      return EGLYF_ERROR;
-    }
-    if (in.segCount != in.idDelta.size()) {
-      return EGLYF_ERROR;
-    }
-    if (in.segCount != in.idRangeOffset.size()) {
-      return EGLYF_ERROR;
-    }
-
-    auto ret = make_unique<SegmentedCoverage>();
-    ret->language = in.language;
-
-    optional<SequentialMapGroup> last;
-    in.enumerate([&](uint32_t codepoint, uint16_t glyphId) {
-      if (last) {
-        if (glyphId == last->startGlyphID + codepoint - last->startCharCode) {
-          last->endCharCode = codepoint;
-          return Status::Ok();
-        } else {
-          ret->groups.push_back(*last);
-        }
-      }
-      SequentialMapGroup group;
-      group.startCharCode = codepoint;
-      group.endCharCode = codepoint;
-      group.startGlyphID = glyphId;
-      last = group;
-      return Status::Ok();
-    });
-    if (last) {
-      ret->groups.push_back(*last);
-    }
-    out.reset(ret.release());
-    return Status::Ok();
-  }
-
   Status write(OutputStream &out) const override {
     using namespace std;
     auto writer = make_shared<OffsetWriter>(out);
