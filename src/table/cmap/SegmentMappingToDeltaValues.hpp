@@ -5,6 +5,14 @@ namespace eglyf::cmap {
 // format 4
 class SegmentMappingToDeltaValues : public CmapSubtable {
 public:
+  struct Segment {
+    uint16_t endCode;
+    uint16_t startCode;
+    int16_t idDelta;
+    std::vector<uint16_t> glyphIdArray;
+  };
+
+public:
   static Status Read(InputStream &stream, std::shared_ptr<SegmentMappingToDeltaValues> &out) {
     using namespace std;
     uint16_t length;
@@ -31,8 +39,7 @@ public:
     if (segCountX2 % 2 == 1) {
       return EGLYF_ERROR;
     }
-    uint16_t segCount = segCountX2 / 2;
-    ret->segCount = segCount;
+    uint16_t const segCount = segCountX2 / 2;
     uint16_t searchRange;
     if (!in.u16(&searchRange)) {
       return EGLYF_ERROR;
@@ -57,28 +64,58 @@ public:
     if (searchRange != expectedSearchRange) {
       return EGLYF_ERROR;
     }
-    if (!in.u16a(ret->endCode, segCount)) {
+    vector<uint16_t> endCode;
+    if (!in.u16a(endCode, segCount)) {
       return EGLYF_ERROR;
     }
     uint16_t reservedPad;
     if (!in.u16(&reservedPad)) {
       return EGLYF_ERROR;
     }
-    if (!in.u16a(ret->startCode, segCount)) {
+    vector<uint16_t> startCode;
+    if (!in.u16a(startCode, segCount)) {
       return EGLYF_ERROR;
     }
-    if (!in.i16a(ret->idDelta, segCount)) {
+    vector<int16_t> idDelta;
+    if (!in.i16a(idDelta, segCount)) {
       return EGLYF_ERROR;
     }
-    if (!in.u16a(ret->idRangeOffset, segCount)) {
+    vector<uint16_t> idRangeOffset;
+    if (!in.u16a(idRangeOffset, segCount)) {
       return EGLYF_ERROR;
     }
+    vector<uint16_t> glyphIdArray;
     while (true) {
       uint16_t glyphId;
       if (!in.u16(&glyphId)) {
         break;
       }
-      ret->glyphIdArray.push_back(glyphId);
+      glyphIdArray.push_back(glyphId);
+    }
+    for (size_t i = 0; i < segCount; i++) {
+      Segment s;
+      s.startCode = startCode[i];
+      s.endCode = endCode[i];
+      s.idDelta = idDelta[i];
+      uint16_t iRO = idRangeOffset[i];
+      if (iRO > 0) {
+        if (iRO % 2 == 1) {
+          return EGLYF_ERROR;
+        }
+        // min: iRO / 2 + i - segCount
+        // max: iRO / 2 + i - segCount + (s.endCode - s.startCode)
+        if (iRO / 2 + i < segCount) {
+          return EGLYF_ERROR;
+        } else if (iRO / 2 + i + (s.endCode - s.startCode) - segCount >= glyphIdArray.size()) {
+          return EGLYF_ERROR;
+        }
+        size_t offset = iRO / 2 + i - segCount;
+        for (uint16_t c = s.startCode; c <= s.endCode; c++) {
+          size_t index = offset + (size_t)(c - s.startCode);
+          s.glyphIdArray.push_back(glyphIdArray[index]);
+        }
+      }
+      ret->segments.push_back(s);
     }
     out.reset(ret.release());
     return Status::Ok();
@@ -97,9 +134,10 @@ public:
     if (!out.u16(language)) {
       return EGLYF_ERROR;
     }
-    if (!out.sizeU16(2 * (size_t)segCount)) {
+    if (!out.sizeU16(2 * (size_t)segments.size())) {
       return EGLYF_ERROR;
     }
+    uint16_t segCount = segments.size();
     uint16_t const searchRange = (uint16_t)2 << (int)(floor(log2(segCount)) + 0.01f);
     if (!out.u16(searchRange)) {
       return EGLYF_ERROR;
@@ -112,36 +150,48 @@ public:
     if (!out.u16(rangeShift)) {
       return EGLYF_ERROR;
     }
-    if (endCode.size() != segCount) {
-      return EGLYF_ERROR;
-    }
-    if (!out.u16a(endCode)) {
-      return EGLYF_ERROR;
+    for (auto const &s : segments) {
+      if (!out.u16(s.endCode)) {
+        return EGLYF_ERROR;
+      }
     }
     // reservedPad
     if (!out.u16(0)) {
       return EGLYF_ERROR;
     }
-    if (startCode.size() != segCount) {
-      return EGLYF_ERROR;
+    for (auto const &s : segments) {
+      if (!out.u16(s.startCode)) {
+        return EGLYF_ERROR;
+      }
     }
-    if (!out.u16a(startCode)) {
-      return EGLYF_ERROR;
+    for (auto const &s : segments) {
+      if (!out.i16(s.idDelta)) {
+        return EGLYF_ERROR;
+      }
     }
-    if (idDelta.size() != segCount) {
-      return EGLYF_ERROR;
+    size_t offset = 0;
+    for (size_t i = 0; i < segments.size(); i++) {
+      auto const &s = segments[i];
+      if (s.glyphIdArray.empty()) {
+        if (!out.u16(0)) {
+          return EGLYF_ERROR;
+        }
+      } else {
+        size_t idRangeOffset = (segCount - i + offset) * 2;
+        if (idRangeOffset > (size_t)numeric_limits<uint16_t>::max()) {
+          return EGLYF_ERROR;
+        }
+        uint16_t iRO = idRangeOffset;
+        if (!out.u16(iRO)) {
+          return EGLYF_ERROR;
+        }
+        offset += s.glyphIdArray.size();
+      }
     }
-    if (!out.i16a(idDelta)) {
-      return EGLYF_ERROR;
-    }
-    if (idRangeOffset.size() != segCount) {
-      return EGLYF_ERROR;
-    }
-    if (!out.u16a(idRangeOffset)) {
-      return EGLYF_ERROR;
-    }
-    if (!out.u16a(glyphIdArray)) {
-      return EGLYF_ERROR;
+    for (auto const &s : segments) {
+      if (!out.u16a(s.glyphIdArray)) {
+        return EGLYF_ERROR;
+      }
     }
     if (auto st = lengthPos->mark(); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
@@ -154,36 +204,21 @@ public:
     if (codepoint > 0xffff) {
       return 0;
     }
-    auto found = ranges::find_if(endCode, [=](uint16_t ec) { return codepoint <= ec; });
-    if (found == endCode.end()) {
+    auto found = ranges::find_if(segments, [=](Segment const &s) { return codepoint <= s.endCode; });
+    if (found == segments.end()) {
       return 0;
     }
-    size_t const i = distance(endCode.begin(), found);
-    if (endCode.size() != startCode.size()) {
-      return EGLYF_NULLOPT;
-    }
-    uint16_t const sc = startCode[i];
-    if (codepoint < sc) {
+    size_t const i = distance(segments.begin(), found);
+    Segment const &s = segments[i];
+    if (codepoint < s.startCode) {
       return 0;
     }
-    if (idDelta.size() != startCode.size()) {
-      return EGLYF_NULLOPT;
+    if (s.glyphIdArray.empty()) {
+      return (codepoint + (int32_t)s.idDelta) & 0xffff;
     }
-    int16_t const iD = idDelta[i];
-    if (idRangeOffset.size() != startCode.size()) {
-      return EGLYF_NULLOPT;
-    }
-    uint16_t const iRO = idRangeOffset[i];
-    if (iRO == 0) {
-      return (codepoint + (int32_t)iD) & 0xffff;
-    }
-    size_t offset = iRO / 2;
-    if (iRO != 2 * offset) {
-      return EGLYF_NULLOPT;
-    }
-    size_t index = offset + (codepoint - sc) - i;
-    if (index < glyphIdArray.size()) {
-      return glyphIdArray[index];
+    size_t index = codepoint - s.startCode;
+    if (index < s.glyphIdArray.size()) {
+      return s.glyphIdArray[index];
     } else {
       return EGLYF_NULLOPT;
     }
@@ -191,12 +226,7 @@ public:
 
 public:
   uint16_t language;
-  uint16_t segCount;
-  std::vector<uint16_t> endCode;
-  std::vector<uint16_t> startCode;
-  std::vector<int16_t> idDelta;
-  std::vector<uint16_t> idRangeOffset;
-  std::vector<uint16_t> glyphIdArray;
+  std::vector<Segment> segments;
 };
 
 } // namespace eglyf::cmap
