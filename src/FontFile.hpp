@@ -25,6 +25,15 @@ public:
     all[FCC("name")] = name;
     all[FCC("OS/2")] = os2;
     all[FCC("post")] = post;
+    if (gdef) {
+      all[FCC("GDEF")] = gdef;
+    }
+    if (gpos) {
+      all[FCC("GPOS")] = gpos;
+    }
+    if (gsub) {
+      all[FCC("GSUB")] = gsub;
+    }
     numTables = all.size();
     numTables += 1; // hmtx
     if (holds_alternative<TrueTypeOutlines>(outlines)) {
@@ -379,13 +388,14 @@ public:
     if (auto tr = records.find(FCC("GSUB")); tr != records.end()) {
       if (auto buffer = tr->second.read(in); buffer) {
         ByteInputStream slice(*buffer);
-        auto result = make_shared<GlyphSubstitutionTable>();
-        if (auto st = result->read(slice); st.ok()) {
-          ff->tables[tr->second.tag] = result;
-        } else if (st.error()->fWhat == Status::Error::UnexpectedFeatureParamsOffset()) {
-          ff->tables[tr->second.tag] = make_shared<ReadonlyTable>(*buffer);
-        } else {
-          return EGLYF_STATUS_PUSH(st);
+        ff->gsub = make_shared<GlyphSubstitutionTable>();
+        if (auto st = ff->gsub->read(slice); !st.ok()) {
+          if (st.error()->fWhat == Status::Error::UnexpectedFeatureParamsOffset()) {
+            ff->gsub = nullptr;
+            ff->tables[FCC("GSUB")] = make_shared<ReadonlyTable>(*buffer);
+          } else {
+            return EGLYF_STATUS_PUSH(st);
+          }
         }
         records.erase(tr);
       } else {
@@ -396,10 +406,8 @@ public:
     if (auto tr = records.find(FCC("GPOS")); tr != records.end()) {
       if (auto buffer = tr->second.read(in); buffer) {
         ByteInputStream slice(*buffer);
-        auto result = make_shared<GlyphPositioningTable>();
-        if (auto st = result->read(slice); st.ok()) {
-          ff->tables[tr->second.tag] = result;
-        } else {
+        ff->gpos = make_shared<GlyphPositioningTable>();
+        if (auto st = ff->gpos->read(slice); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
         records.erase(tr);
@@ -411,10 +419,7 @@ public:
     if (auto tr = records.find(FCC("GDEF")); tr != records.end()) {
       if (auto buffer = tr->second.read(in); buffer) {
         ByteInputStream slice(*buffer);
-        shared_ptr<GlyphDefinitionTable> result;
-        if (auto st = GlyphDefinitionTable::Read(slice, result); st.ok()) {
-          ff->tables[tr->second.tag] = result;
-        } else {
+        if (auto st = GlyphDefinitionTable::Read(slice, ff->gdef); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
         records.erase(tr);
@@ -524,6 +529,7 @@ public:
   uint16_t entrySelector;
   uint16_t rangeShift;
 
+  // Required tables
   std::shared_ptr<CharacterToGlyphIndexMappingTable> cmap;
   std::shared_ptr<FontHeaderTable> head;
   std::shared_ptr<HorizontalHeaderTable> hhea;
@@ -534,6 +540,11 @@ public:
   std::shared_ptr<PostScriptTable> post;
 
   std::variant<TrueTypeOutlines, CFFOutlines> outlines;
+
+  // Optional tables
+  std::shared_ptr<GlyphPositioningTable> gpos;
+  std::shared_ptr<GlyphSubstitutionTable> gsub;
+  std::shared_ptr<GlyphDefinitionTable> gdef;
 
   std::map<std::array<uint8_t, 4>, std::shared_ptr<Table>> tables;
 };
