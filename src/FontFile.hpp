@@ -500,47 +500,20 @@ private:
     }
     TrueTypeOutlines &tto = get<TrueTypeOutlines>(outlines);
 
-    shared_ptr<GlyphDataTable> nGlyf;
-    if (auto st = tto.glyf->clone(nGlyf); !st.ok()) {
-      return EGLYF_NULLOPT_PUSH(st);
-    }
-    shared_ptr<PostScriptTable> nPost;
-    if (auto st = post->clone(nPost); !st.ok()) {
-      return EGLYF_NULLOPT_PUSH(st);
-    }
-    shared_ptr<MaximumProfileTable> nMaxp;
-    if (auto st = maxp->clone(nMaxp); !st.ok()) {
-      return EGLYF_NULLOPT_PUSH(st);
-    }
-    shared_ptr<HorizontalMetricsTable> nHmtx;
-    if (auto st = hmtx->clone(nHmtx); !st.ok()) {
-      return EGLYF_NULLOPT_PUSH(st);
-    }
-    shared_ptr<HorizontalHeaderTable> nHhea;
-    if (auto st = hhea->clone(nHhea); !st.ok()) {
-      return EGLYF_NULLOPT_PUSH(st);
-    }
-
-    auto gid = addOp(*nGlyf, *nHmtx);
+    auto gid = addOp(*tto.glyf, *hmtx);
     if (!gid) {
       return EGLYF_NULLOPT;
     }
-    if (auto postGid = nPost->addName(name); postGid) {
+    if (auto postGid = post->addName(name); postGid) {
       if (*gid != *postGid) {
         return EGLYF_NULLOPT;
       }
     } else {
       return EGLYF_NULLOPT_PUSH(postGid.status());
     }
-    if (auto st = nGlyf->updateMaxp(*nMaxp); !st.ok()) {
+    if (auto st = tto.glyf->updateMaxp(*maxp); !st.ok()) {
       return EGLYF_NULLOPT_PUSH(st);
     }
-
-    tto.glyf = nGlyf;
-    post = nPost;
-    maxp = nMaxp;
-    hmtx = nHmtx;
-    hhea = nHhea;
     return *gid;
   }
 
