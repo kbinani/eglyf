@@ -8,6 +8,7 @@ public:
   }
 
   Optional<uint16_t> defineGlyph(std::string const &name, std::optional<uint32_t> unicode, GlyphDefinitionTable::Class classDef) {
+    using namespace std;
     uint16_t glyphId = 0;
     if (auto gid = font->post->getGlyphId(name); gid) {
       glyphId = *gid;
@@ -22,6 +23,11 @@ public:
       if (auto st = font->cmap->map(*unicode, glyphId); !st.ok()) {
         return EGLYF_NULLOPT_PUSH(st);
       }
+    }
+    if (!font->gdef) {
+      font->gdef = make_shared<GlyphDefinitionTable>();
+      font->gdef->majorVersion = 1;
+      font->gdef->minorVersion = 2;
     }
     // TODO:
     return glyphId;
