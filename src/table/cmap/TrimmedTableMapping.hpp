@@ -91,7 +91,7 @@ public:
     return sizeof(uint16_t) * 2 + sizeof(Offset16) + sizeof(uint16_t) * glyphIdArray.size() > (size_t)numeric_limits<uint16_t>::max();
   }
 
-  Status migrate(std::shared_ptr<SegmentMappingToDeltaValues> &out) const {
+  Status convertToFormat4(std::shared_ptr<SegmentMappingToDeltaValues> &out) const {
     using namespace std;
     auto ret = make_unique<SegmentMappingToDeltaValues>();
     optional<SegmentMappingToDeltaValues::Segment> last;

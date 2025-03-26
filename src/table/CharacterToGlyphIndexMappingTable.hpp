@@ -212,15 +212,12 @@ public:
         }
         if (format6->writeMayFail()) {
           shared_ptr<cmap::SegmentMappingToDeltaValues> format4;
-          if (auto st = format6->migrate(format4); !st.ok()) {
+          if (auto st = format6->convertToFormat4(format4); !st.ok()) {
             return EGLYF_ERROR;
           }
           r.subtable = format4;
           done.insert(format4);
           for (size_t j = 0; j < encodingRecords.size(); j++) {
-            if (j == i) {
-              continue;
-            }
             if (encodingRecords[j].subtable == format6) {
               encodingRecords[j].subtable = format4;
             }
