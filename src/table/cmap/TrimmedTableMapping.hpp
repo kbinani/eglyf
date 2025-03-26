@@ -86,6 +86,56 @@ public:
     }
   }
 
+  bool writeMayFail() const {
+    using namespace std;
+    return sizeof(uint16_t) * 2 + sizeof(Offset16) + sizeof(uint16_t) * glyphIdArray.size() > (size_t)numeric_limits<uint16_t>::max();
+  }
+
+  Status migrate(std::shared_ptr<SegmentMappingToDeltaValues> &out) const {
+    using namespace std;
+    auto ret = make_unique<SegmentMappingToDeltaValues>();
+    optional<SegmentMappingToDeltaValues::Segment> last;
+    for (size_t i = 0; i < glyphIdArray.size(); i++) {
+      uint16_t gid = glyphIdArray[i];
+      if (gid == 0) {
+        continue;
+      }
+      uint32_t codepoint = firstCode + i;
+      if (codepoint >= 0xffff) {
+        return EGLYF_ERROR;
+      }
+      int64_t const delta = (int64_t)gid - (int64_t)codepoint;
+      if (last) {
+        if (last->endCode + 1 == codepoint) {
+          if (!last->glyphIdArray.empty()) {
+            last->endCode = codepoint;
+            last->glyphIdArray.push_back(gid);
+            continue;
+          } else if (delta == last->idDelta) {
+            last->endCode = codepoint;
+            continue;
+          }
+        }
+        ret->segments.push_back(*last);
+      }
+      SegmentMappingToDeltaValues::Segment s;
+      s.startCode = codepoint;
+      s.endCode = codepoint;
+      if (delta == 0) {
+        s.idDelta = 0;
+        s.glyphIdArray.push_back(gid);
+      } else {
+        s.idDelta = delta;
+      }
+      last = s;
+    }
+    if (last) {
+      ret->segments.push_back(*last);
+    }
+    out.reset(ret.release());
+    return Status::Ok();
+  }
+
 public:
   uint16_t language;
   uint16_t firstCode;

@@ -196,7 +196,8 @@ public:
   Status map(uint32_t codepoint, uint16_t glyphId) {
     using namespace std;
     set<shared_ptr<cmap::CmapSubtable>> done;
-    for (auto const &r : encodingRecords) {
+    for (size_t i = 0; i < encodingRecords.size(); i++) {
+      auto &r = encodingRecords[i];
       if (done.find(r.subtable) != done.end()) {
         continue;
       }
@@ -208,6 +209,22 @@ public:
       } else if (auto format6 = dynamic_pointer_cast<cmap::TrimmedTableMapping>(r.subtable); format6 && codepoint <= 0xffff) {
         if (auto st = format6->map((uint16_t)codepoint, glyphId); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
+        }
+        if (format6->writeMayFail()) {
+          shared_ptr<cmap::SegmentMappingToDeltaValues> format4;
+          if (auto st = format6->migrate(format4); !st.ok()) {
+            return EGLYF_ERROR;
+          }
+          r.subtable = format4;
+          done.insert(format4);
+          for (size_t j = 0; j < encodingRecords.size(); j++) {
+            if (j == i) {
+              continue;
+            }
+            if (encodingRecords[j].subtable == format6) {
+              encodingRecords[j].subtable = format4;
+            }
+          }
         }
       } else if (auto format12 = dynamic_pointer_cast<cmap::SegmentedCoverage>(r.subtable); format12) {
         if (auto st = format12->map(codepoint, glyphId); !st.ok()) {
