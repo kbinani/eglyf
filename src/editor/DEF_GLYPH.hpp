@@ -1,3 +1,4 @@
+// clang-format off
 optional<uint16_t> _notdef;
 if (auto gid = defineGlyph(".notdef", nullopt, GlyphDefinitionTable::Class::Mark); gid) {
   _notdef = *gid;

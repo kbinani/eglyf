@@ -21,7 +21,7 @@ static void Run(juce::ArgumentList const &args) {
     Fail(st);
     return;
   }
-  auto editor = make_unique<Editor>(ff);
+  auto editor = make_shared<Editor>(ff);
   if (auto st = editor->run(); !st.ok()) {
     Fail(st);
     return;
