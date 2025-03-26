@@ -29,6 +29,12 @@ public:
       font->gdef->majorVersion = 1;
       font->gdef->minorVersion = 2;
     }
+    if (!font->gdef->glyphClassDef) {
+      font->gdef->glyphClassDef = make_shared<ClassDef2>();
+    }
+    if (auto st = font->gdef->glyphClassDef->add(glyphId, static_cast<uint16_t>(classDef)); !st.ok()) {
+      return EGLYF_NULLOPT_PUSH(st);
+    }
     // TODO:
     return glyphId;
   }

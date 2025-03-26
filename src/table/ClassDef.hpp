@@ -7,6 +7,7 @@ public:
   virtual ~ClassDef() {}
   virtual Status write(OutputStream &out) const = 0;
   virtual size_t size() const = 0;
+  virtual Status add(uint16_t glyphId, uint16_t classValue) = 0;
 };
 
 class ClassDef1 : public ClassDef {
@@ -48,6 +49,24 @@ public:
 
   size_t size() const override {
     return 2 * sizeof(uint16_t) + sizeof(Offset16) + classValues.size() * sizeof(uint16_t);
+  }
+
+  Status add(uint16_t glyphId, uint16_t classValue) override {
+    if (glyphId < startGlyphID) {
+      int num = startGlyphID - glyphId;
+      classValues.resize(classValues.size() + num);
+      for (int i = (int)classValues.size() - 1; i >= num; i++) {
+        classValues[i] = classValues[i - num];
+      }
+      for (int i = 0; i < num; i++) {
+        classValues[i] = 0;
+      }
+      classValues[0] = classValue;
+      return Status::Ok();
+    } else {
+      classValues[glyphId - startGlyphID] = classValue;
+      return Status::Ok();
+    }
   }
 
 public:
@@ -132,6 +151,69 @@ public:
     size_t ret = sizeof(uint16_t) + sizeof(Offset16);
     ret += 3 * sizeof(uint16_t) * classRanges.size();
     return ret;
+  }
+
+  Status add(uint16_t glyphId, uint16_t classValue) override {
+    using namespace std;
+    ClassRange single;
+    single.startGlyphID = glyphId;
+    single.endGlyphID = glyphId;
+    single.classValue = classValue;
+
+    if (classRanges.empty()) {
+      classRanges.push_back(single);
+      return Status::Ok();
+    }
+    auto found = ranges::find_if(classRanges, [=](auto const &r) {
+      return glyphId <= r.endGlyphID;
+    });
+    if (found == classRanges.end()) {
+      if (!classRanges.empty()) {
+        ClassRange &r = classRanges.back();
+        if (r.endGlyphID + 1 == glyphId && r.classValue == classValue) {
+          r.endGlyphID = glyphId;
+          return Status::Ok();
+        }
+      }
+      classRanges.push_back(single);
+      return Status::Ok();
+    }
+    size_t const index = distance(classRanges.begin(), found);
+    auto &center = classRanges[index];
+    if (glyphId + 1 == center.startGlyphID && center.classValue == classValue) {
+      center.startGlyphID = glyphId;
+      return Status::Ok();
+    } else if (center.endGlyphID + 1 == glyphId && center.classValue == classValue) {
+      center.endGlyphID = glyphId;
+      return Status::Ok();
+    } else if (glyphId < center.startGlyphID) {
+      classRanges.insert(classRanges.begin() + index, single);
+      return Status::Ok();
+    } else if (glyphId == center.startGlyphID) {
+      center.startGlyphID = glyphId + 1;
+      classRanges.insert(classRanges.begin() + index, single);
+      return Status::Ok();
+    } else if (glyphId == center.endGlyphID) {
+      center.endGlyphID = glyphId - 1;
+      classRanges.insert(classRanges.begin() + index + 1, single);
+      return Status::Ok();
+    } else {
+      ClassRange copy = center;
+      ClassRange left;
+      left.startGlyphID = copy.startGlyphID;
+      left.endGlyphID = glyphId - 1;
+      left.classValue = copy.classValue;
+      center.startGlyphID = glyphId;
+      center.endGlyphID = glyphId;
+      center.classValue = classValue;
+      ClassRange right;
+      right.startGlyphID = glyphId + 1;
+      right.endGlyphID = copy.endGlyphID;
+      right.classValue = copy.classValue;
+      classRanges.insert(classRanges.begin() + index, left);
+      classRanges.insert(classRanges.begin() + index + 2, right);
+      return Status::Ok();
+    }
   }
 
 public:
