@@ -51,6 +51,10 @@ public:
     std::shared_ptr<Group> group;
   };
 
+  struct Anchor {
+    std::map<std::shared_ptr<Glyph>, Vec<std::optional<int16_t>>> glyphs;
+  };
+
 public:
   explicit Editor(std::shared_ptr<FontFile> const &font) : font(font) {
   }
@@ -77,10 +81,24 @@ public:
     }
   }
 
+  std::shared_ptr<Anchor> getAnchorByName(std::string const &name) {
+    using namespace std;
+    if (auto found = anchors.find(name); found == anchors.end()) {
+      auto a = make_shared<Anchor>();
+      anchors[name] = a;
+      return a;
+    } else {
+      return found->second;
+    }
+  }
+
   Status run() {
     using namespace std;
-#include "editor/DEF_GLYPH.hpp"
-#include "editor/DEF_GROUP.hpp"
+    // clang-format off
+    #include "editor/DEF_GLYPH.hpp"
+    #include "editor/DEF_GROUP.hpp"
+    #include "editor/DEF_ANCHOR.hpp"
+    // clang-format on
     return Status::Ok();
   }
 
@@ -125,10 +143,19 @@ private:
     return make_shared<GroupBuilder>(shared_from_this(), g);
   }
 
+  void defineAnchor(std::string const &name, std::string const &glyph, std::optional<int16_t> dx, std::optional<int16_t> dy) {
+    using namespace std;
+    auto a = getAnchorByName(name);
+    if (auto g = getGlyphByName(glyph); g) {
+      a->glyphs[g] = Vec<optional<int16_t>>(dx, dy);
+    }
+  }
+
 public:
   std::shared_ptr<FontFile> font;
   std::unordered_map<std::string, std::shared_ptr<Glyph>> glyphs;
   std::unordered_map<std::string, std::shared_ptr<Group>> groups;
+  std::unordered_map<std::string, std::shared_ptr<Anchor>> anchors;
 };
 
 } // namespace eglyf
