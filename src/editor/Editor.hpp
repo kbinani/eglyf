@@ -16,31 +16,31 @@ public:
       return group;
     }
 
-    GroupBuilder &beginEnum() {
-      return *this;
+    GroupBuilder *beginEnum() {
+      return this;
     }
 
-    GroupBuilder &endEnum() {
-      return *this;
+    GroupBuilder *endEnum() {
+      return this;
     }
 
-    GroupBuilder &addGroup(std::string const &name) {
+    GroupBuilder *addGroup(std::string const &name) {
       auto e = editor.lock();
       if (e) {
         auto g = e->getGroupByName(name);
         group->members.push_back(g);
       }
-      return *this;
+      return this;
     }
 
-    GroupBuilder &addGlyph(std::string const &name) {
+    GroupBuilder *addGlyph(std::string const &name) {
       auto e = editor.lock();
       if (e) {
         if (auto glyphId = e->getGlyphByName(name); glyphId) {
           group->members.push_back(*glyphId);
         }
       }
-      return *this;
+      return this;
     }
 
     std::weak_ptr<Editor> editor;
@@ -83,10 +83,10 @@ public:
     return glyphId;
   }
 
-  GroupBuilder defineGroup(std::string const &name) {
+  std::shared_ptr<GroupBuilder> defineGroup(std::string const &name) {
+    using namespace std;
     auto g = getGroupByName(name);
-    GroupBuilder builder(shared_from_this(), g);
-    return builder;
+    return make_shared<GroupBuilder>(shared_from_this(), g);
   }
 
   std::optional<uint16_t> getGlyphByName(std::string const &name) {
@@ -118,8 +118,8 @@ public:
 
 public:
   std::shared_ptr<FontFile> font;
-  std::map<std::string, uint16_t> glyphs;
-  std::map<std::string, std::shared_ptr<Group>> groups;
+  std::unordered_map<std::string, uint16_t> glyphs;
+  std::unordered_map<std::string, std::shared_ptr<Group>> groups;
 };
 
 } // namespace eglyf
