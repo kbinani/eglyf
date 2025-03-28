@@ -74,7 +74,109 @@ public:
     std::variant<SkipMarks, ProcessMarks> marks;
   };
 
-  struct LookupBuilder {
+  struct LookupBuilder : public std::enable_shared_from_this<LookupBuilder> {
+    struct ContextBuilder {
+      explicit ContextBuilder(std::shared_ptr<LookupBuilder> const &builder) : lookupBuilder(builder) {}
+
+      ContextBuilder *leftGlyph(std::string const &name) {
+        return this;
+      }
+
+      ContextBuilder *leftGroup(std::string const &name) {
+        return this;
+      }
+
+      ContextBuilder *rightGlyph(std::string const &name) {
+        return this;
+      }
+
+      ContextBuilder *rightGroup(std::string const &name) {
+        return this;
+      }
+
+      std::shared_ptr<LookupBuilder> endContext() {
+        return lookupBuilder;
+      }
+
+      std::shared_ptr<LookupBuilder> lookupBuilder;
+    };
+
+    struct SubstitutionBuilder {
+      explicit SubstitutionBuilder(std::shared_ptr<LookupBuilder> const &builder) : lookupBuilder(builder) {}
+
+      SubstitutionBuilder *substitute() {
+        return this;
+      }
+
+      SubstitutionBuilder *subGlyph(std::string const &name) {
+        return this;
+      }
+
+      SubstitutionBuilder *subGroup(std::string const &name) {
+        return this;
+      }
+
+      SubstitutionBuilder *withGlyph(std::string const &name) {
+        return this;
+      }
+
+      SubstitutionBuilder *withGroup(std::string const &name) {
+        return this;
+      }
+
+      SubstitutionBuilder *endSub() {
+        return this;
+      }
+
+      std::shared_ptr<Lookup> endSubstitutionLookup() {
+        return lookupBuilder->endLookup();
+      }
+
+      std::shared_ptr<LookupBuilder> lookupBuilder;
+    };
+
+    struct PositionBuilder {
+      explicit PositionBuilder(std::shared_ptr<LookupBuilder> const &builder) : lookupBuilder(builder) {}
+
+      PositionBuilder *attachGroup(std::string const &name) {
+        return this;
+      }
+
+      PositionBuilder *attachGlyph(std::string const &name) {
+        return this;
+      }
+
+      PositionBuilder *toGroup(std::string const &groupName, std::string const &anchorName) {
+        return this;
+      }
+
+      PositionBuilder *toGlyph(std::string const &glyphName, std::string const &anchorName) {
+        return this;
+      }
+
+      PositionBuilder *endAttach() {
+        return this;
+      }
+
+      std::shared_ptr<Lookup> endPositionLookup() {
+        return lookupBuilder->endLookup();
+      }
+
+      PositionBuilder *adjustSingle() {
+        return this;
+      }
+
+      PositionBuilder *adjustGlyph(std::string const &name, std::optional<int16_t> dx, std::optional<int16_t> dy) {
+        return this;
+      }
+
+      PositionBuilder *endAdjust() {
+        return this;
+      }
+
+      std::shared_ptr<LookupBuilder> lookupBuilder;
+    };
+
     LookupBuilder(std::shared_ptr<Editor> const &editor, std::shared_ptr<Lookup> const &lookup) : editor(editor), lookup(lookup) {}
 
     LookupBuilder *processBase() {
@@ -128,7 +230,22 @@ public:
       return this;
     }
 
-    std::shared_ptr<Lookup> end() {
+    std::shared_ptr<ContextBuilder> exceptContext() {
+      using namespace std;
+      return make_shared<ContextBuilder>(shared_from_this());
+    }
+
+    std::shared_ptr<SubstitutionBuilder> asSubstitution() {
+      using namespace std;
+      return make_shared<SubstitutionBuilder>(shared_from_this());
+    }
+
+    std::shared_ptr<PositionBuilder> asPosition() {
+      using namespace std;
+      return make_shared<PositionBuilder>(shared_from_this());
+    }
+
+    std::shared_ptr<Lookup> endLookup() {
       return lookup;
     }
 
