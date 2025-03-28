@@ -55,6 +55,87 @@ public:
     std::map<std::shared_ptr<Glyph>, Vec<std::optional<int16_t>>> glyphs;
   };
 
+  struct Lookup {
+    struct SkipBase {};
+    struct ProcessBase {};
+    std::variant<SkipBase, ProcessBase> base;
+
+    struct SkipMarks {};
+    struct ProcessMarks {
+      struct All {};
+      struct Glyphs {
+        std::vector<std::shared_ptr<Editor::Glyph>> glyphs;
+      };
+      struct Group {
+        std::shared_ptr<Editor::Group> group;
+      };
+      std::variant<ProcessMarks::All, ProcessMarks::Glyphs, ProcessMarks::Group> what;
+    };
+    std::variant<SkipMarks, ProcessMarks> marks;
+  };
+
+  struct LookupBuilder {
+    LookupBuilder(std::shared_ptr<Editor> const &editor, std::shared_ptr<Lookup> const &lookup) : editor(editor), lookup(lookup) {}
+
+    LookupBuilder *processBase() {
+      lookup->base = Lookup::ProcessBase();
+      return this;
+    }
+
+    LookupBuilder *skipBase() {
+      lookup->base = Lookup::SkipBase();
+      return this;
+    }
+
+    LookupBuilder *processMarksAll() {
+      Lookup::ProcessMarks marks;
+      marks.what = Lookup::ProcessMarks::All();
+      lookup->marks = marks;
+      return this;
+    }
+
+    LookupBuilder *processMarkGlyphs(std::string const &name) {
+      auto e = editor.lock();
+      if (!e) {
+        return this;
+      }
+      Lookup::ProcessMarks marks;
+      Lookup::ProcessMarks::Glyphs glyphs;
+      auto glyph = e->getGlyphByName(name);
+      glyphs.glyphs.push_back(glyph);
+      marks.what = glyphs;
+      lookup->marks = marks;
+      return this;
+    }
+
+    LookupBuilder *processMarkGroup(std::string const &name) {
+      auto e = editor.lock();
+      if (!e) {
+        return this;
+      }
+      Lookup::ProcessMarks marks;
+      Lookup::ProcessMarks::Group group;
+      auto g = e->getGroupByName(name);
+      group.group = g;
+      marks.what = group;
+      lookup->marks = marks;
+      return this;
+    }
+
+    LookupBuilder *skipMarks() {
+      Lookup::SkipMarks marks;
+      lookup->marks = marks;
+      return this;
+    }
+
+    std::shared_ptr<Lookup> end() {
+      return lookup;
+    }
+
+    std::weak_ptr<Editor> editor;
+    std::shared_ptr<Lookup> lookup;
+  };
+
 public:
   explicit Editor(std::shared_ptr<FontFile> const &font) : font(font) {
   }
@@ -92,11 +173,23 @@ public:
     }
   }
 
+  std::shared_ptr<Lookup> getLookupByName(std::string const &name) {
+    using namespace std;
+    if (auto found = lookups.find(name); found == lookups.end()) {
+      auto l = make_shared<Lookup>();
+      lookups[name] = l;
+      return l;
+    } else {
+      return found->second;
+    }
+  }
+
   Status run() {
     using namespace std;
     // clang-format off
     #include "editor/DEF_GLYPH.hpp"
     #include "editor/DEF_GROUP.hpp"
+    #include "editor/DEF_LOOKUP.hpp"
     #include "editor/DEF_ANCHOR.hpp"
     // clang-format on
     return Status::Ok();
@@ -151,11 +244,18 @@ private:
     }
   }
 
+  std::shared_ptr<LookupBuilder> defineLookup(std::string const &name) {
+    using namespace std;
+    auto l = getLookupByName(name);
+    return make_shared<LookupBuilder>(shared_from_this(), l);
+  }
+
 public:
   std::shared_ptr<FontFile> font;
   std::unordered_map<std::string, std::shared_ptr<Glyph>> glyphs;
   std::unordered_map<std::string, std::shared_ptr<Group>> groups;
   std::unordered_map<std::string, std::shared_ptr<Anchor>> anchors;
+  std::unordered_map<std::string, std::shared_ptr<Lookup>> lookups;
 };
 
 } // namespace eglyf

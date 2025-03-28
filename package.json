@@ -1,0 +1,26 @@
+{
+  "name": "eglyf",
+  "version": "1.0.0",
+  "description": "An OpenType font tool that modifies OTF files to add support for Egyptian Hieroglyph Format Controls, introduced in Unicode 15.0.",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kbinani/eglyf.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kbinani/eglyf/issues"
+  },
+  "homepage": "https://github.com/kbinani/eglyf#readme",
+  "devDependencies": {
+    "@types/node": "^22.13.14",
+    "tsx": "^4.19.3"
+  }
+}

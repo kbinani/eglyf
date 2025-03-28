@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "module": "ES2022",
+    "moduleResolution": "Bundler",
+    "target": "es2022",
+    "sourceMap": true,
+    "outDir": "dist",
+    "jsx": "react",
+    "lib": [
+      "es2022",
+      "dom"
+    ],
+    "strict": true,
+    "esModuleInterop": true
+  }
+}
