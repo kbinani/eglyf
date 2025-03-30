@@ -51,6 +51,7 @@ private:
   void defineAnchor(std::string const &name, std::string const &glyph, std::optional<int16_t> dx, std::optional<int16_t> dy) {
     using namespace std;
     auto a = editor->getAnchorByName(name);
+    a->name = name;
     if (auto g = editor->getGlyphByName(glyph); g) {
       a->glyphs[g] = Vec<optional<int16_t>>(dx, dy);
     }

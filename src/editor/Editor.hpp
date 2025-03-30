@@ -14,6 +14,7 @@ public:
   };
 
   struct Anchor {
+    std::string name;
     std::map<std::shared_ptr<Glyph>, Vec<std::optional<int16_t>>> glyphs;
   };
 
@@ -215,6 +216,23 @@ public:
       if (subtable) {
         auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
         lookupData->lookupType = 1; // SingleAdjustment
+        lookupData->lookupFlag = convertLookupFlag(lookup->base, lookup->marks);
+        lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
+        lookupData->subtables.push_back(subtable);
+
+        auto gposLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
+        gposLookup->data = lookupData;
+        return gposLookup;
+      }
+    }
+
+    // For Lookups with attach
+    if (lookup->attach) {
+      uint16_t lookupType = 4; // Default to MarkToBaseAttachment
+      auto subtable = createAttachmentSubtable(lookup->attach, lookupType);
+      if (subtable) {
+        auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
+        lookupData->lookupType = lookupType; // Set to the determined lookup type
         lookupData->lookupFlag = convertLookupFlag(lookup->base, lookup->marks);
         lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
         lookupData->subtables.push_back(subtable);
@@ -459,6 +477,297 @@ private:
     }
 
     return 0;
+  }
+
+  // Function to collect glyphs from a variant (glyph or group)
+  void collectGlyphsFromVariant(std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>> const &item,
+                                std::vector<uint16_t> &glyphIds,
+                                std::map<uint16_t, std::shared_ptr<Glyph>> &glyphMap) const {
+    using namespace std;
+
+    if (holds_alternative<shared_ptr<Glyph>>(item)) {
+      auto glyph = get<shared_ptr<Glyph>>(item);
+      if (glyph->id) {
+        glyphIds.push_back(*glyph->id);
+        glyphMap[*glyph->id] = glyph;
+      }
+    } else if (holds_alternative<shared_ptr<Group>>(item)) {
+      auto group = get<shared_ptr<Group>>(item);
+      collectGlyphsFromGroup(group, glyphIds, glyphMap);
+    }
+  }
+
+  // Function to recursively collect glyphs from a group
+  void collectGlyphsFromGroup(std::shared_ptr<Group> const &group,
+                              std::vector<uint16_t> &glyphIds,
+                              std::map<uint16_t, std::shared_ptr<Glyph>> &glyphMap) const {
+    using namespace std;
+
+    for (auto const &member : group->members) {
+      if (holds_alternative<shared_ptr<Glyph>>(member)) {
+        auto glyph = get<shared_ptr<Glyph>>(member);
+        if (glyph->id) {
+          glyphIds.push_back(*glyph->id);
+          glyphMap[*glyph->id] = glyph;
+        }
+      } else if (holds_alternative<shared_ptr<Group>>(member)) {
+        auto subgroup = get<shared_ptr<Group>>(member);
+        collectGlyphsFromGroup(subgroup, glyphIds, glyphMap);
+      }
+    }
+  }
+
+  // Function to convert Editor::Anchor to GPOS::Anchor1
+  std::shared_ptr<gpos::Anchor> convertToGposAnchor(std::shared_ptr<Anchor> const &editorAnchor,
+                                                    std::shared_ptr<Glyph> const &glyph) const {
+    using namespace std;
+
+    auto it = editorAnchor->glyphs.find(glyph);
+    if (it == editorAnchor->glyphs.end()) {
+      return nullptr;
+    }
+
+    auto vec = it->second;
+    auto anchor = make_shared<gpos::Anchor1>();
+    anchor->xCoordinate = vec.x.value_or(0);
+    anchor->yCoordinate = vec.y.value_or(0);
+
+    return anchor;
+  }
+
+  // Determine if a glyph is a mark glyph
+  bool isMarkGlyph(std::shared_ptr<Glyph> const &glyph) const {
+    return glyph->classDef == GlyphDefinitionTable::Class::Mark;
+  }
+
+  // Determine if all glyphs in a variant are mark glyphs
+  bool areAllMarkGlyphs(std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>> const &item) const {
+    using namespace std;
+
+    if (holds_alternative<shared_ptr<Glyph>>(item)) {
+      auto glyph = get<shared_ptr<Glyph>>(item);
+      return isMarkGlyph(glyph);
+    } else if (holds_alternative<shared_ptr<Group>>(item)) {
+      auto group = get<shared_ptr<Group>>(item);
+      return areAllMarkGlyphsInGroup(group);
+    }
+
+    return false;
+  }
+
+  // Determine if all glyphs in a group are mark glyphs
+  bool areAllMarkGlyphsInGroup(std::shared_ptr<Group> const &group) const {
+    using namespace std;
+
+    for (auto const &member : group->members) {
+      if (holds_alternative<shared_ptr<Glyph>>(member)) {
+        auto glyph = get<shared_ptr<Glyph>>(member);
+        if (!isMarkGlyph(glyph)) {
+          return false;
+        }
+      } else if (holds_alternative<shared_ptr<Group>>(member)) {
+        auto subgroup = get<shared_ptr<Group>>(member);
+        if (!areAllMarkGlyphsInGroup(subgroup)) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
+  // Create attachment subtable (MarkToBase or MarkToMark) from Editor::Lookup::Attach
+  std::shared_ptr<Subtable> createAttachmentSubtable(std::shared_ptr<Lookup::Attach> const &attach, uint16_t &lookupType) const {
+    using namespace std;
+
+    if (!attach || attach->input.empty() || attach->output.empty()) {
+      return nullptr;
+    }
+
+    // Check if input glyphs are all mark glyphs
+    bool inputIsAllMarks = true;
+    for (auto const &item : attach->input) {
+      if (!areAllMarkGlyphs(item)) {
+        inputIsAllMarks = false;
+        break;
+      }
+    }
+
+    if (!inputIsAllMarks) {
+      // Input must be mark glyphs for both MarkToBase and MarkToMark
+      return nullptr;
+    }
+
+    // Check if output glyphs are all mark glyphs
+    bool outputIsAllMarks = true;
+    for (auto const &target : attach->output) {
+      if (!areAllMarkGlyphs(target.target)) {
+        outputIsAllMarks = false;
+        break;
+      }
+    }
+
+    // Determine lookup type based on output glyphs
+    if (outputIsAllMarks) {
+      lookupType = 6; // MarkToMarkAttachmentPositioning
+    } else {
+      lookupType = 4; // MarkToBaseAttachment
+    }
+
+    // 1. Create mapping from anchor names to mark class IDs
+    map<string, uint16_t> anchorNameToClassId;
+    uint16_t nextClassId = 0;
+
+    for (auto const &target : attach->output) {
+      if (auto anchor = target.anchor) {
+        // Get anchor name directly
+        string anchorName = anchor->name;
+
+        if (anchorNameToClassId.find(anchorName) == anchorNameToClassId.end()) {
+          anchorNameToClassId[anchorName] = nextClassId++;
+        }
+      }
+    }
+
+    // Cannot convert if no mark classes are found
+    if (anchorNameToClassId.empty()) {
+      return nullptr;
+    }
+
+    // 2. Collect mark and base glyph IDs
+    vector<uint16_t> markGlyphIds;
+    map<uint16_t, shared_ptr<Glyph>> markGlyphMap; // glyphId -> Glyph
+
+    for (auto const &item : attach->input) {
+      collectGlyphsFromVariant(item, markGlyphIds, markGlyphMap);
+    }
+
+    vector<uint16_t> baseGlyphIds;
+    map<uint16_t, shared_ptr<Glyph>> baseGlyphMap;                              // glyphId -> Glyph
+    map<uint16_t, vector<pair<uint16_t, shared_ptr<Anchor>>>> baseGlyphAnchors; // glyphId -> [(classId, Anchor)]
+
+    for (auto const &target : attach->output) {
+      // Collect glyphs from target
+      vector<uint16_t> targetGlyphIds;
+      map<uint16_t, shared_ptr<Glyph>> targetGlyphMap;
+      collectGlyphsFromVariant(target.target, targetGlyphIds, targetGlyphMap);
+
+      // Assign anchors to each glyph
+      for (auto glyphId : targetGlyphIds) {
+        baseGlyphIds.push_back(glyphId);
+        baseGlyphMap[glyphId] = targetGlyphMap[glyphId];
+
+        // Get class ID from anchor name
+        string anchorName = target.anchor->name;
+        if (anchorNameToClassId.find(anchorName) != anchorNameToClassId.end()) {
+          uint16_t classId = anchorNameToClassId[anchorName];
+          baseGlyphAnchors[glyphId].push_back(make_pair(classId, target.anchor));
+        }
+      }
+    }
+
+    // Return nullptr if no glyph IDs are found
+    if (markGlyphIds.empty() || baseGlyphIds.empty()) {
+      return nullptr;
+    }
+
+    // Remove duplicates and sort
+    sort(markGlyphIds.begin(), markGlyphIds.end());
+    markGlyphIds.erase(unique(markGlyphIds.begin(), markGlyphIds.end()), markGlyphIds.end());
+
+    sort(baseGlyphIds.begin(), baseGlyphIds.end());
+    baseGlyphIds.erase(unique(baseGlyphIds.begin(), baseGlyphIds.end()), baseGlyphIds.end());
+
+    // 3. Create Coverage
+    auto markCoverage = make_shared<Coverage1>();
+    markCoverage->glyphArray = markGlyphIds;
+
+    auto baseCoverage = make_shared<Coverage1>();
+    baseCoverage->glyphArray = baseGlyphIds;
+
+    // 4. Create MarkArray
+    gpos::MarkArray markArray;
+
+    // Find anchors corresponding to mark glyphs
+    for (auto const &[anchorName, classId] : anchorNameToClassId) {
+      for (auto const &[name, anchor] : anchors) {
+        if (anchor->name == anchorName) {
+          for (auto const &[glyph, coords] : anchor->glyphs) {
+            if (glyph->id && find(markGlyphIds.begin(), markGlyphIds.end(), *glyph->id) != markGlyphIds.end()) {
+              gpos::MarkRecord record;
+              record.markClass = classId;
+              record.markAnchor = convertToGposAnchor(anchor, glyph);
+              markArray.markRecords.push_back(record);
+            }
+          }
+        }
+      }
+    }
+
+    // 5. Create BaseArray or Mark2Array
+    if (lookupType == 4) {
+      // MarkToBaseAttachment
+      auto subtable = make_shared<gpos::MarkToBaseAttachment>();
+      subtable->markCoverage = markCoverage;
+      subtable->baseCoverage = baseCoverage;
+      subtable->markArray = markArray;
+
+      // Create BaseArray
+      gpos::MarkToBaseAttachment::BaseArray baseArray;
+      baseArray.markClassCount = nextClassId;
+
+      for (auto glyphId : baseGlyphIds) {
+        gpos::MarkToBaseAttachment::BaseRecord record;
+        record.baseAnchors.resize(nextClassId, nullptr); // Initialize with nullptr for all mark classes
+
+        // Set anchors corresponding to the glyph
+        if (baseGlyphAnchors.find(glyphId) != baseGlyphAnchors.end()) {
+          for (auto const &[classId, anchor] : baseGlyphAnchors[glyphId]) {
+            auto glyph = baseGlyphMap[glyphId];
+            record.baseAnchors[classId] = convertToGposAnchor(anchor, glyph);
+          }
+        }
+
+        baseArray.baseRecords.push_back(record);
+      }
+
+      subtable->baseArray = baseArray;
+      return subtable;
+    } else {
+      // MarkToMarkAttachmentPositioning
+      auto subtable = make_shared<gpos::MarkToMarkAttachmentPositioning>();
+      subtable->mark1Coverage = markCoverage;
+      subtable->mark2Coverage = baseCoverage;
+      subtable->mark1Array = markArray;
+
+      // Create Mark2Array
+      gpos::MarkToMarkAttachmentPositioning::Mark2Array mark2Array;
+      mark2Array.markClassCount = nextClassId;
+
+      for (auto glyphId : baseGlyphIds) {
+        gpos::MarkToMarkAttachmentPositioning::Mark2 record;
+        record.mark2Anchors.resize(nextClassId, nullptr); // Initialize with nullptr for all mark classes
+
+        // Set anchors corresponding to the glyph
+        if (baseGlyphAnchors.find(glyphId) != baseGlyphAnchors.end()) {
+          for (auto const &[classId, anchor] : baseGlyphAnchors[glyphId]) {
+            auto glyph = baseGlyphMap[glyphId];
+            record.mark2Anchors[classId] = convertToGposAnchor(anchor, glyph);
+          }
+        }
+
+        mark2Array.mark2Records.push_back(record);
+      }
+
+      subtable->mark2Array = mark2Array;
+      return subtable;
+    }
+  }
+
+  // Create MarkToBaseAttachment subtable from Editor::Lookup::Attach
+  std::shared_ptr<Subtable> createMarkToBaseAttachmentSubtable(std::shared_ptr<Lookup::Attach> const &attach) const {
+    uint16_t lookupType = 4; // Default to MarkToBaseAttachment
+    return createAttachmentSubtable(attach, lookupType);
   }
 
 public:
