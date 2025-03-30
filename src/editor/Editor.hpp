@@ -182,7 +182,6 @@ public:
     }
   }
 
-private:
   Optional<uint16_t> defineGlyph(std::string const &name, std::optional<uint32_t> unicode, GlyphDefinitionTable::Class classDef) {
     using namespace std;
     auto g = getGlyphByName(name);
@@ -217,6 +216,7 @@ private:
     return glyphId;
   }
 
+private:
   std::shared_ptr<GroupBuilder> defineGroup(std::string const &name) {
     using namespace std;
     auto g = getGroupByName(name);

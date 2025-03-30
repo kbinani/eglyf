@@ -26,13 +26,19 @@ public:
     // Parse lines
     for (size_t i = 0; i < lines.size();) {
       string_view const &l = lines[i];
-      if (l.find("DEF_LOOKUP") == 0) {
+      if (l.starts_with("DEF_LOOKUP")) {
         auto status = parseLookup(lines, i);
         if (!status.ok()) {
           return EGLYF_STATUS_PUSH(status);
         }
-      } else {
+      } else if (l.starts_with("DEF_GLYPH") && l.ends_with("END_GLYPH")) {
+        auto status = parseGlyph(l);
+        if (!status.ok()) {
+          return EGLYF_STATUS_PUSH(status);
+        }
         i++;
+      } else {
+        return EGLYF_ERROR_WHAT("Unimplemented vtp element");
       }
     }
 
@@ -468,6 +474,70 @@ private:
     }
 
     index = index + 2;
+    return Status::Ok();
+  }
+
+  Status parseGlyph(std::string_view first) {
+    using namespace std;
+
+    if (!first.starts_with("DEF_GLYPH") || !first.ends_with("END_GLYPH")) {
+      return EGLYF_ERROR_WHAT("Expected DEF_GLYPH");
+    }
+
+    auto tokens = splitString(trim(first));
+    if (tokens.size() < 5) {
+      return EGLYF_ERROR_WHAT("Invalid DEF_GLYPH format");
+    }
+
+    // Parse tokens
+    tokens.erase(tokens.begin()); // Remove "DEF_GLYPH"
+
+    auto name = unquote(tokens[0]);
+
+    // Skip "ID" token
+    if (tokens[1] != "ID") {
+      return EGLYF_ERROR_WHAT("Expected ID in DEF_GLYPH");
+    }
+
+    // Parse ID (not used directly, but skip it)
+    tokens.erase(tokens.begin(), tokens.begin() + 3); // Remove name, "ID", and ID value
+
+    optional<uint32_t> unicode;
+    GlyphDefinitionTable::Class classDef;
+
+    // Check if UNICODE is present
+    if (tokens[0] == "UNICODE") {
+      if (tokens.size() < 3) {
+        return EGLYF_ERROR_WHAT("Invalid UNICODE format in DEF_GLYPH");
+      }
+
+      unicode = static_cast<uint32_t>(stoul(string(tokens[1])));
+      tokens.erase(tokens.begin(), tokens.begin() + 2); // Remove "UNICODE" and value
+    }
+
+    // Parse TYPE
+    if (tokens[0] != "TYPE") {
+      return EGLYF_ERROR_WHAT("Expected TYPE in DEF_GLYPH");
+    }
+
+    if (tokens.size() < 2) {
+      return EGLYF_ERROR_WHAT("Missing type value in DEF_GLYPH");
+    }
+
+    auto type = tokens[1];
+    if (type == "MARK") {
+      classDef = GlyphDefinitionTable::Class::Mark;
+    } else if (type == "BASE") {
+      classDef = GlyphDefinitionTable::Class::Base;
+    } else {
+      return EGLYF_ERROR_WHAT("Invalid type in DEF_GLYPH: " + string(type));
+    }
+
+    // Define the glyph
+    if (auto gid = editor->defineGlyph(string(name), unicode, classDef); !gid) {
+      return EGLYF_STATUS_PUSH(gid.status());
+    }
+
     return Status::Ok();
   }
 
