@@ -207,7 +207,26 @@ public:
   }
 
   Status compile() {
-    return EGLYF_ERROR;
+    using namespace std;
+
+    // Create GlyphPositioningTable and GlyphSubstitutionTable
+    auto gpos = make_shared<GlyphPositioningTable>();
+    auto gsub = make_shared<GlyphSubstitutionTable>();
+
+    // Set basic properties
+    gpos->majorVersion = 1;
+    gpos->minorVersion = 0;
+
+    gsub->majorVersion = 1;
+    gsub->minorVersion = 0;
+
+    // TODO:
+
+    // Add tables to FontFile
+    font->gpos = gpos;
+    font->gsub = gsub;
+
+    return Status::Ok();
   }
 
 public:
