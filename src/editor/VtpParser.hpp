@@ -405,7 +405,7 @@ private:
         auto type = tokens[j++];
         auto name = tokens[j++];
 
-        if (j + 3 >= tokens.size() || tokens[j] != "AT" || tokens[j + 1] != "ANCHOR") {
+        if (j + 2 >= tokens.size() || tokens[j] != "AT" || tokens[j + 1] != "ANCHOR") {
           return EGLYF_ERROR_WHAT("Invalid ATTACH target format");
         }
 
