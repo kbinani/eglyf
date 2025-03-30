@@ -13,44 +13,6 @@ public:
     std::vector<std::variant<std::shared_ptr<Group>, std::shared_ptr<Glyph>>> members;
   };
 
-  struct GroupBuilder {
-    GroupBuilder(std::shared_ptr<Editor> const &editor, std::shared_ptr<Group> const &group) : editor(editor), group(group) {
-    }
-
-    std::shared_ptr<Group> endGroup() {
-      return group;
-    }
-
-    GroupBuilder *beginEnum() {
-      return this;
-    }
-
-    GroupBuilder *endEnum() {
-      return this;
-    }
-
-    GroupBuilder *addGroup(std::string const &name) {
-      auto e = editor.lock();
-      if (e) {
-        auto g = e->getGroupByName(name);
-        group->members.push_back(g);
-      }
-      return this;
-    }
-
-    GroupBuilder *addGlyph(std::string const &name) {
-      auto e = editor.lock();
-      if (e) {
-        auto g = e->getGlyphByName(name);
-        group->members.push_back(g);
-      }
-      return this;
-    }
-
-    std::weak_ptr<Editor> editor;
-    std::shared_ptr<Group> group;
-  };
-
   struct Anchor {
     std::map<std::shared_ptr<Glyph>, Vec<std::optional<int16_t>>> glyphs;
   };
@@ -206,54 +168,6 @@ public:
     }
   }
 
-  Optional<uint16_t> defineGlyph(std::string const &name, std::optional<uint32_t> unicode, GlyphDefinitionTable::Class classDef) {
-    using namespace std;
-    auto g = getGlyphByName(name);
-    uint16_t glyphId = 0;
-    if (auto gid = font->post->getGlyphId(name); gid) {
-      glyphId = *gid;
-    } else {
-      if (auto gid = font->addEmptyGlyph(name, 0, 0); gid) {
-        glyphId = *gid;
-      } else {
-        return EGLYF_NULLOPT_PUSH(gid.status());
-      }
-    }
-    if (unicode) {
-      if (auto st = font->cmap->map(*unicode, glyphId); !st.ok()) {
-        return EGLYF_NULLOPT_PUSH(st);
-      }
-    }
-    if (!font->gdef) {
-      font->gdef = make_shared<GlyphDefinitionTable>();
-      font->gdef->majorVersion = 1;
-      font->gdef->minorVersion = 2;
-    }
-    if (!font->gdef->glyphClassDef) {
-      font->gdef->glyphClassDef = make_shared<ClassDef2>();
-    }
-    if (auto st = font->gdef->glyphClassDef->add(glyphId, static_cast<uint16_t>(classDef)); !st.ok()) {
-      return EGLYF_NULLOPT_PUSH(st);
-    }
-    g->id = glyphId;
-    g->classDef = classDef;
-    return glyphId;
-  }
-
-  std::shared_ptr<GroupBuilder> defineGroup(std::string const &name) {
-    using namespace std;
-    auto g = getGroupByName(name);
-    return make_shared<GroupBuilder>(shared_from_this(), g);
-  }
-
-  void defineAnchor(std::string const &name, std::string const &glyph, std::optional<int16_t> dx, std::optional<int16_t> dy) {
-    using namespace std;
-    auto a = getAnchorByName(name);
-    if (auto g = getGlyphByName(glyph); g) {
-      a->glyphs[g] = Vec<optional<int16_t>>(dx, dy);
-    }
-  }
-
   std::shared_ptr<Script> getScriptByName(std::string const &name) {
     using namespace std;
     if (auto found = scripts.find(name); found == scripts.end()) {
@@ -266,30 +180,16 @@ public:
     }
   }
 
-  std::shared_ptr<Script> defineScript(std::string const &name, Tag const &tag) {
-    using namespace std;
-    auto s = getScriptByName(name);
-    s->tag = tag;
-    return s;
-  }
-
-  std::shared_ptr<LangSys> getLangsysByName(std::shared_ptr<Script> script, std::string const &name) {
+  std::shared_ptr<LangSys> getLangSysByName(std::shared_ptr<Script> script, std::string const &name) {
     using namespace std;
     for (auto &ls : script->langSysList) {
       if (ls->name == name) {
         return ls;
       }
     }
-    // Langsys not found, create a new one with empty tag
+    // LangSys not found, create a new one with empty tag
     auto ls = make_shared<LangSys>(name, FCC("\0\0\0\0"));
     script->langSysList.push_back(ls);
-    return ls;
-  }
-
-  std::shared_ptr<LangSys> defineLangsys(std::shared_ptr<Script> script, std::string const &name, Tag const &tag) {
-    using namespace std;
-    auto ls = getLangsysByName(script, name);
-    ls->tag = tag;
     return ls;
   }
 
@@ -304,17 +204,6 @@ public:
     auto f = make_shared<Feature>(name, FCC("\0\0\0\0"));
     langsys->features.push_back(f);
     return f;
-  }
-
-  std::shared_ptr<Feature> defineFeature(std::shared_ptr<LangSys> langsys, std::string const &name, Tag const &tag) {
-    using namespace std;
-    auto f = getFeatureByName(langsys, name);
-    f->tag = tag;
-    return f;
-  }
-
-  void addLookupToFeature(std::shared_ptr<Feature> feature, std::shared_ptr<Lookup> lookup) {
-    feature->lookups.push_back(lookup);
   }
 
 public:

@@ -3,6 +3,115 @@
 namespace eglyf {
 
 class VtpParser {
+private:
+  struct GroupBuilder {
+    GroupBuilder(std::shared_ptr<Editor> const &editor, std::shared_ptr<Editor::Group> const &group) : editor(editor), group(group) {
+    }
+
+    std::shared_ptr<Editor::Group> endGroup() {
+      return group;
+    }
+
+    GroupBuilder *beginEnum() {
+      return this;
+    }
+
+    GroupBuilder *endEnum() {
+      return this;
+    }
+
+    GroupBuilder *addGroup(std::string const &name) {
+      auto e = editor.lock();
+      if (e) {
+        auto g = e->getGroupByName(name);
+        group->members.push_back(g);
+      }
+      return this;
+    }
+
+    GroupBuilder *addGlyph(std::string const &name) {
+      auto e = editor.lock();
+      if (e) {
+        auto g = e->getGlyphByName(name);
+        group->members.push_back(g);
+      }
+      return this;
+    }
+
+    std::weak_ptr<Editor> editor;
+    std::shared_ptr<Editor::Group> group;
+  };
+
+  std::shared_ptr<GroupBuilder> defineGroup(std::string const &name) {
+    using namespace std;
+    auto g = editor->getGroupByName(name);
+    return make_shared<GroupBuilder>(editor, g);
+  }
+
+  void defineAnchor(std::string const &name, std::string const &glyph, std::optional<int16_t> dx, std::optional<int16_t> dy) {
+    using namespace std;
+    auto a = editor->getAnchorByName(name);
+    if (auto g = editor->getGlyphByName(glyph); g) {
+      a->glyphs[g] = Vec<optional<int16_t>>(dx, dy);
+    }
+  }
+
+  Optional<uint16_t> defineGlyph(std::string const &name, std::optional<uint32_t> unicode, GlyphDefinitionTable::Class classDef) {
+    using namespace std;
+    auto g = editor->getGlyphByName(name);
+    auto font = editor->font;
+    uint16_t glyphId = 0;
+    if (auto gid = font->post->getGlyphId(name); gid) {
+      glyphId = *gid;
+    } else {
+      if (auto gid = font->addEmptyGlyph(name, 0, 0); gid) {
+        glyphId = *gid;
+      } else {
+        return EGLYF_NULLOPT_PUSH(gid.status());
+      }
+    }
+    if (unicode) {
+      if (auto st = font->cmap->map(*unicode, glyphId); !st.ok()) {
+        return EGLYF_NULLOPT_PUSH(st);
+      }
+    }
+    if (!font->gdef) {
+      font->gdef = make_shared<GlyphDefinitionTable>();
+      font->gdef->majorVersion = 1;
+      font->gdef->minorVersion = 2;
+    }
+    if (!font->gdef->glyphClassDef) {
+      font->gdef->glyphClassDef = make_shared<ClassDef2>();
+    }
+    if (auto st = font->gdef->glyphClassDef->add(glyphId, static_cast<uint16_t>(classDef)); !st.ok()) {
+      return EGLYF_NULLOPT_PUSH(st);
+    }
+    g->id = glyphId;
+    g->classDef = classDef;
+    return glyphId;
+  }
+
+  std::shared_ptr<Editor::Script> defineScript(std::string const &name, Tag const &tag) {
+    using namespace std;
+    auto s = editor->getScriptByName(name);
+    s->tag = tag;
+    return s;
+  }
+
+  std::shared_ptr<Editor::LangSys> defineLangSys(std::shared_ptr<Editor::Script> script, std::string const &name, Tag const &tag) {
+    using namespace std;
+    auto ls = editor->getLangSysByName(script, name);
+    ls->tag = tag;
+    return ls;
+  }
+
+  std::shared_ptr<Editor::Feature> defineFeature(std::shared_ptr<Editor::LangSys> langsys, std::string const &name, Tag const &tag) {
+    using namespace std;
+    auto f = editor->getFeatureByName(langsys, name);
+    f->tag = tag;
+    return f;
+  }
+
 public:
   explicit VtpParser(std::shared_ptr<Editor> const &editor) : editor(editor) {
   }
@@ -536,7 +645,7 @@ private:
     auto name = unquote(tokens[0]);
 
     // Define the group
-    auto groupBuilder = editor->defineGroup(string(name));
+    auto groupBuilder = defineGroup(string(name));
 
     // Line 2: ENUM GROUP "group1" GLYPH "glyph1" ... END_ENUM
     if (index + 1 >= lines.size()) {
@@ -654,7 +763,7 @@ private:
     }
 
     // Define the anchor
-    editor->defineAnchor(string(name), string(glyphName), dx, dy);
+    defineAnchor(string(name), string(glyphName), dx, dy);
 
     return Status::Ok();
   }
@@ -716,7 +825,7 @@ private:
     }
 
     // Define the glyph
-    if (auto gid = editor->defineGlyph(string(name), unicode, classDef); !gid) {
+    if (auto gid = defineGlyph(string(name), unicode, classDef); !gid) {
       return EGLYF_STATUS_PUSH(gid.status());
     }
 
@@ -847,7 +956,7 @@ private:
     ranges::copy(tagString, tag.begin());
 
     // Define the script
-    auto script = editor->defineScript(string(name), tag);
+    auto script = defineScript(string(name), tag);
 
     // Parse subsequent lines until END_SCRIPT
     for (size_t i = index + 1; i < lines.size();) {
@@ -902,7 +1011,7 @@ private:
     ranges::copy(tagString, tag.begin());
 
     // Define the langsys
-    auto langsys = editor->defineLangsys(script, string(name), tag);
+    auto langsys = defineLangSys(script, string(name), tag);
 
     // Parse subsequent lines until END_LANGSYS
     for (size_t i = index + 1; i < lines.size();) {
@@ -959,7 +1068,7 @@ private:
     ranges::copy(tagString, tag.begin());
 
     // Define the feature
-    auto feature = editor->defineFeature(langsys, string(name), tag);
+    auto feature = defineFeature(langsys, string(name), tag);
 
     // Parse subsequent lines until END_FEATURE
     for (size_t i = index + 1; i < lines.size();) {
@@ -975,7 +1084,7 @@ private:
           if (lookupTokens[j] == "LOOKUP" && j + 1 < lookupTokens.size()) {
             auto lookupName = unquote(lookupTokens[j + 1]);
             auto lookup = editor->getLookupByName(string(lookupName));
-            editor->addLookupToFeature(feature, lookup);
+            feature->lookups.push_back(lookup);
             j++; // Skip lookup name
           }
         }
