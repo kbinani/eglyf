@@ -603,7 +603,8 @@ private:
       }
 
       if (what == "GLYPH") {
-        adjustSingle.glyphs.push_back(Editor::Lookup::AdjustGlyph(string(unquote(name)), dx, dy));
+        auto glyph = editor->getGlyphByName(string(unquote(name)));
+        adjustSingle.glyphs.push_back(Editor::Lookup::AdjustGlyph(glyph, dx, dy));
       } else {
         return EGLYF_ERROR_WHAT("Invalid ADJUST_SINGLE what: " + string(what));
       }

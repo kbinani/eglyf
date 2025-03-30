@@ -64,9 +64,9 @@ public:
     std::shared_ptr<Attach> attach;
 
     struct AdjustGlyph {
-      AdjustGlyph(std::string const &name, std::optional<int16_t> dx, std::optional<int16_t> dy) : name(name), dx(dx), dy(dy) {}
+      AdjustGlyph(std::shared_ptr<Glyph> const &glyph, std::optional<int16_t> dx, std::optional<int16_t> dy) : glyph(glyph), dx(dx), dy(dy) {}
 
-      std::string name;
+      std::shared_ptr<Glyph> glyph;
       std::optional<int16_t> dx;
       std::optional<int16_t> dy;
     };
@@ -220,7 +220,24 @@ public:
     gsub->majorVersion = 1;
     gsub->minorVersion = 0;
 
-    // TODO:
+    // Convert Editor::Lookup to GlyphPositioningTable and GlyphSubstitutionTable
+    for (auto const &[name, lookup] : lookups) {
+      if (lookup->adjustSingle) {
+        // Convert AdjustSingle to GlyphPositioningTable
+        auto subtable = createAdjustSingleSubtable(lookup->adjustSingle);
+        if (subtable) {
+          auto lookupData = std::make_shared<SubtableCollection<Subtable>::LookupData>();
+          lookupData->lookupType = 1; // SingleAdjustment
+          lookupData->lookupFlag = convertLookupFlag(lookup->base, lookup->marks);
+          lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
+          lookupData->subtables.push_back(subtable);
+
+          auto gposLookup = std::make_shared<SubtableCollection<Subtable>::Lookup>();
+          gposLookup->data = lookupData;
+          gpos->lookups.push_back(gposLookup);
+        }
+      }
+    }
 
     // Add tables to FontFile
     font->gpos = gpos;
@@ -254,6 +271,94 @@ private:
     }
 
     return flag;
+  }
+
+  // Create SingleAdjustment subtable from Editor::Lookup::AdjustSingle
+  std::shared_ptr<Subtable> createAdjustSingleSubtable(std::shared_ptr<Lookup::AdjustSingle> const &adjustSingle) const {
+    using namespace std;
+
+    // Create a map of glyph IDs to ValueRecords
+    map<uint16_t, gpos::ValueRecord> glyphValueRecords;
+
+    // Process each glyph in AdjustSingle
+    for (auto const &adjustGlyph : adjustSingle->glyphs) {
+      // Get glyph ID
+      if (!adjustGlyph.glyph->id) {
+        // Skip if glyph ID is not set
+        continue;
+      }
+
+      // Create ValueRecord
+      gpos::ValueRecord valueRecord;
+      if (adjustGlyph.dx) {
+        valueRecord.xPlacement = adjustGlyph.dx;
+      }
+      if (adjustGlyph.dy) {
+        valueRecord.yPlacement = adjustGlyph.dy;
+      }
+
+      // Add glyph ID and ValueRecord to map
+      glyphValueRecords[*adjustGlyph.glyph->id] = valueRecord;
+    }
+
+    // Return nullptr if no glyphs found
+    if (glyphValueRecords.empty()) {
+      return nullptr;
+    }
+
+    // Check if all ValueRecords are the same
+    bool allSameValueRecord = true;
+    auto firstValueRecord = glyphValueRecords.begin()->second;
+    for (auto const &[glyphId, valueRecord] : glyphValueRecords) {
+      if (valueRecord.xPlacement != firstValueRecord.xPlacement ||
+          valueRecord.yPlacement != firstValueRecord.yPlacement) {
+        allSameValueRecord = false;
+        break;
+      }
+    }
+
+    // Create Coverage
+    vector<uint16_t> glyphIds;
+    for (auto const &[glyphId, valueRecord] : glyphValueRecords) {
+      glyphIds.push_back(glyphId);
+    }
+    // Sort glyph IDs in ascending order (OpenType specification requirement)
+    sort(glyphIds.begin(), glyphIds.end());
+
+    auto coverage = make_shared<Coverage1>();
+    coverage->glyphArray = glyphIds;
+
+    // Create SingleAdjustment
+    if (allSameValueRecord) {
+      // Use SingleAdjustment1 if all glyphs have the same ValueRecord
+      auto subtable = make_shared<gpos::SingleAdjustment1>();
+      subtable->coverage = coverage;
+      subtable->valueRecord = firstValueRecord;
+      return subtable;
+    } else {
+      // Use SingleAdjustment2 if glyphs have different ValueRecords
+      auto subtable = make_shared<gpos::SingleAdjustment2>();
+      subtable->coverage = coverage;
+
+      // Determine valueFormat
+      uint16_t valueFormat = 0;
+      for (auto const &[glyphId, valueRecord] : glyphValueRecords) {
+        if (valueRecord.xPlacement) {
+          valueFormat |= gpos::ValueRecord::X_PLACEMENT;
+        }
+        if (valueRecord.yPlacement) {
+          valueFormat |= gpos::ValueRecord::Y_PLACEMENT;
+        }
+      }
+      subtable->valueFormat = valueFormat;
+
+      // Create valueRecords
+      for (auto glyphId : glyphIds) {
+        subtable->valueRecords.push_back(glyphValueRecords[glyphId]);
+      }
+
+      return subtable;
+    }
   }
 
   // Determine markFilteringSet index from Editor::Lookup marks
