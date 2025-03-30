@@ -74,12 +74,19 @@ private:
     // Parse tokens
     tokens.erase(tokens.begin()); // Remove "DEF_LOOKUP"
 
+    // Get lookup name
+    if (tokens.empty()) {
+      return EGLYF_ERROR_WHAT("Missing lookup name");
+    }
     auto name = unquote(tokens[0]);
-
     auto lookup = editor->getLookupByName(string(name));
+    tokens.erase(tokens.begin()); // Remove name
 
     // PROCESS_BASE or SKIP_BASE
-    auto baseType = tokens[1];
+    if (tokens.empty()) {
+      return EGLYF_ERROR_WHAT("Missing base type");
+    }
+    auto baseType = tokens[0];
     if (baseType == "PROCESS_BASE") {
       lookup->base = Editor::Lookup::ProcessBase{};
     } else if (baseType == "SKIP_BASE") {
@@ -87,18 +94,30 @@ private:
     } else {
       return EGLYF_ERROR_WHAT("Invalid base type: " + string(baseType));
     }
+    tokens.erase(tokens.begin()); // Remove base type
 
     // PROCESS_MARKS or SKIP_MARKS
-    auto marksType = tokens[2];
+    if (tokens.empty()) {
+      return EGLYF_ERROR_WHAT("Missing marks type");
+    }
+    auto marksType = tokens[0];
+    tokens.erase(tokens.begin()); // Remove marks type
+
     if (marksType == "PROCESS_MARKS") {
-      auto marksWhat = tokens[3];
+      if (tokens.empty()) {
+        return EGLYF_ERROR_WHAT("Missing PROCESS_MARKS type");
+      }
+      auto marksWhat = tokens[0];
+      tokens.erase(tokens.begin()); // Remove marks what
+
       if (marksWhat == "MARK_GLYPH_SET") {
-        if (tokens.size() < 5) {
+        if (tokens.empty()) {
           return EGLYF_ERROR_WHAT("Missing glyph name for MARK_GLYPH_SET");
         }
-        auto glyphName = unquote(tokens[4]);
+        auto glyphName = unquote(tokens[0]);
         auto glyph = editor->getGlyphByName(string(glyphName));
         lookup->marks = Editor::Lookup::ProcessMarks(Editor::Lookup::ProcessMarks::MarkGlyphs{{glyph}});
+        tokens.erase(tokens.begin()); // Remove glyph name
       } else if (marksWhat == "ALL" || marksWhat == "\"ALL\"") {
         lookup->marks = Editor::Lookup::ProcessMarks(Editor::Lookup::ProcessMarks::All{});
       } else if (marksWhat[0] == '"') {
@@ -116,11 +135,11 @@ private:
     }
 
     // DIRECTION
-    if (tokens.size() < 6 || tokens[tokens.size() - 2] != "DIRECTION") {
+    if (tokens.size() != 2 || tokens[0] != "DIRECTION") {
       return EGLYF_ERROR_WHAT("Missing DIRECTION");
     }
 
-    auto direction = tokens[tokens.size() - 1];
+    auto direction = tokens[1];
     if (direction != "LTR") {
       return EGLYF_ERROR_WHAT("Unsupported direction: " + string(direction));
     }

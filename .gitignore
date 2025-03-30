@@ -1,8 +1,8 @@
 /xcode
+/build
 *.ttf
 *.xml
 *.ttx
 *.txt
 /deps/fonts-main
-/node_modules
 /.idea
