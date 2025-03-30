@@ -138,6 +138,7 @@ target_include_directories(resave PRIVATE src include)
 target_link_libraries(resave
   PRIVATE
     juce::juce_gui_extra
+    eglyf-binary-data
   PUBLIC
     juce::juce_recommended_config_flags
     juce::juce_recommended_lto_flags
