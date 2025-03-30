@@ -72,7 +72,7 @@ private:
     }
 
     // Parse tokens
-    tokens.erase(tokens.begin()); // Remove "DEF_LOOKUP"
+    tokens.pop_front(); // Remove "DEF_LOOKUP"
 
     // Get lookup name
     if (tokens.empty()) {
@@ -80,7 +80,7 @@ private:
     }
     auto name = unquote(tokens[0]);
     auto lookup = editor->getLookupByName(string(name));
-    tokens.erase(tokens.begin()); // Remove name
+    tokens.pop_front(); // Remove name
 
     // PROCESS_BASE or SKIP_BASE
     if (tokens.empty()) {
@@ -94,21 +94,21 @@ private:
     } else {
       return EGLYF_ERROR_WHAT("Invalid base type: " + string(baseType));
     }
-    tokens.erase(tokens.begin()); // Remove base type
+    tokens.pop_front(); // Remove base type
 
     // PROCESS_MARKS or SKIP_MARKS
     if (tokens.empty()) {
       return EGLYF_ERROR_WHAT("Missing marks type");
     }
     auto marksType = tokens[0];
-    tokens.erase(tokens.begin()); // Remove marks type
+    tokens.pop_front(); // Remove marks type
 
     if (marksType == "PROCESS_MARKS") {
       if (tokens.empty()) {
         return EGLYF_ERROR_WHAT("Missing PROCESS_MARKS type");
       }
       auto marksWhat = tokens[0];
-      tokens.erase(tokens.begin()); // Remove marks what
+      tokens.pop_front(); // Remove marks what
 
       if (marksWhat == "MARK_GLYPH_SET") {
         if (tokens.empty()) {
@@ -117,7 +117,7 @@ private:
         auto glyphName = unquote(tokens[0]);
         auto glyph = editor->getGlyphByName(string(glyphName));
         lookup->marks = Editor::Lookup::ProcessMarks(Editor::Lookup::ProcessMarks::MarkGlyphs{{glyph}});
-        tokens.erase(tokens.begin()); // Remove glyph name
+        tokens.pop_front(); // Remove glyph name
       } else if (marksWhat == "ALL" || marksWhat == "\"ALL\"") {
         lookup->marks = Editor::Lookup::ProcessMarks(Editor::Lookup::ProcessMarks::All{});
       } else if (marksWhat[0] == '"') {
@@ -299,7 +299,7 @@ private:
       return EGLYF_ERROR_WHAT("Expected SUB");
     }
 
-    tokens.erase(tokens.begin()); // Remove "SUB"
+    tokens.pop_front(); // Remove "SUB"
 
     // Parse input glyphs/groups
     for (size_t i = 0; i < tokens.size(); i += 2) {
@@ -327,7 +327,7 @@ private:
 
       if (l.find("WITH") == 0) {
         auto tokens = splitString(l);
-        tokens.erase(tokens.begin()); // Remove "WITH"
+        tokens.pop_front(); // Remove "WITH"
 
         for (size_t j = 0; j < tokens.size(); j += 2) {
           if (j + 1 >= tokens.size()) {
@@ -444,7 +444,7 @@ private:
       return EGLYF_ERROR_WHAT("Expected ADJUST_SINGLE");
     }
 
-    tokens.erase(tokens.begin()); // Remove "ADJUST_SINGLE"
+    tokens.pop_front(); // Remove "ADJUST_SINGLE"
 
     while (!tokens.empty()) {
       if (tokens.size() < 5) {
@@ -522,7 +522,7 @@ private:
     }
 
     // Parse tokens
-    tokens.erase(tokens.begin()); // Remove "DEF_GROUP"
+    tokens.pop_front(); // Remove "DEF_GROUP"
 
     auto name = unquote(tokens[0]);
 
@@ -663,7 +663,7 @@ private:
     }
 
     // Parse tokens
-    tokens.erase(tokens.begin()); // Remove "DEF_GLYPH"
+    tokens.pop_front(); // Remove "DEF_GLYPH"
 
     auto name = unquote(tokens[0]);
 
@@ -776,9 +776,9 @@ private:
     return s;
   }
 
-  std::vector<std::string_view> splitString(std::string_view s, char delimiter = ' ') {
+  std::deque<std::string_view> splitString(std::string_view s, char delimiter = ' ') {
     using namespace std;
-    vector<string_view> tokens;
+    deque<string_view> tokens;
 
     size_t start = 0;
     size_t end = 0;
