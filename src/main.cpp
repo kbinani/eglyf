@@ -22,7 +22,8 @@ static void Run(juce::ArgumentList const &args) {
     return;
   }
   auto editor = make_shared<Editor>(ff);
-  if (auto st = editor->run(); !st.ok()) {
+  VtpParser parser(editor);
+  if (auto st = parser.parseVtp(string(BinaryData::EgyptianText_200_vtp, BinaryData::EgyptianText_200_vtpSize)); !st.ok()) {
     Fail(st);
     return;
   }

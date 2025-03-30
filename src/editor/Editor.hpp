@@ -182,17 +182,6 @@ public:
     }
   }
 
-  Status run() {
-    using namespace std;
-    // clang-format off
-    #include "editor/DEF_GLYPH.hpp"
-    #include "editor/DEF_GROUP.hpp"
-    #include "editor/DEF_LOOKUP.hpp"
-    #include "editor/DEF_ANCHOR.hpp"
-    // clang-format on
-    return Status::Ok();
-  }
-
 private:
   Optional<uint16_t> defineGlyph(std::string const &name, std::optional<uint32_t> unicode, GlyphDefinitionTable::Class classDef) {
     using namespace std;

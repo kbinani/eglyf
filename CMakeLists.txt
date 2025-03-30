@@ -100,12 +100,20 @@ list(APPEND src_files
   src/editor/VtpParser.hpp
 )
 
+juce_add_binary_data(eglyf-binary-data
+  NAMESPACE eglyf::BinaryData
+  HEADER_NAME BinaryData.hpp
+  SOURCES
+    "res/EgyptianText_200.vtp"
+)
+
 juce_add_console_app(eglyf)
 target_sources(eglyf PRIVATE ${src_files} src/main.cpp)
 target_include_directories(eglyf PRIVATE src include)
 target_link_libraries(eglyf
   PRIVATE
     juce::juce_gui_extra
+    eglyf-binary-data
   PUBLIC
     juce::juce_recommended_config_flags
     juce::juce_recommended_lto_flags
