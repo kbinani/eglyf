@@ -206,6 +206,10 @@ public:
     return f;
   }
 
+  Status compile() {
+    return EGLYF_ERROR;
+  }
+
 public:
   std::shared_ptr<FontFile> font;
   std::unordered_map<std::string, std::shared_ptr<Glyph>> glyphs;
