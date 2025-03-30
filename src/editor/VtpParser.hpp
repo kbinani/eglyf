@@ -55,6 +55,8 @@ public:
         }
       } else if (l.empty()) {
         i++;
+      } else if (l.starts_with("GRID_PPEM") || l.starts_with("PRESENTATION_PPEM") || l.starts_with("PPOSITIONING_PPEM") || l.starts_with("COMPILER_USEEXTENSIONLOOKUPS") || l.starts_with("DO_NOT_TOUCH_CMAP") || l.starts_with("CMAP_FORMAT")) {
+        i++;
       } else {
         return EGLYF_ERROR_WHAT("Unimplemented vtp element");
       }
