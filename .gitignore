@@ -6,3 +6,4 @@
 *.txt
 /deps/fonts-main
 /.idea
+/.vscode/c_cpp_properties.json
