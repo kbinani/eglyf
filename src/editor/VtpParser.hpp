@@ -37,6 +37,11 @@ public:
           return EGLYF_STATUS_PUSH(status);
         }
         i++;
+      } else if (l.starts_with("DEF_GROUP")) {
+        auto status = parseGroup(lines, i);
+        if (!status.ok()) {
+          return EGLYF_STATUS_PUSH(status);
+        }
       } else {
         return EGLYF_ERROR_WHAT("Unimplemented vtp element");
       }
@@ -474,6 +479,79 @@ private:
     }
 
     index = index + 2;
+    return Status::Ok();
+  }
+
+  Status parseGroup(std::vector<std::string_view> const &lines, size_t &index) {
+    using namespace std;
+
+    // Line 1: DEF_GROUP "name"
+    auto first = lines[index];
+    if (!first.starts_with("DEF_GROUP")) {
+      return EGLYF_ERROR_WHAT("Expected DEF_GROUP");
+    }
+
+    auto tokens = splitString(trim(first));
+    if (tokens.size() < 2) {
+      return EGLYF_ERROR_WHAT("Invalid DEF_GROUP format");
+    }
+
+    // Parse tokens
+    tokens.erase(tokens.begin()); // Remove "DEF_GROUP"
+
+    auto name = unquote(tokens[0]);
+
+    // Define the group
+    auto groupBuilder = editor->defineGroup(string(name));
+
+    // Line 2: ENUM GROUP "group1" GLYPH "glyph1" ... END_ENUM
+    if (index + 1 >= lines.size()) {
+      return EGLYF_ERROR_WHAT("Missing ENUM line in DEF_GROUP");
+    }
+
+    auto enumLine = trim(lines[index + 1]);
+    auto enumTokens = splitString(enumLine);
+
+    if (enumTokens.empty() || enumTokens[0] != "ENUM") {
+      return EGLYF_ERROR_WHAT("Expected ENUM in DEF_GROUP");
+    }
+
+    // Begin ENUM processing
+    groupBuilder->beginEnum();
+
+    // Process ENUM content
+    for (size_t j = 1; j < enumTokens.size(); j++) {
+      if (enumTokens[j] == "END_ENUM") {
+        // End ENUM processing
+        groupBuilder->endEnum();
+        break;
+      } else if (j + 1 < enumTokens.size()) {
+        if (enumTokens[j] == "GROUP" || enumTokens[j] == "GLYPH") {
+          auto type = enumTokens[j];
+          auto itemName = unquote(enumTokens[j + 1]);
+          j++; // Skip name
+
+          if (type == "GROUP") {
+            groupBuilder->addGroup(string(itemName));
+          } else if (type == "GLYPH") {
+            groupBuilder->addGlyph(string(itemName));
+          }
+        }
+      }
+    }
+
+    // Line 3: END_GROUP
+    if (index + 2 >= lines.size()) {
+      return EGLYF_ERROR_WHAT("Missing END_GROUP");
+    }
+
+    auto endLine = trim(lines[index + 2]);
+    if (endLine != "END_GROUP") {
+      return EGLYF_ERROR_WHAT("Expected END_GROUP");
+    }
+
+    // Processing complete
+    index = index + 3;
     return Status::Ok();
   }
 
