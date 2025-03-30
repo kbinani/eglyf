@@ -1,0 +1,551 @@
+#pragma once
+
+namespace eglyf {
+
+class VtpParser {
+public:
+  explicit VtpParser(std::shared_ptr<Editor> const &editor) : editor(editor) {
+  }
+
+  // Parse VTP data from string
+  Status parseVtp(std::string const &vtpContent) {
+    using namespace std;
+    // Split into lines
+    vector<string> lines;
+    stringstream stream(vtpContent);
+    string line;
+    while (getline(stream, line)) {
+      lines.push_back(line);
+    }
+
+    // Parse lines
+    for (size_t i = 0; i < lines.size();) {
+      string const &l = lines[i];
+      if (l.find("DEF_LOOKUP") == 0) {
+        auto status = parseLookup(lines, i);
+        if (!status.ok()) {
+          return EGLYF_STATUS_PUSH(status);
+        }
+      } else {
+        i++;
+      }
+    }
+
+    return Status::Ok();
+  }
+
+private:
+  // Parse functions for each section
+  Status parseLookup(std::vector<std::string> const &lines, size_t &index) {
+    using namespace std;
+
+    string const &first = lines[index];
+    if (first.find("DEF_LOOKUP") != 0) {
+      return EGLYF_ERROR_WHAT("Expected DEF_LOOKUP");
+    }
+
+    auto tokens = splitString(trim(first));
+    if (tokens.size() < 4) {
+      return EGLYF_ERROR_WHAT("Invalid DEF_LOOKUP format");
+    }
+
+    // Parse tokens
+    tokens.erase(tokens.begin()); // Remove "DEF_LOOKUP"
+
+    string name = tokens[0];
+    name = unquote(name);
+
+    auto lookup = editor->getLookupByName(name);
+
+    // PROCESS_BASE or SKIP_BASE
+    string baseType = tokens[1];
+    if (baseType == "PROCESS_BASE") {
+      lookup->base = Editor::Lookup::ProcessBase{};
+    } else if (baseType == "SKIP_BASE") {
+      lookup->base = Editor::Lookup::SkipBase{};
+    } else {
+      return EGLYF_ERROR_WHAT("Invalid base type: " + baseType);
+    }
+
+    // PROCESS_MARKS or SKIP_MARKS
+    string marksType = tokens[2];
+    if (marksType == "PROCESS_MARKS") {
+      string marksWhat = tokens[3];
+      if (marksWhat == "MARK_GLYPH_SET") {
+        if (tokens.size() < 5) {
+          return EGLYF_ERROR_WHAT("Missing glyph name for MARK_GLYPH_SET");
+        }
+        string glyphName = unquote(tokens[4]);
+        auto glyph = editor->getGlyphByName(glyphName);
+        lookup->marks = Editor::Lookup::ProcessMarks(Editor::Lookup::ProcessMarks::MarkGlyphs{{glyph}});
+      } else if (marksWhat == "ALL" || marksWhat == "\"ALL\"") {
+        lookup->marks = Editor::Lookup::ProcessMarks(Editor::Lookup::ProcessMarks::All{});
+      } else if (marksWhat[0] == '"') {
+        // Group name
+        string groupName = unquote(marksWhat);
+        auto group = editor->getGroupByName(groupName);
+        lookup->marks = Editor::Lookup::ProcessMarks(Editor::Lookup::ProcessMarks::MarkGroup{group});
+      } else {
+        return EGLYF_ERROR_WHAT("Invalid PROCESS_MARKS type: " + marksWhat);
+      }
+    } else if (marksType == "SKIP_MARKS") {
+      lookup->marks = Editor::Lookup::SkipMarks{};
+    } else {
+      return EGLYF_ERROR_WHAT("Invalid marks type: " + marksType);
+    }
+
+    // DIRECTION
+    if (tokens.size() < 6 || tokens[tokens.size() - 2] != "DIRECTION") {
+      return EGLYF_ERROR_WHAT("Missing DIRECTION");
+    }
+
+    string direction = tokens[tokens.size() - 1];
+    if (direction != "LTR") {
+      return EGLYF_ERROR_WHAT("Unsupported direction: " + direction);
+    }
+
+    // Parse from next line
+    for (size_t i = index + 1; i < lines.size();) {
+      string const &l = trim(lines[i]);
+
+      if (l == "EXCEPT_CONTEXT") {
+        auto context = make_shared<Editor::Lookup::Context>(
+            initializer_list<variant<shared_ptr<Editor::Glyph>, shared_ptr<Editor::Group>>>{},
+            initializer_list<variant<shared_ptr<Editor::Glyph>, shared_ptr<Editor::Group>>>{});
+        auto status = parseContext(lines, i, *context);
+        if (!status.ok()) {
+          return EGLYF_STATUS_PUSH(status);
+        }
+        lookup->exceptContext = context;
+      } else if (l == "IN_CONTEXT") {
+        auto context = make_shared<Editor::Lookup::Context>(
+            initializer_list<variant<shared_ptr<Editor::Glyph>, shared_ptr<Editor::Group>>>{},
+            initializer_list<variant<shared_ptr<Editor::Glyph>, shared_ptr<Editor::Group>>>{});
+        auto status = parseContext(lines, i, *context);
+        if (!status.ok()) {
+          return EGLYF_STATUS_PUSH(status);
+        }
+        lookup->inContext = context;
+      } else if (l == "AS_SUBSTITUTION") {
+        lookup->substitutions.clear();
+        auto status = parseSubstitution(lines, i, *lookup);
+        if (!status.ok()) {
+          return EGLYF_STATUS_PUSH(status);
+        }
+        index = i;
+        return Status::Ok();
+      } else if (l == "AS_POSITION") {
+        auto status = parsePosition(lines, i, *lookup);
+        if (!status.ok()) {
+          return EGLYF_STATUS_PUSH(status);
+        }
+        index = i;
+        return Status::Ok();
+      } else if (l == "END_SUBSTITUTION" || l == "END_POSITION") {
+        index = i + 1;
+        return Status::Ok();
+      } else {
+        i++;
+      }
+    }
+
+    index = lines.size();
+    return Status::Ok();
+  }
+
+  Status parseContext(std::vector<std::string> const &lines, size_t &index, Editor::Lookup::Context &context) {
+    using namespace std;
+
+    string const &first = trim(lines[index]);
+    if (first != "EXCEPT_CONTEXT" && first != "IN_CONTEXT") {
+      return EGLYF_ERROR_WHAT("Expected EXCEPT_CONTEXT or IN_CONTEXT");
+    }
+
+    for (size_t i = index + 1; i < lines.size();) {
+      string const &l = lines[i];
+      if (l == "END_CONTEXT") {
+        index = i + 1;
+        return Status::Ok();
+      } else {
+        auto tokens = splitString(trim(l));
+
+        for (size_t j = 0; j < tokens.size();) {
+          string const &op = tokens[j++];
+
+          if (op == "LEFT") {
+            if (j + 1 >= tokens.size()) {
+              return EGLYF_ERROR_WHAT("Invalid LEFT format");
+            }
+
+            string const &type = tokens[j++];
+            string const &name = tokens[j++];
+
+            if (type == "GLYPH") {
+              auto glyph = editor->getGlyphByName(unquote(name));
+              context.left.push_back(glyph);
+            } else if (type == "GROUP") {
+              auto group = editor->getGroupByName(unquote(name));
+              context.left.push_back(group);
+            } else {
+              return EGLYF_ERROR_WHAT("Invalid LEFT type: " + type);
+            }
+          } else if (op == "RIGHT") {
+            if (j + 1 >= tokens.size()) {
+              return EGLYF_ERROR_WHAT("Invalid RIGHT format");
+            }
+
+            string const &type = tokens[j++];
+            string const &name = tokens[j++];
+
+            if (type == "GLYPH") {
+              auto glyph = editor->getGlyphByName(unquote(name));
+              context.right.push_back(glyph);
+            } else if (type == "GROUP") {
+              auto group = editor->getGroupByName(unquote(name));
+              context.right.push_back(group);
+            } else {
+              return EGLYF_ERROR_WHAT("Invalid RIGHT type: " + type);
+            }
+          } else {
+            return EGLYF_ERROR_WHAT("Invalid context operation: " + op);
+          }
+        }
+
+        i++;
+      }
+    }
+
+    index = lines.size();
+    return Status::Ok();
+  }
+
+  Status parseSubstitution(std::vector<std::string> const &lines, size_t &index, Editor::Lookup &lookup) {
+    using namespace std;
+
+    string const &first = trim(lines[index]);
+    if (first != "AS_SUBSTITUTION") {
+      return EGLYF_ERROR_WHAT("Expected AS_SUBSTITUTION");
+    }
+
+    for (size_t i = index + 1; i < lines.size();) {
+      string const &l = trim(lines[i]);
+
+      if (l == "END_SUBSTITUTION") {
+        index = i + 1;
+        return Status::Ok();
+      } else if (l.find("SUB ") == 0) {
+        auto subst = make_shared<Editor::Lookup::Substitution>();
+        auto status = parseSub(lines, i, *subst);
+        if (!status.ok()) {
+          return EGLYF_STATUS_PUSH(status);
+        }
+        lookup.substitutions.push_back(subst);
+      } else {
+        return EGLYF_ERROR_WHAT("Invalid substitution line: " + l);
+      }
+    }
+
+    index = lines.size();
+    return Status::Ok();
+  }
+
+  Status parseSub(std::vector<std::string> const &lines, size_t &index, Editor::Lookup::Substitution &subst) {
+    using namespace std;
+
+    string const &first = trim(lines[index]);
+    auto tokens = splitString(first);
+
+    if (tokens.empty() || tokens[0] != "SUB") {
+      return EGLYF_ERROR_WHAT("Expected SUB");
+    }
+
+    tokens.erase(tokens.begin()); // Remove "SUB"
+
+    // Parse input glyphs/groups
+    for (size_t i = 0; i < tokens.size(); i += 2) {
+      if (i + 1 >= tokens.size()) {
+        return EGLYF_ERROR_WHAT("Invalid SUB format");
+      }
+
+      string const &type = tokens[i];
+      string const &name = tokens[i + 1];
+
+      if (type == "GLYPH") {
+        auto glyph = editor->getGlyphByName(unquote(name));
+        subst.input.push_back(glyph);
+      } else if (type == "GROUP") {
+        auto group = editor->getGroupByName(unquote(name));
+        subst.input.push_back(group);
+      } else {
+        return EGLYF_ERROR_WHAT("Invalid SUB type: " + type);
+      }
+    }
+
+    // Parse WITH line
+    for (size_t i = index + 1; i < lines.size();) {
+      string const &l = trim(lines[i]);
+
+      if (l.find("WITH") == 0) {
+        auto tokens = splitString(l);
+        tokens.erase(tokens.begin()); // Remove "WITH"
+
+        for (size_t j = 0; j < tokens.size(); j += 2) {
+          if (j + 1 >= tokens.size()) {
+            return EGLYF_ERROR_WHAT("Invalid WITH format");
+          }
+
+          string const &type = tokens[j];
+          string const &name = tokens[j + 1];
+
+          if (type == "GLYPH") {
+            auto glyph = editor->getGlyphByName(unquote(name));
+            subst.output.push_back(glyph);
+          } else if (type == "GROUP") {
+            auto group = editor->getGroupByName(unquote(name));
+            subst.output.push_back(group);
+          } else {
+            return EGLYF_ERROR_WHAT("Invalid WITH type: " + type);
+          }
+        }
+
+        i++;
+      } else if (l == "END_SUB") {
+        index = i + 1;
+        return Status::Ok();
+      } else {
+        return EGLYF_ERROR_WHAT("Invalid SUB line: " + l);
+      }
+    }
+
+    index = lines.size();
+    return EGLYF_ERROR_WHAT("Missing END_SUB");
+  }
+
+  Status parseAttach(std::vector<std::string> const &lines, size_t &index, Editor::Lookup::Attach &attach) {
+    using namespace std;
+
+    string const &first = trim(lines[index]);
+    auto tokens = splitString(first);
+
+    if (tokens.empty() || tokens[0] != "ATTACH") {
+      return EGLYF_ERROR_WHAT("Expected ATTACH");
+    }
+
+    if (tokens.size() < 3) {
+      return EGLYF_ERROR_WHAT("Invalid ATTACH format");
+    }
+
+    string const &type = tokens[1];
+    string const &name = tokens[2];
+
+    if (type == "GLYPH") {
+      auto glyph = editor->getGlyphByName(unquote(name));
+      attach.input.push_back(glyph);
+    } else if (type == "GROUP") {
+      auto group = editor->getGroupByName(unquote(name));
+      attach.input.push_back(group);
+    } else {
+      return EGLYF_ERROR_WHAT("Invalid ATTACH type: " + type);
+    }
+
+    for (size_t i = index + 1; i < lines.size();) {
+      string const &l = trim(lines[i]);
+
+      if (l == "END_ATTACH") {
+        index = i + 1;
+        return Status::Ok();
+      } else if (l.find("TO GROUP") == 0 || l.find("TO GLYPH") == 0 || l.find("GROUP") == 0 || l.find("GLYPH") == 0) {
+        auto tokens = splitString(l);
+
+        size_t j = 0;
+        if (tokens[0] == "TO") {
+          j = 1;
+        }
+
+        string const &type = tokens[j++];
+        string const &name = tokens[j++];
+
+        if (j + 3 >= tokens.size() || tokens[j] != "AT" || tokens[j + 1] != "ANCHOR") {
+          return EGLYF_ERROR_WHAT("Invalid ATTACH target format");
+        }
+
+        string const &anchorName = tokens[j + 2];
+
+        variant<shared_ptr<Editor::Glyph>, shared_ptr<Editor::Group>> target;
+
+        if (type == "GLYPH") {
+          target = editor->getGlyphByName(unquote(name));
+        } else if (type == "GROUP") {
+          target = editor->getGroupByName(unquote(name));
+        } else {
+          return EGLYF_ERROR_WHAT("Invalid ATTACH target type: " + type);
+        }
+
+        auto anchor = editor->getAnchorByName(unquote(anchorName));
+        attach.output.push_back(Editor::Lookup::AttachTarget(target, anchor));
+
+        i++;
+      } else {
+        return EGLYF_ERROR_WHAT("Invalid ATTACH line: " + l);
+      }
+    }
+
+    index = lines.size();
+    return EGLYF_ERROR_WHAT("Missing END_ATTACH");
+  }
+
+  Status parseAdjustSingle(std::vector<std::string> const &lines, size_t &index, Editor::Lookup::AdjustSingle &adjustSingle) {
+    using namespace std;
+
+    string const &first = trim(lines[index]);
+    auto tokens = splitString(first);
+
+    if (tokens.empty() || tokens[0] != "ADJUST_SINGLE") {
+      return EGLYF_ERROR_WHAT("Expected ADJUST_SINGLE");
+    }
+
+    tokens.erase(tokens.begin()); // Remove "ADJUST_SINGLE"
+
+    while (!tokens.empty()) {
+      if (tokens.size() < 5) {
+        return EGLYF_ERROR_WHAT("Invalid ADJUST_SINGLE format");
+      }
+
+      string const &what = tokens[0];
+      string const &name = tokens[1];
+
+      if (tokens[2] != "BY" || tokens[3] != "POS") {
+        return EGLYF_ERROR_WHAT("Invalid ADJUST_SINGLE format, expected BY POS");
+      }
+
+      optional<int16_t> dx;
+      optional<int16_t> dy;
+
+      size_t i = 4;
+      while (i < tokens.size()) {
+        string const &type = tokens[i++];
+
+        if (type == "END_POS") {
+          break;
+        }
+
+        if (i >= tokens.size()) {
+          return EGLYF_ERROR_WHAT("Invalid ADJUST_SINGLE format, missing value");
+        }
+
+        string const &value = tokens[i++];
+
+        if (type == "DX") {
+          dx = static_cast<int16_t>(stoi(value));
+        } else if (type == "DY") {
+          dy = static_cast<int16_t>(stoi(value));
+        } else {
+          return EGLYF_ERROR_WHAT("Invalid ADJUST_SINGLE type: " + type);
+        }
+      }
+
+      if (what == "GLYPH") {
+        adjustSingle.glyphs.push_back(Editor::Lookup::AdjustGlyph(unquote(name), dx, dy));
+      } else {
+        return EGLYF_ERROR_WHAT("Invalid ADJUST_SINGLE what: " + what);
+      }
+
+      // Process remaining tokens
+      if (i < tokens.size()) {
+        tokens.erase(tokens.begin(), tokens.begin() + i);
+      } else {
+        tokens.clear();
+      }
+    }
+
+    string const &end = trim(lines[index + 1]);
+    if (end != "END_ADJUST") {
+      return EGLYF_ERROR_WHAT("Expected END_ADJUST");
+    }
+
+    index = index + 2;
+    return Status::Ok();
+  }
+
+  Status parsePosition(std::vector<std::string> const &lines, size_t &index, Editor::Lookup &lookup) {
+    using namespace std;
+
+    string const &first = trim(lines[index]);
+    if (first != "AS_POSITION") {
+      return EGLYF_ERROR_WHAT("Expected AS_POSITION");
+    }
+
+    for (size_t i = index + 1; i < lines.size();) {
+      string const &l = trim(lines[i]);
+
+      if (l == "END_POSITION") {
+        index = i + 1;
+        return Status::Ok();
+      } else if (l.find("ATTACH") == 0) {
+        auto attach = make_shared<Editor::Lookup::Attach>(
+            initializer_list<variant<shared_ptr<Editor::Glyph>, shared_ptr<Editor::Group>>>{},
+            initializer_list<Editor::Lookup::AttachTarget>{});
+        auto status = parseAttach(lines, i, *attach);
+        if (!status.ok()) {
+          return EGLYF_STATUS_PUSH(status);
+        }
+        lookup.attach = attach;
+      } else if (l.find("ADJUST_SINGLE") == 0) {
+        auto adjustSingle = make_shared<Editor::Lookup::AdjustSingle>(initializer_list<Editor::Lookup::AdjustGlyph>{});
+        auto status = parseAdjustSingle(lines, i, *adjustSingle);
+        if (!status.ok()) {
+          return EGLYF_STATUS_PUSH(status);
+        }
+        lookup.adjustSingle = adjustSingle;
+      } else {
+        return EGLYF_ERROR_WHAT("Invalid position line: " + l);
+      }
+    }
+
+    index = lines.size();
+    return Status::Ok();
+  }
+
+  // Utility functions
+  std::string trim(std::string const &s) {
+    using namespace std;
+    auto start = s.begin();
+    while (start != s.end() && std::isspace(*start)) {
+      start++;
+    }
+
+    auto end = s.end();
+    while (end != start && std::isspace(*(end - 1))) {
+      end--;
+    }
+
+    return string(start, end);
+  }
+
+  std::string unquote(std::string const &s) {
+    if (s.size() >= 2 && s.front() == '"' && s.back() == '"') {
+      return s.substr(1, s.size() - 2);
+    }
+    return s;
+  }
+
+  std::vector<std::string> splitString(std::string const &s, char delimiter = ' ') {
+    using namespace std;
+    vector<string> tokens;
+    istringstream stream(s);
+    string token;
+
+    while (getline(stream, token, delimiter)) {
+      if (!token.empty()) {
+        tokens.push_back(token);
+      }
+    }
+
+    return tokens;
+  }
+
+private:
+  std::shared_ptr<Editor> editor;
+};
+
+} // namespace eglyf

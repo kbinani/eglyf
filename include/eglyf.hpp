@@ -81,3 +81,4 @@
 #include "table/CharacterToGlyphIndexMappingTable.hpp"
 #include "FontFile.hpp"
 #include "editor/Editor.hpp"
+#include "editor/VtpParser.hpp"

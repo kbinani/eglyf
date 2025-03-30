@@ -71,7 +71,7 @@ public:
       };
 
       ProcessMarks() {}
-      ProcessMarks(std::variant<ProcessMarks::All, ProcessMarks::MarkGlyphs, ProcessMarks::MarkGroup> what) : what(what) {}
+      explicit ProcessMarks(std::variant<ProcessMarks::All, ProcessMarks::MarkGlyphs, ProcessMarks::MarkGroup> what) : what(what) {}
 
       std::variant<ProcessMarks::All, ProcessMarks::MarkGlyphs, ProcessMarks::MarkGroup> what;
     };
@@ -116,8 +116,6 @@ public:
     std::shared_ptr<AdjustSingle> adjustSingle;
 
     struct Substitution {
-      Substitution(std::initializer_list<std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>>> input, std::initializer_list<std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>>> output) : input(input), output(output) {}
-
       std::vector<std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>>> input;
       std::vector<std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>>> output;
     };
@@ -131,7 +129,8 @@ public:
            std::shared_ptr<Context> inContext,
            std::shared_ptr<Attach> attach,
            std::shared_ptr<AdjustSingle> adjustSingle,
-           std::initializer_list<std::shared_ptr<Substitution>> substitutions) : base(base), marks(marks), exceptContext(exceptContext), inContext(inContext), attach(attach), adjustSingle(adjustSingle), substitutions(substitutions) {
+           std::vector<std::shared_ptr<Substitution>> &substitutions) : base(base), marks(marks), exceptContext(exceptContext), inContext(inContext), attach(attach), adjustSingle(adjustSingle) {
+      this->substitutions.swap(substitutions);
     }
   };
 
