@@ -48,6 +48,8 @@ public:
           return EGLYF_STATUS_PUSH(status);
         }
         i++;
+      } else if (l.empty()) {
+        i++;
       } else {
         return EGLYF_ERROR_WHAT("Unimplemented vtp element");
       }
