@@ -229,6 +229,55 @@ public:
     return Status::Ok();
   }
 
+private:
+  // Convert Editor::Lookup base and marks to OpenType lookupFlag
+  uint16_t convertLookupFlag(std::variant<Lookup::SkipBase, Lookup::ProcessBase> const &base,
+                             std::variant<Lookup::SkipMarks, Lookup::ProcessMarks> const &marks) const {
+    uint16_t flag = 0;
+
+    // Process base flag
+    if (std::holds_alternative<Lookup::SkipBase>(base)) {
+      flag |= 0x0002; // Ignore base glyphs
+    }
+
+    // Process marks flag
+    if (std::holds_alternative<Lookup::SkipMarks>(marks)) {
+      flag |= 0x0008; // Ignore marks
+    } else if (std::holds_alternative<Lookup::ProcessMarks>(marks)) {
+      auto const &processMarks = std::get<Lookup::ProcessMarks>(marks);
+
+      // Set Use mark filtering set flag for ProcessMarks::MarkGlyphs or ProcessMarks::MarkGroup
+      if (std::holds_alternative<Lookup::ProcessMarks::MarkGlyphs>(processMarks.what) ||
+          std::holds_alternative<Lookup::ProcessMarks::MarkGroup>(processMarks.what)) {
+        flag |= 0x0010; // Use mark filtering set
+      }
+    }
+
+    return flag;
+  }
+
+  // Determine markFilteringSet index from Editor::Lookup marks
+  uint16_t determineMarkFilteringSet(std::variant<Lookup::SkipMarks, Lookup::ProcessMarks> const &marks,
+                                     std::shared_ptr<GlyphDefinitionTable> const &gdef) const {
+    if (!gdef || !std::holds_alternative<Lookup::ProcessMarks>(marks)) {
+      return 0;
+    }
+
+    auto const &processMarks = std::get<Lookup::ProcessMarks>(marks);
+
+    if (std::holds_alternative<Lookup::ProcessMarks::MarkGlyphs>(processMarks.what)) {
+      auto const &markGlyphs = std::get<Lookup::ProcessMarks::MarkGlyphs>(processMarks.what);
+      // TODO: Add MarkGlyphs to GlyphDefinitionTable's MarkGlyphSetsDef table and return its index
+      return 0; // Placeholder
+    } else if (std::holds_alternative<Lookup::ProcessMarks::MarkGroup>(processMarks.what)) {
+      auto const &markGroup = std::get<Lookup::ProcessMarks::MarkGroup>(processMarks.what);
+      // TODO: Add MarkGroup to GlyphDefinitionTable's MarkGlyphSetsDef table and return its index
+      return 0; // Placeholder
+    }
+
+    return 0;
+  }
+
 public:
   std::shared_ptr<FontFile> font;
   std::unordered_map<std::string, std::shared_ptr<Glyph>> glyphs;
