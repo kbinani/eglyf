@@ -206,6 +206,32 @@ public:
     return f;
   }
 
+  std::shared_ptr<SubtableCollection<Subtable>::Lookup> convertLookup(std::shared_ptr<Lookup> const &lookup) const {
+    using namespace std;
+
+    // For Lookups with adjustSingle
+    if (lookup->adjustSingle) {
+      auto subtable = createAdjustSingleSubtable(lookup->adjustSingle);
+      if (subtable) {
+        auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
+        lookupData->lookupType = 1; // SingleAdjustment
+        lookupData->lookupFlag = convertLookupFlag(lookup->base, lookup->marks);
+        lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
+        lookupData->subtables.push_back(subtable);
+
+        auto gposLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
+        gposLookup->data = lookupData;
+        return gposLookup;
+      }
+    }
+
+    // For other types of Lookups (to be implemented in the future)
+    // ...
+
+    // Return nullptr if conversion is not possible
+    return nullptr;
+  }
+
   Status compile() {
     using namespace std;
 
@@ -220,50 +246,75 @@ public:
     gsub->majorVersion = 1;
     gsub->minorVersion = 0;
 
-    // Convert Editor::Lookup to GlyphPositioningTable and GlyphSubstitutionTable
+    // Convert each Lookup and store in a map
+    map<shared_ptr<Lookup>, shared_ptr<SubtableCollection<Subtable>::Lookup>> convertedLookups;
     for (auto const &[name, lookup] : lookups) {
-      if (lookup->adjustSingle) {
-        // Convert AdjustSingle to GlyphPositioningTable
-        auto subtable = createAdjustSingleSubtable(lookup->adjustSingle);
-        if (subtable) {
-          auto lookupData = std::make_shared<SubtableCollection<Subtable>::LookupData>();
-          lookupData->lookupType = 1; // SingleAdjustment
-          lookupData->lookupFlag = convertLookupFlag(lookup->base, lookup->marks);
-          lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
-          lookupData->subtables.push_back(subtable);
-
-          auto gposLookup = std::make_shared<SubtableCollection<Subtable>::Lookup>();
-          gposLookup->data = lookupData;
-          gpos->lookups.push_back(gposLookup);
-        }
-      }
+      auto converted = convertLookup(lookup);
+      convertedLookups[lookup] = converted; // Will be nullptr if conversion is not possible
     }
 
-    // Create default script, langsys, and feature structure if there are lookups
-    if (!gpos->lookups.empty()) {
-      // Create default feature
-      auto feature = make_shared<SubtableCollection<Subtable>::Feature>();
-      feature->tag = FCC("kern"); // "kern" for kerning
-      auto featureData = make_shared<SubtableCollection<Subtable>::FeatureData>();
+    // Map for GPOS table features (to avoid duplicates)
+    map<Tag, shared_ptr<SubtableCollection<Subtable>::Feature>> featureMap;
 
-      // Add lookups to feature
-      for (auto const &lookup : gpos->lookups) {
-        featureData->lookups.push_back(lookup);
+    // Build GPOS table from scripts
+    for (auto const &[scriptName, script] : scripts) {
+      SubtableCollection<Subtable>::Script gposScript;
+      gposScript.tag = script->tag;
+
+      // Process each LangSys
+      for (auto const &langSys : script->langSysList) {
+        auto gposLangSys = make_shared<SubtableCollection<Subtable>::LangSys>();
+
+        // Process each Feature
+        for (auto const &feature : langSys->features) {
+          // Check if Feature already exists
+          shared_ptr<SubtableCollection<Subtable>::Feature> gposFeature;
+          if (auto it = featureMap.find(feature->tag); it != featureMap.end()) {
+            gposFeature = it->second;
+          } else {
+            gposFeature = make_shared<SubtableCollection<Subtable>::Feature>();
+            gposFeature->tag = feature->tag;
+            auto featureData = make_shared<SubtableCollection<Subtable>::FeatureData>();
+            gposFeature->data = featureData;
+            featureMap[feature->tag] = gposFeature;
+            gpos->features.push_back(gposFeature);
+          }
+
+          // Process each Lookup
+          bool hasConvertibleLookup = false;
+          for (auto const &lookup : feature->lookups) {
+            auto converted = convertedLookups[lookup];
+            if (converted) {
+              gposFeature->data->lookups.push_back(converted);
+              hasConvertibleLookup = true;
+
+              // Add to GPOS lookups list if not already added
+              if (find(gpos->lookups.begin(), gpos->lookups.end(), converted) == gpos->lookups.end()) {
+                gpos->lookups.push_back(converted);
+              }
+            }
+          }
+
+          // Add only Features with convertible Lookups to LangSys
+          if (hasConvertibleLookup) {
+            gposLangSys->features.push_back(gposFeature);
+          }
+        }
+
+        // Add LangSys only if it has features
+        if (!gposLangSys->features.empty()) {
+          if (langSys->name == "dflt") {
+            gposScript.defaultLangSys = gposLangSys;
+          } else {
+            gposScript.langSysTable.push_back(make_pair(langSys->tag, gposLangSys));
+          }
+        }
       }
-      feature->data = featureData;
-      gpos->features.push_back(feature);
 
-      // Create default langsys
-      auto langsys = make_shared<SubtableCollection<Subtable>::LangSys>();
-      langsys->features.push_back(feature);
-
-      // Create default script
-      SubtableCollection<Subtable>::Script script;
-      script.tag = FCC("DFLT"); // Default script
-      script.defaultLangSys = langsys;
-
-      // Add script to GPOS table
-      gpos->scripts.push_back(script);
+      // Add Script only if it has defaultLangSys or langSysTable
+      if (gposScript.defaultLangSys || !gposScript.langSysTable.empty()) {
+        gpos->scripts.push_back(gposScript);
+      }
     }
 
     // Add tables to FontFile
