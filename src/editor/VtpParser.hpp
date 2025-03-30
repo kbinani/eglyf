@@ -48,6 +48,11 @@ public:
           return EGLYF_STATUS_PUSH(status);
         }
         i++;
+      } else if (l.starts_with("DEF_SCRIPT")) {
+        auto status = parseScript(lines, i);
+        if (!status.ok()) {
+          return EGLYF_STATUS_PUSH(status);
+        }
       } else if (l.empty()) {
         i++;
       } else {
@@ -796,6 +801,179 @@ private:
     }
 
     return tokens;
+  }
+
+  Status parseScript(std::vector<std::string_view> const &lines, size_t &index) {
+    using namespace std;
+
+    auto first = lines[index];
+    if (!first.starts_with("DEF_SCRIPT")) {
+      return EGLYF_ERROR_WHAT("Expected DEF_SCRIPT");
+    }
+
+    auto tokens = splitString(trim(first));
+    if (tokens.size() < 4) {
+      return EGLYF_ERROR_WHAT("Invalid DEF_SCRIPT format");
+    }
+
+    // Parse tokens
+    if (tokens[1] != "NAME") {
+      return EGLYF_ERROR_WHAT("Expected NAME in DEF_SCRIPT");
+    }
+
+    auto name = unquote(tokens[2]);
+
+    if (tokens[3] != "TAG") {
+      return EGLYF_ERROR_WHAT("Expected TAG in DEF_SCRIPT");
+    }
+
+    auto tagString = unquote(tokens[4]);
+    if (tagString.size() != 4) {
+      return EGLYF_ERROR_WHAT("Invalid string length for tag");
+    }
+    Tag tag;
+    ranges::copy(tagString, tag.begin());
+
+    // Define the script
+    auto script = editor->defineScript(string(name), tag);
+
+    // Parse subsequent lines until END_SCRIPT
+    for (size_t i = index + 1; i < lines.size();) {
+      auto l = trim(lines[i]);
+
+      if (l.starts_with("DEF_LANGSYS")) {
+        auto status = parseLangsys(lines, i, script);
+        if (!status.ok()) {
+          return EGLYF_STATUS_PUSH(status);
+        }
+      } else if (l == "END_SCRIPT") {
+        index = i + 1;
+        return Status::Ok();
+      } else {
+        return EGLYF_ERROR_WHAT("Unexpected line in DEF_SCRIPT: " + string(l));
+      }
+    }
+
+    return EGLYF_ERROR_WHAT("Missing END_SCRIPT");
+  }
+
+  Status parseLangsys(std::vector<std::string_view> const &lines, size_t &index, std::shared_ptr<Editor::Script> script) {
+    using namespace std;
+
+    auto first = lines[index];
+    if (!first.starts_with("DEF_LANGSYS")) {
+      return EGLYF_ERROR_WHAT("Expected DEF_LANGSYS");
+    }
+
+    auto tokens = splitString(trim(first));
+    if (tokens.size() < 4) {
+      return EGLYF_ERROR_WHAT("Invalid DEF_LANGSYS format");
+    }
+
+    // Parse tokens
+    // DEF_LANGSYS NAME "Default" TAG "dflt"
+    if (tokens[1] != "NAME") {
+      return EGLYF_ERROR_WHAT("Expected NAME in DEF_LANGSYS");
+    }
+
+    auto name = unquote(tokens[2]);
+
+    if (tokens[3] != "TAG") {
+      return EGLYF_ERROR_WHAT("Expected TAG in DEF_LANGSYS");
+    }
+
+    auto tagString = unquote(tokens[4]);
+    if (tagString.size() != 4) {
+      return EGLYF_ERROR_WHAT("Invalid string length for tag");
+    }
+    Tag tag;
+    ranges::copy(tagString, tag.begin());
+
+    // Define the langsys
+    auto langsys = editor->defineLangsys(script, string(name), tag);
+
+    // Parse subsequent lines until END_LANGSYS
+    for (size_t i = index + 1; i < lines.size();) {
+      auto l = trim(lines[i]);
+
+      if (l.starts_with("DEF_FEATURE")) {
+        auto status = parseFeature(lines, i, langsys);
+        if (!status.ok()) {
+          return EGLYF_STATUS_PUSH(status);
+        }
+      } else if (l == "END_LANGSYS") {
+        index = i + 1;
+        return Status::Ok();
+      } else if (l.empty()) {
+        i++;
+      } else {
+        return EGLYF_ERROR_WHAT("Unexpected line in DEF_LANGSYS: " + string(l));
+      }
+    }
+
+    return EGLYF_ERROR_WHAT("Missing END_LANGSYS");
+  }
+
+  Status parseFeature(std::vector<std::string_view> const &lines, size_t &index, std::shared_ptr<Editor::LangSys> langsys) {
+    using namespace std;
+
+    auto first = lines[index];
+    if (!first.starts_with("DEF_FEATURE")) {
+      return EGLYF_ERROR_WHAT("Expected DEF_FEATURE");
+    }
+
+    auto tokens = splitString(trim(first));
+    if (tokens.size() < 4) {
+      return EGLYF_ERROR_WHAT("Invalid DEF_FEATURE format");
+    }
+
+    // Parse tokens
+    // DEF_FEATURE NAME "Above-base Substitutions" TAG "abvs"
+    if (tokens[1] != "NAME") {
+      return EGLYF_ERROR_WHAT("Expected NAME in DEF_FEATURE");
+    }
+
+    auto name = unquote(tokens[2]);
+
+    if (tokens[3] != "TAG") {
+      return EGLYF_ERROR_WHAT("Expected TAG in DEF_FEATURE");
+    }
+
+    auto tagString = unquote(tokens[4]);
+    if (tagString.size() != 4) {
+      return EGLYF_ERROR_WHAT("Invalid string length for tag");
+    }
+    Tag tag;
+    ranges::copy(tagString, tag.begin());
+
+    // Define the feature
+    auto feature = editor->defineFeature(langsys, string(name), tag);
+
+    // Parse subsequent lines until END_FEATURE
+    for (size_t i = index + 1; i < lines.size();) {
+      auto l = trim(lines[i]);
+
+      if (l == "END_FEATURE") {
+        index = i + 1;
+        return Status::Ok();
+      } else if (!l.empty()) {
+        // Parse LOOKUP references
+        auto lookupTokens = splitString(l);
+        for (size_t j = 0; j < lookupTokens.size(); j++) {
+          if (lookupTokens[j] == "LOOKUP" && j + 1 < lookupTokens.size()) {
+            auto lookupName = unquote(lookupTokens[j + 1]);
+            auto lookup = editor->getLookupByName(string(lookupName));
+            editor->addLookupToFeature(feature, lookup);
+            j++; // Skip lookup name
+          }
+        }
+        i++;
+      } else {
+        i++;
+      }
+    }
+
+    return EGLYF_ERROR_WHAT("Missing END_FEATURE");
   }
 
 private:

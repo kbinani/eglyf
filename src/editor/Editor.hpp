@@ -134,6 +134,30 @@ public:
     }
   };
 
+  struct Feature {
+    std::string name;
+    Tag tag;
+    std::vector<std::shared_ptr<Lookup>> lookups;
+
+    Feature(std::string const &name, Tag const &tag) : name(name), tag(tag) {}
+  };
+
+  struct LangSys {
+    std::string name;
+    Tag tag;
+    std::vector<std::shared_ptr<Feature>> features;
+
+    LangSys(std::string const &name, Tag const &tag) : name(name), tag(tag) {}
+  };
+
+  struct Script {
+    std::string name;
+    Tag tag;
+    std::vector<std::shared_ptr<LangSys>> langSysList;
+
+    Script(std::string const &name, Tag const &tag) : name(name), tag(tag) {}
+  };
+
 public:
   explicit Editor(std::shared_ptr<FontFile> const &font) : font(font) {
   }
@@ -230,12 +254,76 @@ public:
     }
   }
 
+  std::shared_ptr<Script> getScriptByName(std::string const &name) {
+    using namespace std;
+    if (auto found = scripts.find(name); found == scripts.end()) {
+      // Script not found, create a new one with empty tag
+      auto s = make_shared<Script>(name, FCC("\0\0\0\0"));
+      scripts[name] = s;
+      return s;
+    } else {
+      return found->second;
+    }
+  }
+
+  std::shared_ptr<Script> defineScript(std::string const &name, Tag const &tag) {
+    using namespace std;
+    auto s = getScriptByName(name);
+    s->tag = tag;
+    return s;
+  }
+
+  std::shared_ptr<LangSys> getLangsysByName(std::shared_ptr<Script> script, std::string const &name) {
+    using namespace std;
+    for (auto &ls : script->langSysList) {
+      if (ls->name == name) {
+        return ls;
+      }
+    }
+    // Langsys not found, create a new one with empty tag
+    auto ls = make_shared<LangSys>(name, FCC("\0\0\0\0"));
+    script->langSysList.push_back(ls);
+    return ls;
+  }
+
+  std::shared_ptr<LangSys> defineLangsys(std::shared_ptr<Script> script, std::string const &name, Tag const &tag) {
+    using namespace std;
+    auto ls = getLangsysByName(script, name);
+    ls->tag = tag;
+    return ls;
+  }
+
+  std::shared_ptr<Feature> getFeatureByName(std::shared_ptr<LangSys> langsys, std::string const &name) {
+    using namespace std;
+    for (auto &f : langsys->features) {
+      if (f->name == name) {
+        return f;
+      }
+    }
+    // Feature not found, create a new one with empty tag
+    auto f = make_shared<Feature>(name, FCC("\0\0\0\0"));
+    langsys->features.push_back(f);
+    return f;
+  }
+
+  std::shared_ptr<Feature> defineFeature(std::shared_ptr<LangSys> langsys, std::string const &name, Tag const &tag) {
+    using namespace std;
+    auto f = getFeatureByName(langsys, name);
+    f->tag = tag;
+    return f;
+  }
+
+  void addLookupToFeature(std::shared_ptr<Feature> feature, std::shared_ptr<Lookup> lookup) {
+    feature->lookups.push_back(lookup);
+  }
+
 public:
   std::shared_ptr<FontFile> font;
   std::unordered_map<std::string, std::shared_ptr<Glyph>> glyphs;
   std::unordered_map<std::string, std::shared_ptr<Group>> groups;
   std::unordered_map<std::string, std::shared_ptr<Anchor>> anchors;
   std::unordered_map<std::string, std::shared_ptr<Lookup>> lookups;
+  std::unordered_map<std::string, std::shared_ptr<Script>> scripts;
 };
 
 } // namespace eglyf
