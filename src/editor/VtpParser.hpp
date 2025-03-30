@@ -788,14 +788,24 @@ private:
     deque<string_view> tokens;
 
     size_t start = 0;
-    size_t end = 0;
-    while ((end = s.find(delimiter, start)) != string_view::npos) {
-      if (end > start) {
-        tokens.push_back(s.substr(start, end - start));
+    bool inQuotes = false;
+
+    for (size_t i = 0; i < s.size(); i++) {
+      // Toggle quote state
+      if (s[i] == '"') {
+        inQuotes = !inQuotes;
       }
-      start = end + 1;
+
+      // If we find a delimiter (only when not inside quotes)
+      if (s[i] == delimiter && !inQuotes) {
+        if (i > start) {
+          tokens.push_back(s.substr(start, i - start));
+        }
+        start = i + 1;
+      }
     }
 
+    // Add the last token
     if (start < s.size()) {
       tokens.push_back(s.substr(start));
     }
