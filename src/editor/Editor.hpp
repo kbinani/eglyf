@@ -222,7 +222,6 @@ public:
     return make_shared<GroupBuilder>(shared_from_this(), g);
   }
 
-private:
   void defineAnchor(std::string const &name, std::string const &glyph, std::optional<int16_t> dx, std::optional<int16_t> dy) {
     using namespace std;
     auto a = getAnchorByName(name);

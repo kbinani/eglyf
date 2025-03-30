@@ -42,6 +42,12 @@ public:
         if (!status.ok()) {
           return EGLYF_STATUS_PUSH(status);
         }
+      } else if (l.starts_with("DEF_ANCHOR")) {
+        auto status = parseAnchor(l);
+        if (!status.ok()) {
+          return EGLYF_STATUS_PUSH(status);
+        }
+        i++;
       } else {
         return EGLYF_ERROR_WHAT("Unimplemented vtp element");
       }
@@ -552,6 +558,76 @@ private:
 
     // Processing complete
     index = index + 3;
+    return Status::Ok();
+  }
+
+  Status parseAnchor(std::string_view line) {
+    using namespace std;
+
+    if (!line.starts_with("DEF_ANCHOR") || !line.ends_with("END_ANCHOR")) {
+      return EGLYF_ERROR_WHAT("Expected DEF_ANCHOR");
+    }
+
+    auto tokens = splitString(trim(line));
+    if (tokens.size() < 10) { // Minimum tokens needed for a valid DEF_ANCHOR
+      return EGLYF_ERROR_WHAT("Invalid DEF_ANCHOR format");
+    }
+
+    // Parse tokens
+    // DEF_ANCHOR "a1" ON 469 GLYPH QB1 COMPONENT 1 AT POS DX 105 DY 1860 END_POS END_ANCHOR
+
+    // Get anchor name
+    auto name = unquote(tokens[1]);
+
+    // Find GLYPH token
+    size_t glyphIndex = 0;
+    for (size_t i = 2; i < tokens.size(); i++) {
+      if (tokens[i] == "GLYPH") {
+        glyphIndex = i;
+        break;
+      }
+    }
+
+    if (glyphIndex == 0 || glyphIndex + 1 >= tokens.size()) {
+      return EGLYF_ERROR_WHAT("Missing GLYPH in DEF_ANCHOR");
+    }
+
+    auto glyphName = unquote(tokens[glyphIndex + 1]);
+
+    // Find POS token
+    size_t posIndex = 0;
+    for (size_t i = glyphIndex + 2; i < tokens.size(); i++) {
+      if (tokens[i] == "POS") {
+        posIndex = i;
+        break;
+      }
+    }
+
+    if (posIndex == 0 || posIndex + 1 >= tokens.size()) {
+      return EGLYF_ERROR_WHAT("Missing POS in DEF_ANCHOR");
+    }
+
+    // Parse DX and DY values
+    optional<int16_t> dx = nullopt;
+    optional<int16_t> dy = nullopt;
+
+    for (size_t i = posIndex + 1; i < tokens.size(); i++) {
+      if (tokens[i] == "END_POS") {
+        break;
+      }
+
+      if (tokens[i] == "DX" && i + 1 < tokens.size()) {
+        dx = static_cast<int16_t>(stoi(string(tokens[i + 1])));
+        i++; // Skip value
+      } else if (tokens[i] == "DY" && i + 1 < tokens.size()) {
+        dy = static_cast<int16_t>(stoi(string(tokens[i + 1])));
+        i++; // Skip value
+      }
+    }
+
+    // Define the anchor
+    editor->defineAnchor(string(name), string(glyphName), dx, dy);
+
     return Status::Ok();
   }
 
