@@ -212,13 +212,18 @@ public:
 
     // For Lookups with adjustSingle
     if (lookup->adjustSingle) {
-      auto subtable = createAdjustSingleSubtable(lookup->adjustSingle);
-      if (subtable) {
+      auto originalSubtable = createAdjustSingleSubtable(lookup->adjustSingle);
+      if (originalSubtable) {
+        // Wrap the original subtable in an Extension Positioning subtable
+        auto extensionSubtable = make_shared<gpos::PositioningExtension>();
+        extensionSubtable->extensionLookupType = 1; // SingleAdjustment
+        extensionSubtable->extension = originalSubtable;
+
         auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
-        lookupData->lookupType = 1; // SingleAdjustment
+        lookupData->lookupType = 9; // Extension Positioning
         lookupData->lookupFlag = convertLookupFlag(lookup->base, lookup->marks);
         lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
-        lookupData->subtables.push_back(subtable);
+        lookupData->subtables.push_back(extensionSubtable);
 
         auto gposLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
         gposLookup->data = lookupData;
@@ -228,14 +233,19 @@ public:
 
     // For Lookups with attach
     if (lookup->attach) {
-      uint16_t lookupType = 4; // Default to MarkToBaseAttachment
-      auto subtable = createAttachmentSubtable(lookup->attach, lookupType);
-      if (subtable) {
+      uint16_t originalLookupType = 4; // Default to MarkToBaseAttachment
+      auto originalSubtable = createAttachmentSubtable(lookup->attach, originalLookupType);
+      if (originalSubtable) {
+        // Wrap the original subtable in an Extension Positioning subtable
+        auto extensionSubtable = make_shared<gpos::PositioningExtension>();
+        extensionSubtable->extensionLookupType = originalLookupType; // MarkToBaseAttachment or MarkToMarkAttachmentPositioning
+        extensionSubtable->extension = originalSubtable;
+
         auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
-        lookupData->lookupType = lookupType; // Set to the determined lookup type
+        lookupData->lookupType = 9; // Extension Positioning
         lookupData->lookupFlag = convertLookupFlag(lookup->base, lookup->marks);
         lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
-        lookupData->subtables.push_back(subtable);
+        lookupData->subtables.push_back(extensionSubtable);
 
         auto gposLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
         gposLookup->data = lookupData;
