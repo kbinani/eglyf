@@ -28,6 +28,10 @@ static void Run(juce::ArgumentList const &args) {
     Fail(st);
     return;
   }
+  if (auto st = editor->compile(); !st.ok()) {
+    Fail(st);
+    return;
+  }
   FileOutputStream fos(output);
   if (auto st = ff->write(fos); !st.ok()) {
     Fail(st);

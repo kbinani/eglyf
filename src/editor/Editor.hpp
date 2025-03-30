@@ -239,6 +239,33 @@ public:
       }
     }
 
+    // Create default script, langsys, and feature structure if there are lookups
+    if (!gpos->lookups.empty()) {
+      // Create default feature
+      auto feature = make_shared<SubtableCollection<Subtable>::Feature>();
+      feature->tag = FCC("kern"); // "kern" for kerning
+      auto featureData = make_shared<SubtableCollection<Subtable>::FeatureData>();
+
+      // Add lookups to feature
+      for (auto const &lookup : gpos->lookups) {
+        featureData->lookups.push_back(lookup);
+      }
+      feature->data = featureData;
+      gpos->features.push_back(feature);
+
+      // Create default langsys
+      auto langsys = make_shared<SubtableCollection<Subtable>::LangSys>();
+      langsys->features.push_back(feature);
+
+      // Create default script
+      SubtableCollection<Subtable>::Script script;
+      script.tag = FCC("DFLT"); // Default script
+      script.defaultLangSys = langsys;
+
+      // Add script to GPOS table
+      gpos->scripts.push_back(script);
+    }
+
     // Add tables to FontFile
     font->gpos = gpos;
     font->gsub = gsub;
