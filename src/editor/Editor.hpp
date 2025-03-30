@@ -63,194 +63,76 @@ public:
     struct SkipMarks {};
     struct ProcessMarks {
       struct All {};
-      struct Glyphs {
-        std::vector<std::shared_ptr<Editor::Glyph>> glyphs;
+      struct MarkGlyphs {
+        std::vector<std::shared_ptr<Glyph>> glyphs;
       };
-      struct Group {
-        std::shared_ptr<Editor::Group> group;
+      struct MarkGroup {
+        std::shared_ptr<Group> group;
       };
-      std::variant<ProcessMarks::All, ProcessMarks::Glyphs, ProcessMarks::Group> what;
+
+      ProcessMarks() {}
+      ProcessMarks(std::variant<ProcessMarks::All, ProcessMarks::MarkGlyphs, ProcessMarks::MarkGroup> what) : what(what) {}
+
+      std::variant<ProcessMarks::All, ProcessMarks::MarkGlyphs, ProcessMarks::MarkGroup> what;
     };
     std::variant<SkipMarks, ProcessMarks> marks;
-  };
 
-  struct LookupBuilder : public std::enable_shared_from_this<LookupBuilder> {
-    struct ContextBuilder {
-      explicit ContextBuilder(std::shared_ptr<LookupBuilder> const &builder) : lookupBuilder(builder) {}
-
-      ContextBuilder *leftGlyph(std::string const &name) {
-        return this;
+    struct Context {
+      Context(std::initializer_list<std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>>> left, std::initializer_list<std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>>> right) : left(left), right(right) {
       }
 
-      ContextBuilder *leftGroup(std::string const &name) {
-        return this;
-      }
-
-      ContextBuilder *rightGlyph(std::string const &name) {
-        return this;
-      }
-
-      ContextBuilder *rightGroup(std::string const &name) {
-        return this;
-      }
-
-      std::shared_ptr<LookupBuilder> endContext() {
-        return lookupBuilder;
-      }
-
-      std::shared_ptr<LookupBuilder> lookupBuilder;
+      std::vector<std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>>> left;
+      std::vector<std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>>> right;
     };
+    std::shared_ptr<Context> exceptContext;
+    std::shared_ptr<Context> inContext;
 
-    struct SubstitutionBuilder {
-      explicit SubstitutionBuilder(std::shared_ptr<LookupBuilder> const &builder) : lookupBuilder(builder) {}
+    struct AttachTarget {
+      AttachTarget(std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>> target, std::shared_ptr<Anchor> const &anchor) : target(target), anchor(anchor) {}
 
-      SubstitutionBuilder *substitute() {
-        return this;
-      }
-
-      SubstitutionBuilder *subGlyph(std::string const &name) {
-        return this;
-      }
-
-      SubstitutionBuilder *subGroup(std::string const &name) {
-        return this;
-      }
-
-      SubstitutionBuilder *withGlyph(std::string const &name) {
-        return this;
-      }
-
-      SubstitutionBuilder *withGroup(std::string const &name) {
-        return this;
-      }
-
-      SubstitutionBuilder *endSub() {
-        return this;
-      }
-
-      std::shared_ptr<Lookup> endSubstitutionLookup() {
-        return lookupBuilder->endLookup();
-      }
-
-      std::shared_ptr<LookupBuilder> lookupBuilder;
+      std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>> target;
+      std::shared_ptr<Anchor> anchor;
     };
+    struct Attach {
+      Attach(std::initializer_list<std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>>> input, std::initializer_list<AttachTarget> output) : input(input), output(output) {}
 
-    struct PositionBuilder {
-      explicit PositionBuilder(std::shared_ptr<LookupBuilder> const &builder) : lookupBuilder(builder) {}
-
-      PositionBuilder *attachGroup(std::string const &name) {
-        return this;
-      }
-
-      PositionBuilder *attachGlyph(std::string const &name) {
-        return this;
-      }
-
-      PositionBuilder *toGroup(std::string const &groupName, std::string const &anchorName) {
-        return this;
-      }
-
-      PositionBuilder *toGlyph(std::string const &glyphName, std::string const &anchorName) {
-        return this;
-      }
-
-      PositionBuilder *endAttach() {
-        return this;
-      }
-
-      std::shared_ptr<Lookup> endPositionLookup() {
-        return lookupBuilder->endLookup();
-      }
-
-      PositionBuilder *adjustSingle() {
-        return this;
-      }
-
-      PositionBuilder *adjustGlyph(std::string const &name, std::optional<int16_t> dx, std::optional<int16_t> dy) {
-        return this;
-      }
-
-      PositionBuilder *endAdjust() {
-        return this;
-      }
-
-      std::shared_ptr<LookupBuilder> lookupBuilder;
+      std::vector<std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>>> input;
+      std::vector<AttachTarget> output;
     };
+    std::shared_ptr<Attach> attach;
 
-    LookupBuilder(std::shared_ptr<Editor> const &editor, std::shared_ptr<Lookup> const &lookup) : editor(editor), lookup(lookup) {}
+    struct AdjustGlyph {
+      AdjustGlyph(std::string const &name, std::optional<int16_t> dx, std::optional<int16_t> dy) : name(name), dx(dx), dy(dy) {}
 
-    LookupBuilder *processBase() {
-      lookup->base = Lookup::ProcessBase();
-      return this;
+      std::string name;
+      std::optional<int16_t> dx;
+      std::optional<int16_t> dy;
+    };
+    struct AdjustSingle {
+      explicit AdjustSingle(std::initializer_list<AdjustGlyph> glyphs) : glyphs(glyphs) {}
+
+      std::vector<AdjustGlyph> glyphs;
+    };
+    std::shared_ptr<AdjustSingle> adjustSingle;
+
+    struct Substitution {
+      Substitution(std::initializer_list<std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>>> input, std::initializer_list<std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>>> output) : input(input), output(output) {}
+
+      std::vector<std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>>> input;
+      std::vector<std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>>> output;
+    };
+    std::vector<std::shared_ptr<Substitution>> substitutions;
+
+    Lookup() {}
+
+    Lookup(std::variant<SkipBase, ProcessBase> base,
+           std::variant<SkipMarks, ProcessMarks> marks,
+           std::shared_ptr<Context> exceptContext,
+           std::shared_ptr<Context> inContext,
+           std::shared_ptr<Attach> attach,
+           std::shared_ptr<AdjustSingle> adjustSingle,
+           std::initializer_list<std::shared_ptr<Substitution>> substitutions) : base(base), marks(marks), exceptContext(exceptContext), inContext(inContext), attach(attach), adjustSingle(adjustSingle), substitutions(substitutions) {
     }
-
-    LookupBuilder *skipBase() {
-      lookup->base = Lookup::SkipBase();
-      return this;
-    }
-
-    LookupBuilder *processMarksAll() {
-      Lookup::ProcessMarks marks;
-      marks.what = Lookup::ProcessMarks::All();
-      lookup->marks = marks;
-      return this;
-    }
-
-    LookupBuilder *processMarkGlyphs(std::string const &name) {
-      auto e = editor.lock();
-      if (!e) {
-        return this;
-      }
-      Lookup::ProcessMarks marks;
-      Lookup::ProcessMarks::Glyphs glyphs;
-      auto glyph = e->getGlyphByName(name);
-      glyphs.glyphs.push_back(glyph);
-      marks.what = glyphs;
-      lookup->marks = marks;
-      return this;
-    }
-
-    LookupBuilder *processMarkGroup(std::string const &name) {
-      auto e = editor.lock();
-      if (!e) {
-        return this;
-      }
-      Lookup::ProcessMarks marks;
-      Lookup::ProcessMarks::Group group;
-      auto g = e->getGroupByName(name);
-      group.group = g;
-      marks.what = group;
-      lookup->marks = marks;
-      return this;
-    }
-
-    LookupBuilder *skipMarks() {
-      Lookup::SkipMarks marks;
-      lookup->marks = marks;
-      return this;
-    }
-
-    std::shared_ptr<ContextBuilder> exceptContext() {
-      using namespace std;
-      return make_shared<ContextBuilder>(shared_from_this());
-    }
-
-    std::shared_ptr<SubstitutionBuilder> asSubstitution() {
-      using namespace std;
-      return make_shared<SubstitutionBuilder>(shared_from_this());
-    }
-
-    std::shared_ptr<PositionBuilder> asPosition() {
-      using namespace std;
-      return make_shared<PositionBuilder>(shared_from_this());
-    }
-
-    std::shared_ptr<Lookup> endLookup() {
-      return lookup;
-    }
-
-    std::weak_ptr<Editor> editor;
-    std::shared_ptr<Lookup> lookup;
   };
 
 public:
@@ -359,12 +241,6 @@ private:
     if (auto g = getGlyphByName(glyph); g) {
       a->glyphs[g] = Vec<optional<int16_t>>(dx, dy);
     }
-  }
-
-  std::shared_ptr<LookupBuilder> defineLookup(std::string const &name) {
-    using namespace std;
-    auto l = getLookupByName(name);
-    return make_shared<LookupBuilder>(shared_from_this(), l);
   }
 
 public:

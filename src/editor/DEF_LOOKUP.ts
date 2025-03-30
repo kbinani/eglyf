@@ -1,5 +1,135 @@
 import fs from "node:fs";
 
+class Context {
+  left: (Glyph | Group)[] = [];
+  right: (Glyph | Group)[] = [];
+
+  toCode(): string {
+    let s = `make_shared<Lookup::Context>(initializer_list<variant<shared_ptr<Glyph>, shared_ptr<Group>>>({`;
+    s += this.left.map(it => it.toCode()).join(", ");
+    s += `}), initializer_list<variant<shared_ptr<Glyph>, shared_ptr<Group>>>({`;
+    s += this.right.map(it => it.toCode()).join(", ");
+    s += `})),`;
+    return s;
+  }
+}
+
+class Lookup {
+  name?: string;
+  base?: "skip" | "process";
+  marks?: "skip" | "all" | Group | Glyph;
+  exceptContext?: Context;
+  inContext?: Context;
+  substList?: Subst[];
+  attach?: Attach;
+  adjustSingle?: AdjustSingle;
+
+  toCode(): string {
+    if (this.name === undefined) {
+      throw new Error();
+    }
+    const indent = " ".repeat(20);
+    let s = `make_shared<Lookup>(`;
+    switch (this.base) {
+      case "skip":
+        s += "Lookup::SkipBase{},";
+        break;
+      case "process":
+        s += "Lookup::ProcessBase{},";
+        break;
+      default:
+        throw new Error();
+    }
+    s += "\n";
+    s += indent;
+    if (this.marks === "skip") {
+      s += "Lookup::SkipMarks{},";
+    } else if (this.marks === "all") {
+      s += "Lookup::ProcessMarks(Lookup::ProcessMarks::All{}),";
+    } else if (this.marks instanceof Glyph) {
+      s += `Lookup::ProcessMarks(Lookup::ProcessMarks::MarkGlyphs({getGlyphByName("${this.marks.name}")})),`
+    } else if (this.marks instanceof Group) {
+      s += `Lookup::ProcessMarks(Lookup::ProcessMarks::MarkGroup(getGroupByName("${this.marks.name}"))),`
+    } else {
+      throw new Error();
+    }
+    s += "\n" + indent;
+    if (this.exceptContext) {
+      s += this.exceptContext.toCode();
+    } else {
+      s += "nullptr,";
+    }
+    s += "\n" + indent;
+    if (this.inContext) {
+      s += this.inContext.toCode();
+    } else {
+      s += "nullptr,";
+    }
+    s += "\n" + indent;
+    if (this.attach) {
+      s += this.attach.toCode();
+    } else {
+      s += "nullptr,";
+    }
+    s += "\n" + indent;
+    if (this.adjustSingle) {
+      s += this.adjustSingle.toCode();
+    } else {
+      s += "nullptr,";
+    }
+    s += "\n" + indent;
+    s += Subst.ToCode(this.substList ?? []);
+    s += ");";
+    return `lookups[${this.name}] = ${s}`;
+  }
+}
+
+class Glyph {
+  readonly name: string;
+
+  constructor(name: string) {
+    this.name = unquote(name);
+  }
+
+  toCode(): string {
+    return `getGlyphByName("${this.name}")`;
+  }
+}
+
+class Group {
+  readonly name: string;
+
+  constructor(name: string) {
+    this.name = unquote(name);
+  }
+
+  toCode(): string {
+    return `getGroupByName("${this.name}")`;
+  }
+}
+
+class Subst {
+  input: (Glyph | Group)[] = [];
+  output: (Glyph | Group)[] = [];
+
+  static ToCode(list: Subst[]): string {
+    let s = "initializer_list<shared_ptr<Lookup::Substitution>>({";
+    s += list.map(subst => subst.toCode()).join(", ");
+    s += "})";
+    return s;
+  }
+
+  toCode() : string {
+    let s = `make_shared<Lookup::Substitution>(initializer_list<variant<shared_ptr<Glyph>, shared_ptr<Group>>>({`;
+    s += this.input.map(it => it.toCode()).join(", ");
+    s += `}), `;
+    s += `initializer_list<variant<shared_ptr<Glyph>, shared_ptr<Group>>>({`;
+    s += this.output.map((it => it.toCode())).join(", ");
+    s += `}))`;
+    return s;
+  }
+}
+
 const trim = (s: string) => {
   s = s.trim();
   while (true) {
@@ -9,52 +139,62 @@ const trim = (s: string) => {
     }
     s = n;
   }
-};
+}
 
-const consumeContext = (lines: string[], start: number) :number => {
+function unquote(s: string) : string {
+  if (s.startsWith(`"`) !== s.endsWith(`"`)) {
+    throw new Error();
+  }
+  if (s.startsWith(`"`)) {
+    return s.substring(1, s.length - 1);
+  } else {
+    return s;
+  }
+}
+
+const consumeContext = (lines: string[], start: number) : {next: number, context: Context } => {
   const first = trim(lines[start]);
   if (first !== "EXCEPT_CONTEXT" && first !== "IN_CONTEXT") {
     throw new Error();
   }
-  console.log("->exceptContext()");
+  const context = new Context();
   for (let i = start + 1; i < lines.length; ) {
     const l = lines[i];
     if (l === "END_CONTEXT") {
-      console.log("->endContext()");
-      return i + 1;
+      return {next: i + 1, context};
     } else {
       const tokens = trim(l).split(" ");
       while (tokens.length > 0) {
         const op = tokens.shift();
         switch (op) {
           case "LEFT": {
-            let s = "";
             const type = tokens.shift();
+            const name = tokens.shift();
+            if (name === undefined) {
+              throw new Error();
+            }
             if (type === "GLYPH") {
-              s += "->leftGlyph(";
+              context.left.push(new Glyph(name));
             } else if (type === "GROUP") {
-              s += "->leftGroup(";
+              context.left.push(new Group(name));
             } else {
               throw new Error();
             }
-            const name = tokens.shift();
-            s += `${name})`;
-            console.log(s);
             break;
           }
           case "RIGHT": {
-            let s = "";
             const type = tokens.shift();
+            const name = tokens.shift();
+            if (name === undefined) {
+              throw new Error();
+            }
             if (type === "GLYPH") {
-              s += "->rightGlyph(";
+              context.right.push(new Glyph(name));
             } else if (type === "GROUP") {
-              s += "->rightGroup(";
+              context.right.push(new Group(name));
             } else {
               throw new Error();
             }
-            const name = tokens.shift();
-            s += `${name})`;
-            console.log(s);
             break;
           }
           default:
@@ -65,34 +205,38 @@ const consumeContext = (lines: string[], start: number) :number => {
       i += 1;
     }
   }
-  return lines.length;
+  return { next: lines.length, context};
 }
 
-const consumeSub = (lines: string[], start: number): number => {
+const consumeSub = (lines: string[], start: number): { next: number, subst: Subst } => {
   const first = trim(lines[start]);
   const tokens = first.split(" ");
   tokens.shift();
-  let s = "->substitute()";
+  const subst = new Subst();
   while (tokens.length > 0) {
     const op = tokens.shift();
     if (op === "GLYPH") {
       const name = tokens.shift();
-      s += `->subGlyph(${name})`;
+      if (name === undefined) {
+        throw new Error();
+      }
+      subst.input.push(new Glyph(name));
     } else if (op === "GROUP") {
       const name = tokens.shift();
-      s += `->subGroup(${name})`;
+      if (name === undefined) {
+        throw new Error();
+      }
+      subst.input.push(new Group(name));
     } else {
       console.log(`op=${op}`);
       throw new Error();
     }
   }
-  console.log(s);
   for (let i = start + 1; i < lines.length;) {
     const l = trim(lines[i]);
     if (l.startsWith("WITH")) {
       const tokens = trim(l).split(" ");
       if (tokens.shift() !== "WITH") throw new Error();
-      let s = "";
       while (tokens.length > 0) {
         const op = tokens.shift();
         const name = tokens.shift();
@@ -100,66 +244,79 @@ const consumeSub = (lines: string[], start: number): number => {
           throw new Error();
         }
         if (op === "GLYPH") {
-          s += `->withGlyph(${name})`;
+          subst.output.push(new Glyph(name));
         } else if (op === "GROUP") {
-          s += `->withGroup(${name})`;
+          subst.output.push(new Group(name));
         } else {
           throw new Error();
         }
       }
-      console.log(s);
       i += 1;
     } else if (l === "END_SUB") {
-      console.log(`->endSub()`);
-      return i + 1;
+      return {next: i + 1, subst };
     } else {
       console.log(l);
       throw new Error();
     }
   }
-  return lines.length;
+  return{next: lines.length, subst };
 };
 
-const consumeSubstitution = (lines: string[], start: number) : number => {
+const consumeSubstitution = (lines: string[], start: number, lookup: Lookup) : { next: number, lookup: Lookup } => {
   const first = lines[start];
   if (first !== "AS_SUBSTITUTION") {
     throw new Error();
   }
-  console.log("->asSubstitution()");
   for (let i = start + 1; i < lines.length;) {
     const l = trim(lines[i]);
     if (l === "END_SUBSTITUTION") {
-      console.log("->endSubstitutionLookup();");
-      return i + 1;
+      return { next: i + 1, lookup };
     } else if (l.startsWith("SUB ")) {
-      i = consumeSub(lines, i);
+      const { next, subst } = consumeSub(lines, i);
+      lookup.substList!.push(subst);
+      i = next;
     } else {
       console.log(l);
       throw new Error();
     }
   }
-  return lines.length;
+  return {next: lines.length, lookup };
 };
 
-const consumeAttach = (lines: string[], start: number) : number => {
+class Attach {
+  input: (Glyph | Group)[] = [];
+  output: ({target: Glyph | Group, anchor: string})[] = [];
+
+  toCode(): string {
+    let s = `make_shared<Lookup::Attach>(initializer_list<variant<shared_ptr<Glyph>, shared_ptr<Group>>>({`;
+    s += this.input.map(it => it.toCode()).join(", ");
+    s += "}), initializer_list<Lookup::AttachTarget>({";
+    s += this.output.map(it => {
+      return `Lookup::AttachTarget(${it.target.toCode()}, getAnchorByName("${it.anchor}"))`;
+    }).join(", ");
+    s += "})),";
+    return s;
+  }
+}
+
+const consumeAttach = (lines: string[], start: number) : {next: number, attach: Attach } => {
   const first = trim(lines[start]).split(" ");
   if (first.shift() !== "ATTACH") throw new Error();
+  const attach = new Attach();
   const op = first.shift();
   const name = first.shift();
   if (name === undefined) throw new Error();
   if (op === "GROUP") {
-    console.log(`->attachGroup(${name})`);
+    attach.input.push(new Group(name));
   } else if (op === "GLYPH") {
-    console.log(`->attachGlyph(${name})`);
+    attach.input.push(new Glyph(name));
   } else {
-    console.log(lines[start]);
     throw new Error();
   }
   for (let i = start + 1; i < lines.length;) {
     const l = trim(lines[i]);
     if (l === "END_ATTACH") {
-      console.log(`->endAttach()`);
-      return i + 1;
+      return {next: i + 1, attach };
     } else if (l.startsWith("TO GROUP ") || l.startsWith("TO GLYPH ") || l.startsWith("GROUP ") || l.startsWith("GLYPH ")) {
       const tokens = l.split(" ");
       if (l.startsWith("TO GROUP ") || l.startsWith("TO GLYPH ")) {
@@ -168,15 +325,19 @@ const consumeAttach = (lines: string[], start: number) : number => {
       }
       const type = tokens.shift();
       const name = tokens.shift();
+      if (name === undefined) {
+        throw new Error();
+      }
       const at = tokens.shift();
       if (at !== "AT") throw new Error();
       const anchor = tokens.shift();
       if (anchor !== "ANCHOR") throw new Error();
       const anchorName = tokens.shift();
+      if (anchorName === undefined) throw new Error();
       if (type === "GROUP") {
-        console.log(`->toGroup(${name}, ${anchorName})`);
+        attach.output.push({target: new Group(name), anchor: unquote(anchorName)});
       } else if (type === "GLYPH") {
-        console.log(`->toGlyph(${name}, ${anchorName})`);
+        attach.output.push({target: new Glyph(name), anchor: unquote(anchorName)});
       } else {
         throw new Error();
       }
@@ -186,15 +347,39 @@ const consumeAttach = (lines: string[], start: number) : number => {
       throw new Error();
     }
   }
-  return lines.length;
+  return {next:lines.length, attach};
 };
 
-const consumeAdjustSingle = (lines: string[], start: number): number => {
+class AdjustSingle {
+  glyphs: {name: string, dx?: number, dy?: number }[] = [];
+
+  toCode(): string {
+    let s = `make_shared<Lookup::AdjustSingle>(initializer_list<Lookup::AdjustGlyph>({`;
+    s += this.glyphs.map(({name, dx, dy}) => {
+      let k = `Lookup::AdjustGlyph("${unquote(name)}", `;
+      if (dx === undefined) {
+        k += "nullopt, ";
+      } else {
+        k += `(int16_t)${dx}, `;
+      }
+      if (dy === undefined) {
+        k += "nullopt)";
+      } else {
+        k += `(int16_t)${dy})`;
+      }
+      return k;
+    }).join(", ");
+    s += "})),";
+    return s;
+  }
+}
+
+const consumeAdjustSingle = (lines: string[], start: number): {next: number, adjustSingle: AdjustSingle} => {
   const tokens = trim(lines[start]).split(" ");
   if (tokens.shift() !== "ADJUST_SINGLE") {
     throw new Error();
   }
-  console.log("->adjustSingle()");
+  const adjustSingle = new AdjustSingle();
   while (tokens.length > 0) {
     const what = tokens.shift();
     const name = tokens.shift();
@@ -203,8 +388,8 @@ const consumeAdjustSingle = (lines: string[], start: number): number => {
     if (by !== "BY") throw new Error();
     const pos = tokens.shift();
     if (pos !== "POS") throw new Error();
-    let dx = "nullopt";
-    let dy = "nullopt";
+    let dx: number | undefined = undefined;
+    let dy: number | undefined = undefined;
     while (tokens.length > 0) {
       const type = tokens.shift();
       if (type === "END_POS") {
@@ -213,15 +398,15 @@ const consumeAdjustSingle = (lines: string[], start: number): number => {
       const value = tokens.shift();
       if (value === undefined) throw new Error();
       if (type === "DX") {
-        dx = value;
+        dx = parseInt(value, 10);
       } else if (type === "DY") {
-        dy = value;
+        dy = parseInt(value, 10);
       } else {
         throw new Error();
       }
     }
     if (what === "GLYPH") {
-      console.log(`->adjustGlyph(${name}, ${dx}, ${dy})`);
+      adjustSingle.glyphs.push({name, dx, dy});
     } else {
       throw new Error();
     }
@@ -230,69 +415,77 @@ const consumeAdjustSingle = (lines: string[], start: number): number => {
   if (end !== "END_ADJUST") {
     throw new Error();
   }
-  console.log(`->endAdjust()`);
-  return start + 2;
+  return { next: start + 2, adjustSingle };
 };
 
-const consumePosition = (lines: string[], start: number) : number => {
+const consumePosition = (lines: string[], start: number, lookup: Lookup) : {next: number, lookup: Lookup} => {
   const first = trim(lines[start]);
   if (first !== "AS_POSITION") {
     throw new Error();
   }
-  console.log("->asPosition()");
   for (let i = start + 1; i < lines.length; ) {
     const l = trim(lines[i]);
     if (l === "END_POSITION") {
-      console.log("->endPositionLookup();");
-      return i + 1;
+      return {next: i + 1, lookup};
     } else if (l.startsWith("ATTACH")) {
-      i = consumeAttach(lines, i);
+      const { next, attach } = consumeAttach(lines, i);
+      lookup.attach = attach;
+      i = next;
     } else if (l.startsWith("ADJUST_SINGLE")) {
-      i = consumeAdjustSingle(lines, i);
+      const { next, adjustSingle } = consumeAdjustSingle(lines, i);
+      lookup.adjustSingle = adjustSingle;
+      i = next;
     } else {
       console.log(l);
       throw new Error();
     }
   }
-  return lines.length;
+  return {next:lines.length, lookup};
 }
 
-const consumeLookup = (lines: string[], start: number): number => {
+const consumeLookup = (lines: string[], start: number): { next: number, lookup: Lookup } => {
   const first = lines[start];
   if (!first.startsWith("DEF_LOOKUP")) {
     throw new Error();
   }
+  const lookup = new Lookup();
   const tokens = trim(first).split(" ");
   tokens.shift();
   const name = tokens.shift();
-  let base: string;
+  if (name === undefined) {
+    throw new Error();
+  }
+  lookup.name = name;
   switch (tokens.shift()) {
     case "PROCESS_BASE":
-      base = "processBase()";
+      lookup.base = "process";
       break;
     case "SKIP_BASE":
-      base = "skipBase()";
+      lookup.base = "skip";
       break;
     default:
       throw new Error();
   }
-  let marks: string;
   switch (tokens.shift()) {
     case "PROCESS_MARKS": {
       const marksWhat = tokens.shift();
       if (marksWhat === "MARK_GLYPH_SET") {
-        marks = `processMarkGlyphs(${tokens.shift()})`;
+        const n = tokens.shift();
+        if (n === undefined) {
+          throw new Error();
+        }
+        lookup.marks = new Glyph(n);
       } else if (marksWhat === "ALL" || marksWhat === `"ALL"`) {
-        marks = "processMarksAll()";
+        lookup.marks = "all";
       } else if (marksWhat?.startsWith(`"`)) {
-        marks = `processMarkGroup(${marksWhat})`;
+        lookup.marks = new Group(marksWhat);
       } else {
         throw new Error();
       }
       break;
     }
     case "SKIP_MARKS":
-      marks = "skipMarks()";
+      lookup.marks = "skip";
       break;
     default:
       throw new Error();
@@ -304,24 +497,29 @@ const consumeLookup = (lines: string[], start: number): number => {
   if (directionWhat !== "LTR") {
     throw new Error();
   }
-  console.log(`defineLookup(${name})->${base}->${marks}`);
   for (let i = start + 1; i < lines.length;) {
     const l = trim(lines[i]);
     if (l === "END_SUBSTITUTION" || l === "END_POSITION") {
-      console.log(`->endLookup();`);
-      return i + 1;
-    } else if (l === "EXCEPT_CONTEXT" || l === "IN_CONTEXT") {
-      i = consumeContext(lines, i);
+      return {next: i + 1, lookup };
+    } else if (l === "EXCEPT_CONTEXT") {
+      const { next, context } = consumeContext(lines, i);
+      lookup.exceptContext = context;
+      i = next;
+    } else if (l === "IN_CONTEXT") {
+      const { next, context } = consumeContext(lines, i);
+      lookup.inContext = context;
+      i = next;
     } else if (l === "AS_SUBSTITUTION") {
-      return consumeSubstitution(lines, i);
+      lookup.substList = [];
+      return consumeSubstitution(lines, i, lookup);
     } else if (l === "AS_POSITION") {
-      return consumePosition(lines, i);
+      return consumePosition(lines, i, lookup);
     } else {
       console.log(l);
       throw new Error();
     }
   }
-  return lines.length;
+  return { next: lines.length, lookup };
 };
 
 const main = async () => {
@@ -330,7 +528,9 @@ const main = async () => {
   for (let i = 0; i < lines.length;) {
     const l = lines[i];
     if (l.startsWith("DEF_LOOKUP")) {
-      i = consumeLookup(lines, i);
+      const { next, lookup } = consumeLookup(lines, i);
+      console.log(lookup.toCode());
+      i = next;
     } else {
       i += 1;
     }
