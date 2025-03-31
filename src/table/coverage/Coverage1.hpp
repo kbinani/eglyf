@@ -11,8 +11,12 @@ public:
     if (!in.u16(&glyphCount)) {
       return EGLYF_ERROR;
     }
-    if (!in.u16a(r->glyphArray, glyphCount)) {
+    vector<uint16_t> glyphIdList;
+    if (!in.u16a(glyphIdList, glyphCount)) {
       return EGLYF_ERROR;
+    }
+    for (uint16_t gid : glyphIdList) {
+      r->glyphArray.insert(gid);
     }
     out.reset(r.release());
     return Status::Ok();
@@ -26,8 +30,10 @@ public:
     if (!out.sizeU16(glyphArray.size())) {
       return EGLYF_ERROR;
     }
-    if (!out.u16a(glyphArray)) {
-      return EGLYF_ERROR;
+    for (uint16_t gid : glyphArray) {
+      if (!out.u16(gid)) {
+        return EGLYF_ERROR;
+      }
     }
     return Status::Ok();
   }
@@ -37,7 +43,7 @@ public:
   }
 
 public:
-  std::vector<uint16_t> glyphArray;
+  std::set<uint16_t> glyphArray;
 };
 
 } // namespace eglyf

@@ -133,6 +133,23 @@ public:
     }
   }
 
+  std::shared_ptr<Glyph> getGlyphById(uint16_t gid) {
+    using namespace std;
+    if (auto found = glyphsLut.find(gid); found != glyphsLut.end()) {
+      return found->second;
+    }
+    if (auto found = ranges::find_if(glyphs, [=](pair<string, shared_ptr<Glyph>> const &it) { return it.second->id == gid; }); found != glyphs.end()) {
+      glyphsLut[gid] = found->second;
+      return found->second;
+    }
+    if (auto name = font->post->getName(gid); name) {
+      auto g = getGlyphByName(*name);
+      glyphsLut[gid] = g;
+      return g;
+    }
+    return nullptr;
+  }
+
   std::shared_ptr<Group> getGroupByName(std::string const &name) {
     using namespace std;
     if (auto found = groups.find(name); found == groups.end()) {
@@ -204,7 +221,7 @@ public:
     return f;
   }
 
-  Status convertLookup(std::shared_ptr<Lookup> const &lookup, std::shared_ptr<SubtableCollection<Subtable>::Lookup> &result) const {
+  Status convertLookup(std::shared_ptr<Lookup> const &lookup, std::shared_ptr<SubtableCollection<Subtable>::Lookup> &result) {
     using namespace std;
 
     if (lookup->adjustSingle) {
@@ -423,12 +440,10 @@ private:
     }
 
     // Create Coverage
-    vector<uint16_t> glyphIds;
+    set<uint16_t> glyphIds;
     for (auto const &[glyphId, valueRecord] : glyphValueRecords) {
-      glyphIds.push_back(glyphId);
+      glyphIds.insert(glyphId);
     }
-    // Sort glyph IDs in ascending order (OpenType specification requirement)
-    sort(glyphIds.begin(), glyphIds.end());
 
     auto coverage = make_shared<Coverage1>();
     coverage->glyphArray = glyphIds;
@@ -492,19 +507,13 @@ private:
     }
 
     // Collect glyph IDs
-    vector<uint16_t> glyphIds;
-    map<uint16_t, shared_ptr<Glyph>> glyphMap;
-    collectGlyphsFromGroup(markGroup.group, glyphIds, glyphMap);
+    set<uint16_t> glyphIds;
+    collectGlyphsFromGroup(markGroup.group, glyphIds);
 
     // Return 0 if no glyph IDs
     if (glyphIds.empty()) {
       return 0;
     }
-
-    // Sort glyph IDs
-    sort(glyphIds.begin(), glyphIds.end());
-    // Remove duplicates
-    glyphIds.erase(unique(glyphIds.begin(), glyphIds.end()), glyphIds.end());
 
     // Search for existing coverages with the same glyph ID set
     for (size_t i = 0; i < gdef->markGlyphSets->coverages.size(); i++) {
@@ -519,10 +528,10 @@ private:
         auto existingCoverage2 = dynamic_pointer_cast<Coverage2>(gdef->markGlyphSets->coverages[i]);
         if (existingCoverage2) {
           // For Coverage2, extract glyph ID set from rangeRecords and compare
-          vector<uint16_t> coverage2GlyphIds;
+          set<uint16_t> coverage2GlyphIds;
           for (auto const &rangeRecord : existingCoverage2->rangeRecords) {
             for (uint16_t glyphId = rangeRecord.startGlyphID; glyphId <= rangeRecord.endGlyphID; glyphId++) {
-              coverage2GlyphIds.push_back(glyphId);
+              coverage2GlyphIds.insert(glyphId);
             }
           }
 
@@ -548,38 +557,34 @@ private:
 
   // Function to collect glyphs from a variant (glyph or group)
   void collectGlyphsFromVariant(std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>> const &item,
-                                std::vector<uint16_t> &glyphIds,
-                                std::map<uint16_t, std::shared_ptr<Glyph>> &glyphMap) const {
+                                std::set<uint16_t> &glyphIds) const {
     using namespace std;
 
     if (holds_alternative<shared_ptr<Glyph>>(item)) {
       auto glyph = get<shared_ptr<Glyph>>(item);
       if (glyph->id) {
-        glyphIds.push_back(*glyph->id);
-        glyphMap[*glyph->id] = glyph;
+        glyphIds.insert(*glyph->id);
       }
     } else if (holds_alternative<shared_ptr<Group>>(item)) {
       auto group = get<shared_ptr<Group>>(item);
-      collectGlyphsFromGroup(group, glyphIds, glyphMap);
+      collectGlyphsFromGroup(group, glyphIds);
     }
   }
 
   // Function to recursively collect glyphs from a group
   void collectGlyphsFromGroup(std::shared_ptr<Group> const &group,
-                              std::vector<uint16_t> &glyphIds,
-                              std::map<uint16_t, std::shared_ptr<Glyph>> &glyphMap) const {
+                              std::set<uint16_t> &glyphIds) const {
     using namespace std;
 
     for (auto const &member : group->members) {
       if (holds_alternative<shared_ptr<Glyph>>(member)) {
         auto glyph = get<shared_ptr<Glyph>>(member);
         if (glyph->id) {
-          glyphIds.push_back(*glyph->id);
-          glyphMap[*glyph->id] = glyph;
+          glyphIds.insert(*glyph->id);
         }
       } else if (holds_alternative<shared_ptr<Group>>(member)) {
         auto subgroup = get<shared_ptr<Group>>(member);
-        collectGlyphsFromGroup(subgroup, glyphIds, glyphMap);
+        collectGlyphsFromGroup(subgroup, glyphIds);
       }
     }
   }
@@ -644,7 +649,7 @@ private:
   }
 
   // Create attachment subtable (MarkToBase or MarkToMark) from Editor::Lookup::Attach
-  Status createAttachmentSubtable(std::shared_ptr<Lookup::Attach> const &attach, std::shared_ptr<Subtable> &result, uint16_t &lookupType) const {
+  Status createAttachmentSubtable(std::shared_ptr<Lookup::Attach> const &attach, std::shared_ptr<Subtable> &result, uint16_t &lookupType) {
     using namespace std;
 
     if (!attach || attach->input.empty() || attach->output.empty()) {
@@ -700,27 +705,23 @@ private:
     }
 
     // 2. Collect mark and base glyph IDs
-    vector<uint16_t> markGlyphIds;
-    map<uint16_t, shared_ptr<Glyph>> markGlyphMap; // glyphId -> Glyph
+    set<uint16_t> markGlyphIds;
 
     for (auto const &item : attach->input) {
-      collectGlyphsFromVariant(item, markGlyphIds, markGlyphMap);
+      collectGlyphsFromVariant(item, markGlyphIds);
     }
 
-    vector<uint16_t> baseGlyphIds;
-    map<uint16_t, shared_ptr<Glyph>> baseGlyphMap;                              // glyphId -> Glyph
+    set<uint16_t> baseGlyphIds;
     map<uint16_t, vector<pair<uint16_t, shared_ptr<Anchor>>>> baseGlyphAnchors; // glyphId -> [(classId, Anchor)]
 
     for (auto const &target : attach->output) {
       // Collect glyphs from target
-      vector<uint16_t> targetGlyphIds;
-      map<uint16_t, shared_ptr<Glyph>> targetGlyphMap;
-      collectGlyphsFromVariant(target.target, targetGlyphIds, targetGlyphMap);
+      set<uint16_t> targetGlyphIds;
+      collectGlyphsFromVariant(target.target, targetGlyphIds);
 
       // Assign anchors to each glyph
       for (auto glyphId : targetGlyphIds) {
-        baseGlyphIds.push_back(glyphId);
-        baseGlyphMap[glyphId] = targetGlyphMap[glyphId];
+        baseGlyphIds.insert(glyphId);
 
         // Get class ID from anchor name
         string anchorName = target.anchor->name;
@@ -735,13 +736,6 @@ private:
     if (markGlyphIds.empty() || baseGlyphIds.empty()) {
       return Status::Ok();
     }
-
-    // Remove duplicates and sort
-    sort(markGlyphIds.begin(), markGlyphIds.end());
-    markGlyphIds.erase(unique(markGlyphIds.begin(), markGlyphIds.end()), markGlyphIds.end());
-
-    sort(baseGlyphIds.begin(), baseGlyphIds.end());
-    baseGlyphIds.erase(unique(baseGlyphIds.begin(), baseGlyphIds.end()), baseGlyphIds.end());
 
     // 3. Create Coverage
     auto markCoverage = make_shared<Coverage1>();
@@ -789,7 +783,7 @@ private:
         // Set anchors corresponding to the glyph
         if (baseGlyphAnchors.find(glyphId) != baseGlyphAnchors.end()) {
           for (auto const &[classId, anchor] : baseGlyphAnchors[glyphId]) {
-            auto glyph = baseGlyphMap[glyphId];
+            auto glyph = getGlyphById(glyphId);
             record.baseAnchors[classId] = convertToGposAnchor(anchor, glyph);
           }
         }
@@ -818,7 +812,7 @@ private:
         // Set anchors corresponding to the glyph
         if (baseGlyphAnchors.find(glyphId) != baseGlyphAnchors.end()) {
           for (auto const &[classId, anchor] : baseGlyphAnchors[glyphId]) {
-            auto glyph = baseGlyphMap[glyphId];
+            auto glyph = getGlyphById(glyphId);
             record.mark2Anchors[classId] = convertToGposAnchor(anchor, glyph);
           }
         }
@@ -835,6 +829,7 @@ private:
 public:
   std::shared_ptr<FontFile> font;
   std::unordered_map<std::string, std::shared_ptr<Glyph>> glyphs;
+  std::unordered_map<uint16_t, std::shared_ptr<Glyph>> glyphsLut;
   std::unordered_map<std::string, std::shared_ptr<Group>> groups;
   std::unordered_map<std::string, std::shared_ptr<Anchor>> anchors;
   std::unordered_map<std::string, std::shared_ptr<Lookup>> lookups;
