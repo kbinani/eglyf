@@ -480,17 +480,86 @@ private:
 
     auto const &processMarks = get<Lookup::ProcessMarks>(marks);
 
-    if (holds_alternative<Lookup::ProcessMarks::MarkGlyphs>(processMarks.what)) {
-      auto const &markGlyphs = get<Lookup::ProcessMarks::MarkGlyphs>(processMarks.what);
-      // TODO: Add MarkGlyphs to GlyphDefinitionTable's MarkGlyphSetsDef table and return its index
-      return 0; // Placeholder
-    } else if (holds_alternative<Lookup::ProcessMarks::MarkGroup>(processMarks.what)) {
-      auto const &markGroup = get<Lookup::ProcessMarks::MarkGroup>(processMarks.what);
-      // TODO: Add MarkGroup to GlyphDefinitionTable's MarkGlyphSetsDef table and return its index
-      return 0; // Placeholder
+    // Process only for MarkGlyphs or MarkGroup
+    if (!holds_alternative<Lookup::ProcessMarks::MarkGlyphs>(processMarks.what) &&
+        !holds_alternative<Lookup::ProcessMarks::MarkGroup>(processMarks.what)) {
+      return 0;
     }
 
-    return 0;
+    // Create markGlyphSets if it doesn't exist
+    if (!gdef->markGlyphSets) {
+      gdef->markGlyphSets = MarkGlyphSets();
+      // Update minorVersion to 2 if it's 1 or less
+      if (gdef->minorVersion <= 1) {
+        gdef->minorVersion = 2;
+      }
+    }
+
+    // Collect glyph IDs
+    vector<uint16_t> glyphIds;
+    map<uint16_t, shared_ptr<Glyph>> glyphMap;
+
+    if (holds_alternative<Lookup::ProcessMarks::MarkGlyphs>(processMarks.what)) {
+      auto const &markGlyphs = get<Lookup::ProcessMarks::MarkGlyphs>(processMarks.what);
+      for (auto const &glyph : markGlyphs.glyphs) {
+        if (glyph->id) {
+          glyphIds.push_back(*glyph->id);
+          glyphMap[*glyph->id] = glyph;
+        }
+      }
+    } else if (holds_alternative<Lookup::ProcessMarks::MarkGroup>(processMarks.what)) {
+      auto const &markGroup = get<Lookup::ProcessMarks::MarkGroup>(processMarks.what);
+      collectGlyphsFromGroup(markGroup.group, glyphIds, glyphMap);
+    }
+
+    // Return 0 if no glyph IDs
+    if (glyphIds.empty()) {
+      return 0;
+    }
+
+    // Sort glyph IDs
+    sort(glyphIds.begin(), glyphIds.end());
+    // Remove duplicates
+    glyphIds.erase(unique(glyphIds.begin(), glyphIds.end()), glyphIds.end());
+
+    // Search for existing coverages with the same glyph ID set
+    for (size_t i = 0; i < gdef->markGlyphSets->coverages.size(); i++) {
+      auto existingCoverage1 = dynamic_pointer_cast<Coverage1>(gdef->markGlyphSets->coverages[i]);
+      if (existingCoverage1) {
+        // For Coverage1, compare glyphArray
+        if (existingCoverage1->glyphArray == glyphIds) {
+          // If a Coverage with the same glyph ID set is found, return its index
+          return i;
+        }
+      } else {
+        auto existingCoverage2 = dynamic_pointer_cast<Coverage2>(gdef->markGlyphSets->coverages[i]);
+        if (existingCoverage2) {
+          // For Coverage2, extract glyph ID set from rangeRecords and compare
+          vector<uint16_t> coverage2GlyphIds;
+          for (auto const &rangeRecord : existingCoverage2->rangeRecords) {
+            for (uint16_t glyphId = rangeRecord.startGlyphID; glyphId <= rangeRecord.endGlyphID; glyphId++) {
+              coverage2GlyphIds.push_back(glyphId);
+            }
+          }
+
+          // Compare glyph ID sets
+          if (coverage2GlyphIds == glyphIds) {
+            // If a Coverage with the same glyph ID set is found, return its index
+            return i;
+          }
+        }
+      }
+    }
+
+    // If no Coverage with the same glyph ID set is found, create a new one
+    auto coverage = make_shared<Coverage1>();
+    coverage->glyphArray = glyphIds;
+
+    // Add to markGlyphSets
+    gdef->markGlyphSets->coverages.push_back(coverage);
+
+    // Return the index (0-based)
+    return gdef->markGlyphSets->coverages.size() - 1;
   }
 
   // Function to collect glyphs from a variant (glyph or group)
