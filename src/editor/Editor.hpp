@@ -651,6 +651,7 @@ private:
   // Create attachment subtable (MarkToBase or MarkToMark) from Editor::Lookup::Attach
   Status createAttachmentSubtable(std::shared_ptr<Lookup::Attach> const &attach, std::shared_ptr<Subtable> &result, uint16_t &lookupType) {
     using namespace std;
+    using ClassId = uint16_t;
 
     if (!attach || attach->input.empty() || attach->output.empty()) {
       return Status::Ok();
@@ -686,8 +687,8 @@ private:
     }
 
     // 1. Create mapping from anchor names to mark class IDs
-    map<string, uint16_t> anchorNameToClassId;
-    uint16_t nextClassId = 0;
+    map<string, ClassId> anchorNameToClassId;
+    ClassId nextClassId = 0;
 
     for (auto const &target : attach->output) {
       if (auto anchor = target.anchor) {
@@ -712,7 +713,7 @@ private:
     }
 
     set<uint16_t> baseGlyphIds;
-    map<uint16_t, vector<pair<uint16_t, shared_ptr<Anchor>>>> baseGlyphAnchors; // glyphId -> [(classId, Anchor)]
+    map<uint16_t, vector<pair<ClassId, shared_ptr<Anchor>>>> baseGlyphAnchors; // glyphId -> [(classId, Anchor)]
 
     for (auto const &target : attach->output) {
       // Collect glyphs from target
