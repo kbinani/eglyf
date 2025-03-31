@@ -26,17 +26,14 @@ public:
     struct SkipMarks {};
     struct ProcessMarks {
       struct All {};
-      struct MarkGlyphs {
-        std::vector<std::shared_ptr<Glyph>> glyphs;
-      };
       struct MarkGroup {
         std::shared_ptr<Group> group;
       };
 
       ProcessMarks() {}
-      explicit ProcessMarks(std::variant<ProcessMarks::All, ProcessMarks::MarkGlyphs, ProcessMarks::MarkGroup> what) : what(what) {}
+      explicit ProcessMarks(std::variant<ProcessMarks::All, ProcessMarks::MarkGroup> what) : what(what) {}
 
-      std::variant<ProcessMarks::All, ProcessMarks::MarkGlyphs, ProcessMarks::MarkGroup> what;
+      std::variant<ProcessMarks::All, ProcessMarks::MarkGroup> what;
     };
     std::variant<SkipMarks, ProcessMarks> marks;
 
@@ -373,8 +370,7 @@ private:
       auto const &processMarks = get<Lookup::ProcessMarks>(marks);
 
       // Set Use mark filtering set flag for ProcessMarks::MarkGlyphs or ProcessMarks::MarkGroup
-      if (holds_alternative<Lookup::ProcessMarks::MarkGlyphs>(processMarks.what) ||
-          holds_alternative<Lookup::ProcessMarks::MarkGroup>(processMarks.what)) {
+      if (holds_alternative<Lookup::ProcessMarks::MarkGroup>(processMarks.what)) {
         flag |= 0x0010; // Use mark filtering set
       }
     }
@@ -481,10 +477,10 @@ private:
     auto const &processMarks = get<Lookup::ProcessMarks>(marks);
 
     // Process only for MarkGlyphs or MarkGroup
-    if (!holds_alternative<Lookup::ProcessMarks::MarkGlyphs>(processMarks.what) &&
-        !holds_alternative<Lookup::ProcessMarks::MarkGroup>(processMarks.what)) {
+    if (!holds_alternative<Lookup::ProcessMarks::MarkGroup>(processMarks.what)) {
       return 0;
     }
+    auto const &markGroup = get<Lookup::ProcessMarks::MarkGroup>(processMarks.what);
 
     // Create markGlyphSets if it doesn't exist
     if (!gdef->markGlyphSets) {
@@ -498,19 +494,7 @@ private:
     // Collect glyph IDs
     vector<uint16_t> glyphIds;
     map<uint16_t, shared_ptr<Glyph>> glyphMap;
-
-    if (holds_alternative<Lookup::ProcessMarks::MarkGlyphs>(processMarks.what)) {
-      auto const &markGlyphs = get<Lookup::ProcessMarks::MarkGlyphs>(processMarks.what);
-      for (auto const &glyph : markGlyphs.glyphs) {
-        if (glyph->id) {
-          glyphIds.push_back(*glyph->id);
-          glyphMap[*glyph->id] = glyph;
-        }
-      }
-    } else if (holds_alternative<Lookup::ProcessMarks::MarkGroup>(processMarks.what)) {
-      auto const &markGroup = get<Lookup::ProcessMarks::MarkGroup>(processMarks.what);
-      collectGlyphsFromGroup(markGroup.group, glyphIds, glyphMap);
-    }
+    collectGlyphsFromGroup(markGroup.group, glyphIds, glyphMap);
 
     // Return 0 if no glyph IDs
     if (glyphIds.empty()) {

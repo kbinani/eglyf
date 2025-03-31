@@ -233,13 +233,13 @@ private:
         if (tokens.empty()) {
           return EGLYF_ERROR_WHAT("Missing glyph name for MARK_GLYPH_SET");
         }
-        auto glyphName = unquote(tokens[0]);
-        auto glyph = editor->getGlyphByName(string(glyphName));
-        lookup->marks = Editor::Lookup::ProcessMarks(Editor::Lookup::ProcessMarks::MarkGlyphs{{glyph}});
+        auto groupName = unquote(tokens[0]);
+        auto group = editor->getGroupByName(string(groupName));
+        lookup->marks = Editor::Lookup::ProcessMarks(Editor::Lookup::ProcessMarks::MarkGroup{group});
         tokens.pop_front(); // Remove glyph name
       } else if (marksWhat == "ALL" || marksWhat == "\"ALL\"") {
         lookup->marks = Editor::Lookup::ProcessMarks(Editor::Lookup::ProcessMarks::All{});
-      } else if (marksWhat[0] == '"') {
+      } else if (marksWhat.starts_with('"') || marksWhat == "MARK_GLYPH_SET") {
         // Group name
         auto groupName = unquote(marksWhat);
         auto group = editor->getGroupByName(string(groupName));
