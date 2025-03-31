@@ -207,14 +207,12 @@ public:
     return f;
   }
 
-  std::shared_ptr<SubtableCollection<Subtable>::Lookup> convertLookup(std::shared_ptr<Lookup> const &lookup) const {
+  Status convertLookup(std::shared_ptr<Lookup> const &lookup, std::shared_ptr<SubtableCollection<Subtable>::Lookup> &result) const {
     using namespace std;
 
-    // For Lookups with adjustSingle
     if (lookup->adjustSingle) {
       auto originalSubtable = createAdjustSingleSubtable(lookup->adjustSingle);
       if (originalSubtable) {
-        // Wrap the original subtable in an Extension Positioning subtable
         auto extensionSubtable = make_shared<gpos::PositioningExtension>();
         extensionSubtable->extensionLookupType = 1; // SingleAdjustment
         extensionSubtable->extension = originalSubtable;
@@ -227,19 +225,21 @@ public:
 
         auto gposLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
         gposLookup->data = lookupData;
-        return gposLookup;
+        result.swap(gposLookup);
+        return Status::Ok();
       }
     }
 
-    // For Lookups with attach
     if (lookup->attach) {
-      uint16_t originalLookupType = 4; // Default to MarkToBaseAttachment
-      auto originalSubtable = createAttachmentSubtable(lookup->attach, originalLookupType);
-      if (originalSubtable) {
-        // Wrap the original subtable in an Extension Positioning subtable
+      shared_ptr<Subtable> subtable;
+      uint16_t lookupType = 0;
+      if (auto st = createAttachmentSubtable(lookup->attach, subtable, lookupType); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+      if (subtable) {
         auto extensionSubtable = make_shared<gpos::PositioningExtension>();
-        extensionSubtable->extensionLookupType = originalLookupType; // MarkToBaseAttachment or MarkToMarkAttachmentPositioning
-        extensionSubtable->extension = originalSubtable;
+        extensionSubtable->extensionLookupType = lookupType;
+        extensionSubtable->extension = subtable;
 
         auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
         lookupData->lookupType = 9; // Extension Positioning
@@ -249,15 +249,14 @@ public:
 
         auto gposLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
         gposLookup->data = lookupData;
-        return gposLookup;
+        result.swap(gposLookup);
+        return Status::Ok();
       }
     }
 
-    // For other types of Lookups (to be implemented in the future)
-    // ...
+    // TODO:
 
-    // Return nullptr if conversion is not possible
-    return nullptr;
+    return Status::Ok();
   }
 
   Status compile() {
@@ -277,7 +276,10 @@ public:
     // Convert each Lookup and store in a map
     map<shared_ptr<Lookup>, shared_ptr<SubtableCollection<Subtable>::Lookup>> convertedLookups;
     for (auto const &[name, lookup] : lookups) {
-      auto converted = convertLookup(lookup);
+      shared_ptr<SubtableCollection<Subtable>::Lookup> converted;
+      if (auto st = convertLookup(lookup, converted); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
       convertedLookups[lookup] = converted; // Will be nullptr if conversion is not possible
     }
 
@@ -551,74 +553,73 @@ private:
   }
 
   // Determine if all glyphs in a variant are mark glyphs
-  bool areAllMarkGlyphs(std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>> const &item) const {
+  void countGlyphType(std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>> const &item, size_t &base, size_t &mark) const {
     using namespace std;
 
     if (holds_alternative<shared_ptr<Glyph>>(item)) {
       auto glyph = get<shared_ptr<Glyph>>(item);
-      return isMarkGlyph(glyph);
+      if (isMarkGlyph(glyph)) {
+        mark++;
+      } else {
+        base++;
+      }
     } else if (holds_alternative<shared_ptr<Group>>(item)) {
       auto group = get<shared_ptr<Group>>(item);
-      return areAllMarkGlyphsInGroup(group);
+      countGlyphTypeInGroup(group, base, mark);
     }
-
-    return false;
   }
 
   // Determine if all glyphs in a group are mark glyphs
-  bool areAllMarkGlyphsInGroup(std::shared_ptr<Group> const &group) const {
+  void countGlyphTypeInGroup(std::shared_ptr<Group> const &group, size_t &base, size_t &mark) const {
     using namespace std;
 
     for (auto const &member : group->members) {
       if (holds_alternative<shared_ptr<Glyph>>(member)) {
         auto glyph = get<shared_ptr<Glyph>>(member);
-        if (!isMarkGlyph(glyph)) {
-          return false;
+        if (isMarkGlyph(glyph)) {
+          mark++;
+        } else {
+          base++;
         }
       } else if (holds_alternative<shared_ptr<Group>>(member)) {
         auto subgroup = get<shared_ptr<Group>>(member);
-        if (!areAllMarkGlyphsInGroup(subgroup)) {
-          return false;
-        }
+        countGlyphTypeInGroup(subgroup, base, mark);
       }
     }
-
-    return true;
   }
 
   // Create attachment subtable (MarkToBase or MarkToMark) from Editor::Lookup::Attach
-  std::shared_ptr<Subtable> createAttachmentSubtable(std::shared_ptr<Lookup::Attach> const &attach, uint16_t &lookupType) const {
+  Status createAttachmentSubtable(std::shared_ptr<Lookup::Attach> const &attach, std::shared_ptr<Subtable> &result, uint16_t &lookupType) const {
     using namespace std;
 
     if (!attach || attach->input.empty() || attach->output.empty()) {
-      return nullptr;
+      return Status::Ok();
     }
 
     // Check if input glyphs are all mark glyphs
+    size_t inputBase = 0;
+    size_t inputMark = 0;
     bool inputIsAllMarks = true;
     for (auto const &item : attach->input) {
-      if (!areAllMarkGlyphs(item)) {
-        inputIsAllMarks = false;
-        break;
-      }
-    }
-
-    if (!inputIsAllMarks) {
-      // Input must be mark glyphs for both MarkToBase and MarkToMark
-      return nullptr;
+      countGlyphType(item, inputBase, inputMark);
     }
 
     // Check if output glyphs are all mark glyphs
+    size_t outputBase = 0;
+    size_t outputMark = 0;
     bool outputIsAllMarks = true;
     for (auto const &target : attach->output) {
-      if (!areAllMarkGlyphs(target.target)) {
-        outputIsAllMarks = false;
-        break;
-      }
+      countGlyphType(target.target, outputBase, outputMark);
     }
 
     // Determine lookup type based on output glyphs
-    if (outputIsAllMarks) {
+    if (inputBase * outputBase != 0) {
+      return EGLYF_ERROR;
+    }
+    if (outputBase != 0) {
+      return EGLYF_ERROR;
+    }
+    if (outputBase == 0) {
       lookupType = 6; // MarkToMarkAttachmentPositioning
     } else {
       lookupType = 4; // MarkToBaseAttachment
@@ -639,9 +640,8 @@ private:
       }
     }
 
-    // Cannot convert if no mark classes are found
     if (anchorNameToClassId.empty()) {
-      return nullptr;
+      return EGLYF_ERROR_WHAT("Cannot convert if no mark classes are found");
     }
 
     // 2. Collect mark and base glyph IDs
@@ -678,7 +678,7 @@ private:
 
     // Return nullptr if no glyph IDs are found
     if (markGlyphIds.empty() || baseGlyphIds.empty()) {
-      return nullptr;
+      return Status::Ok();
     }
 
     // Remove duplicates and sort
@@ -717,7 +717,8 @@ private:
     // 5. Create BaseArray or Mark2Array
     if (lookupType == 4) {
       // MarkToBaseAttachment
-      auto subtable = make_shared<gpos::MarkToBaseAttachment>();
+
+      auto subtable = make_unique<gpos::MarkToBaseAttachment>();
       subtable->markCoverage = markCoverage;
       subtable->baseCoverage = baseCoverage;
       subtable->markArray = markArray;
@@ -742,10 +743,11 @@ private:
       }
 
       subtable->baseArray = baseArray;
-      return subtable;
+      result.reset(subtable.release());
+      return Status::Ok();
     } else {
       // MarkToMarkAttachmentPositioning
-      auto subtable = make_shared<gpos::MarkToMarkAttachmentPositioning>();
+      auto subtable = make_unique<gpos::MarkToMarkAttachmentPositioning>();
       subtable->mark1Coverage = markCoverage;
       subtable->mark2Coverage = baseCoverage;
       subtable->mark1Array = markArray;
@@ -770,14 +772,9 @@ private:
       }
 
       subtable->mark2Array = mark2Array;
-      return subtable;
+      result.reset(subtable.release());
+      return Status::Ok();
     }
-  }
-
-  // Create MarkToBaseAttachment subtable from Editor::Lookup::Attach
-  std::shared_ptr<Subtable> createMarkToBaseAttachmentSubtable(std::shared_ptr<Lookup::Attach> const &attach) const {
-    uint16_t lookupType = 4; // Default to MarkToBaseAttachment
-    return createAttachmentSubtable(attach, lookupType);
   }
 
 public:
