@@ -268,7 +268,89 @@ public:
       }
     }
 
-    // TODO:
+    if (!lookup->substitutions.empty()) {
+      // Check if the substitution is context-independent
+      bool isContextIndependent = !lookup->exceptContext && !lookup->inContext;
+
+      if (isContextIndependent) {
+        // Process simple Single Substitution
+        bool isSingleSubstitution = true;
+        set<uint16_t> inputGlyphIds;
+        map<uint16_t, uint16_t> substitutionMap; // input glyph ID -> output glyph ID
+
+        for (auto const &subst : lookup->substitutions) {
+          // Check if the input and output have the same number of elements
+          if (subst->input.size() != subst->output.size()) {
+            isSingleSubstitution = false;
+            break;
+          }
+
+          // Check if all elements are glyphs (not groups)
+          bool allGlyphs = true;
+          for (size_t i = 0; i < subst->input.size(); i++) {
+            if (!holds_alternative<shared_ptr<Glyph>>(subst->input[i]) ||
+                !holds_alternative<shared_ptr<Glyph>>(subst->output[i])) {
+              allGlyphs = false;
+              break;
+            }
+          }
+
+          if (!allGlyphs) {
+            isSingleSubstitution = false;
+            break;
+          }
+
+          // Map input and output glyphs
+          for (size_t i = 0; i < subst->input.size(); i++) {
+            auto inputGlyph = get<shared_ptr<Glyph>>(subst->input[i]);
+            auto outputGlyph = get<shared_ptr<Glyph>>(subst->output[i]);
+
+            if (!inputGlyph->id || !outputGlyph->id) {
+              isSingleSubstitution = false;
+              break;
+            }
+
+            inputGlyphIds.insert(*inputGlyph->id);
+            substitutionMap[*inputGlyph->id] = *outputGlyph->id;
+          }
+        }
+
+        if (isSingleSubstitution && !inputGlyphIds.empty()) {
+          // Create SingleFormat2
+          auto subtable = make_shared<gsub::SingleFormat2>();
+
+          // Create Coverage
+          auto coverage = make_shared<Coverage1>();
+          coverage->glyphArray = inputGlyphIds;
+          subtable->coverage = coverage;
+
+          // Create substituteGlyphIDs
+          for (auto glyphId : inputGlyphIds) {
+            subtable->substituteGlyphIDs.push_back(substitutionMap[glyphId]);
+          }
+
+          // Wrap with SubstitutionExtension
+          auto extensionSubtable = make_shared<gsub::SubstitutionExtension>();
+          extensionSubtable->extensionLookupType = 1; // Single Substitution
+          extensionSubtable->extension = subtable;
+
+          // Create LookupData
+          auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
+          lookupData->lookupType = 7; // Extension Substitution
+          lookupData->lookupFlag = convertLookupFlag(lookup->base, lookup->marks);
+          lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
+          lookupData->subtables.push_back(extensionSubtable);
+
+          // Create Lookup
+          auto gsubLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
+          gsubLookup->data = lookupData;
+          result.swap(gsubLookup);
+          return Status::Ok();
+        }
+      }
+
+      // TODO: Implement context-dependent Substitution
+    }
 
     return Status::Ok();
   }
