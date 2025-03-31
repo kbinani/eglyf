@@ -2,6 +2,8 @@
 
 namespace eglyf {
 
+class Editor;
+
 class VtpParser {
 private:
   struct GroupBuilder {
@@ -275,7 +277,9 @@ private:
         if (!status.ok()) {
           return EGLYF_STATUS_PUSH(status);
         }
-        lookup->exceptContext = context;
+        if (!context->left.empty() || !context->right.empty()) {
+          lookup->exceptContext = context;
+        }
       } else if (l == "IN_CONTEXT") {
         auto context = make_shared<Editor::Lookup::Context>(
             initializer_list<variant<shared_ptr<Editor::Glyph>, shared_ptr<Editor::Group>>>{},
@@ -284,7 +288,9 @@ private:
         if (!status.ok()) {
           return EGLYF_STATUS_PUSH(status);
         }
-        lookup->inContext = context;
+        if (!context->left.empty() || !context->right.empty()) {
+          lookup->inContext = context;
+        }
       } else if (l == "AS_SUBSTITUTION") {
         lookup->substitutions.clear();
         auto status = parseSubstitution(lines, i, *lookup);
