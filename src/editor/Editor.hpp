@@ -289,8 +289,157 @@ public:
     return Status::Ok();
   }
 
+  // Function to extract glyph IDs from a variant (glyph or group) while preserving order
+  void expandGlyphsFromVariant(GG const &item,
+                               std::vector<uint16_t> &glyphIds) const {
+    using namespace std;
+
+    if (holds_alternative<shared_ptr<Glyph>>(item)) {
+      auto glyph = get<shared_ptr<Glyph>>(item);
+      if (glyph->id) {
+        glyphIds.push_back(*glyph->id);
+      }
+    } else if (holds_alternative<shared_ptr<Group>>(item)) {
+      auto group = get<shared_ptr<Group>>(item);
+      expandGlyphsFromGroup(group, glyphIds);
+    }
+  }
+
+  // Function to recursively extract glyph IDs from a group while preserving order
+  void expandGlyphsFromGroup(std::shared_ptr<Group> const &group,
+                             std::vector<uint16_t> &glyphIds) const {
+    using namespace std;
+
+    for (auto const &member : group->members) {
+      if (holds_alternative<shared_ptr<Glyph>>(member)) {
+        auto glyph = get<shared_ptr<Glyph>>(member);
+        if (glyph->id) {
+          glyphIds.push_back(*glyph->id);
+        }
+      } else if (holds_alternative<shared_ptr<Group>>(member)) {
+        auto subgroup = get<shared_ptr<Group>>(member);
+        expandGlyphsFromGroup(subgroup, glyphIds);
+      }
+    }
+  }
+
   Status convertSingleGsubLookup(std::vector<std::pair<GG, GG>> const &substitutions,
                                  std::shared_ptr<Subtable> &subtable) {
+    using namespace std;
+
+    if (substitutions.empty()) {
+      return Status::Ok();
+    }
+
+    // Map to store the mapping between input glyph IDs and output glyph IDs
+    map<uint16_t, uint16_t> glyphMap;
+
+    // Vector to preserve the order of glyph IDs included in the Coverage
+    vector<uint16_t> coverageGlyphIds;
+
+    // Process each substitution pair
+    for (auto const &[input, output] : substitutions) {
+      // Extract glyph IDs from input (preserving order)
+      vector<uint16_t> inputGlyphIds;
+      expandGlyphsFromVariant(input, inputGlyphIds);
+
+      // Extract glyph IDs from output (preserving order)
+      vector<uint16_t> outputGlyphIds;
+      expandGlyphsFromVariant(output, outputGlyphIds);
+
+      // Error if input is a single glyph and output is a group (this is a multiple substitution)
+      if (inputGlyphIds.size() == 1 && outputGlyphIds.size() > 1) {
+        return EGLYF_ERROR_WHAT("Single to multiple substitution is not supported in convertSingleGsubLookup");
+      }
+
+      // Check if both input and output are groups, their glyph counts must match
+      if (inputGlyphIds.size() > 1 && outputGlyphIds.size() > 1 && inputGlyphIds.size() != outputGlyphIds.size()) {
+        return EGLYF_ERROR_WHAT("Group to group substitution requires equal number of glyphs");
+      }
+
+      // Create glyph ID mapping
+      if (inputGlyphIds.size() == 1 && outputGlyphIds.size() == 1) {
+        // Single glyph to single glyph substitution
+        uint16_t inputGlyphId = inputGlyphIds[0];
+        uint16_t outputGlyphId = outputGlyphIds[0];
+
+        // Add to Coverage if not already processed
+        if (glyphMap.find(inputGlyphId) == glyphMap.end()) {
+          coverageGlyphIds.push_back(inputGlyphId);
+        }
+
+        glyphMap[inputGlyphId] = outputGlyphId;
+      } else if (inputGlyphIds.size() > 1 && outputGlyphIds.size() == 1) {
+        // Group to single glyph substitution
+        uint16_t outputGlyphId = outputGlyphIds[0];
+
+        for (auto inputGlyphId : inputGlyphIds) {
+          // Add to Coverage if not already processed
+          if (glyphMap.find(inputGlyphId) == glyphMap.end()) {
+            coverageGlyphIds.push_back(inputGlyphId);
+          }
+
+          glyphMap[inputGlyphId] = outputGlyphId;
+        }
+      } else if (inputGlyphIds.size() > 1 && outputGlyphIds.size() > 1) {
+        // Group to group substitution (when glyph counts match)
+        for (size_t i = 0; i < inputGlyphIds.size(); ++i) {
+          uint16_t inputGlyphId = inputGlyphIds[i];
+          uint16_t outputGlyphId = outputGlyphIds[i];
+
+          // Add to Coverage if not already processed
+          if (glyphMap.find(inputGlyphId) == glyphMap.end()) {
+            coverageGlyphIds.push_back(inputGlyphId);
+          }
+
+          glyphMap[inputGlyphId] = outputGlyphId;
+        }
+      }
+    }
+
+    // Do nothing if the glyph map is empty
+    if (glyphMap.empty()) {
+      return Status::Ok();
+    }
+
+    // Create Coverage
+    auto coverage = make_shared<Coverage1>();
+    for (auto glyphId : coverageGlyphIds) {
+      coverage->glyphArray.insert(glyphId);
+    }
+
+    // Check if all substitutions have the same deltaGlyphID
+    bool allSameDelta = true;
+    int16_t firstDelta = static_cast<int16_t>(glyphMap[coverageGlyphIds[0]]) - static_cast<int16_t>(coverageGlyphIds[0]);
+
+    for (auto glyphId : coverageGlyphIds) {
+      int16_t delta = static_cast<int16_t>(glyphMap[glyphId]) - static_cast<int16_t>(glyphId);
+      if (delta != firstDelta) {
+        allSameDelta = false;
+        break;
+      }
+    }
+
+    // Create Subtable
+    if (allSameDelta) {
+      // Use SingleFormat1 if all substitutions have the same deltaGlyphID
+      auto format1 = make_shared<gsub::SingleFormat1>();
+      format1->coverage = coverage;
+      format1->deltaGlyphID = firstDelta;
+      subtable = format1;
+    } else {
+      // Use SingleFormat2 if substitutions have different deltaGlyphIDs
+      auto format2 = make_shared<gsub::SingleFormat2>();
+      format2->coverage = coverage;
+
+      // Create substituteGlyphIDs (in the same order as Coverage)
+      for (auto glyphId : coverage->glyphArray) {
+        format2->substituteGlyphIDs.push_back(glyphMap[glyphId]);
+      }
+
+      subtable = format2;
+    }
+
     return Status::Ok();
   }
 
