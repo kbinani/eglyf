@@ -289,40 +289,6 @@ public:
     return Status::Ok();
   }
 
-  // Function to extract glyph IDs from a variant (glyph or group) while preserving order
-  void expandGlyphsFromVariant(GG const &item,
-                               std::vector<uint16_t> &glyphIds) const {
-    using namespace std;
-
-    if (holds_alternative<shared_ptr<Glyph>>(item)) {
-      auto glyph = get<shared_ptr<Glyph>>(item);
-      if (glyph->id) {
-        glyphIds.push_back(*glyph->id);
-      }
-    } else if (holds_alternative<shared_ptr<Group>>(item)) {
-      auto group = get<shared_ptr<Group>>(item);
-      expandGlyphsFromGroup(group, glyphIds);
-    }
-  }
-
-  // Function to recursively extract glyph IDs from a group while preserving order
-  void expandGlyphsFromGroup(std::shared_ptr<Group> const &group,
-                             std::vector<uint16_t> &glyphIds) const {
-    using namespace std;
-
-    for (auto const &member : group->members) {
-      if (holds_alternative<shared_ptr<Glyph>>(member)) {
-        auto glyph = get<shared_ptr<Glyph>>(member);
-        if (glyph->id) {
-          glyphIds.push_back(*glyph->id);
-        }
-      } else if (holds_alternative<shared_ptr<Group>>(member)) {
-        auto subgroup = get<shared_ptr<Group>>(member);
-        expandGlyphsFromGroup(subgroup, glyphIds);
-      }
-    }
-  }
-
   Status convertSingleGsubLookup(std::vector<std::pair<GG, GG>> const &substitutions,
                                  std::shared_ptr<Subtable> &subtable) {
     using namespace std;
@@ -341,11 +307,11 @@ public:
     for (auto const &[input, output] : substitutions) {
       // Extract glyph IDs from input (preserving order)
       vector<uint16_t> inputGlyphIds;
-      expandGlyphsFromVariant(input, inputGlyphIds);
+      collectGlyphVector(input, inputGlyphIds);
 
       // Extract glyph IDs from output (preserving order)
       vector<uint16_t> outputGlyphIds;
-      expandGlyphsFromVariant(output, outputGlyphIds);
+      collectGlyphVector(output, outputGlyphIds);
 
       // Error if input is a single glyph and output is a group (this is a multiple substitution)
       if (inputGlyphIds.size() == 1 && outputGlyphIds.size() > 1) {
@@ -852,7 +818,7 @@ private:
 
     // Collect glyph IDs
     set<uint16_t> glyphIds;
-    collectGlyphsFromGroup(markGroup.group, glyphIds);
+    collectGlyphSetFromGroup(markGroup.group, glyphIds);
 
     // Return 0 if no glyph IDs
     if (glyphIds.empty()) {
@@ -900,8 +866,8 @@ private:
   }
 
   // Function to collect glyphs from a variant (glyph or group)
-  void collectGlyphsFromVariant(GG const &item,
-                                std::set<uint16_t> &glyphIds) const {
+  void collectGlyphSet(GG const &item,
+                       std::set<uint16_t> &glyphIds) const {
     using namespace std;
 
     if (holds_alternative<shared_ptr<Glyph>>(item)) {
@@ -911,13 +877,13 @@ private:
       }
     } else if (holds_alternative<shared_ptr<Group>>(item)) {
       auto group = get<shared_ptr<Group>>(item);
-      collectGlyphsFromGroup(group, glyphIds);
+      collectGlyphSetFromGroup(group, glyphIds);
     }
   }
 
   // Function to recursively collect glyphs from a group
-  void collectGlyphsFromGroup(std::shared_ptr<Group> const &group,
-                              std::set<uint16_t> &glyphIds) const {
+  void collectGlyphSetFromGroup(std::shared_ptr<Group> const &group,
+                                std::set<uint16_t> &glyphIds) const {
     using namespace std;
 
     for (auto const &member : group->members) {
@@ -928,7 +894,41 @@ private:
         }
       } else if (holds_alternative<shared_ptr<Group>>(member)) {
         auto subgroup = get<shared_ptr<Group>>(member);
-        collectGlyphsFromGroup(subgroup, glyphIds);
+        collectGlyphSetFromGroup(subgroup, glyphIds);
+      }
+    }
+  }
+
+  // Function to extract glyph IDs from a variant (glyph or group) while preserving order
+  void collectGlyphVector(GG const &item,
+                          std::vector<uint16_t> &glyphIds) const {
+    using namespace std;
+
+    if (holds_alternative<shared_ptr<Glyph>>(item)) {
+      auto glyph = get<shared_ptr<Glyph>>(item);
+      if (glyph->id) {
+        glyphIds.push_back(*glyph->id);
+      }
+    } else if (holds_alternative<shared_ptr<Group>>(item)) {
+      auto group = get<shared_ptr<Group>>(item);
+      collectGlyphVectorFromGroup(group, glyphIds);
+    }
+  }
+
+  // Function to recursively extract glyph IDs from a group while preserving order
+  void collectGlyphVectorFromGroup(std::shared_ptr<Group> const &group,
+                                   std::vector<uint16_t> &glyphIds) const {
+    using namespace std;
+
+    for (auto const &member : group->members) {
+      if (holds_alternative<shared_ptr<Glyph>>(member)) {
+        auto glyph = get<shared_ptr<Glyph>>(member);
+        if (glyph->id) {
+          glyphIds.push_back(*glyph->id);
+        }
+      } else if (holds_alternative<shared_ptr<Group>>(member)) {
+        auto subgroup = get<shared_ptr<Group>>(member);
+        collectGlyphVectorFromGroup(subgroup, glyphIds);
       }
     }
   }
@@ -1053,7 +1053,7 @@ private:
     set<uint16_t> markGlyphIds;
 
     for (auto const &item : attach->input) {
-      collectGlyphsFromVariant(item, markGlyphIds);
+      collectGlyphSet(item, markGlyphIds);
     }
 
     set<uint16_t> baseGlyphIds;
@@ -1062,7 +1062,7 @@ private:
     for (auto const &target : attach->output) {
       // Collect glyphs from target
       set<uint16_t> targetGlyphIds;
-      collectGlyphsFromVariant(target.target, targetGlyphIds);
+      collectGlyphSet(target.target, targetGlyphIds);
 
       // Assign anchors to each glyph
       for (auto glyphId : targetGlyphIds) {
