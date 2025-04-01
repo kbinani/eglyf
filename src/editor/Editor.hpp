@@ -10,8 +10,10 @@ public:
   };
 
   struct Group {
-    std::vector<std::variant<std::shared_ptr<Group>, std::shared_ptr<Glyph>>> members;
+    std::vector<std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>>> members;
   };
+
+  using GG = std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>>;
 
   struct Anchor {
     std::string name;
@@ -38,25 +40,25 @@ public:
     std::variant<SkipMarks, ProcessMarks> marks;
 
     struct Context {
-      Context(std::initializer_list<std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>>> left, std::initializer_list<std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>>> right) : left(left), right(right) {
+      Context(std::initializer_list<GG> left, std::initializer_list<GG> right) : left(left), right(right) {
       }
 
-      std::vector<std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>>> left;
-      std::vector<std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>>> right;
+      std::vector<GG> left;
+      std::vector<GG> right;
     };
     std::shared_ptr<Context> exceptContext;
     std::shared_ptr<Context> inContext;
 
     struct AttachTarget {
-      AttachTarget(std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>> target, std::shared_ptr<Anchor> const &anchor) : target(target), anchor(anchor) {}
+      AttachTarget(GG target, std::shared_ptr<Anchor> const &anchor) : target(target), anchor(anchor) {}
 
-      std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>> target;
+      GG target;
       std::shared_ptr<Anchor> anchor;
     };
     struct Attach {
-      Attach(std::initializer_list<std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>>> input, std::initializer_list<AttachTarget> output) : input(input), output(output) {}
+      Attach(std::initializer_list<GG> input, std::initializer_list<AttachTarget> output) : input(input), output(output) {}
 
-      std::vector<std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>>> input;
+      std::vector<GG> input;
       std::vector<AttachTarget> output;
     };
     std::shared_ptr<Attach> attach;
@@ -76,8 +78,8 @@ public:
     std::shared_ptr<AdjustSingle> adjustSingle;
 
     struct Substitution {
-      std::vector<std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>>> input;
-      std::vector<std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>>> output;
+      std::vector<GG> input;
+      std::vector<GG> output;
     };
     std::vector<std::shared_ptr<Substitution>> substitutions;
 
@@ -221,13 +223,17 @@ public:
     return f;
   }
 
-  Status convertLookup(std::shared_ptr<Lookup> const &lookup, std::shared_ptr<SubtableCollection<Subtable>::Lookup> &result) {
+  Status convertLookup(std::shared_ptr<Lookup> const &lookup, std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> &result) {
     using namespace std;
 
     if (!lookup->substitutions.empty()) {
-      return convertGsubLookup(lookup, result);
+      return EGLYF_STATUS_PUSH(convertGsubLookup(lookup, result));
     } else if (lookup->adjustSingle || lookup->attach) {
-      return convertGposLookup(lookup, result);
+      shared_ptr<SubtableCollection<Subtable>::Lookup> ret;
+      if (auto st = convertGposLookup(lookup, ret); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+      result.push_back(ret);
     }
 
     return Status::Ok();
@@ -283,18 +289,31 @@ public:
     return Status::Ok();
   }
 
-  Status convertGsubLookup(std::shared_ptr<Lookup> const &lookup, std::shared_ptr<SubtableCollection<Subtable>::Lookup> &result) {
+  Status convertSingleGsubLookup(std::vector<std::pair<GG, GG>> const &substitutions,
+                                 std::shared_ptr<Subtable> &subtable) {
+    return Status::Ok();
+  }
+
+  Status convertMultipleGsubLookup(std::vector<std::pair<GG, std::vector<GG>>> const &substitutions,
+                                   std::shared_ptr<Subtable> &subtable) {
+    return Status::Ok();
+  }
+
+  Status convertLigatureGsubLookup(std::vector<std::pair<std::vector<GG>, GG>> const &substitutions,
+                                   std::shared_ptr<Subtable> &subtable) {
+    return Status::Ok();
+  }
+
+  Status convertGsubLookup(std::shared_ptr<Lookup> const &lookup, std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> &result) {
     using namespace std;
 
     if (lookup->substitutions.empty()) {
       return Status::Ok();
     }
 
-    using Item = variant<shared_ptr<Glyph>, shared_ptr<Group>>;
-
-    vector<pair<Item, Item>> single;
-    vector<pair<Item, vector<Item>>> multiple;
-    vector<pair<vector<Item>, Item>> ligature;
+    vector<pair<GG, GG>> single;
+    vector<pair<GG, vector<GG>>> multiple;
+    vector<pair<vector<GG>, GG>> ligature;
 
     for (auto const &subst : lookup->substitutions) {
       if (subst->input.size() == 1 && subst->output.size()) {
@@ -308,88 +327,74 @@ public:
       }
     }
 
-    if (!lookup->substitutions.empty()) {
-      // Check if the substitution is context-independent
-      bool isContextIndependent = !lookup->exceptContext && !lookup->inContext;
-
-      if (isContextIndependent) {
-        // Process simple Single Substitution
-        bool isSingleSubstitution = true;
-        set<uint16_t> inputGlyphIds;
-        map<uint16_t, uint16_t> substitutionMap; // input glyph ID -> output glyph ID
-
-        for (auto const &subst : lookup->substitutions) {
-          // Check if the input and output have the same number of elements
-          if (subst->input.size() != subst->output.size()) {
-            isSingleSubstitution = false;
-            break;
-          }
-
-          // Check if all elements are glyphs (not groups)
-          bool allGlyphs = true;
-          for (size_t i = 0; i < subst->input.size(); i++) {
-            if (!holds_alternative<shared_ptr<Glyph>>(subst->input[i]) ||
-                !holds_alternative<shared_ptr<Glyph>>(subst->output[i])) {
-              allGlyphs = false;
-              break;
-            }
-          }
-
-          if (!allGlyphs) {
-            isSingleSubstitution = false;
-            break;
-          }
-
-          // Map input and output glyphs
-          for (size_t i = 0; i < subst->input.size(); i++) {
-            auto inputGlyph = get<shared_ptr<Glyph>>(subst->input[i]);
-            auto outputGlyph = get<shared_ptr<Glyph>>(subst->output[i]);
-
-            if (!inputGlyph->id || !outputGlyph->id) {
-              isSingleSubstitution = false;
-              break;
-            }
-
-            inputGlyphIds.insert(*inputGlyph->id);
-            substitutionMap[*inputGlyph->id] = *outputGlyph->id;
-          }
-        }
-
-        if (isSingleSubstitution && !inputGlyphIds.empty()) {
-          // Create SingleFormat2
-          auto subtable = make_shared<gsub::SingleFormat2>();
-
-          // Create Coverage
-          auto coverage = make_shared<Coverage1>();
-          coverage->glyphArray = inputGlyphIds;
-          subtable->coverage = coverage;
-
-          // Create substituteGlyphIDs
-          for (auto glyphId : inputGlyphIds) {
-            subtable->substituteGlyphIDs.push_back(substitutionMap[glyphId]);
-          }
-
-          // Wrap with SubstitutionExtension
-          auto extensionSubtable = make_shared<gsub::SubstitutionExtension>();
-          extensionSubtable->extensionLookupType = 1; // Single Substitution
-          extensionSubtable->extension = subtable;
-
-          // Create LookupData
-          auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
-          lookupData->lookupType = 7; // Extension Substitution
-          lookupData->lookupFlag = convertLookupFlag(lookup->base, lookup->marks);
-          lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
-          lookupData->subtables.push_back(extensionSubtable);
-
-          // Create Lookup
-          auto gsubLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
-          gsubLookup->data = lookupData;
-          result.swap(gsubLookup);
-          return Status::Ok();
-        }
+    if (!single.empty()) {
+      shared_ptr<Subtable> subtable;
+      if (auto st = convertSingleGsubLookup(single, subtable); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
 
-      // TODO: Implement context-dependent Substitution
+      if (subtable) {
+        auto extensionSubtable = make_shared<gsub::SubstitutionExtension>();
+        extensionSubtable->extensionLookupType = 1;
+        extensionSubtable->extension = subtable;
+
+        auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
+        lookupData->lookupType = 7; // Extension Substitution
+        lookupData->lookupFlag = convertLookupFlag(lookup->base, lookup->marks);
+        lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
+        lookupData->subtables.push_back(extensionSubtable);
+
+        auto gsubLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
+        gsubLookup->data = lookupData;
+
+        result.push_back(gsubLookup);
+      }
+    }
+    if (!multiple.empty()) {
+      shared_ptr<Subtable> subtable;
+      if (auto st = convertMultipleGsubLookup(multiple, subtable); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+
+      if (subtable) {
+        auto extensionSubtable = make_shared<gsub::SubstitutionExtension>();
+        extensionSubtable->extensionLookupType = 2;
+        extensionSubtable->extension = subtable;
+
+        auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
+        lookupData->lookupType = 7; // Extension Substitution
+        lookupData->lookupFlag = convertLookupFlag(lookup->base, lookup->marks);
+        lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
+        lookupData->subtables.push_back(extensionSubtable);
+
+        auto gsubLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
+        gsubLookup->data = lookupData;
+
+        result.push_back(gsubLookup);
+      }
+    }
+    if (!ligature.empty()) {
+      shared_ptr<Subtable> subtable;
+      if (auto st = convertLigatureGsubLookup(ligature, subtable); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+
+      if (subtable) {
+        auto extensionSubtable = make_shared<gsub::SubstitutionExtension>();
+        extensionSubtable->extensionLookupType = 4;
+        extensionSubtable->extension = subtable;
+
+        auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
+        lookupData->lookupType = 7; // Extension Substitution
+        lookupData->lookupFlag = convertLookupFlag(lookup->base, lookup->marks);
+        lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
+        lookupData->subtables.push_back(extensionSubtable);
+
+        auto gsubLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
+        gsubLookup->data = lookupData;
+
+        result.push_back(gsubLookup);
+      }
     }
 
     return Status::Ok();
@@ -410,8 +415,8 @@ public:
     gsub->minorVersion = 0;
 
     // Convert each Lookup and store in maps for GPOS and GSUB
-    map<shared_ptr<Lookup>, shared_ptr<SubtableCollection<Subtable>::Lookup>> convertedGposLookups;
-    map<shared_ptr<Lookup>, shared_ptr<SubtableCollection<Subtable>::Lookup>> convertedGsubLookups;
+    map<shared_ptr<Lookup>, vector<shared_ptr<SubtableCollection<Subtable>::Lookup>>> convertedGposLookups;
+    map<shared_ptr<Lookup>, vector<shared_ptr<SubtableCollection<Subtable>::Lookup>>> convertedGsubLookups;
 
     for (auto const &[name, lookup] : lookups) {
       // Determine if this is a GSUB or GPOS lookup
@@ -422,20 +427,20 @@ public:
         continue; // Skip if neither GSUB nor GPOS
       }
 
-      shared_ptr<SubtableCollection<Subtable>::Lookup> converted;
+      vector<shared_ptr<SubtableCollection<Subtable>::Lookup>> converted;
       if (auto st = convertLookup(lookup, converted); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
 
-      if (!converted) {
+      if (converted.empty()) {
         continue; // Skip if conversion failed
       }
 
       // Store in appropriate map
       if (isGsubLookup) {
-        convertedGsubLookups[lookup] = converted;
+        ranges::copy(converted, back_inserter(convertedGsubLookups[lookup]));
       } else {
-        convertedGposLookups[lookup] = converted;
+        ranges::copy(converted, back_inserter(convertedGposLookups[lookup]));
       }
     }
 
@@ -496,26 +501,20 @@ public:
           for (auto const &lookup : feature->lookups) {
             // Add to GPOS if it's a GPOS lookup
             if (auto it = convertedGposLookups.find(lookup); it != convertedGposLookups.end()) {
-              auto converted = it->second;
-              gposFeature->data->lookups.push_back(converted);
               hasGposLookup = true;
 
-              // Add to GPOS lookups list if not already added
-              if (find(gpos->lookups.begin(), gpos->lookups.end(), converted) == gpos->lookups.end()) {
-                gpos->lookups.push_back(converted);
-              }
+              auto converted = it->second;
+              ranges::copy(converted, back_inserter(gposFeature->data->lookups));
+              ranges::copy(converted, back_inserter(gpos->lookups));
             }
 
             // Add to GSUB if it's a GSUB lookup
             if (auto it = convertedGsubLookups.find(lookup); it != convertedGsubLookups.end()) {
-              auto converted = it->second;
-              gsubFeature->data->lookups.push_back(converted);
               hasGsubLookup = true;
 
-              // Add to GSUB lookups list if not already added
-              if (find(gsub->lookups.begin(), gsub->lookups.end(), converted) == gsub->lookups.end()) {
-                gsub->lookups.push_back(converted);
-              }
+              auto converted = it->second;
+              ranges::copy(converted, back_inserter(gsubFeature->data->lookups));
+              ranges::copy(converted, back_inserter(gsub->lookups));
             }
           }
 
@@ -752,7 +751,7 @@ private:
   }
 
   // Function to collect glyphs from a variant (glyph or group)
-  void collectGlyphsFromVariant(std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>> const &item,
+  void collectGlyphsFromVariant(GG const &item,
                                 std::set<uint16_t> &glyphIds) const {
     using namespace std;
 
@@ -809,7 +808,7 @@ private:
   }
 
   // Determine if all glyphs in a variant are mark glyphs
-  void countGlyphType(std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>> const &item, size_t &base, size_t &mark) const {
+  void countGlyphType(GG const &item, size_t &base, size_t &mark) const {
     using namespace std;
 
     if (holds_alternative<shared_ptr<Glyph>>(item)) {
