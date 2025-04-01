@@ -224,6 +224,18 @@ public:
   Status convertLookup(std::shared_ptr<Lookup> const &lookup, std::shared_ptr<SubtableCollection<Subtable>::Lookup> &result) {
     using namespace std;
 
+    if (!lookup->substitutions.empty()) {
+      return convertGsubLookup(lookup, result);
+    } else if (lookup->adjustSingle || lookup->attach) {
+      return convertGposLookup(lookup, result);
+    }
+
+    return Status::Ok();
+  }
+
+  Status convertGposLookup(std::shared_ptr<Lookup> const &lookup, std::shared_ptr<SubtableCollection<Subtable>::Lookup> &result) {
+    using namespace std;
+
     if (lookup->adjustSingle) {
       auto originalSubtable = createAdjustSingleSubtable(lookup->adjustSingle);
       if (originalSubtable) {
@@ -267,6 +279,12 @@ public:
         return Status::Ok();
       }
     }
+
+    return Status::Ok();
+  }
+
+  Status convertGsubLookup(std::shared_ptr<Lookup> const &lookup, std::shared_ptr<SubtableCollection<Subtable>::Lookup> &result) {
+    using namespace std;
 
     if (!lookup->substitutions.empty()) {
       // Check if the substitution is context-independent
@@ -369,65 +387,127 @@ public:
     gsub->majorVersion = 1;
     gsub->minorVersion = 0;
 
-    // Convert each Lookup and store in a map
-    map<shared_ptr<Lookup>, shared_ptr<SubtableCollection<Subtable>::Lookup>> convertedLookups;
+    // Convert each Lookup and store in maps for GPOS and GSUB
+    map<shared_ptr<Lookup>, shared_ptr<SubtableCollection<Subtable>::Lookup>> convertedGposLookups;
+    map<shared_ptr<Lookup>, shared_ptr<SubtableCollection<Subtable>::Lookup>> convertedGsubLookups;
+
     for (auto const &[name, lookup] : lookups) {
+      // Determine if this is a GSUB or GPOS lookup
+      bool isGsubLookup = !lookup->substitutions.empty();
+      bool isGposLookup = lookup->adjustSingle || lookup->attach;
+
+      if (!isGsubLookup && !isGposLookup) {
+        continue; // Skip if neither GSUB nor GPOS
+      }
+
       shared_ptr<SubtableCollection<Subtable>::Lookup> converted;
       if (auto st = convertLookup(lookup, converted); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
-      convertedLookups[lookup] = converted; // Will be nullptr if conversion is not possible
+
+      if (!converted) {
+        continue; // Skip if conversion failed
+      }
+
+      // Store in appropriate map
+      if (isGsubLookup) {
+        convertedGsubLookups[lookup] = converted;
+      } else {
+        convertedGposLookups[lookup] = converted;
+      }
     }
 
     // Map for GPOS table features (to avoid duplicates)
-    map<Tag, shared_ptr<SubtableCollection<Subtable>::Feature>> featureMap;
+    map<Tag, shared_ptr<SubtableCollection<Subtable>::Feature>> gposFeatureMap;
 
-    // Build GPOS table from scripts
+    // Map for GSUB table features (to avoid duplicates)
+    map<Tag, shared_ptr<SubtableCollection<Subtable>::Feature>> gsubFeatureMap;
+
+    // Build tables from scripts
     for (auto const &[scriptName, script] : scripts) {
+      // Create script for GPOS
       SubtableCollection<Subtable>::Script gposScript;
       gposScript.tag = script->tag;
+
+      // Create script for GSUB
+      SubtableCollection<Subtable>::Script gsubScript;
+      gsubScript.tag = script->tag;
 
       // Process each LangSys
       for (auto const &langSys : script->langSysList) {
         auto gposLangSys = make_shared<SubtableCollection<Subtable>::LangSys>();
+        auto gsubLangSys = make_shared<SubtableCollection<Subtable>::LangSys>();
 
         // Process each Feature
         for (auto const &feature : langSys->features) {
-          // Check if Feature already exists
+          // Process GPOS features
+          bool hasGposLookup = false;
           shared_ptr<SubtableCollection<Subtable>::Feature> gposFeature;
-          if (auto it = featureMap.find(feature->tag); it != featureMap.end()) {
+
+          if (auto it = gposFeatureMap.find(feature->tag); it != gposFeatureMap.end()) {
             gposFeature = it->second;
           } else {
             gposFeature = make_shared<SubtableCollection<Subtable>::Feature>();
             gposFeature->tag = feature->tag;
             auto featureData = make_shared<SubtableCollection<Subtable>::FeatureData>();
             gposFeature->data = featureData;
-            featureMap[feature->tag] = gposFeature;
+            gposFeatureMap[feature->tag] = gposFeature;
             gpos->features.push_back(gposFeature);
           }
 
+          // Process GSUB features
+          bool hasGsubLookup = false;
+          shared_ptr<SubtableCollection<Subtable>::Feature> gsubFeature;
+
+          if (auto it = gsubFeatureMap.find(feature->tag); it != gsubFeatureMap.end()) {
+            gsubFeature = it->second;
+          } else {
+            gsubFeature = make_shared<SubtableCollection<Subtable>::Feature>();
+            gsubFeature->tag = feature->tag;
+            auto featureData = make_shared<SubtableCollection<Subtable>::FeatureData>();
+            gsubFeature->data = featureData;
+            gsubFeatureMap[feature->tag] = gsubFeature;
+            gsub->features.push_back(gsubFeature);
+          }
+
           // Process each Lookup
-          bool hasConvertibleLookup = false;
           for (auto const &lookup : feature->lookups) {
-            auto converted = convertedLookups[lookup];
-            if (converted) {
+            // Add to GPOS if it's a GPOS lookup
+            if (auto it = convertedGposLookups.find(lookup); it != convertedGposLookups.end()) {
+              auto converted = it->second;
               gposFeature->data->lookups.push_back(converted);
-              hasConvertibleLookup = true;
+              hasGposLookup = true;
 
               // Add to GPOS lookups list if not already added
               if (find(gpos->lookups.begin(), gpos->lookups.end(), converted) == gpos->lookups.end()) {
                 gpos->lookups.push_back(converted);
               }
             }
+
+            // Add to GSUB if it's a GSUB lookup
+            if (auto it = convertedGsubLookups.find(lookup); it != convertedGsubLookups.end()) {
+              auto converted = it->second;
+              gsubFeature->data->lookups.push_back(converted);
+              hasGsubLookup = true;
+
+              // Add to GSUB lookups list if not already added
+              if (find(gsub->lookups.begin(), gsub->lookups.end(), converted) == gsub->lookups.end()) {
+                gsub->lookups.push_back(converted);
+              }
+            }
           }
 
-          // Add only Features with convertible Lookups to LangSys
-          if (hasConvertibleLookup) {
+          // Add features to LangSys if they have lookups
+          if (hasGposLookup) {
             gposLangSys->features.push_back(gposFeature);
+          }
+
+          if (hasGsubLookup) {
+            gsubLangSys->features.push_back(gsubFeature);
           }
         }
 
-        // Add LangSys only if it has features
+        // Add LangSys to Script if it has features
         if (!gposLangSys->features.empty()) {
           if (langSys->name == "dflt") {
             gposScript.defaultLangSys = gposLangSys;
@@ -435,11 +515,23 @@ public:
             gposScript.langSysTable.push_back(make_pair(langSys->tag, gposLangSys));
           }
         }
+
+        if (!gsubLangSys->features.empty()) {
+          if (langSys->name == "dflt") {
+            gsubScript.defaultLangSys = gsubLangSys;
+          } else {
+            gsubScript.langSysTable.push_back(make_pair(langSys->tag, gsubLangSys));
+          }
+        }
       }
 
-      // Add Script only if it has defaultLangSys or langSysTable
+      // Add Script to table if it has LangSys
       if (gposScript.defaultLangSys || !gposScript.langSysTable.empty()) {
         gpos->scripts.push_back(gposScript);
+      }
+
+      if (gsubScript.defaultLangSys || !gsubScript.langSysTable.empty()) {
+        gsub->scripts.push_back(gsubScript);
       }
     }
 

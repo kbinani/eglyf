@@ -2,8 +2,6 @@
 
 namespace eglyf {
 
-class Editor;
-
 class VtpParser {
 private:
   struct GroupBuilder {
