@@ -286,6 +286,28 @@ public:
   Status convertGsubLookup(std::shared_ptr<Lookup> const &lookup, std::shared_ptr<SubtableCollection<Subtable>::Lookup> &result) {
     using namespace std;
 
+    if (lookup->substitutions.empty()) {
+      return Status::Ok();
+    }
+
+    using Item = variant<shared_ptr<Glyph>, shared_ptr<Group>>;
+
+    vector<pair<Item, Item>> single;
+    vector<pair<Item, vector<Item>>> multiple;
+    vector<pair<vector<Item>, Item>> ligature;
+
+    for (auto const &subst : lookup->substitutions) {
+      if (subst->input.size() == 1 && subst->output.size()) {
+        single.push_back(make_pair(subst->input[0], subst->output[0]));
+      } else if (subst->input.size() == 1 && subst->output.size() > 1) {
+        multiple.push_back(make_pair(subst->input[0], subst->output));
+      } else if (subst->input.size() > 1 && subst->output.size() == 1) {
+        ligature.push_back(make_pair(subst->input, subst->output[0]));
+      } else {
+        return EGLYF_ERROR;
+      }
+    }
+
     if (!lookup->substitutions.empty()) {
       // Check if the substitution is context-independent
       bool isContextIndependent = !lookup->exceptContext && !lookup->inContext;
