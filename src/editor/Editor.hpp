@@ -411,6 +411,41 @@ public:
 
   Status convertMultipleGsubLookup(std::vector<std::pair<GG, std::vector<GG>>> const &substitutions,
                                    std::shared_ptr<Subtable> &subtable) {
+    using namespace std;
+
+    map<uint16_t, vector<uint16_t>> mapping;
+
+    // Return if mapping is empty
+    if (mapping.empty()) {
+      return Status::Ok();
+    }
+
+    // Create Coverage1 object from input glyph IDs
+    auto coverage = make_shared<Coverage1>();
+    vector<uint16_t> coverageGlyphIds; // Vector to preserve order
+
+    for (auto const &[inputGlyphId, outputGlyphIds] : mapping) {
+      coverage->glyphArray.insert(inputGlyphId);
+      coverageGlyphIds.push_back(inputGlyphId);
+    }
+
+    // Create Sequence objects for each input glyph ID
+    vector<gsub::Multiple::Sequence> sequences;
+
+    for (auto glyphId : coverageGlyphIds) {
+      gsub::Multiple::Sequence sequence;
+      sequence.substituteGlyphIDs = mapping[glyphId];
+      sequences.push_back(sequence);
+    }
+
+    // Create gsub::Multiple object and set coverage and sequences
+    auto multiple = make_shared<gsub::Multiple>();
+    multiple->coverage = coverage;
+    multiple->sequences = sequences;
+
+    // Set result to subtable argument
+    subtable.swap(multiple);
+
     return Status::Ok();
   }
 
