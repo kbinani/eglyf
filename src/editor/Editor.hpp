@@ -439,7 +439,120 @@ public:
     using namespace std;
 
     vector<pair<vector<uint16_t>, uint16_t>> mapping;
-    // TODO: add input/output pair to mapping
+    for (auto const &[input, output] : substitutions) {
+      if (input.size() < 2) {
+        return EGLYF_ERROR;
+      }
+      shared_ptr<Group> inGroup;
+      for (auto const &it : input) {
+        if (holds_alternative<shared_ptr<Group>>(it)) {
+          auto g = get<shared_ptr<Group>>(it);
+          if (inGroup) {
+            if (g != inGroup) {
+              return EGLYF_ERROR;
+            }
+          } else {
+            inGroup = g;
+          }
+        }
+      }
+      vector<shared_ptr<Glyph>> inGroupGlyphs;
+      if (inGroup) {
+        collectGlyphVectorFromGroup(inGroup, inGroupGlyphs);
+      }
+
+      if (holds_alternative<shared_ptr<Group>>(output)) {
+        auto outGroup = get<shared_ptr<Group>>(output);
+        if (!inGroup) {
+          return EGLYF_ERROR;
+        }
+        vector<shared_ptr<Glyph>> outGroupGlyphs;
+        collectGlyphVectorFromGroup(outGroup, outGroupGlyphs);
+        if (outGroupGlyphs.size() != inGroupGlyphs.size()) {
+          return EGLYF_ERROR;
+        }
+        for (size_t i = 0; i < inGroupGlyphs.size(); i++) {
+          auto const &inGlyph = inGroupGlyphs[i];
+          if (!inGlyph->id) {
+            continue;
+          }
+          auto const &outGlyph = outGroupGlyphs[i];
+          if (!outGlyph->id) {
+            continue;
+          }
+          vector<uint16_t> in;
+          bool ok = true;
+          for (auto const &it : input) {
+            if (holds_alternative<shared_ptr<Glyph>>(it)) {
+              auto glyph = get<shared_ptr<Glyph>>(it);
+              if (!glyph->id) {
+                ok = false;
+                break;
+              }
+              in.push_back(*glyph->id);
+            } else if (holds_alternative<shared_ptr<Group>>(it)) {
+              auto group = get<shared_ptr<Group>>(it);
+              assert(group == inGroup);
+              in.push_back(*inGlyph->id);
+            } else {
+              return EGLYF_ERROR;
+            }
+          }
+          mapping.push_back(make_pair(in, *outGlyph->id));
+        }
+      } else {
+        auto outGlyph = get<shared_ptr<Glyph>>(output);
+        if (!outGlyph->id) {
+          continue;
+        }
+        if (inGroup) {
+          for (auto const &inGlyph : inGroupGlyphs) {
+            if (!inGlyph->id) {
+              continue;
+            }
+            vector<uint16_t> in;
+            bool ok = true;
+            for (auto const &it : input) {
+              if (holds_alternative<shared_ptr<Glyph>>(it)) {
+                auto glyph = get<shared_ptr<Glyph>>(it);
+                if (!glyph->id) {
+                  ok = false;
+                  break;
+                }
+                in.push_back(*glyph->id);
+              } else if (holds_alternative<shared_ptr<Group>>(it)) {
+                auto group = get<shared_ptr<Group>>(it);
+                assert(group == inGroup);
+                in.push_back(*inGlyph->id);
+              } else {
+                return EGLYF_ERROR;
+              }
+            }
+            if (ok) {
+              mapping.push_back(make_pair(in, *outGlyph->id));
+            }
+          }
+        } else {
+          vector<uint16_t> in;
+          bool ok = true;
+          for (auto const &it : input) {
+            if (holds_alternative<shared_ptr<Glyph>>(it)) {
+              auto glyph = get<shared_ptr<Glyph>>(it);
+              if (!glyph->id) {
+                ok = false;
+                break;
+              }
+              in.push_back(*glyph->id);
+            } else {
+              return EGLYF_ERROR;
+            }
+          }
+          if (ok) {
+            mapping.push_back(make_pair(in, *outGlyph->id));
+          }
+        }
+      }
+    }
 
     // Return if mapping is empty
     if (mapping.empty()) {
