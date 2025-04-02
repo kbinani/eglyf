@@ -55,7 +55,7 @@ public:
       }
     } else if (r->extensionLookupType == 6) {
       // Chained contexts substitution
-      if (auto st = ChainedContexts::Read(in, r->extension); !st.ok()) {
+      if (auto st = ChainedContextsReader::Read(in, r->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     } else if (r->extensionLookupType == 8) {

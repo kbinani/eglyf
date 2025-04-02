@@ -774,7 +774,7 @@ public:
       if (singleLookup) {
         SequenceLookup seqLookup;
         seqLookup.sequenceIndex = 0; // Replace the first input glyph
-        seqLookup.lookupListIndex = result.size();
+        seqLookup.lookup = singleLookup;
         chainedContexts2->seqLookups.push_back(seqLookup);
 
         result.push_back(singleLookup);
@@ -782,7 +782,7 @@ public:
       if (ligatureLookup) {
         SequenceLookup seqLookup;
         seqLookup.sequenceIndex = 0; // Replace the first input glyph
-        seqLookup.lookupListIndex = result.size();
+        seqLookup.lookup = ligatureLookup;
         chainedContexts2->seqLookups.push_back(seqLookup);
 
         result.push_back(ligatureLookup);
@@ -853,7 +853,7 @@ public:
       if (singleLookup) {
         SequenceLookup seqLookup;
         seqLookup.sequenceIndex = 0; // Replace the first input glyph
-        seqLookup.lookupListIndex = result.size();
+        seqLookup.lookup = singleLookup;
         chainedContexts->seqLookups.push_back(seqLookup);
 
         result.push_back(singleLookup);
@@ -861,7 +861,7 @@ public:
       if (ligatureLookup) {
         SequenceLookup seqLookup;
         seqLookup.sequenceIndex = 0; // Replace the first input glyph
-        seqLookup.lookupListIndex = result.size();
+        seqLookup.lookup = ligatureLookup;
         chainedContexts->seqLookups.push_back(seqLookup);
 
         result.push_back(ligatureLookup);
@@ -947,7 +947,7 @@ public:
       if (singleLookup) {
         SequenceLookup seqLookup;
         seqLookup.sequenceIndex = 0; // Replace the first input glyph
-        seqLookup.lookupListIndex = result.size();
+        seqLookup.lookup = singleLookup;
         chainedContexts2->seqLookups.push_back(seqLookup);
 
         result.push_back(singleLookup);
@@ -955,7 +955,7 @@ public:
       if (ligatureLookup) {
         SequenceLookup seqLookup;
         seqLookup.sequenceIndex = 0; // Replace the first input glyph
-        seqLookup.lookupListIndex = result.size();
+        seqLookup.lookup = ligatureLookup;
         chainedContexts2->seqLookups.push_back(seqLookup);
 
         result.push_back(ligatureLookup);
@@ -1106,6 +1106,17 @@ public:
           }
 
           if (hasGsubLookup) {
+            for (auto &lookup : gsubFeature->data->lookups) {
+              for (auto const &subtable : lookup->data->subtables) {
+                auto sub = subtable;
+                if (auto extension = dynamic_pointer_cast<gsub::SubstitutionExtension>(subtable); extension) {
+                  sub = extension->extension;
+                }
+                if (auto chained = dynamic_pointer_cast<ChainedContexts>(sub); chained) {
+                  chained->updateLookupToLookupListIndex(gsubFeature->data->lookups);
+                }
+              }
+            }
             gsubLangSys->features.push_back(gsubFeature);
           }
         }

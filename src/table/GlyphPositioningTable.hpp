@@ -22,7 +22,7 @@ public:
     case 7:
       return EGLYF_STATUS_PUSH(Contextual::Read(in, out));
     case 8:
-      return EGLYF_STATUS_PUSH(ChainedContexts::Read(in, out));
+      return EGLYF_STATUS_PUSH(ChainedContextsReader::Read(in, out));
     case 9:
       return EGLYF_STATUS_PUSH(gpos::PositioningExtension::Read(in, out));
     default:

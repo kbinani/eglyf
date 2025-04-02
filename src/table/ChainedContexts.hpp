@@ -2,7 +2,12 @@
 
 namespace eglyf {
 
-class ChainedContexts1 : public Subtable {
+class ChainedContexts : public Subtable {
+public:
+  virtual Status updateLookupToLookupListIndex(std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> const &lookups) = 0;
+};
+
+class ChainedContexts1 : public ChainedContexts {
 public:
   struct ChainedSequenceRule {
     std::vector<uint16_t> backtrackSequence;
@@ -259,11 +264,34 @@ public:
     return ret;
   }
 
+  Status updateLookupToLookupListIndex(std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> const &lookups) override {
+    using namespace std;
+    for (auto &ruleSet : ruleSets) {
+      for (auto &rule : ruleSet->rules) {
+        for (auto &record : rule.seqLookupRecords) {
+          if (holds_alternative<shared_ptr<SubtableCollection<Subtable>::Lookup>>(record.lookup)) {
+            auto const &lookup = get<shared_ptr<SubtableCollection<Subtable>::Lookup>>(record.lookup);
+            auto found = ranges::find_if(lookups, [=](auto const &it) { return it == lookup; });
+            if (found == lookups.end()) {
+              return EGLYF_ERROR;
+            }
+            size_t index = distance(lookups.begin(), found);
+            if (index > (size_t)numeric_limits<uint16_t>::max()) {
+              return EGLYF_ERROR;
+            }
+            record.lookup = static_cast<uint16_t>(index);
+          }
+        }
+      }
+    }
+    return Status::Ok();
+  }
+
 public:
   std::vector<std::shared_ptr<ChainedSequenceRuleSet>> ruleSets;
 };
 
-class ChainedContexts2 : public Subtable {
+class ChainedContexts2 : public ChainedContexts {
 public:
   struct ChainedClassSequenceRule {
     static Optional<ChainedClassSequenceRule> Read(InputStream &in) {
@@ -616,6 +644,29 @@ public:
     return ret;
   }
 
+  Status updateLookupToLookupListIndex(std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> const &lookups) override {
+    using namespace std;
+    for (auto &ruleSet : ruleSets) {
+      for (auto &rule : ruleSet->rules) {
+        for (auto &record : rule.seqLookupRecords) {
+          if (holds_alternative<shared_ptr<SubtableCollection<Subtable>::Lookup>>(record.lookup)) {
+            auto const &lookup = get<shared_ptr<SubtableCollection<Subtable>::Lookup>>(record.lookup);
+            auto found = ranges::find_if(lookups, [=](auto const &it) { return it == lookup; });
+            if (found == lookups.end()) {
+              return EGLYF_ERROR;
+            }
+            size_t index = distance(lookups.begin(), found);
+            if (index > (size_t)numeric_limits<uint16_t>::max()) {
+              return EGLYF_ERROR;
+            }
+            record.lookup = static_cast<uint16_t>(index);
+          }
+        }
+      }
+    }
+    return Status::Ok();
+  }
+
 public:
   std::shared_ptr<ClassDef> backtrackClassDef;
   std::shared_ptr<ClassDef> inputClassDef;
@@ -623,7 +674,7 @@ public:
   std::vector<std::optional<ChainedClassSequenceRuleSet>> ruleSets;
 };
 
-class ChainedContexts3 : public Subtable {
+class ChainedContexts3 : public ChainedContexts {
 public:
   static Status Read(InputStream &in, std::shared_ptr<Subtable> &out) {
     using namespace std;
@@ -813,6 +864,25 @@ public:
     return ret;
   }
 
+  Status updateLookupToLookupListIndex(std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> const &lookups) override {
+    using namespace std;
+    for (auto &record : seqLookups) {
+      if (holds_alternative<shared_ptr<SubtableCollection<Subtable>::Lookup>>(record.lookup)) {
+        auto const &lookup = get<shared_ptr<SubtableCollection<Subtable>::Lookup>>(record.lookup);
+        auto found = ranges::find_if(lookups, [=](auto const &it) { return it == lookup; });
+        if (found == lookups.end()) {
+          return EGLYF_ERROR;
+        }
+        size_t index = distance(lookups.begin(), found);
+        if (index > (size_t)numeric_limits<uint16_t>::max()) {
+          return EGLYF_ERROR;
+        }
+        record.lookup = static_cast<uint16_t>(index);
+      }
+    }
+    return Status::Ok();
+  }
+
 public:
   std::vector<std::shared_ptr<Coverage>> backtrackCoverage;
   std::vector<std::shared_ptr<Coverage>> inputCoverage;
@@ -820,8 +890,8 @@ public:
   std::vector<SequenceLookup> seqLookups;
 };
 
-class ChainedContexts {
-  ChainedContexts() = delete;
+class ChainedContextsReader {
+  ChainedContextsReader() = delete;
 
 public:
   static Status Read(InputStream &stream, std::shared_ptr<Subtable> &out) {

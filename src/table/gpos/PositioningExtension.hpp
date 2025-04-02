@@ -62,7 +62,7 @@ public:
       }
       break;
     case 8:
-      if (auto st = ChainedContexts::Read(in, ret->extension); !st.ok()) {
+      if (auto st = ChainedContextsReader::Read(in, ret->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
       break;

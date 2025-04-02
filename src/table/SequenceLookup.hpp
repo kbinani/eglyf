@@ -4,7 +4,7 @@ namespace eglyf {
 
 struct SequenceLookup {
   uint16_t sequenceIndex;
-  uint16_t lookupListIndex;
+  std::variant<uint16_t, std::shared_ptr<SubtableCollection<Subtable>::Lookup>> lookup;
 
   static Optional<SequenceLookup> Read(InputStream &in) {
     using namespace std;
@@ -12,9 +12,11 @@ struct SequenceLookup {
     if (!in.u16(&r.sequenceIndex)) {
       return EGLYF_NULLOPT;
     }
-    if (!in.u16(&r.lookupListIndex)) {
+    uint16_t lookupListIndex;
+    if (!in.u16(&lookupListIndex)) {
       return EGLYF_NULLOPT;
     }
+    r.lookup = lookupListIndex;
     return r;
   }
 
@@ -22,7 +24,10 @@ struct SequenceLookup {
     if (!out.u16(sequenceIndex)) {
       return EGLYF_ERROR;
     }
-    if (out.u16(lookupListIndex)) {
+    if (!holds_alternative<uint16_t>(lookup)) {
+      return EGLYF_ERROR;
+    }
+    if (out.u16(get<uint16_t>(lookup))) {
       return Status::Ok();
     } else {
       return EGLYF_ERROR;
