@@ -436,6 +436,57 @@ public:
 
   Status convertLigatureGsubLookup(std::vector<std::pair<std::vector<GG>, GG>> const &substitutions,
                                    std::shared_ptr<Subtable> &subtable) {
+    using namespace std;
+
+    vector<pair<vector<uint16_t>, uint16_t>> mapping;
+    // TODO: add input/output pair to mapping
+
+    // Return if mapping is empty
+    if (mapping.empty()) {
+      return Status::Ok();
+    }
+
+    // Group mappings by first glyph ID (for Coverage table)
+    map<uint16_t, vector<pair<vector<uint16_t>, uint16_t>>> groupedMapping;
+    for (auto const &[components, ligatureGlyph] : mapping) {
+      if (components.empty()) {
+        continue; // Skip empty input sequences
+      }
+      uint16_t firstGlyphId = components[0];
+      groupedMapping[firstGlyphId].push_back(make_pair(components, ligatureGlyph));
+    }
+
+    // Create Coverage table with first glyph IDs
+    auto coverage = make_shared<Coverage1>();
+    for (auto const &[firstGlyphId, _] : groupedMapping) {
+      coverage->glyphArray.insert(firstGlyphId);
+    }
+
+    // Create Ligature object and set coverage
+    auto ligature = make_shared<gsub::Ligature>();
+    ligature->coverage = coverage;
+
+    // Create LigatureSet for each first glyph ID
+    for (auto const &[firstGlyphId, mappings] : groupedMapping) {
+      gsub::Ligature::LigatureSet ligatureSet;
+
+      // Create LigatureTable for each mapping
+      for (auto const &[components, ligatureGlyph] : mappings) {
+        gsub::Ligature::LigatureTable ligatureTable;
+        ligatureTable.ligatureGlyph = ligatureGlyph;
+
+        // Add component glyphs (excluding the first one which is in Coverage)
+        for (size_t i = 1; i < components.size(); i++) {
+          ligatureTable.componentGlyphIDs.push_back(components[i]);
+        }
+
+        ligatureSet.ligatures.push_back(ligatureTable);
+      }
+
+      ligature->ligatureSets.push_back(ligatureSet);
+    }
+
+    subtable = ligature;
     return Status::Ok();
   }
 
