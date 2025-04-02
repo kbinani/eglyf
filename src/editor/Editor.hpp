@@ -306,21 +306,46 @@ public:
     // Process each substitution pair
     for (auto const &[input, output] : substitutions) {
       // Extract glyph IDs from input (preserving order)
-      vector<uint16_t> inputGlyphIds;
-      collectGlyphVector(input, inputGlyphIds);
+      vector<shared_ptr<Glyph>> inputGlyphs;
+      collectGlyphVector(input, inputGlyphs);
 
       // Extract glyph IDs from output (preserving order)
-      vector<uint16_t> outputGlyphIds;
-      collectGlyphVector(output, outputGlyphIds);
+      vector<shared_ptr<Glyph>> outputGlyphs;
+      collectGlyphVector(output, outputGlyphs);
 
       // Error if input is a single glyph and output is a group (this is a multiple substitution)
-      if (inputGlyphIds.size() == 1 && outputGlyphIds.size() > 1) {
+      if (inputGlyphs.size() == 1 && outputGlyphs.size() > 1) {
         return EGLYF_ERROR_WHAT("Single to multiple substitution is not supported in convertSingleGsubLookup");
       }
 
       // Check if both input and output are groups, their glyph counts must match
-      if (inputGlyphIds.size() > 1 && outputGlyphIds.size() > 1 && inputGlyphIds.size() != outputGlyphIds.size()) {
+      if (inputGlyphs.size() > 1 && outputGlyphs.size() > 1 && inputGlyphs.size() != outputGlyphs.size()) {
         return EGLYF_ERROR_WHAT("Group to group substitution requires equal number of glyphs");
+      }
+
+      // Check if all input/output glyphs have its id
+      vector<uint16_t> inputGlyphIds;
+      vector<uint16_t> outputGlyphIds;
+      bool ok = true;
+      for (auto const &g : inputGlyphs) {
+        if (!g->id) {
+          ok = false;
+          break;
+        }
+        inputGlyphIds.push_back(*g->id);
+      }
+      if (!ok) {
+        continue;
+      }
+      for (auto const &g : outputGlyphs) {
+        if (!g->id) {
+          ok = false;
+          break;
+        }
+        outputGlyphIds.push_back(*g->id);
+      }
+      if (!ok) {
+        continue;
       }
 
       // Create glyph ID mapping
@@ -409,46 +434,6 @@ public:
     return Status::Ok();
   }
 
-  Status convertMultipleGsubLookup(std::vector<std::pair<GG, std::vector<GG>>> const &substitutions,
-                                   std::shared_ptr<Subtable> &subtable) {
-    using namespace std;
-
-    map<uint16_t, vector<uint16_t>> mapping;
-
-    // Return if mapping is empty
-    if (mapping.empty()) {
-      return Status::Ok();
-    }
-
-    // Create Coverage1 object from input glyph IDs
-    auto coverage = make_shared<Coverage1>();
-    vector<uint16_t> coverageGlyphIds; // Vector to preserve order
-
-    for (auto const &[inputGlyphId, outputGlyphIds] : mapping) {
-      coverage->glyphArray.insert(inputGlyphId);
-      coverageGlyphIds.push_back(inputGlyphId);
-    }
-
-    // Create Sequence objects for each input glyph ID
-    vector<gsub::Multiple::Sequence> sequences;
-
-    for (auto glyphId : coverageGlyphIds) {
-      gsub::Multiple::Sequence sequence;
-      sequence.substituteGlyphIDs = mapping[glyphId];
-      sequences.push_back(sequence);
-    }
-
-    // Create gsub::Multiple object and set coverage and sequences
-    auto multiple = make_shared<gsub::Multiple>();
-    multiple->coverage = coverage;
-    multiple->sequences = sequences;
-
-    // Set result to subtable argument
-    subtable.swap(multiple);
-
-    return Status::Ok();
-  }
-
   Status convertLigatureGsubLookup(std::vector<std::pair<std::vector<GG>, GG>> const &substitutions,
                                    std::shared_ptr<Subtable> &subtable) {
     return Status::Ok();
@@ -461,15 +446,19 @@ public:
       return Status::Ok();
     }
 
+    if (lookup->inContext || lookup->exceptContext) {
+      // TODO:
+      return Status::Ok();
+    }
+
     vector<pair<GG, GG>> single;
-    vector<pair<GG, vector<GG>>> multiple;
     vector<pair<vector<GG>, GG>> ligature;
 
     for (auto const &subst : lookup->substitutions) {
       if (subst->input.size() == 1 && subst->output.size()) {
         single.push_back(make_pair(subst->input[0], subst->output[0]));
       } else if (subst->input.size() == 1 && subst->output.size() > 1) {
-        multiple.push_back(make_pair(subst->input[0], subst->output));
+        return EGLYF_ERROR_WHAT("Unsupported substitution (1 -> N multiple substitution)");
       } else if (subst->input.size() > 1 && subst->output.size() == 1) {
         ligature.push_back(make_pair(subst->input, subst->output[0]));
       } else {
@@ -486,29 +475,6 @@ public:
       if (subtable) {
         auto extensionSubtable = make_shared<gsub::SubstitutionExtension>();
         extensionSubtable->extensionLookupType = 1;
-        extensionSubtable->extension = subtable;
-
-        auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
-        lookupData->lookupType = 7; // Extension Substitution
-        lookupData->lookupFlag = convertLookupFlag(lookup->base, lookup->marks);
-        lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
-        lookupData->subtables.push_back(extensionSubtable);
-
-        auto gsubLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
-        gsubLookup->data = lookupData;
-
-        result.push_back(gsubLookup);
-      }
-    }
-    if (!multiple.empty()) {
-      shared_ptr<Subtable> subtable;
-      if (auto st = convertMultipleGsubLookup(multiple, subtable); !st.ok()) {
-        return EGLYF_STATUS_PUSH(st);
-      }
-
-      if (subtable) {
-        auto extensionSubtable = make_shared<gsub::SubstitutionExtension>();
-        extensionSubtable->extensionLookupType = 2;
         extensionSubtable->extension = subtable;
 
         auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
@@ -853,7 +819,7 @@ private:
 
     // Collect glyph IDs
     set<uint16_t> glyphIds;
-    collectGlyphSetFromGroup(markGroup.group, glyphIds);
+    collectGIDSetFromGroup(markGroup.group, glyphIds);
 
     // Return 0 if no glyph IDs
     if (glyphIds.empty()) {
@@ -901,8 +867,8 @@ private:
   }
 
   // Function to collect glyphs from a variant (glyph or group)
-  void collectGlyphSet(GG const &item,
-                       std::set<uint16_t> &glyphIds) const {
+  void collectGIDSet(GG const &item,
+                     std::set<uint16_t> &glyphIds) const {
     using namespace std;
 
     if (holds_alternative<shared_ptr<Glyph>>(item)) {
@@ -912,13 +878,13 @@ private:
       }
     } else if (holds_alternative<shared_ptr<Group>>(item)) {
       auto group = get<shared_ptr<Group>>(item);
-      collectGlyphSetFromGroup(group, glyphIds);
+      collectGIDSetFromGroup(group, glyphIds);
     }
   }
 
   // Function to recursively collect glyphs from a group
-  void collectGlyphSetFromGroup(std::shared_ptr<Group> const &group,
-                                std::set<uint16_t> &glyphIds) const {
+  void collectGIDSetFromGroup(std::shared_ptr<Group> const &group,
+                              std::set<uint16_t> &glyphIds) const {
     using namespace std;
 
     for (auto const &member : group->members) {
@@ -929,41 +895,37 @@ private:
         }
       } else if (holds_alternative<shared_ptr<Group>>(member)) {
         auto subgroup = get<shared_ptr<Group>>(member);
-        collectGlyphSetFromGroup(subgroup, glyphIds);
+        collectGIDSetFromGroup(subgroup, glyphIds);
       }
     }
   }
 
   // Function to extract glyph IDs from a variant (glyph or group) while preserving order
   void collectGlyphVector(GG const &item,
-                          std::vector<uint16_t> &glyphIds) const {
+                          std::vector<std::shared_ptr<Glyph>> &glyphs) const {
     using namespace std;
 
     if (holds_alternative<shared_ptr<Glyph>>(item)) {
       auto glyph = get<shared_ptr<Glyph>>(item);
-      if (glyph->id) {
-        glyphIds.push_back(*glyph->id);
-      }
+      glyphs.push_back(glyph);
     } else if (holds_alternative<shared_ptr<Group>>(item)) {
       auto group = get<shared_ptr<Group>>(item);
-      collectGlyphVectorFromGroup(group, glyphIds);
+      collectGlyphVectorFromGroup(group, glyphs);
     }
   }
 
   // Function to recursively extract glyph IDs from a group while preserving order
   void collectGlyphVectorFromGroup(std::shared_ptr<Group> const &group,
-                                   std::vector<uint16_t> &glyphIds) const {
+                                   std::vector<std::shared_ptr<Glyph>> &glyphs) const {
     using namespace std;
 
     for (auto const &member : group->members) {
       if (holds_alternative<shared_ptr<Glyph>>(member)) {
         auto glyph = get<shared_ptr<Glyph>>(member);
-        if (glyph->id) {
-          glyphIds.push_back(*glyph->id);
-        }
+        glyphs.push_back(glyph);
       } else if (holds_alternative<shared_ptr<Group>>(member)) {
         auto subgroup = get<shared_ptr<Group>>(member);
-        collectGlyphVectorFromGroup(subgroup, glyphIds);
+        collectGlyphVectorFromGroup(subgroup, glyphs);
       }
     }
   }
@@ -1088,7 +1050,7 @@ private:
     set<uint16_t> markGlyphIds;
 
     for (auto const &item : attach->input) {
-      collectGlyphSet(item, markGlyphIds);
+      collectGIDSet(item, markGlyphIds);
     }
 
     set<uint16_t> baseGlyphIds;
@@ -1097,7 +1059,7 @@ private:
     for (auto const &target : attach->output) {
       // Collect glyphs from target
       set<uint16_t> targetGlyphIds;
-      collectGlyphSet(target.target, targetGlyphIds);
+      collectGIDSet(target.target, targetGlyphIds);
 
       // Assign anchors to each glyph
       for (auto glyphId : targetGlyphIds) {
