@@ -1132,7 +1132,9 @@ public:
                   sub = extension->extension;
                 }
                 if (auto chained = dynamic_pointer_cast<ChainedContexts>(sub); chained) {
-                  chained->updateLookupToLookupListIndex(gsubFeature->data->lookups);
+                  if (auto st = chained->updateLookupToLookupListIndex(gsubFeature->data->lookups); !st.ok()) {
+                    return EGLYF_STATUS_PUSH(st);
+                  }
                 }
               }
             }
