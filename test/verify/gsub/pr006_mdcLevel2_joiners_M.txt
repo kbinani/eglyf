@@ -1,0 +1,31 @@
+DEF_LOOKUP "pr006_mdcLevel2_joiners_M" PROCESS_BASE  PROCESS_MARKS "controls_a" DIRECTION LTR
+IN_CONTEXT
+ LEFT GLYPH "ss"
+ LEFT GLYPH "ss"
+END_CONTEXT
+IN_CONTEXT
+ LEFT GLYPH "ss"
+ LEFT GROUP "controls_joiners"
+ LEFT GLYPH "ss"
+END_CONTEXT
+IN_CONTEXT
+ LEFT GLYPH "ss"
+ LEFT GROUP "controls_joiners"
+ LEFT GROUP "controls_joiners"
+ LEFT GLYPH "ss"
+END_CONTEXT
+IN_CONTEXT
+ LEFT GLYPH "ss"
+ LEFT GROUP "controls_joiners"
+ LEFT GROUP "controls_joiners"
+ LEFT GROUP "controls_joiners"
+ LEFT GLYPH "ss"
+END_CONTEXT
+AS_SUBSTITUTION
+ SUB GLYPH "hj"
+ WITH GLYPH "hj2A"
+END_SUB
+ SUB GLYPH "vj"
+ WITH GLYPH "vj2A"
+END_SUB
+END_SUBSTITUTION

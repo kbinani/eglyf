@@ -1,9 +1,10 @@
 /xcode
 /build*
 *.ttf
-*.xml
+/*.xml
 *.ttx
-*.txt
+/*.txt
 /deps/fonts-main
 /.idea
 /.vscode/c_cpp_properties.json
+/test/verify/gsub_output
