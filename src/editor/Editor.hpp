@@ -839,15 +839,23 @@ public:
       auto gsubLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
       gsubLookup->data = lookupData;
 
+      map<pair<size_t, size_t>, vector<shared_ptr<Lookup::Context>>> merged;
       for (auto const &inContext : lookup->inContexts) {
+        auto key = make_pair(inContext->left.size(), inContext->right.size());
+        merged[key].push_back(inContext);
+      }
+
+      for (auto [key, contexts] : merged) {
         auto chainedContexts = make_shared<ChainedContexts3>();
         chainedContexts->inputCoverage.push_back(inputCoverage);
 
-        // Set up backtrack coverage (left context)
-        for (auto const &item : inContext->left) {
+        auto [left, right] = key;
+        for (size_t i = 0; i < left; i++) {
           set<uint16_t> glyphIds;
-          collectGIDSet(item, glyphIds);
-
+          for (auto const &context : contexts) {
+            auto const &item = context->left[i];
+            collectGIDSet(item, glyphIds);
+          }
           if (!glyphIds.empty()) {
             auto coverage = make_shared<Coverage1>();
             coverage->glyphArray = glyphIds;
@@ -855,11 +863,12 @@ public:
           }
         }
 
-        // Set up lookahead coverage (right context)
-        for (auto const &item : inContext->right) {
+        for (size_t i = 0; i < right; i++) {
           set<uint16_t> glyphIds;
-          collectGIDSet(item, glyphIds);
-
+          for (auto const &context : contexts) {
+            auto const &item = context->right[i];
+            collectGIDSet(item, glyphIds);
+          }
           if (!glyphIds.empty()) {
             auto coverage = make_shared<Coverage1>();
             coverage->glyphArray = glyphIds;
