@@ -982,8 +982,18 @@ public:
     return Status::Ok();
   }
 
-  Status compile() {
+  Status compile(std::optional<std::string> onlyLookupWithName = std::nullopt) {
     using namespace std;
+
+    if (onlyLookupWithName) {
+      if (auto found = lookups.find(*onlyLookupWithName); found == lookups.end()) {
+        lookups.clear();
+      } else {
+        auto lookup = found->second;
+        lookups.clear();
+        lookups[*onlyLookupWithName] = lookup;
+      }
+    }
 
     // Create GlyphPositioningTable and GlyphSubstitutionTable
     auto gpos = make_shared<GlyphPositioningTable>();
