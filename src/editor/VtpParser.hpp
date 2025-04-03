@@ -276,7 +276,7 @@ private:
           return EGLYF_STATUS_PUSH(status);
         }
         if (!context->left.empty() || !context->right.empty()) {
-          lookup->exceptContext = context;
+          lookup->exceptContexts.push_back(context);
         }
       } else if (l == "IN_CONTEXT") {
         auto context = make_shared<Editor::Lookup::Context>(
@@ -287,7 +287,7 @@ private:
           return EGLYF_STATUS_PUSH(status);
         }
         if (!context->left.empty() || !context->right.empty()) {
-          lookup->inContext = context;
+          lookup->inContexts.push_back(context);
         }
       } else if (l == "AS_SUBSTITUTION") {
         lookup->substitutions.clear();

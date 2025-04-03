@@ -46,8 +46,8 @@ public:
       std::vector<GG> left;
       std::vector<GG> right;
     };
-    std::shared_ptr<Context> exceptContext;
-    std::shared_ptr<Context> inContext;
+    std::vector<std::shared_ptr<Context>> exceptContexts;
+    std::vector<std::shared_ptr<Context>> inContexts;
 
     struct AttachTarget {
       AttachTarget(GG target, std::shared_ptr<Anchor> const &anchor) : target(target), anchor(anchor) {}
@@ -87,11 +87,11 @@ public:
 
     Lookup(std::variant<SkipBase, ProcessBase> base,
            std::variant<SkipMarks, ProcessMarks> marks,
-           std::shared_ptr<Context> exceptContext,
-           std::shared_ptr<Context> inContext,
+           std::vector<std::shared_ptr<Context>> exceptContexts,
+           std::vector<std::shared_ptr<Context>> inContexts,
            std::shared_ptr<Attach> attach,
            std::shared_ptr<AdjustSingle> adjustSingle,
-           std::vector<std::shared_ptr<Substitution>> &substitutions) : base(base), marks(marks), exceptContext(exceptContext), inContext(inContext), attach(attach), adjustSingle(adjustSingle) {
+           std::vector<std::shared_ptr<Substitution>> &substitutions) : base(base), marks(marks), exceptContexts(exceptContexts), inContexts(inContexts), attach(attach), adjustSingle(adjustSingle) {
       this->substitutions.swap(substitutions);
     }
   };
@@ -676,7 +676,7 @@ public:
       return Status::Ok();
     }
 
-    if (!lookup->inContext && !lookup->exceptContext) {
+    if (lookup->inContexts.empty() && lookup->exceptContexts.empty()) {
       if (singleLookup) {
         result.push_back(singleLookup);
       }
@@ -686,7 +686,7 @@ public:
       return Status::Ok();
     }
 
-    if (lookup->inContext && lookup->exceptContext) {
+    if (!lookup->inContexts.empty() && !lookup->exceptContexts.empty()) {
       // Create a single lookup with two extension subtables
       auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
       lookupData->lookupType = 7; // Extension Substitution
@@ -712,27 +712,29 @@ public:
       inputCoverage1->glyphArray = inputGlyphIds;
       chainedContexts1->inputCoverage.push_back(inputCoverage1);
 
-      // Set up backtrack coverage for exceptContext (left context)
-      for (auto const &item : lookup->exceptContext->left) {
-        set<uint16_t> glyphIds;
-        collectGIDSet(item, glyphIds);
+      for (auto const &exceptContext : lookup->exceptContexts) {
+        // Set up backtrack coverage for exceptContexts (left context)
+        for (auto const &item : exceptContext->left) {
+          set<uint16_t> glyphIds;
+          collectGIDSet(item, glyphIds);
 
-        if (!glyphIds.empty()) {
-          auto coverage = make_shared<Coverage1>();
-          coverage->glyphArray = glyphIds;
-          chainedContexts1->backtrackCoverage.push_back(coverage);
+          if (!glyphIds.empty()) {
+            auto coverage = make_shared<Coverage1>();
+            coverage->glyphArray = glyphIds;
+            chainedContexts1->backtrackCoverage.push_back(coverage);
+          }
         }
-      }
 
-      // Set up lookahead coverage for exceptContext (right context)
-      for (auto const &item : lookup->exceptContext->right) {
-        set<uint16_t> glyphIds;
-        collectGIDSet(item, glyphIds);
+        // Set up lookahead coverage for exceptContexts (right context)
+        for (auto const &item : exceptContext->right) {
+          set<uint16_t> glyphIds;
+          collectGIDSet(item, glyphIds);
 
-        if (!glyphIds.empty()) {
-          auto coverage = make_shared<Coverage1>();
-          coverage->glyphArray = glyphIds;
-          chainedContexts1->lookaheadCoverage.push_back(coverage);
+          if (!glyphIds.empty()) {
+            auto coverage = make_shared<Coverage1>();
+            coverage->glyphArray = glyphIds;
+            chainedContexts1->lookaheadCoverage.push_back(coverage);
+          }
         }
       }
 
@@ -746,28 +748,29 @@ public:
       inputCoverage2->glyphArray = inputGlyphIds;
       chainedContexts2->inputCoverage.push_back(inputCoverage2);
 
-      // Set up backtrack coverage for inContext (left context)
-      set<uint16_t> backtrackGlyphIds;
-      for (auto const &item : lookup->inContext->left) {
-        collectGIDSet(item, backtrackGlyphIds);
-      }
+      for (auto const &inContext : lookup->inContexts) {
+        // Set up backtrack coverage for inContext (left context)
+        set<uint16_t> backtrackGlyphIds;
+        for (auto const &item : inContext->left) {
+          collectGIDSet(item, backtrackGlyphIds);
+        }
+        if (!backtrackGlyphIds.empty()) {
+          auto coverage = make_shared<Coverage1>();
+          coverage->glyphArray = backtrackGlyphIds;
+          chainedContexts2->backtrackCoverage.push_back(coverage);
+        }
 
-      if (!backtrackGlyphIds.empty()) {
-        auto coverage = make_shared<Coverage1>();
-        coverage->glyphArray = backtrackGlyphIds;
-        chainedContexts2->backtrackCoverage.push_back(coverage);
-      }
+        // Set up lookahead coverage for inContext (right context)
+        set<uint16_t> lookaheadGlyphIds;
+        for (auto const &item : inContext->right) {
+          collectGIDSet(item, lookaheadGlyphIds);
+        }
 
-      // Set up lookahead coverage for inContext (right context)
-      set<uint16_t> lookaheadGlyphIds;
-      for (auto const &item : lookup->inContext->right) {
-        collectGIDSet(item, lookaheadGlyphIds);
-      }
-
-      if (!lookaheadGlyphIds.empty()) {
-        auto coverage = make_shared<Coverage1>();
-        coverage->glyphArray = lookaheadGlyphIds;
-        chainedContexts2->lookaheadCoverage.push_back(coverage);
+        if (!lookaheadGlyphIds.empty()) {
+          auto coverage = make_shared<Coverage1>();
+          coverage->glyphArray = lookaheadGlyphIds;
+          chainedContexts2->lookaheadCoverage.push_back(coverage);
+        }
       }
 
       // Set up reference to substitution rule
@@ -806,9 +809,7 @@ public:
       result.push_back(gsubLookup);
 
       return Status::Ok();
-    } else if (lookup->inContext) {
-      auto chainedContexts = make_shared<ChainedContexts3>();
-
+    } else if (!lookup->inContexts.empty()) {
       // Set up input coverage
       set<uint16_t> inputGlyphIds;
       for (auto const &subst : lookup->substitutions) {
@@ -823,64 +824,70 @@ public:
 
       auto inputCoverage = make_shared<Coverage1>();
       inputCoverage->glyphArray = inputGlyphIds;
-      chainedContexts->inputCoverage.push_back(inputCoverage);
 
-      // Set up backtrack coverage (left context)
-      for (auto const &item : lookup->inContext->left) {
-        set<uint16_t> glyphIds;
-        collectGIDSet(item, glyphIds);
-
-        if (!glyphIds.empty()) {
-          auto coverage = make_shared<Coverage1>();
-          coverage->glyphArray = glyphIds;
-          chainedContexts->backtrackCoverage.push_back(coverage);
-        }
-      }
-
-      // Set up lookahead coverage (right context)
-      for (auto const &item : lookup->inContext->right) {
-        set<uint16_t> glyphIds;
-        collectGIDSet(item, glyphIds);
-
-        if (!glyphIds.empty()) {
-          auto coverage = make_shared<Coverage1>();
-          coverage->glyphArray = glyphIds;
-          chainedContexts->lookaheadCoverage.push_back(coverage);
-        }
-      }
-
-      // Set up reference to substitution rule
       if (singleLookup) {
-        SequenceLookup seqLookup;
-        seqLookup.sequenceIndex = 0; // Replace the first input glyph
-        seqLookup.lookup = singleLookup;
-        chainedContexts->seqLookups.push_back(seqLookup);
-
         result.push_back(singleLookup);
       }
       if (ligatureLookup) {
-        SequenceLookup seqLookup;
-        seqLookup.sequenceIndex = 0; // Replace the first input glyph
-        seqLookup.lookup = ligatureLookup;
-        chainedContexts->seqLookups.push_back(seqLookup);
-
         result.push_back(ligatureLookup);
       }
-
-      // Wrap with extension subtable
-      auto extensionSubtable = make_shared<gsub::SubstitutionExtension>();
-      extensionSubtable->extensionLookupType = 6; // ChainedContexts
-      extensionSubtable->extension = chainedContexts;
 
       auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
       lookupData->lookupType = 7; // Extension Substitution
       lookupData->lookupFlag = convertLookupFlag(lookup->base, lookup->marks);
       lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
-      lookupData->subtables.push_back(extensionSubtable);
-
       auto gsubLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
       gsubLookup->data = lookupData;
 
+      for (auto const &inContext : lookup->inContexts) {
+        auto chainedContexts = make_shared<ChainedContexts3>();
+        chainedContexts->inputCoverage.push_back(inputCoverage);
+
+        // Set up backtrack coverage (left context)
+        for (auto const &item : inContext->left) {
+          set<uint16_t> glyphIds;
+          collectGIDSet(item, glyphIds);
+
+          if (!glyphIds.empty()) {
+            auto coverage = make_shared<Coverage1>();
+            coverage->glyphArray = glyphIds;
+            chainedContexts->backtrackCoverage.push_back(coverage);
+          }
+        }
+
+        // Set up lookahead coverage (right context)
+        for (auto const &item : inContext->right) {
+          set<uint16_t> glyphIds;
+          collectGIDSet(item, glyphIds);
+
+          if (!glyphIds.empty()) {
+            auto coverage = make_shared<Coverage1>();
+            coverage->glyphArray = glyphIds;
+            chainedContexts->lookaheadCoverage.push_back(coverage);
+          }
+        }
+
+        // Set up reference to substitution rule
+        if (singleLookup) {
+          SequenceLookup seqLookup;
+          seqLookup.sequenceIndex = 0; // Replace the first input glyph
+          seqLookup.lookup = singleLookup;
+          chainedContexts->seqLookups.push_back(seqLookup);
+        }
+        if (ligatureLookup) {
+          SequenceLookup seqLookup;
+          seqLookup.sequenceIndex = 0; // Replace the first input glyph
+          seqLookup.lookup = ligatureLookup;
+          chainedContexts->seqLookups.push_back(seqLookup);
+        }
+
+        // Wrap with extension subtable
+        auto extensionSubtable = make_shared<gsub::SubstitutionExtension>();
+        extensionSubtable->extensionLookupType = 6; // ChainedContexts
+        extensionSubtable->extension = chainedContexts;
+
+        lookupData->subtables.push_back(extensionSubtable);
+      }
       result.push_back(gsubLookup);
     } else /* if (lookup->exceptContext)*/ {
       auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
@@ -907,27 +914,29 @@ public:
       inputCoverage1->glyphArray = inputGlyphIds;
       chainedContexts1->inputCoverage.push_back(inputCoverage1);
 
-      // Set up backtrack coverage (left context)
-      for (auto const &item : lookup->exceptContext->left) {
-        set<uint16_t> glyphIds;
-        collectGIDSet(item, glyphIds);
+      for (auto const &exceptContext : lookup->exceptContexts) {
+        // Set up backtrack coverage (left context)
+        for (auto const &item : exceptContext->left) {
+          set<uint16_t> glyphIds;
+          collectGIDSet(item, glyphIds);
 
-        if (!glyphIds.empty()) {
-          auto coverage = make_shared<Coverage1>();
-          coverage->glyphArray = glyphIds;
-          chainedContexts1->backtrackCoverage.push_back(coverage);
+          if (!glyphIds.empty()) {
+            auto coverage = make_shared<Coverage1>();
+            coverage->glyphArray = glyphIds;
+            chainedContexts1->backtrackCoverage.push_back(coverage);
+          }
         }
-      }
 
-      // Set up lookahead coverage (right context)
-      for (auto const &item : lookup->exceptContext->right) {
-        set<uint16_t> glyphIds;
-        collectGIDSet(item, glyphIds);
+        // Set up lookahead coverage (right context)
+        for (auto const &item : exceptContext->right) {
+          set<uint16_t> glyphIds;
+          collectGIDSet(item, glyphIds);
 
-        if (!glyphIds.empty()) {
-          auto coverage = make_shared<Coverage1>();
-          coverage->glyphArray = glyphIds;
-          chainedContexts1->lookaheadCoverage.push_back(coverage);
+          if (!glyphIds.empty()) {
+            auto coverage = make_shared<Coverage1>();
+            coverage->glyphArray = glyphIds;
+            chainedContexts1->lookaheadCoverage.push_back(coverage);
+          }
         }
       }
 
