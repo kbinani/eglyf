@@ -7,6 +7,11 @@
     </xsl:copy>
   </xsl:template>
 
+  <!-- Skip markAttachmentType comments -->
+  <xsl:template match="comment()[contains(., 'markAttachmentType')]">
+    <!-- Skip these comments as they will be generated based on LookupFlag value -->
+  </xsl:template>
+
   <!-- Create the root element -->
   <xsl:template match="/">
     <LookupList>
@@ -27,6 +32,29 @@
 
   <!-- Remove index attributes from other elements -->
   <xsl:template match="@index"/>
+
+  <!-- Handle LookupFlag elements and normalize both value and markAttachmentType comments -->
+  <xsl:template match="LookupFlag">
+    <xsl:variable name="flag_value" select="number(@value)"/>
+    <xsl:variable name="upper_bytes" select="floor($flag_value div 256)"/>
+
+    <LookupFlag>
+      <!-- If upper bytes are non-zero, normalize to a fixed value (256) -->
+      <xsl:choose>
+        <xsl:when test="$upper_bytes &gt; 0">
+          <xsl:attribute name="value">256</xsl:attribute>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:copy-of select="@value"/>
+        </xsl:otherwise>
+      </xsl:choose>
+    </LookupFlag>
+
+    <!-- Add markAttachmentType comment if upper bytes are non-zero -->
+    <xsl:if test="$upper_bytes &gt; 0">
+      <xsl:comment> markAttachmentType[1] </xsl:comment>
+    </xsl:if>
+  </xsl:template>
 
   <!-- Handle ExtensionSubst elements -->
   <xsl:template match="ExtensionSubst">
