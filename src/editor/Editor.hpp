@@ -254,7 +254,11 @@ public:
 
         auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
         lookupData->lookupType = 9; // Extension Positioning
-        lookupData->lookupFlag = convertLookupFlag(lookup->base, lookup->marks);
+        auto lookupFlag = convertLookupFlag(lookup->base, lookup->marks, font->gdef);
+        if (!lookupFlag) {
+          return EGLYF_STATUS_PUSH(lookupFlag.status());
+        }
+        lookupData->lookupFlag = *lookupFlag;
         lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
         lookupData->subtables.push_back(extensionSubtable);
 
@@ -278,7 +282,11 @@ public:
 
         auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
         lookupData->lookupType = 9; // Extension Positioning
-        lookupData->lookupFlag = convertLookupFlag(lookup->base, lookup->marks);
+        auto lookupFlag = convertLookupFlag(lookup->base, lookup->marks, font->gdef);
+        if (!lookupFlag) {
+          return EGLYF_STATUS_PUSH(lookupFlag.status());
+        }
+        lookupData->lookupFlag = *lookupFlag;
         lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
         lookupData->subtables.push_back(extensionSubtable);
 
@@ -644,7 +652,11 @@ public:
 
         auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
         lookupData->lookupType = 7; // Extension Substitution
-        lookupData->lookupFlag = convertLookupFlag(lookup->base, lookup->marks);
+        auto lookupFlag = convertLookupFlag(lookup->base, lookup->marks, font->gdef);
+        if (!lookupFlag) {
+          return EGLYF_STATUS_PUSH(lookupFlag.status());
+        }
+        lookupData->lookupFlag = *lookupFlag;
         lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
         lookupData->subtables.push_back(extensionSubtable);
 
@@ -666,7 +678,11 @@ public:
 
         auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
         lookupData->lookupType = 7; // Extension Substitution
-        lookupData->lookupFlag = convertLookupFlag(lookup->base, lookup->marks);
+        auto lookupFlag = convertLookupFlag(lookup->base, lookup->marks, font->gdef);
+        if (!lookupFlag) {
+          return EGLYF_STATUS_PUSH(lookupFlag.status());
+        }
+        lookupData->lookupFlag = *lookupFlag;
         lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
         lookupData->subtables.push_back(extensionSubtable);
 
@@ -693,7 +709,11 @@ public:
       // Create a single lookup with two extension subtables
       auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
       lookupData->lookupType = 7; // Extension Substitution
-      lookupData->lookupFlag = convertLookupFlag(lookup->base, lookup->marks);
+      auto lookupFlag = convertLookupFlag(lookup->base, lookup->marks, font->gdef);
+      if (!lookupFlag) {
+        return EGLYF_STATUS_PUSH(lookupFlag.status());
+      }
+      lookupData->lookupFlag = *lookupFlag;
       lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
 
       // First rule: do nothing if the exceptContext matches
@@ -837,7 +857,11 @@ public:
 
       auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
       lookupData->lookupType = 7; // Extension Substitution
-      lookupData->lookupFlag = convertLookupFlag(lookup->base, lookup->marks);
+      auto lookupFlag = convertLookupFlag(lookup->base, lookup->marks, font->gdef);
+      if (!lookupFlag) {
+        return EGLYF_STATUS_PUSH(lookupFlag.status());
+      }
+      lookupData->lookupFlag = *lookupFlag;
       lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
       auto gsubLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
       gsubLookup->data = lookupData;
@@ -904,7 +928,11 @@ public:
     } else /* if (lookup->exceptContext)*/ {
       auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
       lookupData->lookupType = 7; // Extension Substitution
-      lookupData->lookupFlag = convertLookupFlag(lookup->base, lookup->marks);
+      auto lookupFlag = convertLookupFlag(lookup->base, lookup->marks, font->gdef);
+      if (!lookupFlag) {
+        return EGLYF_STATUS_PUSH(lookupFlag.status());
+      }
+      lookupData->lookupFlag = *lookupFlag;
       lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
 
       // First rule: do nothing if the context matches
@@ -1191,8 +1219,9 @@ public:
 
 private:
   // Convert Editor::Lookup base and marks to OpenType lookupFlag
-  uint16_t convertLookupFlag(std::variant<Lookup::SkipBase, Lookup::ProcessBase> const &base,
-                             std::variant<Lookup::SkipMarks, Lookup::ProcessMarks> const &marks) const {
+  Optional<uint16_t> convertLookupFlag(std::variant<Lookup::SkipBase, Lookup::ProcessBase> const &base,
+                                       std::variant<Lookup::SkipMarks, Lookup::ProcessMarks> const &marks,
+                                       std::shared_ptr<GlyphDefinitionTable> const &gdef) {
     using namespace std;
     uint16_t flag = 0;
 
@@ -1210,6 +1239,13 @@ private:
       // Set Use mark filtering set flag for ProcessMarks::MarkGlyphs or ProcessMarks::MarkGroup
       if (holds_alternative<Lookup::ProcessMarks::MarkFilteringSet>(processMarks.what)) {
         flag |= 0x0010; // Use mark filtering set
+      } else if (holds_alternative<Lookup::ProcessMarks::MarkGroup>(processMarks.what)) {
+        auto markGroup = get<Lookup::ProcessMarks::MarkGroup>(processMarks.what);
+        auto classValue = determineMarkAttachmentClass(markGroup.group, gdef);
+        if (!classValue) {
+          return EGLYF_NULLOPT_PUSH(classValue.status());
+        }
+        flag |= (0xff00 & (*classValue << 8));
       }
     }
 
@@ -1363,6 +1399,55 @@ private:
       return index;
     } else {
       return found->second.second;
+    }
+  }
+
+  Optional<uint16_t> determineMarkAttachmentClass(std::shared_ptr<Group> const &group, std::shared_ptr<GlyphDefinitionTable> const &gdef) {
+    using namespace std;
+    if (!markAttachClasses) {
+      markAttachClasses = make_shared<unordered_map<uint16_t, uint16_t>>();
+      if (gdef->markAttachClassDef) {
+        gdef->markAttachClassDef->enumerateClassValues([this](uint16_t gid, uint16_t classValue) {
+          (*markAttachClasses)[gid] = classValue;
+        });
+      } else {
+        gdef->markAttachClassDef = make_shared<ClassDef1>();
+      }
+    }
+    set<uint16_t> gids;
+    collectGIDSet(group, gids);
+    if (gids.empty()) {
+      return EGLYF_NULLOPT;
+    }
+    uint16_t first = *gids.begin();
+    auto found = markAttachClasses->find(first);
+    if (found == markAttachClasses->end()) {
+      uint16_t maxClassValue = 0;
+      for (auto const &[gid, cv] : *markAttachClasses) {
+        if (gids.find(gid) != gids.end()) {
+          return EGLYF_NULLOPT;
+        }
+        maxClassValue = (std::min)(maxClassValue, cv);
+      }
+      uint16_t classValue = maxClassValue + 1;
+      if (classValue > (uint16_t)numeric_limits<uint8_t>::max()) {
+        return EGLYF_NULLOPT;
+      }
+      for (auto gid : gids) {
+        (*markAttachClasses)[gid] = classValue;
+      }
+      return classValue;
+    } else {
+      uint16_t classValue = found->second;
+      if (classValue > (uint16_t)numeric_limits<uint8_t>::max()) {
+        return EGLYF_NULLOPT;
+      }
+      for (auto const &[gid, cv] : *markAttachClasses) {
+        if (cv != classValue && gids.find(gid) != gids.end()) {
+          return EGLYF_NULLOPT;
+        }
+      }
+      return classValue;
     }
   }
 
@@ -1678,6 +1763,7 @@ public:
   std::unordered_map<std::string, std::shared_ptr<Script>> scripts;
 
   std::shared_ptr<std::map<std::set<uint16_t>, std::pair<std::shared_ptr<Coverage>, size_t>>> markFilteringSets;
+  std::shared_ptr<std::unordered_map<uint16_t, uint16_t>> markAttachClasses;
 };
 
 } // namespace eglyf

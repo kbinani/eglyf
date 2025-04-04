@@ -8,6 +8,7 @@ public:
   virtual Status write(OutputStream &out) const = 0;
   virtual size_t size() const = 0;
   virtual Status add(uint16_t glyphId, uint16_t classValue) = 0;
+  virtual void enumerateClassValues(std::function<void(uint16_t gid, uint16_t classValue)> cb) const = 0;
 };
 
 class ClassDef1 : public ClassDef {
@@ -66,6 +67,13 @@ public:
     } else {
       classValues[glyphId - startGlyphID] = classValue;
       return Status::Ok();
+    }
+  }
+
+  void enumerateClassValues(std::function<void(uint16_t gid, uint16_t classValue)> cb) const override {
+    for (size_t i = 0; i < classValues.size(); i++) {
+      auto gid = i + startGlyphID;
+      cb(gid, classValues[i]);
     }
   }
 
@@ -213,6 +221,14 @@ public:
       classRanges.insert(classRanges.begin() + index, left);
       classRanges.insert(classRanges.begin() + index + 2, right);
       return Status::Ok();
+    }
+  }
+
+  void enumerateClassValues(std::function<void(uint16_t gid, uint16_t classValue)> cb) const override {
+    for (auto const &range : classRanges) {
+      for (uint16_t gid = range.startGlyphID; gid <= range.endGlyphID; gid++) {
+        cb(gid, range.classValue);
+      }
     }
   }
 
