@@ -1,0 +1,252 @@
+<LookupList>
+      <Lookup index="1216">
+        <LookupType value="7"/>
+        <LookupFlag value="0"/>
+        <!-- SubTableCount=1 -->
+        <ExtensionSubst index="0" Format="1">
+          <ExtensionLookupType value="2"/>
+          <MultipleSubst>
+            <Substitution in="bi0A" out="bi0A,Qi,et66,tsh666564636261565554535251464544434241363534333231262524232221161514131211,GB1,Qf"/>
+            <Substitution in="bi1A" out="bi1A,Qi,et66,tsh666564636261565554535251464544434241363534333231262524232221161514131211,GB1,Qf"/>
+            <Substitution in="hj0A" out="hj0A,Qi,et66,tsh666564636261565554535251464544434241363534333231262524232221161514131211,GB1,Qf"/>
+            <Substitution in="hj1A" out="hj1A,Qi,et66,tsh666564636261565554535251464544434241363534333231262524232221161514131211,GB1,Qf"/>
+            <Substitution in="hj2A" out="hj2A,Qi,et66,tsh666564636261565554535251464544434241363534333231262524232221161514131211,GB1,Qf"/>
+            <Substitution in="ibe0A" out="ibe0A,Qi,et66,tsh666564636261565554535251464544434241363534333231262524232221161514131211,GB1,Qf"/>
+            <Substitution in="ibe1A" out="ibe1A,Qi,et66,tsh666564636261565554535251464544434241363534333231262524232221161514131211,GB1,Qf"/>
+            <Substitution in="ibs0A" out="ibs0A,Qi,et66,tsh666564636261565554535251464544434241363534333231262524232221161514131211,GB1,Qf"/>
+            <Substitution in="ibs1A" out="ibs1A,Qi,et66,tsh666564636261565554535251464544434241363534333231262524232221161514131211,GB1,Qf"/>
+            <Substitution in="ite0A" out="ite0A,Qi,et66,tsh666564636261565554535251464544434241363534333231262524232221161514131211,GB1,Qf"/>
+            <Substitution in="ite1A" out="ite1A,Qi,et66,tsh666564636261565554535251464544434241363534333231262524232221161514131211,GB1,Qf"/>
+            <Substitution in="its0A" out="its0A,Qi,et66,tsh666564636261565554535251464544434241363534333231262524232221161514131211,GB1,Qf"/>
+            <Substitution in="its1A" out="its1A,Qi,et66,tsh666564636261565554535251464544434241363534333231262524232221161514131211,GB1,Qf"/>
+            <Substitution in="mi0A" out="mi0A,Qi,et66,tsh666564636261565554535251464544434241363534333231262524232221161514131211,GB1,Qf"/>
+            <Substitution in="mi1A" out="mi1A,Qi,et66,tsh666564636261565554535251464544434241363534333231262524232221161514131211,GB1,Qf"/>
+            <Substitution in="om0A" out="om0A,Qi,et66,tsh666564636261565554535251464544434241363534333231262524232221161514131211,GB1,Qf"/>
+            <Substitution in="om1A" out="om1A,Qi,et66,tsh666564636261565554535251464544434241363534333231262524232221161514131211,GB1,Qf"/>
+            <Substitution in="ss" out="ss,Qi,et66,tsh666564636261565554535251464544434241363534333231262524232221161514131211,GB1,Qf"/>
+            <Substitution in="ti0A" out="ti0A,Qi,et66,tsh666564636261565554535251464544434241363534333231262524232221161514131211,GB1,Qf"/>
+            <Substitution in="ti1A" out="ti1A,Qi,et66,tsh666564636261565554535251464544434241363534333231262524232221161514131211,GB1,Qf"/>
+            <Substitution in="vj0A" out="vj0A,Qi,et66,tsh666564636261565554535251464544434241363534333231262524232221161514131211,GB1,Qf"/>
+            <Substitution in="vj1A" out="vj1A,Qi,et66,tsh666564636261565554535251464544434241363534333231262524232221161514131211,GB1,Qf"/>
+            <Substitution in="vj2A" out="vj2A,Qi,et66,tsh666564636261565554535251464544434241363534333231262524232221161514131211,GB1,Qf"/>
+          </MultipleSubst>
+        </ExtensionSubst>
+      </Lookup>
+      <Lookup index="34">
+        <LookupType value="7"/>
+        <LookupFlag value="0"/>
+        <!-- SubTableCount=4 -->
+        <ExtensionSubst index="0" Format="1">
+          <ExtensionLookupType value="6"/>
+          <ChainContextSubst Format="3">
+            <!-- BacktrackGlyphCount=0 -->
+            <!-- InputGlyphCount=1 -->
+            <InputCoverage index="0">
+              <Glyph value="ss"/>
+              <Glyph value="hj0A"/>
+              <Glyph value="hj1A"/>
+              <Glyph value="hj2A"/>
+              <Glyph value="vj0A"/>
+              <Glyph value="vj1A"/>
+              <Glyph value="vj2A"/>
+              <Glyph value="bi0A"/>
+              <Glyph value="ibe0A"/>
+              <Glyph value="ibs0A"/>
+              <Glyph value="ite0A"/>
+              <Glyph value="its0A"/>
+              <Glyph value="mi0A"/>
+              <Glyph value="om0A"/>
+              <Glyph value="ti0A"/>
+              <Glyph value="bi1A"/>
+              <Glyph value="ibe1A"/>
+              <Glyph value="ibs1A"/>
+              <Glyph value="ite1A"/>
+              <Glyph value="its1A"/>
+              <Glyph value="mi1A"/>
+              <Glyph value="om1A"/>
+              <Glyph value="ti1A"/>
+            </InputCoverage>
+            <!-- LookAheadGlyphCount=1 -->
+            <LookAheadCoverage index="0">
+              <Glyph value="ss"/>
+              <Glyph value="Qi"/>
+            </LookAheadCoverage>
+            <!-- SubstCount=0 -->
+          </ChainContextSubst>
+        </ExtensionSubst>
+        <ExtensionSubst index="1" Format="1">
+          <ExtensionLookupType value="6"/>
+          <ChainContextSubst Format="3">
+            <!-- BacktrackGlyphCount=1 -->
+            <BacktrackCoverage index="0">
+              <Glyph value="Qf"/>
+            </BacktrackCoverage>
+            <!-- InputGlyphCount=1 -->
+            <InputCoverage index="0">
+              <Glyph value="ss"/>
+              <Glyph value="hj0A"/>
+              <Glyph value="hj1A"/>
+              <Glyph value="hj2A"/>
+              <Glyph value="vj0A"/>
+              <Glyph value="vj1A"/>
+              <Glyph value="vj2A"/>
+              <Glyph value="bi0A"/>
+              <Glyph value="ibe0A"/>
+              <Glyph value="ibs0A"/>
+              <Glyph value="ite0A"/>
+              <Glyph value="its0A"/>
+              <Glyph value="mi0A"/>
+              <Glyph value="om0A"/>
+              <Glyph value="ti0A"/>
+              <Glyph value="bi1A"/>
+              <Glyph value="ibe1A"/>
+              <Glyph value="ibs1A"/>
+              <Glyph value="ite1A"/>
+              <Glyph value="its1A"/>
+              <Glyph value="mi1A"/>
+              <Glyph value="om1A"/>
+              <Glyph value="ti1A"/>
+            </InputCoverage>
+            <!-- LookAheadGlyphCount=0 -->
+            <!-- SubstCount=1 -->
+            <SubstLookupRecord index="0">
+              <SequenceIndex value="0"/>
+              <LookupListIndex value="1216"/>
+            </SubstLookupRecord>
+          </ChainContextSubst>
+        </ExtensionSubst>
+        <ExtensionSubst index="2" Format="1">
+          <ExtensionLookupType value="6"/>
+          <ChainContextSubst Format="3">
+            <!-- BacktrackGlyphCount=2 -->
+            <BacktrackCoverage index="0">
+              <Glyph value="hj0A"/>
+              <Glyph value="hj1A"/>
+              <Glyph value="hj2A"/>
+              <Glyph value="vj0A"/>
+              <Glyph value="vj1A"/>
+              <Glyph value="vj2A"/>
+              <Glyph value="bi0A"/>
+              <Glyph value="ibe0A"/>
+              <Glyph value="ibs0A"/>
+              <Glyph value="ite0A"/>
+              <Glyph value="its0A"/>
+              <Glyph value="mi0A"/>
+              <Glyph value="om0A"/>
+              <Glyph value="ti0A"/>
+              <Glyph value="bi1A"/>
+              <Glyph value="ibe1A"/>
+              <Glyph value="ibs1A"/>
+              <Glyph value="ite1A"/>
+              <Glyph value="its1A"/>
+              <Glyph value="mi1A"/>
+              <Glyph value="om1A"/>
+              <Glyph value="ti1A"/>
+            </BacktrackCoverage>
+            <BacktrackCoverage index="1">
+              <Glyph value="Qf"/>
+            </BacktrackCoverage>
+            <!-- InputGlyphCount=1 -->
+            <InputCoverage index="0">
+              <Glyph value="ss"/>
+              <Glyph value="hj0A"/>
+              <Glyph value="hj1A"/>
+              <Glyph value="hj2A"/>
+              <Glyph value="vj0A"/>
+              <Glyph value="vj1A"/>
+              <Glyph value="vj2A"/>
+              <Glyph value="bi0A"/>
+              <Glyph value="ibe0A"/>
+              <Glyph value="ibs0A"/>
+              <Glyph value="ite0A"/>
+              <Glyph value="its0A"/>
+              <Glyph value="mi0A"/>
+              <Glyph value="om0A"/>
+              <Glyph value="ti0A"/>
+              <Glyph value="bi1A"/>
+              <Glyph value="ibe1A"/>
+              <Glyph value="ibs1A"/>
+              <Glyph value="ite1A"/>
+              <Glyph value="its1A"/>
+              <Glyph value="mi1A"/>
+              <Glyph value="om1A"/>
+              <Glyph value="ti1A"/>
+            </InputCoverage>
+            <!-- LookAheadGlyphCount=0 -->
+            <!-- SubstCount=1 -->
+            <SubstLookupRecord index="0">
+              <SequenceIndex value="0"/>
+              <LookupListIndex value="1216"/>
+            </SubstLookupRecord>
+          </ChainContextSubst>
+        </ExtensionSubst>
+        <ExtensionSubst index="3" Format="1">
+          <ExtensionLookupType value="6"/>
+          <ChainContextSubst Format="3">
+            <!-- BacktrackGlyphCount=3 -->
+            <BacktrackCoverage index="0">
+              <Glyph value="ss"/>
+            </BacktrackCoverage>
+            <BacktrackCoverage index="1">
+              <Glyph value="hj0A"/>
+              <Glyph value="hj1A"/>
+              <Glyph value="hj2A"/>
+              <Glyph value="vj0A"/>
+              <Glyph value="vj1A"/>
+              <Glyph value="vj2A"/>
+              <Glyph value="bi0A"/>
+              <Glyph value="ibe0A"/>
+              <Glyph value="ibs0A"/>
+              <Glyph value="ite0A"/>
+              <Glyph value="its0A"/>
+              <Glyph value="mi0A"/>
+              <Glyph value="om0A"/>
+              <Glyph value="ti0A"/>
+              <Glyph value="bi1A"/>
+              <Glyph value="ibe1A"/>
+              <Glyph value="ibs1A"/>
+              <Glyph value="ite1A"/>
+              <Glyph value="its1A"/>
+              <Glyph value="mi1A"/>
+              <Glyph value="om1A"/>
+              <Glyph value="ti1A"/>
+            </BacktrackCoverage>
+            <BacktrackCoverage index="2">
+              <Glyph value="Qf"/>
+            </BacktrackCoverage>
+            <!-- InputGlyphCount=1 -->
+            <InputCoverage index="0">
+              <Glyph value="ss"/>
+              <Glyph value="hj0A"/>
+              <Glyph value="hj1A"/>
+              <Glyph value="hj2A"/>
+              <Glyph value="vj0A"/>
+              <Glyph value="vj1A"/>
+              <Glyph value="vj2A"/>
+              <Glyph value="bi0A"/>
+              <Glyph value="ibe0A"/>
+              <Glyph value="ibs0A"/>
+              <Glyph value="ite0A"/>
+              <Glyph value="its0A"/>
+              <Glyph value="mi0A"/>
+              <Glyph value="om0A"/>
+              <Glyph value="ti0A"/>
+              <Glyph value="bi1A"/>
+              <Glyph value="ibe1A"/>
+              <Glyph value="ibs1A"/>
+              <Glyph value="ite1A"/>
+              <Glyph value="its1A"/>
+              <Glyph value="mi1A"/>
+              <Glyph value="om1A"/>
+              <Glyph value="ti1A"/>
+            </InputCoverage>
+            <!-- LookAheadGlyphCount=0 -->
+            <!-- SubstCount=1 -->
+            <SubstLookupRecord index="0">
+              <SequenceIndex value="0"/>
+              <LookupListIndex value="1216"/>
+            </SubstLookupRecord>
+          </ChainContextSubst>
+        </ExtensionSubst>
+      </Lookup>
+</LookupList>
