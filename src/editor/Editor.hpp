@@ -935,9 +935,6 @@ public:
       lookupData->lookupFlag = *lookupFlag;
       lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
 
-      // First rule: do nothing if the context matches
-      auto chainedContexts1 = make_shared<ChainedContexts3>();
-
       // Set up input coverage
       set<uint16_t> inputGlyphIds;
       for (auto const &subst : lookup->substitutions) {
@@ -952,52 +949,60 @@ public:
 
       auto inputCoverage1 = make_shared<Coverage1>();
       inputCoverage1->glyphArray = inputGlyphIds;
-      chainedContexts1->inputCoverage.push_back(inputCoverage1);
 
+      map<pair<size_t, size_t>, vector<shared_ptr<Lookup::Context>>> merged;
       for (auto const &exceptContext : lookup->exceptContexts) {
-        // Set up backtrack coverage (left context)
-        for (auto const &item : exceptContext->left) {
-          set<uint16_t> glyphIds;
-          collectGIDSet(item, glyphIds);
-
-          if (!glyphIds.empty()) {
-            auto coverage = make_shared<Coverage1>();
-            coverage->glyphArray = glyphIds;
-            chainedContexts1->backtrackCoverage.push_back(coverage);
-          }
-        }
-
-        // Set up lookahead coverage (right context)
-        for (auto const &item : exceptContext->right) {
-          set<uint16_t> glyphIds;
-          collectGIDSet(item, glyphIds);
-
-          if (!glyphIds.empty()) {
-            auto coverage = make_shared<Coverage1>();
-            coverage->glyphArray = glyphIds;
-            chainedContexts1->lookaheadCoverage.push_back(coverage);
-          }
-        }
+        auto key = make_pair(exceptContext->left.size(), exceptContext->right.size());
+        merged[key].push_back(exceptContext);
       }
 
-      // Don't add SubstLookupRecord (do nothing)
+      for (auto const &[key, contexts] : merged) {
+        auto negative = make_shared<ChainedContexts3>();
+        negative->inputCoverage.push_back(inputCoverage1);
 
-      // Second rule: apply substitution in all other cases
-      auto chainedContexts2 = make_shared<ChainedContexts3>();
+        auto [left, right] = key;
 
-      // Set up input coverage (same as the first rule)
-      auto inputCoverage2 = make_shared<Coverage1>();
-      inputCoverage2->glyphArray = inputGlyphIds;
-      chainedContexts2->inputCoverage.push_back(inputCoverage2);
+        for (size_t i = 0; i < left; i++) {
+          set<uint16_t> glyphIds;
+          for (auto const &context : contexts) {
+            auto const &item = context->left[i];
+            collectGIDSet(item, glyphIds);
+          }
+          if (!glyphIds.empty()) {
+            auto coverage = make_shared<Coverage1>();
+            coverage->glyphArray = glyphIds;
+            negative->backtrackCoverage.push_back(coverage);
+          }
+        }
 
-      // Don't specify backtrack and lookahead
+        for (size_t i = 0; i < right; i++) {
+          set<uint16_t> glyphIds;
+          for (auto const &context : contexts) {
+            auto const &item = context->right[i];
+            collectGIDSet(item, glyphIds);
+          }
+          if (!glyphIds.empty()) {
+            auto coverage = make_shared<Coverage1>();
+            coverage->glyphArray = glyphIds;
+            negative->lookaheadCoverage.push_back(coverage);
+          }
+        }
 
-      // Set up reference to substitution rule
+        auto extensionNegative = make_shared<gsub::SubstitutionExtension>();
+        extensionNegative->extensionLookupType = 6; // ChainedContexts
+        extensionNegative->extension = negative;
+
+        lookupData->subtables.push_back(extensionNegative);
+      }
+
+      auto positive = make_shared<ChainedContexts3>();
+      positive->inputCoverage.push_back(inputCoverage1);
+
       if (singleLookup) {
         SequenceLookup seqLookup;
         seqLookup.sequenceIndex = 0; // Replace the first input glyph
         seqLookup.lookup = singleLookup;
-        chainedContexts2->seqLookups.push_back(seqLookup);
+        positive->seqLookups.push_back(seqLookup);
 
         result.push_back(singleLookup);
       }
@@ -1005,22 +1010,15 @@ public:
         SequenceLookup seqLookup;
         seqLookup.sequenceIndex = 0; // Replace the first input glyph
         seqLookup.lookup = ligatureLookup;
-        chainedContexts2->seqLookups.push_back(seqLookup);
+        positive->seqLookups.push_back(seqLookup);
 
-        result.push_back(ligatureLookup);
+        result.push_back(singleLookup);
       }
 
-      // Wrap both rules with extension subtables and add to a single lookup
-      auto extensionSubtable1 = make_shared<gsub::SubstitutionExtension>();
-      extensionSubtable1->extensionLookupType = 6; // ChainedContexts
-      extensionSubtable1->extension = chainedContexts1;
-
-      auto extensionSubtable2 = make_shared<gsub::SubstitutionExtension>();
-      extensionSubtable2->extensionLookupType = 6; // ChainedContexts
-      extensionSubtable2->extension = chainedContexts2;
-
-      lookupData->subtables.push_back(extensionSubtable1);
-      lookupData->subtables.push_back(extensionSubtable2);
+      auto extensionPositive = make_shared<gsub::SubstitutionExtension>();
+      extensionPositive->extensionLookupType = 6; // ChainedContexts
+      extensionPositive->extension = positive;
+      lookupData->subtables.push_back(extensionPositive);
 
       auto gsubLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
       gsubLookup->data = lookupData;
