@@ -19,11 +19,11 @@ public:
     LookupList ret;
     uint16_t lookupCount;
     if (!in.u16(&lookupCount)) {
-      return EGLYF_NULLOPT;
+      return EGLYF_NULLOPT_WHAT("Failed to read lookupCount");
     }
     vector<Offset16> lookupOffsets;
     if (!in.o16a(lookupOffsets, lookupCount)) {
-      return EGLYF_NULLOPT;
+      return EGLYF_NULLOPT_WHAT("Failed to read lookupOffsets");
     }
     map<Offset16, shared_ptr<Lookup>> lookups;
     for (uint16_t lookupOffset : lookupOffsets) {
@@ -35,23 +35,23 @@ public:
       auto l = make_shared<Lookup>();
       l->lookupOffset = lookupOffset;
       if (!in.seek(lookupOffset)) {
-        return EGLYF_NULLOPT;
+        return EGLYF_NULLOPT_WHAT("Failed to seek to lookupOffset");
       }
       if (!in.u16(&l->lookupType)) {
-        return EGLYF_NULLOPT;
+        return EGLYF_NULLOPT_WHAT("Failed to read lookupType");
       }
       if (!in.u16(&l->lookupFlag)) {
-        return EGLYF_NULLOPT;
+        return EGLYF_NULLOPT_WHAT("Failed to read lookupFlag");
       }
       uint16_t subTableCount;
       if (!in.u16(&subTableCount)) {
-        return EGLYF_NULLOPT;
+        return EGLYF_NULLOPT_WHAT("Failed to read subTableCount");
       }
       if (!in.o16a(l->subtableOffsets, subTableCount)) {
-        return EGLYF_NULLOPT;
+        return EGLYF_NULLOPT_WHAT("Failed to read subtableOffsets");
       }
       if (!in.u16(&l->markFilteringSet)) {
-        return EGLYF_NULLOPT;
+        return EGLYF_NULLOPT_WHAT("Failed to read markFilteringSet");
       }
       lookups[lookupOffset] = l;
       ret.lookupTable.push_back(l);
@@ -67,11 +67,11 @@ public:
     using namespace std;
 
     if (lookupTable.size() != subtables.size()) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Lookup table size mismatch");
     }
     for (size_t i = 0; i < lookupTable.size(); i++) {
       if (lookupTable[i]->subtableOffsets.size() != subtables[i].size()) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Subtable offsets size mismatch");
       }
     }
 
@@ -80,7 +80,7 @@ public:
 
     auto lookupListBeginning = make_shared<OffsetWriter>(out);
     if (!out.sizeU16(lookupTable.size())) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Failed to write lookup table size");
     }
     map<shared_ptr<Lookup>, pair<vector<shared_ptr<Subtable>>, vector<OffsetWriter::Handle16>>> lookupOffsets;
     for (size_t i = 0; i < lookupTable.size(); i++) {
@@ -88,17 +88,17 @@ public:
       auto const &tables = subtables[i];
       auto handle = lookupListBeginning->o16();
       if (!handle) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to create lookup offset handle");
       }
       if (lookupOffsets[lookup].first.empty()) {
         lookupOffsets[lookup].first = tables;
       } else {
         if (lookupOffsets[lookup].first.size() != tables.size()) {
-          return EGLYF_ERROR;
+          return EGLYF_ERROR_WHAT("Lookup offset tables size mismatch");
         }
         for (size_t j = 0; j < tables.size(); j++) {
           if (tables[j] != lookupOffsets[lookup].first[j]) {
-            return EGLYF_ERROR;
+            return EGLYF_ERROR_WHAT("Lookup offset tables content mismatch");
           }
         }
       }
@@ -118,18 +118,18 @@ public:
       }
 
       if (!out.u16(lookup->lookupType)) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to write lookupType");
       }
       if (!out.u16(lookup->lookupFlag)) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to write lookupFlag");
       }
       if (!out.sizeU16(tables.size())) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to write tables size");
       }
       for (auto const &table : tables) {
         auto h = lookupTableBeginning->o16();
         if (!h) {
-          return EGLYF_ERROR;
+          return EGLYF_ERROR_WHAT("Failed to create subtable offset handle");
         }
         auto found = ranges::find_if(handles, [&table](auto const &it) { return it.first == table; });
         if (found == handles.end()) {
@@ -141,7 +141,7 @@ public:
         }
       }
       if (!out.u16(lookup->markFilteringSet)) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to write markFilteringSet");
       }
     }
 
@@ -189,7 +189,7 @@ public:
         return EGLYF_STATUS_PUSH(st);
       }
       if (!ex.empty()) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Nested extensions are not supported");
       }
     }
     for (auto [table, p] : extensions) {

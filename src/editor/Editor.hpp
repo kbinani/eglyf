@@ -452,7 +452,7 @@ public:
     vector<pair<vector<uint16_t>, uint16_t>> mapping;
     for (auto const &[input, output] : substitutions) {
       if (input.size() < 2) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Input size must be at least 2 for ligature substitution");
       }
       shared_ptr<Group> inGroup;
       for (auto const &it : input) {
@@ -460,7 +460,7 @@ public:
           auto g = get<shared_ptr<Group>>(it);
           if (inGroup) {
             if (g != inGroup) {
-              return EGLYF_ERROR;
+              return EGLYF_ERROR_WHAT("Multiple different groups in input are not supported");
             }
           } else {
             inGroup = g;
@@ -475,12 +475,12 @@ public:
       if (holds_alternative<shared_ptr<Group>>(output)) {
         auto outGroup = get<shared_ptr<Group>>(output);
         if (!inGroup) {
-          return EGLYF_ERROR;
+          return EGLYF_ERROR_WHAT("Group output requires group input");
         }
         vector<shared_ptr<Glyph>> outGroupGlyphs;
         collectGlyphVectorFromGroup(outGroup, outGroupGlyphs);
         if (outGroupGlyphs.size() != inGroupGlyphs.size()) {
-          return EGLYF_ERROR;
+          return EGLYF_ERROR_WHAT("Output group size must match input group size");
         }
         for (size_t i = 0; i < inGroupGlyphs.size(); i++) {
           auto const &inGlyph = inGroupGlyphs[i];
@@ -506,7 +506,7 @@ public:
               assert(group == inGroup);
               in.push_back(*inGlyph->id);
             } else {
-              return EGLYF_ERROR;
+              return EGLYF_ERROR_WHAT("Unsupported variant type in input");
             }
           }
           mapping.push_back(make_pair(in, *outGlyph->id));
@@ -536,7 +536,7 @@ public:
                 assert(group == inGroup);
                 in.push_back(*inGlyph->id);
               } else {
-                return EGLYF_ERROR;
+                return EGLYF_ERROR_WHAT("Unsupported variant type in input");
               }
             }
             if (ok) {
@@ -555,7 +555,7 @@ public:
               }
               in.push_back(*glyph->id);
             } else {
-              return EGLYF_ERROR;
+              return EGLYF_ERROR_WHAT("Unsupported variant type in input");
             }
           }
           if (ok) {
@@ -632,7 +632,7 @@ public:
       } else if (subst->input.size() > 1 && subst->output.size() == 1) {
         ligature.push_back(make_pair(subst->input, subst->output[0]));
       } else {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Unsupported substitution pattern");
       }
     }
 
@@ -1417,7 +1417,7 @@ private:
     set<uint16_t> gids;
     collectGIDSet(group, gids);
     if (gids.empty()) {
-      return EGLYF_NULLOPT;
+      return EGLYF_NULLOPT_WHAT("No glyph IDs found in the group");
     }
     uint16_t first = *gids.begin();
     auto found = markAttachClasses->find(first);
@@ -1425,13 +1425,13 @@ private:
       uint16_t maxClassValue = 0;
       for (auto const &[gid, cv] : *markAttachClasses) {
         if (gids.find(gid) != gids.end()) {
-          return EGLYF_NULLOPT;
+          return EGLYF_NULLOPT_WHAT("Failed to determine mark attachment class");
         }
         maxClassValue = (std::min)(maxClassValue, cv);
       }
       uint16_t classValue = maxClassValue + 1;
       if (classValue > (uint16_t)numeric_limits<uint8_t>::max()) {
-        return EGLYF_NULLOPT;
+        return EGLYF_NULLOPT_WHAT("Class value exceeds maximum allowed value");
       }
       for (auto gid : gids) {
         (*markAttachClasses)[gid] = classValue;
@@ -1440,11 +1440,11 @@ private:
     } else {
       uint16_t classValue = found->second;
       if (classValue > (uint16_t)numeric_limits<uint8_t>::max()) {
-        return EGLYF_NULLOPT;
+        return EGLYF_NULLOPT_WHAT("Class value exceeds maximum allowed value");
       }
       for (auto const &[gid, cv] : *markAttachClasses) {
         if (cv != classValue && gids.find(gid) != gids.end()) {
-          return EGLYF_NULLOPT;
+          return EGLYF_NULLOPT_WHAT("Inconsistent class values for glyphs in the same group");
         }
       }
       return classValue;
@@ -1601,10 +1601,10 @@ private:
 
     // Determine lookup type based on output glyphs
     if (inputBase * outputBase != 0) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Both input and output contain base glyphs");
     }
     if (outputBase != 0) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Output contains base glyphs");
     }
     if (outputBase == 0) {
       lookupType = 6; // MarkToMarkAttachmentPositioning

@@ -17,14 +17,14 @@ public:
     using namespace std;
     auto r = make_unique<ClassDef1>();
     if (!in.u16(&r->startGlyphID)) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Failed to read startGlyphID");
     }
     uint16_t glyphCount;
     if (!in.u16(&glyphCount)) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Failed to read glyphCount");
     }
     if (!in.u16a(r->classValues, glyphCount)) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Failed to read classValues");
     }
     out.reset(r.release());
     return Status::Ok();
@@ -33,18 +33,18 @@ public:
   Status write(OutputStream &out) const override {
     using namespace std;
     if (!out.u16(1)) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Failed to write format");
     }
     if (!out.u16(startGlyphID)) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Failed to write startGlyphID");
     }
     if (!out.sizeU16(classValues.size())) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Failed to write classValues size");
     }
     if (out.u16a(classValues)) {
       return Status::Ok();
     } else {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Failed to write classValues");
     }
   }
 
@@ -64,9 +64,11 @@ public:
       }
       classValues[0] = classValue;
       return Status::Ok();
-    } else {
+    } else if (glyphId - startGlyphID < classValues.size()) {
       classValues[glyphId - startGlyphID] = classValue;
       return Status::Ok();
+    } else {
+      return EGLYF_ERROR_WHAT("Glyph ID out of range");
     }
   }
 
@@ -93,28 +95,28 @@ public:
       using namespace std;
       ClassRange r;
       if (!in.u16(&r.startGlyphID)) {
-        return EGLYF_NULLOPT;
+        return EGLYF_NULLOPT_WHAT("Failed to read startGlyphID");
       }
       if (!in.u16(&r.endGlyphID)) {
-        return EGLYF_NULLOPT;
+        return EGLYF_NULLOPT_WHAT("Failed to read endGlyphID");
       }
       if (!in.u16(&r.classValue)) {
-        return EGLYF_NULLOPT;
+        return EGLYF_NULLOPT_WHAT("Failed to read classValue");
       }
       return r;
     }
 
     Status write(OutputStream &out) const {
       if (!out.u16(startGlyphID)) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to write startGlyphID");
       }
       if (!out.u16(endGlyphID)) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to write endGlyphID");
       }
       if (out.u16(classValue)) {
         return Status::Ok();
       } else {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to write classValue");
       }
     }
   };
@@ -124,7 +126,7 @@ public:
     using namespace std;
     uint16_t classRangeCount;
     if (!in.u16(&classRangeCount)) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Failed to read classRangeCount");
     }
     auto r = make_unique<ClassDef2>();
     r->classRanges.reserve(classRangeCount);
@@ -142,10 +144,10 @@ public:
   Status write(OutputStream &out) const override {
     using namespace std;
     if (!out.u16(2)) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Failed to write format");
     }
     if (!out.sizeU16(classRanges.size())) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Failed to write classRanges size");
     }
     for (auto const &range : classRanges) {
       if (auto st = range.write(out); !st.ok()) {
@@ -244,7 +246,7 @@ public:
     using namespace std;
     uint16_t format;
     if (!in.u16(&format)) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Failed to read format");
     }
     if (format == 1) {
       auto st = ClassDef1::Read(in, out);
@@ -253,7 +255,7 @@ public:
       auto st = ClassDef2::Read(in, out);
       return EGLYF_STATUS_PUSH(st);
     } else {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Unsupported format: " + std::to_string(format));
     }
   }
 };

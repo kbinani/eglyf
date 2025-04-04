@@ -64,40 +64,40 @@ public:
   Status read(InputStream &in) {
     using namespace std;
     if (!in.u16(&majorVersion)) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Failed to read majorVersion");
     }
     if (!in.u16(&minorVersion)) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Failed to read minorVersion");
     }
     if (majorVersion != 1) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Unsupported major version: " + std::to_string(majorVersion));
     }
     if (minorVersion > 1) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Unsupported minor version: " + std::to_string(minorVersion));
     }
     Offset16 scriptListOffset;
     if (!in.o16(&scriptListOffset)) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Failed to read scriptListOffset");
     }
     Offset16 featureListOffset;
     if (!in.o16(&featureListOffset)) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Failed to read featureListOffset");
     }
     Offset16 lookupListOffset;
     if (!in.o16(&lookupListOffset)) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Failed to read lookupListOffset");
     }
     Offset32 featureVariationsOffset = 0;
     if (minorVersion == 1) {
       if (!in.o32(&featureVariationsOffset)) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to read featureVariationsOffset");
       }
     }
 
     ScriptList scriptList;
     {
       if (!in.seek(scriptListOffset)) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to seek to scriptListOffset");
       }
       if (auto sl = ScriptList::Read(in); sl) {
         scriptList = *sl;
@@ -109,7 +109,7 @@ public:
     FeatureList featureList;
     {
       if (!in.seek(featureListOffset)) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to seek to featureListOffset");
       }
       if (auto fl = FeatureList::Read(in); fl) {
         featureList = *fl;
@@ -121,7 +121,7 @@ public:
     LookupList lookupList;
     {
       if (!in.seek(lookupListOffset)) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to seek to lookupListOffset");
       }
       if (auto ll = LookupList::Read(in); ll) {
         lookupList = *ll;
@@ -152,7 +152,7 @@ public:
         pos += offset;
         if (auto found = subtables.find(pos); found == subtables.end()) {
           if (!in.seek(pos)) {
-            return EGLYF_ERROR;
+            return EGLYF_ERROR_WHAT("Failed to seek to subtable position");
           }
           shared_ptr<T> table;
           if (auto st = readSubtable(in, it->lookupType, table); st.ok()) {
@@ -185,7 +185,7 @@ public:
       data->featureParams = f->data->featureParams;
       for (uint16_t index : f->data->lookupListIndices) {
         if (index >= lookups.size()) {
-          return EGLYF_ERROR;
+          return EGLYF_ERROR_WHAT("Lookup index out of range");
         }
         data->lookups.push_back(lookups[index]);
       }
@@ -197,7 +197,7 @@ public:
     if (featureVariationsOffset) {
       FeatureVariations featureVariations;
       if (!in.seek(featureVariationsOffset)) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to seek to featureVariationsOffset");
       }
       OffsetInputStream sub(&in);
       auto raw = ::eglyf::FeatureVariations::Read(sub);
@@ -210,11 +210,11 @@ public:
         for (auto const &rawSubstitution : rawRecord.featureTableSubstitution.substitutions) {
           FeatureTableSubstitution substitution;
           if (rawSubstitution.featureIndex >= features.size()) {
-            return EGLYF_ERROR;
+            return EGLYF_ERROR_WHAT("Feature index out of range in feature variation record");
           }
           substitution.feature = features[rawSubstitution.featureIndex];
           if (!sub.seek(rawRecord.featureTableSubstitution.featureTableSubstitutionOffset + rawSubstitution.alternateFeatureOffset)) {
-            return EGLYF_ERROR;
+            return EGLYF_ERROR_WHAT("Failed to seek to alternate feature offset");
           }
           OffsetInputStream sub2(&sub);
           shared_ptr<FeatureList::FeatureData> fdata;
@@ -227,7 +227,7 @@ public:
           data->featureParams = fdata->featureParams;
           for (uint16_t index : fdata->lookupListIndices) {
             if (index >= lookups.size()) {
-              return EGLYF_ERROR;
+              return EGLYF_ERROR_WHAT("Lookup index out of range in feature variation record");
             }
             data->lookups.push_back(lookups[index]);
           }
@@ -264,7 +264,7 @@ public:
         if (auto found = convertedLangSysList.find(s.defaultLangSys); found == convertedLangSysList.end()) {
           auto converted = convertLangSys(*s.defaultLangSys);
           if (!converted) {
-            return EGLYF_ERROR;
+            return EGLYF_ERROR_WHAT("Failed to convert LangSys");
           }
           script.defaultLangSys = converted;
           convertedLangSysList[s.defaultLangSys] = converted;
@@ -276,7 +276,7 @@ public:
         if (auto found = convertedLangSysList.find(langSys); found == convertedLangSysList.end()) {
           auto converted = convertLangSys(*langSys);
           if (!converted) {
-            return EGLYF_ERROR;
+            return EGLYF_ERROR_WHAT("Failed to convert LangSys for langSysTable");
           }
           script.langSysTable.push_back(make_pair(langSysTag, converted));
           convertedLangSysList[langSys] = converted;
@@ -294,26 +294,26 @@ public:
     using namespace std;
     ByteOutputStream out;
     if (majorVersion != 1) {
-      return EGLYF_NULLOPT;
+      return EGLYF_NULLOPT_WHAT("Unsupported major version: " + std::to_string(majorVersion));
     }
     auto gsubHeader = make_shared<OffsetWriter>(out);
     if (!out.u16(majorVersion)) {
-      return EGLYF_NULLOPT;
+      return EGLYF_NULLOPT_WHAT("Failed to write feature variations version major");
     }
     if (!out.u16(minorVersion)) {
-      return EGLYF_NULLOPT;
+      return EGLYF_NULLOPT_WHAT("Failed to write minor version");
     }
     auto scriptListOffsetHandle = gsubHeader->o16();
     if (!scriptListOffsetHandle) {
-      return EGLYF_NULLOPT;
+      return EGLYF_NULLOPT_WHAT("Failed to create script list offset handle");
     }
     auto featureListOffsetHandle = gsubHeader->o16();
     if (!featureListOffsetHandle) {
-      return EGLYF_NULLOPT;
+      return EGLYF_NULLOPT_WHAT("Failed to create feature list offset handle");
     }
     auto lookupListOffsetHandle = gsubHeader->o16();
     if (!lookupListOffsetHandle) {
-      return EGLYF_NULLOPT;
+      return EGLYF_NULLOPT_WHAT("Failed to create lookup list offset handle");
     }
     OffsetWriter::Handle32 featureVariationOffset;
     if (minorVersion == 0) {
@@ -322,15 +322,15 @@ public:
       if (featureVariations) {
         featureVariationOffset = gsubHeader->o32();
         if (!featureVariationOffset) {
-          return EGLYF_NULLOPT;
+          return EGLYF_NULLOPT_WHAT("Lookup not found in feature");
         }
       } else {
         if (!out.o32(0)) {
-          return EGLYF_NULLOPT;
+          return EGLYF_NULLOPT_WHAT("Failed to write feature variations offset");
         }
       }
     } else {
-      return EGLYF_NULLOPT;
+      return EGLYF_NULLOPT_WHAT("Unsupported minor version: " + std::to_string(minorVersion));
     }
 
     LookupList lookupList;
@@ -372,11 +372,11 @@ public:
       for (auto const &lookup : feature->data->lookups) {
         auto found = ranges::find(lookups, lookup);
         if (found == lookups.end()) {
-          return EGLYF_NULLOPT;
+          return EGLYF_NULLOPT_WHAT("Lookup not found in feature");
         }
         size_t index = distance(lookups.begin(), found);
         if (index > numeric_limits<uint16_t>::max()) {
-          return EGLYF_NULLOPT;
+          return EGLYF_NULLOPT_WHAT("Lookup index exceeds maximum value");
         }
         data->lookupListIndices.push_back(index);
       }
@@ -426,14 +426,14 @@ public:
         if (auto converted = convertLangSys(script.defaultLangSys); converted) {
           s.defaultLangSys = converted;
         } else {
-          return EGLYF_NULLOPT;
+          return EGLYF_NULLOPT_WHAT("Failed to convert LangSys for langSysTable");
         }
       }
       for (auto const &[tag, langSys] : script.langSysTable) {
         if (auto converted = convertLangSys(langSys); converted) {
           s.langSysTable.push_back(make_pair(tag, converted));
         } else {
-          return EGLYF_NULLOPT;
+          return EGLYF_NULLOPT_WHAT("Failed to convert LangSys for langSysTable entry");
         }
       }
       scriptList.scriptTable.push_back(s);
@@ -471,24 +471,24 @@ public:
       auto writer = make_shared<OffsetWriter>(out);
       // majorVersion
       if (!out.u16(1)) {
-        return EGLYF_NULLOPT;
+        return EGLYF_NULLOPT_WHAT("Failed to write feature variations version major");
       }
       // minorVersion
       if (!out.u16(0)) {
-        return EGLYF_NULLOPT;
+        return EGLYF_NULLOPT_WHAT("Failed to write feature variations version minor");
       }
       if (!out.sizeU32(featureVariations->featureVariationRecords.size())) {
-        return EGLYF_NULLOPT;
+        return EGLYF_NULLOPT_WHAT("Failed to write feature variation records size");
       }
       vector<tuple<FeatureVariationRecord, OffsetWriter::Handle32, OffsetWriter::Handle32>> handles;
       for (auto const &rawRecord : featureVariations->featureVariationRecords) {
         auto conditionSetOffset = writer->o32();
         if (!conditionSetOffset) {
-          return EGLYF_NULLOPT;
+          return EGLYF_NULLOPT_WHAT("Failed to write feature parameters");
         }
         auto featureTableSubstitutionOffset = writer->o32();
         if (!featureTableSubstitutionOffset) {
-          return EGLYF_NULLOPT;
+          return EGLYF_NULLOPT_WHAT("Failed to write feature table substitution offset");
         }
         handles.push_back(make_tuple(rawRecord, conditionSetOffset, featureTableSubstitutionOffset));
       }
@@ -504,27 +504,27 @@ public:
         }
         auto w = make_shared<OffsetWriter>(out);
         if (!out.u16(1)) {
-          return EGLYF_NULLOPT;
+          return EGLYF_NULLOPT_WHAT("Failed to write feature version major");
         }
         if (!out.u16(0)) {
-          return EGLYF_NULLOPT;
+          return EGLYF_NULLOPT_WHAT("Failed to write feature version minor");
         }
         if (!out.sizeU16(rawRecord.substitutions.size())) {
-          return EGLYF_NULLOPT;
+          return EGLYF_NULLOPT_WHAT("Failed to write substitutions size");
         }
         vector<OffsetWriter::Handle32> alternateFeatureOffsets;
         for (auto const &substitution : rawRecord.substitutions) {
           auto found = ranges::find_if(features, [&](auto const &it) { return it == substitution.feature; });
           if (found == features.end()) {
-            return EGLYF_NULLOPT;
+            return EGLYF_NULLOPT_WHAT("Feature not found in substitution");
           }
           auto index = distance(features.begin(), found);
           if (!out.sizeU16(index)) {
-            return EGLYF_NULLOPT;
+            return EGLYF_NULLOPT_WHAT("Failed to write feature index");
           }
           auto alternateFeatureOffset = w->o32();
           if (!alternateFeatureOffset) {
-            return EGLYF_NULLOPT;
+            return EGLYF_NULLOPT_WHAT("Failed to create alternate feature offset");
           }
           alternateFeatureOffsets.push_back(alternateFeatureOffset);
         }
@@ -539,25 +539,25 @@ public:
           if (substitution.alternateFeature->data->featureParams) {
             auto featureParamsOffset = w2->o16();
             if (!featureParamsOffset) {
-              return EGLYF_NULLOPT;
+              return EGLYF_NULLOPT_WHAT("Failed to create feature params offset");
             }
             featureParamsWriters.push_back(make_tuple(*substitution.alternateFeature->data->featureParams, featureParamsOffset, w2));
           } else {
             if (!out.o16(0)) {
-              return EGLYF_NULLOPT;
+              return EGLYF_NULLOPT_WHAT("Failed to write feature params placeholder");
             }
           }
           if (!out.sizeU16(substitution.alternateFeature->data->lookups.size())) {
-            return EGLYF_NULLOPT;
+            return EGLYF_NULLOPT_WHAT("Failed to write lookups size");
           }
           for (auto const &lookup : substitution.alternateFeature->data->lookups) {
             auto found = ranges::find_if(lookups, [&](auto const &it) { return it == lookup; });
             if (found == lookups.end()) {
-              return EGLYF_NULLOPT;
+              return EGLYF_NULLOPT_WHAT("Lookup not found in alternate feature");
             }
             auto index = distance(lookups.begin(), found);
             if (!out.sizeU16(index)) {
-              return EGLYF_NULLOPT;
+              return EGLYF_NULLOPT_WHAT("Failed to write lookup index");
             }
           }
         }
@@ -569,7 +569,7 @@ public:
             return EGLYF_NULLOPT_PUSH(st);
           }
           if (!out.write(featureParams.data(), featureParams.size())) {
-            return EGLYF_NULLOPT;
+            return EGLYF_NULLOPT_WHAT("Failed to write feature params data");
           }
           if (auto st = w2->commit(); !st.ok()) {
             return EGLYF_NULLOPT_PUSH(st);

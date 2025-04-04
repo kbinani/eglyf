@@ -9,23 +9,23 @@ public:
     OffsetInputStream in(&stream);
     uint16_t format;
     if (!in.u16(&format)) {
-      return EGLYF_NULLOPT;
+      return EGLYF_NULLOPT_WHAT("Failed to read format");
     }
     if (format != 1) {
-      return EGLYF_NULLOPT;
+      return EGLYF_NULLOPT_WHAT("Unsupported format: " + std::to_string(format));
     }
     uint16_t markGlyphSetCount;
     if (!in.u16(&markGlyphSetCount)) {
-      return EGLYF_NULLOPT;
+      return EGLYF_NULLOPT_WHAT("Failed to read markGlyphSetCount");
     }
     vector<Offset32> coverageOffsets;
     if (!in.o32a(coverageOffsets, markGlyphSetCount)) {
-      return EGLYF_NULLOPT;
+      return EGLYF_NULLOPT_WHAT("Failed to read coverageOffsets");
     }
     MarkGlyphSets ret;
     for (auto offset : coverageOffsets) {
       if (!in.seek(offset)) {
-        return EGLYF_NULLOPT;
+        return EGLYF_NULLOPT_WHAT("Failed to seek to coverage offset");
       }
       shared_ptr<Coverage> cov;
       if (auto st = CoverageReader::Read(in, cov); !st.ok()) {
@@ -40,16 +40,16 @@ public:
     using namespace std;
     auto writer = make_shared<DataFragmentWriter>(&stream);
     if (!writer->u16(1)) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Failed to write format");
     }
     if (!writer->sizeU16(coverages.size())) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Failed to write coverages size");
     }
     vector<DataFragmentWriter::Marker32> coverageOffsets;
     for (size_t i = 0; i < coverages.size(); i++) {
       auto offset = writer->o32();
       if (!offset) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to create coverage offset marker");
       }
       coverageOffsets.push_back(offset);
     }

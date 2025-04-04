@@ -16,40 +16,40 @@ public:
       using namespace std;
       Header h;
       if (!in.i16(&h.numberOfContours)) {
-        return EGLYF_NULLOPT;
+        return EGLYF_NULLOPT_WHAT("Failed to read numberOfContours");
       }
       if (!in.i16(&h.xMin)) {
-        return EGLYF_NULLOPT;
+        return EGLYF_NULLOPT_WHAT("Failed to read xMin");
       }
       if (!in.i16(&h.yMin)) {
-        return EGLYF_NULLOPT;
+        return EGLYF_NULLOPT_WHAT("Failed to read yMin");
       }
       if (!in.i16(&h.xMax)) {
-        return EGLYF_NULLOPT;
+        return EGLYF_NULLOPT_WHAT("Failed to read xMax");
       }
       if (!in.i16(&h.yMax)) {
-        return EGLYF_NULLOPT;
+        return EGLYF_NULLOPT_WHAT("Failed to read yMax");
       }
       return h;
     }
 
     Status encode(OutputStream &out) const {
       if (!out.i16(numberOfContours)) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to write numberOfContours");
       }
       if (!out.i16(xMin)) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to write xMin");
       }
       if (!out.i16(yMin)) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to write yMin");
       }
       if (!out.i16(xMax)) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to write xMax");
       }
       if (out.i16(yMax)) {
         return Status::Ok();
       } else {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to write yMax");
       }
     }
   };
@@ -69,7 +69,7 @@ public:
         for (uint16_t i = 0; i < header.numberOfContours; i++) {
           uint16_t index;
           if (!in.u16(&index)) {
-            return EGLYF_NULLOPT;
+            return EGLYF_NULLOPT_WHAT("Failed to read contour index");
           }
           r.numPoints = (std::max)(r.numPoints, (uint16_t)(index + 1));
         }
@@ -84,7 +84,7 @@ public:
       if (out.write((void *)data.c_str(), data.size())) {
         return Status::Ok();
       } else {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to write data");
       }
     }
 
@@ -136,30 +136,30 @@ public:
       uint16_t flags;
       do {
         if (!in.u16(&flags)) {
-          return EGLYF_NULLOPT;
+          return EGLYF_NULLOPT_WHAT("Failed to read flags");
         }
         GlyphRecord rec;
         rec.flags = flags;
         if (!in.u16(&rec.glyphIndex)) {
-          return EGLYF_NULLOPT;
+          return EGLYF_NULLOPT_WHAT("Failed to read glyphIndex");
         }
         if (flags & ARG_1_AND_2_ARE_WORDS) {
           if (flags & ARGS_ARE_XY_VALUES) {
             Vec<int16_t> offset;
             if (!in.i16(&offset.x)) {
-              return EGLYF_NULLOPT;
+              return EGLYF_NULLOPT_WHAT("Failed to read offset.x (i16)");
             }
             if (!in.i16(&offset.y)) {
-              return EGLYF_NULLOPT;
+              return EGLYF_NULLOPT_WHAT("Failed to read offset.y (i16)");
             }
             rec.offset = offset;
           } else {
             Vec<uint16_t> offset;
             if (!in.u16(&offset.x)) {
-              return EGLYF_NULLOPT;
+              return EGLYF_NULLOPT_WHAT("Failed to read offset.x (u16)");
             }
             if (!in.u16(&offset.y)) {
-              return EGLYF_NULLOPT;
+              return EGLYF_NULLOPT_WHAT("Failed to read offset.y (u16)");
             }
             rec.offset = offset;
           }
@@ -167,19 +167,19 @@ public:
           if (flags & ARGS_ARE_XY_VALUES) {
             Vec<int8_t> offset;
             if (!in.i8(&offset.x)) {
-              return EGLYF_NULLOPT;
+              return EGLYF_NULLOPT_WHAT("Failed to read offset.x (i8)");
             }
             if (!in.i8(&offset.y)) {
-              return EGLYF_NULLOPT;
+              return EGLYF_NULLOPT_WHAT("Failed to read offset.y (i8)");
             }
             rec.offset = offset;
           } else {
             Vec<uint8_t> offset;
             if (!in.u8(&offset.x)) {
-              return EGLYF_NULLOPT;
+              return EGLYF_NULLOPT_WHAT("Failed to read offset.x (u8)");
             }
             if (!in.u8(&offset.y)) {
-              return EGLYF_NULLOPT;
+              return EGLYF_NULLOPT_WHAT("Failed to read offset.y (u8)");
             }
             rec.offset = offset;
           }
@@ -187,35 +187,35 @@ public:
         if (flags & WE_HAVE_A_SCALE) {
           F2DOT14 scale;
           if (!in.f2dot14(&scale)) {
-            return EGLYF_NULLOPT;
+            return EGLYF_NULLOPT_WHAT("Failed to read scale (f2dot14)");
           }
           rec.scale = scale;
         } else if (flags & WE_HAVE_AN_X_AND_Y_SCALE) {
           F2DOT14 xscale;
           F2DOT14 yscale;
           if (!in.f2dot14(&xscale)) {
-            return EGLYF_NULLOPT;
+            return EGLYF_NULLOPT_WHAT("Failed to read xscale (f2dot14)");
           }
           if (!in.f2dot14(&yscale)) {
-            return EGLYF_NULLOPT;
+            return EGLYF_NULLOPT_WHAT("Failed to read yscale (f2dot14)");
           }
           rec.scale = Vec<F2DOT14>(xscale, yscale);
         } else if (flags & WE_HAVE_A_TWO_BY_TWO) {
           F2DOT14 xscale;
           if (!in.f2dot14(&xscale)) {
-            return EGLYF_NULLOPT;
+            return EGLYF_NULLOPT_WHAT("Failed to read xscale (f2dot14) for two-by-two");
           }
           F2DOT14 scale01;
           if (!in.f2dot14(&scale01)) {
-            return EGLYF_NULLOPT;
+            return EGLYF_NULLOPT_WHAT("Failed to read scale01 (f2dot14)");
           }
           F2DOT14 scale10;
           if (!in.f2dot14(&scale10)) {
-            return EGLYF_NULLOPT;
+            return EGLYF_NULLOPT_WHAT("Failed to read scale10 (f2dot14)");
           }
           F2DOT14 yscale;
           if (!in.f2dot14(&yscale)) {
-            return EGLYF_NULLOPT;
+            return EGLYF_NULLOPT_WHAT("Failed to read yscale (f2dot14) for two-by-two");
           }
           rec.scale = Vec<F2DOT14>(xscale, yscale);
           rec.scale2 = Vec<F2DOT14>(scale01, scale10);
@@ -225,12 +225,12 @@ public:
       if (flags & WE_HAVE_INSTRUCTIONS) {
         uint16_t numInstr;
         if (!in.u16(&numInstr)) {
-          return EGLYF_NULLOPT;
+          return EGLYF_NULLOPT_WHAT("Failed to read numInstr");
         }
         string instructions;
         instructions.resize(numInstr);
         if (in.read(instructions.data(), numInstr) != numInstr) {
-          return EGLYF_NULLOPT;
+          return EGLYF_NULLOPT_WHAT("Failed to read instructions data");
         }
         ret.instructions = instructions;
       }
@@ -270,71 +270,71 @@ public:
           flg |= WE_HAVE_INSTRUCTIONS;
         }
         if (!out.u16(rec.flags)) {
-          return EGLYF_ERROR;
+          return EGLYF_ERROR_WHAT("Failed to write flags");
         }
         if (!out.u16(rec.glyphIndex)) {
-          return EGLYF_ERROR;
+          return EGLYF_ERROR_WHAT("Failed to write glyphIndex");
         }
         if (holds_alternative<Vec<int16_t>>(rec.offset)) {
           auto const &o = get<Vec<int16_t>>(rec.offset);
           if (!out.i16(o.x)) {
-            return EGLYF_ERROR;
+            return EGLYF_ERROR_WHAT("Failed to write offset.x (i16)");
           }
           if (!out.i16(o.y)) {
-            return EGLYF_ERROR;
+            return EGLYF_ERROR_WHAT("Failed to write offset.y (i16)");
           }
         } else if (holds_alternative<Vec<uint16_t>>(rec.offset)) {
           auto const &o = get<Vec<uint16_t>>(rec.offset);
           if (!out.u16(o.x)) {
-            return EGLYF_ERROR;
+            return EGLYF_ERROR_WHAT("Failed to write offset.x (u16)");
           }
           if (!out.u16(o.y)) {
-            return EGLYF_ERROR;
+            return EGLYF_ERROR_WHAT("Failed to write offset.y (u16)");
           }
         } else if (holds_alternative<Vec<int8_t>>(rec.offset)) {
           auto const &o = get<Vec<int8_t>>(rec.offset);
           if (!out.i8(o.x)) {
-            return EGLYF_ERROR;
+            return EGLYF_ERROR_WHAT("Failed to write offset.x (i8)");
           }
           if (!out.i8(o.y)) {
-            return EGLYF_ERROR;
+            return EGLYF_ERROR_WHAT("Failed to write offset.y (i8)");
           }
         } else if (holds_alternative<Vec<uint8_t>>(rec.offset)) {
           auto const &o = get<Vec<uint8_t>>(rec.offset);
           if (!out.u8(o.x)) {
-            return EGLYF_ERROR;
+            return EGLYF_ERROR_WHAT("Failed to write offset.x (u8)");
           }
           if (!out.u8(o.y)) {
-            return EGLYF_ERROR;
+            return EGLYF_ERROR_WHAT("Failed to write offset.y (u8)");
           }
         }
         if (rec.scale) {
           if (holds_alternative<F2DOT14>(*rec.scale)) {
             auto s1 = get<F2DOT14>(*rec.scale);
             if (!out.f2dot14(s1)) {
-              return EGLYF_ERROR;
+              return EGLYF_ERROR_WHAT("Failed to write scale (f2dot14)");
             }
           } else if (holds_alternative<Vec<F2DOT14>>(*rec.scale)) {
             auto s1 = get<Vec<F2DOT14>>(*rec.scale);
             if (rec.scale2) {
               if (!out.f2dot14(s1.x)) {
-                return EGLYF_ERROR;
+                return EGLYF_ERROR_WHAT("Failed to write scale.x (f2dot14)");
               }
               if (!out.f2dot14(rec.scale2->x)) {
-                return EGLYF_ERROR;
+                return EGLYF_ERROR_WHAT("Failed to write scale2.x (f2dot14)");
               }
               if (!out.f2dot14(rec.scale2->y)) {
-                return EGLYF_ERROR;
+                return EGLYF_ERROR_WHAT("Failed to write scale2.y (f2dot14)");
               }
               if (!out.f2dot14(s1.y)) {
-                return EGLYF_ERROR;
+                return EGLYF_ERROR_WHAT("Failed to write scale.y (f2dot14)");
               }
             } else {
               if (!out.f2dot14(s1.x)) {
-                return EGLYF_ERROR;
+                return EGLYF_ERROR_WHAT("Failed to write scale.x (f2dot14)");
               }
               if (!out.f2dot14(s1.y)) {
-                return EGLYF_ERROR;
+                return EGLYF_ERROR_WHAT("Failed to write scale.y (f2dot14)");
               }
             }
           }
@@ -342,10 +342,10 @@ public:
       }
       if (instructions) {
         if (!out.sizeU16(instructions->size())) {
-          return EGLYF_ERROR;
+          return EGLYF_ERROR_WHAT("Failed to write instructions size");
         }
         if (!out.write(instructions->data(), instructions->size())) {
-          return EGLYF_ERROR;
+          return EGLYF_ERROR_WHAT("Failed to write instructions data");
         }
       }
       return Status::Ok();
@@ -367,12 +367,12 @@ public:
         continue;
       }
       if (!in.seek(offset)) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to seek to glyph offset");
       }
       string buffer;
       buffer.resize(length);
       if (length != in.read(buffer.data(), length)) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to read glyph data");
       }
       ByteInputStream slice(buffer);
       auto header = Header::Read(slice);
@@ -398,7 +398,7 @@ public:
   }
 
   Optional<EncodeResult> encode() const override {
-    return EGLYF_NULLOPT;
+    return EGLYF_NULLOPT_WHAT("Direct encoding of GlyphDataTable is not supported, use encode(offsets, padding) instead");
   }
 
   Optional<EncodeResult> encode(std::vector<Offset32> &offsets, size_t padding) const {
@@ -431,7 +431,7 @@ public:
         if (size % padding != 0) {
           size_t cnt = padding - size % padding;
           if (!out.write(pad.data(), cnt)) {
-            return EGLYF_NULLOPT;
+            return EGLYF_NULLOPT_WHAT("Failed to write padding");
           }
         }
       }
@@ -450,7 +450,7 @@ public:
   Optional<uint16_t> addCompositeGlyph(GlyphDataTable::CompositeGlyph::GlyphRecord child) {
     using namespace std;
     if (child.glyphIndex >= glyphs.size()) {
-      return EGLYF_NULLOPT;
+      return EGLYF_NULLOPT_WHAT("Child glyph index out of range");
     }
     auto g = glyphs[child.glyphIndex];
     uint16_t gid = glyphs.size();
@@ -462,7 +462,7 @@ public:
       auto cg = get<CompositeGlyph>(g);
       add.header = cg.header;
     } else {
-      return EGLYF_NULLOPT;
+      return EGLYF_NULLOPT_WHAT("Cannot create composite glyph from empty glyph");
     }
     add.header.numberOfContours = -1;
     add.records.push_back(child);
@@ -505,7 +505,7 @@ public:
         uint16_t compositeContours = 0;
         for (auto const &record : cg.records) {
           if (!visit(record, depth, path, out, compositePoints, compositeContours)) {
-            return EGLYF_ERROR;
+            return EGLYF_ERROR_WHAT("Failed to visit composite glyph record");
           }
         }
         out.maxComponentElements = (std::max)(out.maxComponentElements, (uint16_t)cg.records.size());

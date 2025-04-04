@@ -18,14 +18,14 @@ public:
     jassert(in.position() == 0);
     uint16_t format;
     if (!in.u16(&format)) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Failed to read format");
     }
     if (format != 0) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Invalid format, expected 0");
     }
     uint16_t numTables;
     if (!in.u16(&numTables)) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Failed to read numTables");
     }
     struct Record {
       uint16_t platformID;
@@ -36,13 +36,13 @@ public:
     for (uint16_t i = 0; i < numTables; i++) {
       Record r;
       if (!in.u16(&r.platformID)) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to read platformID");
       }
       if (!in.u16(&r.encodingID)) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to read encodingID");
       }
       if (!in.o32(&r.subtableOffset)) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to read subtableOffset");
       }
       encodingRecords.push_back(r);
     }
@@ -58,12 +58,12 @@ public:
         continue;
       }
       if (!in.seek(record.subtableOffset)) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to seek to subtable offset");
       }
       OffsetInputStream sub(&in);
       uint16_t fmt;
       if (!sub.u16(&fmt)) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to read subtable format");
       }
       switch (fmt) {
       case 0: {
@@ -120,7 +120,7 @@ public:
         }
       }
       default:
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Unsupported cmap subtable format: " + std::to_string(fmt));
       }
       ret->encodingRecords.push_back(r);
       tables[record.subtableOffset] = r.subtable;
@@ -134,22 +134,22 @@ public:
     ByteOutputStream out;
     auto writer = make_unique<DataFragmentWriter>(&out);
     if (!writer->u16(0)) {
-      return EGLYF_NULLOPT;
+      return EGLYF_NULLOPT_WHAT("Failed to write format");
     }
     if (!writer->sizeU16(encodingRecords.size())) {
-      return EGLYF_NULLOPT;
+      return EGLYF_NULLOPT_WHAT("Failed to write encoding records size");
     }
     vector<DataFragmentWriter::Marker32> subtableOffsets;
     for (auto const &record : encodingRecords) {
       if (!writer->u16(record.platformID)) {
-        return EGLYF_NULLOPT;
+        return EGLYF_NULLOPT_WHAT("Failed to write platform ID");
       }
       if (!writer->u16(record.encodingID)) {
-        return EGLYF_NULLOPT;
+        return EGLYF_NULLOPT_WHAT("Failed to write encoding ID");
       }
       auto offset = writer->o32();
       if (!offset) {
-        return EGLYF_NULLOPT;
+        return EGLYF_NULLOPT_WHAT("Failed to create offset marker");
       }
       subtableOffsets.push_back(offset);
     }
@@ -213,7 +213,7 @@ public:
         if (format6->writeMayFail()) {
           shared_ptr<cmap::SegmentMappingToDeltaValues> format4;
           if (auto st = format6->convertToFormat4(format4); !st.ok()) {
-            return EGLYF_ERROR;
+            return EGLYF_ERROR_WHAT("Failed to convert format 6 to format 4");
           }
           r.subtable = format4;
           done.insert(format4);

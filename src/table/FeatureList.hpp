@@ -13,20 +13,20 @@ public:
       OffsetInputStream in(&stream);
       Offset16 featureParamsOffset;
       if (!in.o16(&featureParamsOffset)) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to read featureParamsOffset");
       }
       uint16_t lookupIndexCount;
       if (!in.u16(&lookupIndexCount)) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to read lookupIndexCount");
       }
       auto f = make_unique<FeatureData>();
       if (!in.u16a(f->lookupListIndices, lookupIndexCount)) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to read lookupListIndices");
       }
       if (featureParamsOffset != 0) {
         auto pos = in.position();
         if (!in.seek(featureParamsOffset)) {
-          return EGLYF_ERROR;
+          return EGLYF_ERROR_WHAT("Failed to seek to featureParamsOffset");
         }
         string data;
         if (FCC("cv01") <= tag && tag <= FCC("cv99")) {
@@ -39,10 +39,10 @@ public:
           return EGLYF_ERROR_WHAT(Status::Error::UnexpectedFeatureParamsOffset());
         }
         if (!in.read(data.data(), data.size())) {
-          return EGLYF_ERROR;
+          return EGLYF_ERROR_WHAT("Failed to read feature params data");
         }
         if (!in.seek(pos)) {
-          return EGLYF_ERROR;
+          return EGLYF_ERROR_WHAT("Failed to seek back to original position");
         }
         f->featureParams = data;
       }
@@ -63,18 +63,18 @@ public:
     FeatureList featureList;
     uint16_t featureCount;
     if (!in.u16(&featureCount)) {
-      return EGLYF_NULLOPT;
+      return EGLYF_NULLOPT_WHAT("Failed to read featureCount");
     }
     vector<pair<Tag, Offset16>> featureOffsets;
     set<Offset16> o;
     for (uint16_t i = 0; i < featureCount; i++) {
       auto tag = ReadTag(in);
       if (!tag) {
-        return EGLYF_NULLOPT;
+        return EGLYF_NULLOPT_WHAT("Failed to read feature tag");
       }
       Offset16 offset;
       if (!in.o16(&offset)) {
-        return EGLYF_NULLOPT;
+        return EGLYF_NULLOPT_WHAT("Failed to read feature offset");
       }
       featureOffsets.push_back(make_pair(*tag, offset));
       o.insert(offset);
@@ -91,7 +91,7 @@ public:
         continue;
       }
       if (!in.seek(featureOffset)) {
-        return EGLYF_NULLOPT;
+        return EGLYF_NULLOPT_WHAT("Failed to seek to feature offset");
       }
       shared_ptr<FeatureData> data;
       if (auto st = FeatureData::Read(in, tag, data); st.ok()) {
@@ -109,16 +109,16 @@ public:
     using namespace std;
     auto featureTableBeginning = make_shared<OffsetWriter>(out);
     if (!out.sizeU16(featureTable.size())) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Failed to write feature table size");
     }
     map<shared_ptr<FeatureData>, vector<OffsetWriter::Handle16>> featureOffsets;
     for (auto const &feature : featureTable) {
       if (!out.write(feature->tag.data(), feature->tag.size())) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to write feature tag");
       }
       auto handle = featureTableBeginning->o16();
       if (!handle) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to create feature offset handle");
       }
       featureOffsets[feature->data].push_back(handle);
     }
@@ -133,19 +133,19 @@ public:
       if (data->featureParams) {
         auto offset = writer->o16();
         if (!offset) {
-          return EGLYF_ERROR;
+          return EGLYF_ERROR_WHAT("Failed to create feature params offset handle");
         }
         featureParamsOffsets.push_back(make_tuple(*data->featureParams, writer, offset));
       } else {
         if (!out.o16(0)) {
-          return EGLYF_ERROR;
+          return EGLYF_ERROR_WHAT("Failed to write zero feature params offset");
         }
       }
       if (!out.sizeU16(data->lookupListIndices.size())) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to write lookup list indices size");
       }
       if (!out.u16a(data->lookupListIndices)) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to write lookup list indices");
       }
     }
     for (auto &[data, writer, offset] : featureParamsOffsets) {
@@ -153,7 +153,7 @@ public:
         return EGLYF_STATUS_PUSH(st);
       }
       if (!out.write(data.data(), data.size())) {
-        return EGLYF_ERROR;
+        return EGLYF_ERROR_WHAT("Failed to write feature params data");
       }
       if (auto st = writer->commit(); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
