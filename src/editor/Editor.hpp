@@ -445,6 +445,84 @@ public:
     return Status::Ok();
   }
 
+  Status convertMultipleGsubLookup(std::vector<std::pair<GG, std::vector<GG>>> const &substitutions,
+                                   std::shared_ptr<Subtable> &subtable) {
+    using namespace std;
+
+    map<uint16_t, vector<uint16_t>> mapping;
+
+    // Create mapping from input argument substitutions
+    for (auto const &[input, outputs] : substitutions) {
+      // Extract glyph from input GG
+      vector<shared_ptr<Glyph>> inputGlyphs;
+      collectGlyphVector(input, inputGlyphs);
+
+      if (inputGlyphs.size() != 1) {
+        // Multiple substitution requires exactly one input glyph
+        continue;
+      }
+
+      auto inputGlyph = inputGlyphs[0];
+      if (!inputGlyph->id) {
+        // Skip if glyph ID is not set
+        continue;
+      }
+
+      uint16_t inputGlyphId = *inputGlyph->id;
+
+      // Extract glyph IDs from output GGs
+      vector<uint16_t> outputGlyphIds;
+      for (auto const &output : outputs) {
+        vector<shared_ptr<Glyph>> outputGlyphs;
+        collectGlyphVector(output, outputGlyphs);
+
+        for (auto const &outputGlyph : outputGlyphs) {
+          if (outputGlyph->id) {
+            outputGlyphIds.push_back(*outputGlyph->id);
+          }
+        }
+      }
+
+      if (!outputGlyphIds.empty()) {
+        // Add to mapping
+        mapping[inputGlyphId] = outputGlyphIds;
+      }
+    }
+
+    // Return if mapping is empty
+    if (mapping.empty()) {
+      return Status::Ok();
+    }
+
+    // Create Coverage1 object from input glyph IDs
+    auto coverage = make_shared<Coverage1>();
+    vector<uint16_t> coverageGlyphIds; // Vector to preserve order
+
+    for (auto const &[inputGlyphId, outputGlyphIds] : mapping) {
+      coverage->glyphArray.insert(inputGlyphId);
+      coverageGlyphIds.push_back(inputGlyphId);
+    }
+
+    // Create Sequence objects for each input glyph ID
+    vector<gsub::Multiple::Sequence> sequences;
+
+    for (auto glyphId : coverageGlyphIds) {
+      gsub::Multiple::Sequence sequence;
+      sequence.substituteGlyphIDs = mapping[glyphId];
+      sequences.push_back(sequence);
+    }
+
+    // Create gsub::Multiple object and set coverage and sequences
+    auto multiple = make_shared<gsub::Multiple>();
+    multiple->coverage = coverage;
+    multiple->sequences = sequences;
+
+    // Set result to subtable argument
+    subtable = multiple;
+
+    return Status::Ok();
+  }
+
   Status convertLigatureGsubLookup(std::vector<std::pair<std::vector<GG>, GG>> const &substitutions,
                                    std::shared_ptr<Subtable> &subtable) {
     using namespace std;
@@ -622,13 +700,14 @@ public:
     }
 
     vector<pair<GG, GG>> single;
+    vector<pair<GG, vector<GG>>> multiple;
     vector<pair<vector<GG>, GG>> ligature;
 
     for (auto const &subst : lookup->substitutions) {
-      if (subst->input.size() == 1 && subst->output.size()) {
+      if (subst->input.size() == 1 && subst->output.size() == 1) {
         single.push_back(make_pair(subst->input[0], subst->output[0]));
       } else if (subst->input.size() == 1 && subst->output.size() > 1) {
-        return EGLYF_ERROR_WHAT("Unsupported substitution (1 -> N multiple substitution)");
+        multiple.push_back(make_pair(subst->input[0], subst->output));
       } else if (subst->input.size() > 1 && subst->output.size() == 1) {
         ligature.push_back(make_pair(subst->input, subst->output[0]));
       } else {
@@ -636,8 +715,9 @@ public:
       }
     }
 
-    std::shared_ptr<SubtableCollection<Subtable>::Lookup> singleLookup;
-    std::shared_ptr<SubtableCollection<Subtable>::Lookup> ligatureLookup;
+    shared_ptr<SubtableCollection<Subtable>::Lookup> singleLookup;
+    shared_ptr<SubtableCollection<Subtable>::Lookup> multipleLookup;
+    shared_ptr<SubtableCollection<Subtable>::Lookup> ligatureLookup;
 
     if (!single.empty()) {
       shared_ptr<Subtable> subtable;
@@ -662,6 +742,32 @@ public:
 
         singleLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
         singleLookup->data = lookupData;
+      }
+    }
+
+    if (!multiple.empty()) {
+      shared_ptr<Subtable> subtable;
+      if (auto st = convertMultipleGsubLookup(multiple, subtable); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+
+      if (subtable) {
+        auto extensionSubtable = make_shared<gsub::SubstitutionExtension>();
+        extensionSubtable->extensionLookupType = 2; // Multiple
+        extensionSubtable->extension = subtable;
+
+        auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
+        lookupData->lookupType = 7; // Extension Substitution
+        auto lookupFlag = convertLookupFlag(lookup->base, lookup->marks, font->gdef);
+        if (!lookupFlag) {
+          return EGLYF_STATUS_PUSH(lookupFlag.status());
+        }
+        lookupData->lookupFlag = *lookupFlag;
+        lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
+        lookupData->subtables.push_back(extensionSubtable);
+
+        multipleLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
+        multipleLookup->data = lookupData;
       }
     }
 
@@ -691,12 +797,15 @@ public:
       }
     }
 
-    if (!singleLookup && !ligatureLookup) {
+    if (!singleLookup && !ligatureLookup && !multipleLookup) {
       return Status::Ok();
     }
 
     if (singleLookup) {
       result.push_back(singleLookup);
+    }
+    if (multipleLookup) {
+      result.push_back(multipleLookup);
     }
     if (ligatureLookup) {
       result.push_back(ligatureLookup);
@@ -821,6 +930,12 @@ public:
         SequenceLookup seqLookup;
         seqLookup.sequenceIndex = 0; // Replace the first input glyph
         seqLookup.lookup = singleLookup;
+        chainedContexts->seqLookups.push_back(seqLookup);
+      }
+      if (multipleLookup) {
+        SequenceLookup seqLookup;
+        seqLookup.sequenceIndex = 0; // Replace the first input glyph
+        seqLookup.lookup = multipleLookup;
         chainedContexts->seqLookups.push_back(seqLookup);
       }
       if (ligatureLookup) {
