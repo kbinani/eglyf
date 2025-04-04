@@ -866,17 +866,16 @@ public:
       auto gsubLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
       gsubLookup->data = lookupData;
 
-      map<pair<size_t, size_t>, vector<shared_ptr<Lookup::Context>>> merged;
-      for (auto const &inContext : lookup->inContexts) {
-        auto key = make_pair(inContext->left.size(), inContext->right.size());
-        merged[key].push_back(inContext);
-      }
+      deque<vector<shared_ptr<Lookup::Context>>> merged;
+      MergeContexts(lookup->inContexts, merged);
 
-      for (auto [key, contexts] : merged) {
+      for (auto const &contexts : merged) {
         auto chainedContexts = make_shared<ChainedContexts3>();
         chainedContexts->inputCoverage.push_back(inputCoverage);
 
-        auto [left, right] = key;
+        size_t const left = contexts[0]->left.size();
+        size_t const right = contexts[0]->right.size();
+
         for (size_t i = 0; i < left; i++) {
           set<uint16_t> glyphIds;
           for (auto const &context : contexts) {
@@ -950,17 +949,15 @@ public:
       auto inputCoverage1 = make_shared<Coverage1>();
       inputCoverage1->glyphArray = inputGlyphIds;
 
-      map<pair<size_t, size_t>, vector<shared_ptr<Lookup::Context>>> merged;
-      for (auto const &exceptContext : lookup->exceptContexts) {
-        auto key = make_pair(exceptContext->left.size(), exceptContext->right.size());
-        merged[key].push_back(exceptContext);
-      }
+      deque<vector<shared_ptr<Lookup::Context>>> merged;
+      MergeContexts(lookup->exceptContexts, merged);
 
-      for (auto const &[key, contexts] : merged) {
+      for (auto const &contexts : merged) {
         auto negative = make_shared<ChainedContexts3>();
         negative->inputCoverage.push_back(inputCoverage1);
 
-        auto [left, right] = key;
+        size_t const left = contexts[0]->left.size();
+        size_t const right = contexts[0]->right.size();
 
         for (size_t i = 0; i < left; i++) {
           set<uint16_t> glyphIds;
@@ -1748,6 +1745,29 @@ private:
       subtable->mark2Array = mark2Array;
       result.reset(subtable.release());
       return Status::Ok();
+    }
+  }
+
+  static void MergeContexts(std::vector<std::shared_ptr<Lookup::Context>> const &contexts,
+                            std::deque<std::vector<std::shared_ptr<Lookup::Context>>> &merged) {
+    using namespace std;
+    for (auto const &context : contexts) {
+      if (merged.empty()) {
+        vector<shared_ptr<Lookup::Context>> v;
+        v.push_back(context);
+        merged.push_back(v);
+        continue;
+      }
+      vector<shared_ptr<Lookup::Context>> &back = merged.back();
+      assert(!back.empty());
+      auto front = back.front();
+      if (front->left.size() == context->left.size() && front->right.size() == context->right.size()) {
+        back.push_back(context);
+      } else {
+        vector<shared_ptr<Lookup::Context>> v;
+        v.push_back(context);
+        merged.push_back(v);
+      }
     }
   }
 
