@@ -78,6 +78,13 @@
     </SubstLookupRecord>
   </xsl:template>
 
+  <!-- Normalize MarkFilteringSet values to a fixed value "0" -->
+  <xsl:template match="MarkFilteringSet">
+    <MarkFilteringSet>
+      <xsl:attribute name="value">0</xsl:attribute>
+    </MarkFilteringSet>
+  </xsl:template>
+
   <!-- Normalize LookupListIndex values to a fixed value -->
   <xsl:template match="LookupListIndex">
     <LookupListIndex>
