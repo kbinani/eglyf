@@ -235,11 +235,11 @@ private:
         }
         auto groupName = unquote(tokens[0]);
         auto group = editor->getGroupByName(string(groupName));
-        lookup->marks = Editor::Lookup::ProcessMarks(Editor::Lookup::ProcessMarks::MarkGroup{group});
+        lookup->marks = Editor::Lookup::ProcessMarks(Editor::Lookup::ProcessMarks::MarkFilteringSet{group});
         tokens.pop_front(); // Remove glyph name
       } else if (marksWhat == "ALL" || marksWhat == "\"ALL\"") {
         lookup->marks = Editor::Lookup::ProcessMarks(Editor::Lookup::ProcessMarks::All{});
-      } else if (marksWhat.starts_with('"') || marksWhat == "MARK_GLYPH_SET") {
+      } else if (marksWhat.starts_with('"')) {
         // Group name
         auto groupName = unquote(marksWhat);
         auto group = editor->getGroupByName(string(groupName));

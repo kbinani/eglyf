@@ -31,11 +31,14 @@ public:
       struct MarkGroup {
         std::shared_ptr<Group> group;
       };
+      struct MarkFilteringSet {
+        std::shared_ptr<Group> group;
+      };
 
       ProcessMarks() {}
-      explicit ProcessMarks(std::variant<ProcessMarks::All, ProcessMarks::MarkGroup> what) : what(what) {}
+      explicit ProcessMarks(std::variant<ProcessMarks::All, ProcessMarks::MarkFilteringSet, ProcessMarks::MarkGroup> what) : what(what) {}
 
-      std::variant<ProcessMarks::All, ProcessMarks::MarkGroup> what;
+      std::variant<ProcessMarks::All, ProcessMarks::MarkFilteringSet, ProcessMarks::MarkGroup> what;
     };
     std::variant<SkipMarks, ProcessMarks> marks;
 
@@ -1205,7 +1208,7 @@ private:
       auto const &processMarks = get<Lookup::ProcessMarks>(marks);
 
       // Set Use mark filtering set flag for ProcessMarks::MarkGlyphs or ProcessMarks::MarkGroup
-      if (holds_alternative<Lookup::ProcessMarks::MarkGroup>(processMarks.what)) {
+      if (holds_alternative<Lookup::ProcessMarks::MarkFilteringSet>(processMarks.what)) {
         flag |= 0x0010; // Use mark filtering set
       }
     }
@@ -1301,7 +1304,7 @@ private:
 
   // Determine markFilteringSet index from Editor::Lookup marks
   uint16_t determineMarkFilteringSet(std::variant<Lookup::SkipMarks, Lookup::ProcessMarks> const &marks,
-                                     std::shared_ptr<GlyphDefinitionTable> const &gdef) const {
+                                     std::shared_ptr<GlyphDefinitionTable> const &gdef) {
     using namespace std;
     if (!gdef || !holds_alternative<Lookup::ProcessMarks>(marks)) {
       return 0;
@@ -1309,11 +1312,11 @@ private:
 
     auto const &processMarks = get<Lookup::ProcessMarks>(marks);
 
-    // Process only for MarkGlyphs or MarkGroup
-    if (!holds_alternative<Lookup::ProcessMarks::MarkGroup>(processMarks.what)) {
+    if (!holds_alternative<Lookup::ProcessMarks::MarkFilteringSet>(processMarks.what)) {
       return 0;
     }
-    auto const &markGroup = get<Lookup::ProcessMarks::MarkGroup>(processMarks.what);
+
+    auto const &what = get<Lookup::ProcessMarks::MarkFilteringSet>(processMarks.what);
 
     // Create markGlyphSets if it doesn't exist
     if (!gdef->markGlyphSets) {
@@ -1326,51 +1329,41 @@ private:
 
     // Collect glyph IDs
     set<uint16_t> glyphIds;
-    collectGIDSetFromGroup(markGroup.group, glyphIds);
+    collectGIDSetFromGroup(what.group, glyphIds);
 
     // Return 0 if no glyph IDs
     if (glyphIds.empty()) {
       return 0;
     }
 
-    // Search for existing coverages with the same glyph ID set
-    for (size_t i = 0; i < gdef->markGlyphSets->coverages.size(); i++) {
-      auto existingCoverage1 = dynamic_pointer_cast<Coverage1>(gdef->markGlyphSets->coverages[i]);
-      if (existingCoverage1) {
-        // For Coverage1, compare glyphArray
-        if (existingCoverage1->glyphArray == glyphIds) {
-          // If a Coverage with the same glyph ID set is found, return its index
-          return i;
-        }
-      } else {
-        auto existingCoverage2 = dynamic_pointer_cast<Coverage2>(gdef->markGlyphSets->coverages[i]);
-        if (existingCoverage2) {
-          // For Coverage2, extract glyph ID set from rangeRecords and compare
+    if (!markFilteringSets) {
+      markFilteringSets = make_shared<map<set<uint16_t>, pair<shared_ptr<Coverage>, size_t>>>();
+
+      for (size_t i = 0; i < gdef->markGlyphSets->coverages.size(); i++) {
+        if (auto coverage1 = dynamic_pointer_cast<Coverage1>(gdef->markGlyphSets->coverages[i]); coverage1) {
+          (*markFilteringSets)[coverage1->glyphArray] = make_pair(coverage1, i);
+        } else if (auto coverage2 = dynamic_pointer_cast<Coverage2>(gdef->markGlyphSets->coverages[i]); coverage2) {
           set<uint16_t> coverage2GlyphIds;
-          for (auto const &rangeRecord : existingCoverage2->rangeRecords) {
+          for (auto const &rangeRecord : coverage2->rangeRecords) {
             for (uint16_t glyphId = rangeRecord.startGlyphID; glyphId <= rangeRecord.endGlyphID; glyphId++) {
               coverage2GlyphIds.insert(glyphId);
             }
           }
-
-          // Compare glyph ID sets
-          if (coverage2GlyphIds == glyphIds) {
-            // If a Coverage with the same glyph ID set is found, return its index
-            return i;
-          }
+          (*markFilteringSets)[coverage2GlyphIds] = make_pair(coverage2, i);
         }
       }
     }
 
-    // If no Coverage with the same glyph ID set is found, create a new one
-    auto coverage = make_shared<Coverage1>();
-    coverage->glyphArray = glyphIds;
-
-    // Add to markGlyphSets
-    gdef->markGlyphSets->coverages.push_back(coverage);
-
-    // Return the index (0-based)
-    return gdef->markGlyphSets->coverages.size() - 1;
+    if (auto found = markFilteringSets->find(glyphIds); found == markFilteringSets->end()) {
+      auto coverage = make_shared<Coverage1>();
+      coverage->glyphArray = glyphIds;
+      auto index = gdef->markGlyphSets->coverages.size();
+      gdef->markGlyphSets->coverages.push_back(coverage);
+      (*markFilteringSets)[glyphIds] = make_pair(coverage, index);
+      return index;
+    } else {
+      return found->second.second;
+    }
   }
 
   // Function to collect glyphs from a variant (glyph or group)
@@ -1683,6 +1676,8 @@ public:
   std::unordered_map<std::string, std::shared_ptr<Anchor>> anchors;
   std::unordered_map<std::string, std::shared_ptr<Lookup>> lookups;
   std::unordered_map<std::string, std::shared_ptr<Script>> scripts;
+
+  std::shared_ptr<std::map<std::set<uint16_t>, std::pair<std::shared_ptr<Coverage>, size_t>>> markFilteringSets;
 };
 
 } // namespace eglyf
