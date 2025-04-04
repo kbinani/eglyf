@@ -304,9 +304,6 @@ private:
         }
         index = i;
         return Status::Ok();
-      } else if (l == "END_SUBSTITUTION" || l == "END_POSITION") {
-        index = i + 1;
-        return Status::Ok();
       } else {
         i++;
       }
