@@ -64,11 +64,13 @@ public:
       }
       classValues[0] = classValue;
       return Status::Ok();
-    } else if (glyphId - startGlyphID < classValues.size()) {
-      classValues[glyphId - startGlyphID] = classValue;
-      return Status::Ok();
     } else {
-      return EGLYF_ERROR_WHAT("Glyph ID out of range");
+      size_t index = glyphId - startGlyphID;
+      if (index >= classValues.size()) {
+        classValues.resize(index + 1);
+      }
+      classValues[index] = classValue;
+      return Status::Ok();
     }
   }
 

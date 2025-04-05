@@ -1570,6 +1570,9 @@ private:
       }
       for (auto gid : gids) {
         (*markAttachClasses)[gid] = classValue;
+        if (auto st = gdef->markAttachClassDef->add(gid, classValue); !st.ok()) {
+          return EGLYF_NULLOPT_PUSH(st);
+        }
       }
       return classValue;
     } else {
