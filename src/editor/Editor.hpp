@@ -1114,7 +1114,7 @@ public:
 
         // Add LangSys to Script if it has features
         if (!gposLangSys->features.empty()) {
-          if (langSys->name == "dflt") {
+          if (langSys->tag == FCC("dflt")) {
             gposScript.defaultLangSys = gposLangSys;
           } else {
             gposScript.langSysTable.push_back(make_pair(langSys->tag, gposLangSys));
@@ -1122,7 +1122,7 @@ public:
         }
 
         if (!gsubLangSys->features.empty()) {
-          if (langSys->name == "dflt") {
+          if (langSys->tag == FCC("dflt")) {
             gsubScript.defaultLangSys = gsubLangSys;
           } else {
             gsubScript.langSysTable.push_back(make_pair(langSys->tag, gsubLangSys));
