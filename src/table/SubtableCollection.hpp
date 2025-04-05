@@ -11,6 +11,7 @@ template <subtable T>
 class SubtableCollection : public Table {
 public:
   struct LookupData {
+    std::string name;
     uint16_t lookupType;
     uint16_t lookupFlag;
     uint16_t markFilteringSet;

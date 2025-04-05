@@ -21,6 +21,7 @@ public:
   };
 
   struct Lookup {
+    std::string name;
     struct SkipBase {};
     struct ProcessBase {};
     std::variant<SkipBase, ProcessBase> base;
@@ -85,18 +86,6 @@ public:
       std::vector<GG> output;
     };
     std::vector<std::shared_ptr<Substitution>> substitutions;
-
-    Lookup() {}
-
-    Lookup(std::variant<SkipBase, ProcessBase> base,
-           std::variant<SkipMarks, ProcessMarks> marks,
-           std::vector<std::shared_ptr<Context>> exceptContexts,
-           std::vector<std::shared_ptr<Context>> inContexts,
-           std::shared_ptr<Attach> attach,
-           std::shared_ptr<AdjustSingle> adjustSingle,
-           std::vector<std::shared_ptr<Substitution>> &substitutions) : base(base), marks(marks), exceptContexts(exceptContexts), inContexts(inContexts), attach(attach), adjustSingle(adjustSingle) {
-      this->substitutions.swap(substitutions);
-    }
   };
 
   struct Feature {
@@ -181,6 +170,7 @@ public:
     using namespace std;
     if (auto found = lookups.find(name); found == lookups.end()) {
       auto l = make_shared<Lookup>();
+      l->name = name;
       lookups[name] = l;
       return l;
     } else {
@@ -253,6 +243,7 @@ public:
         extensionSubtable->extension = originalSubtable;
 
         auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
+        lookupData->name = lookup->name;
         lookupData->lookupType = 9; // Extension Positioning
         auto lookupFlag = convertLookupFlag(lookup->base, lookup->marks, font->gdef);
         if (!lookupFlag) {
@@ -281,6 +272,7 @@ public:
         extensionSubtable->extension = subtable;
 
         auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
+        lookupData->name = lookup->name;
         lookupData->lookupType = 9; // Extension Positioning
         auto lookupFlag = convertLookupFlag(lookup->base, lookup->marks, font->gdef);
         if (!lookupFlag) {
@@ -731,6 +723,7 @@ public:
         extensionSubtable->extension = subtable;
 
         auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
+        lookupData->name = lookup->name;
         lookupData->lookupType = 7; // Extension Substitution
         auto lookupFlag = convertLookupFlag(lookup->base, lookup->marks, font->gdef);
         if (!lookupFlag) {
@@ -757,6 +750,7 @@ public:
         extensionSubtable->extension = subtable;
 
         auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
+        lookupData->name = lookup->name;
         lookupData->lookupType = 7; // Extension Substitution
         auto lookupFlag = convertLookupFlag(lookup->base, lookup->marks, font->gdef);
         if (!lookupFlag) {
@@ -783,6 +777,7 @@ public:
         extensionSubtable->extension = subtable;
 
         auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
+        lookupData->name = lookup->name;
         lookupData->lookupType = 7; // Extension Substitution
         auto lookupFlag = convertLookupFlag(lookup->base, lookup->marks, font->gdef);
         if (!lookupFlag) {
@@ -816,6 +811,7 @@ public:
     }
 
     auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
+    lookupData->name = lookup->name;
     lookupData->lookupType = 7; // Extension Substitution
     auto lookupFlag = convertLookupFlag(lookup->base, lookup->marks, font->gdef);
     if (!lookupFlag) {
