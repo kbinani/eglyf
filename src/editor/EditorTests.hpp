@@ -107,6 +107,20 @@ class EditorTests : public juce::UnitTest {
                                          [&tags](auto const &feature) { return tags.find(feature->tag) == tags.end(); });
         script.defaultLangSys->features.erase(removed.begin(),
                                               script.defaultLangSys->features.end());
+        auto rlig = ranges::find_if(script.defaultLangSys->features, [](auto const &f) { return f->tag == FCC("rlig"); });
+        size_t clip =
+            //        1 //ok
+            //        8 // ok
+            11 // ok
+               //        12 // ng
+               //        13 // ng
+               //        14 // ng
+               //        27 // ng
+               //        53 // ng
+               //        105 // ng
+               //        208 // ng
+            ;
+        (*rlig)->data->lookups.resize(clip);
       }
       for (auto &[langSysTag, langSys] : script.langSysTable) {
         auto removed = ranges::remove_if(langSys->features,
@@ -149,58 +163,215 @@ public:
       return;
     }
     auto tag =
-        // FCC("abvs")
-        // FCC("blws")
-        // FCC("haln")
+        //         FCC("abvs")//ok
+        //         FCC("blws")//ok
+        //         FCC("haln")//ok
         // FCC("mark")
         // FCC("mkmk")
-        // FCC("psts")
-        // FCC("ss01")
-        // FCC("rlig")
-        // FCC("rtlm")
-        FCC("vrt2");
+        //         FCC("psts")//ok
+        //         FCC("ss01")//ok
+        FCC("rlig") // ng
+        //         FCC("rtlm")//ok
+        //        FCC("vrt2")//ok
+        ;
     /*
+     [pres]
+     Qi
+     r0bA
+     c0bA
+     et33      -> eh3, ev3 by (rl001)
+     tsh332211
+     Q3
+     c0eA
+     r0eA
+     vj0A
+     r0bA
+     c0bA
+     et61
+     tsh615141312111
+     N35
+     c0eA
+     r0eA
+     Qf
+     ---
+     Qi
+     r0bA
+     c0bA
+     eh3    -> eh3, im0 by rl002
+     ev3
+     tsh332211
+     Q3
+     c0eA
+     r0eA
+     vj0A
+     r0bA
+     c0bA
+     et61
+     tsh615141312111
+     N35
+     c0eA
+     r0eA
+     Qf
+     ---
+     Qi
+     r0bA
+     c0bA
+     eh3  )
+     im0  ) -> eh3 by rl003
+     ev3
+     tsh332211
+     Q3
+     c0eA
+     r0eA
+     vj0A
+     r0bA
+     c0bA
+     et61
+     tsh615141312111
+     N35
+     c0eA
+     r0eA
+     Qf
+     ---
+     Qi
+     r0bA
+     c0bA -> c0bA, h0 by rl005
+     eh3
+     ev3
+     tsh332211
+     Q3
+     c0eA
+     r0eA
+     vj0A
+     r0bA
+     c0bA
+     et61
+     tsh615141312111
+     N35
+     c0eA
+     r0eA
+     Qf
+     ---
+     Qi
+     r0bA
+     c0bA
+     h0      -> h1 by rl012
+     eh3
+     ev3
+     tsh332211
+     Q3
+     c0eA
+     r0eA
+     vj0A
+     r0bA
+     c0bA
+     et61
+     tsh615141312111
+     N35
+     c0eA
+     r0eA
+     Qf
+     ---
+     Qi
+     r0bA   -> ch0, r0bA by rl013
+     c0bA
+     h1
+     eh3
+     ev3
+     tsh332211
+     Q3
+     c0eA
+     r0eA
+     vj0A
+     r0bA     -> ch0, r0bA by rl013
+     c0bA
+     et61
+     tsh615141312111
+     N35
+     c0eA
+     r0eA
+     Qf
+     ---
+     Qi    -> Qi, rc0 by rl020
+     ch0
+     r0bA
+     c0bA
+     h1
+     eh3
+     ev3
+     tsh332211
+     Q3
+     c0eA
+     r0eA
+     vj0A
+     ch0
+     r0bA
+     c0bA
+     et61
+     tsh615141312111
+     N35
+     c0eA
+     r0eA
+     Qf
+     ---
+     Qi
+     rc0
+     ch0
+     r0bA
+     c0bA
+     h1
+     eh3
+     ev3
+     tsh332211
+     Q3
+     c0eA
+     r0eA
+     vj0A
+     ch0
+     r0bA
+     c0bA
+     et61
+     tsh615141312111
+     N35
+     c0eA
+     r0eA
+     Qf
+     ---
+
      actual:
        Qi
+       rc0
+       ch0
+       trg6
+       cv0
        r0bA
+       v0
        c0bA
-       et33
+       h0
+       ch3
+       sh3
+       cv3
+       rm3
+       sv3
        tsh332211
        Q3
        c0eA
-       r0eA
-       Qf   <- excess
-       c0eA <- excess
-       r0eA <- excess
-       vj0A
-       r0bA
-       c0bA
-       et61
-       tsh615141312111
-       N35
-       c0eA
-       r0eA
+       r0eB
        Qf
      expected:
        Qi
-       r0bA
+       sh3
+       r0v6
        c0bA
-       et33
+       sh3
+       sv6
        tsh332211
        Q3
        c0eA
-       r0eA
-       vj0A
-       r0bA
-       c0bA
-       et61
-       tsh615141312111
-       N35
-       c0eA
-       r0eA
+       r0eB
        Qf
      */
-    set<Tag> tags = {FCC("pres")}; //, tag};
+    set<Tag> tags = {FCC("pres"), tag};
     RemoveFeaturesExcept(font->gsub->scripts, tags);
     ByteOutputStream out;
     if (auto st = font->write(out); !st.ok()) {
@@ -247,9 +418,13 @@ public:
     auto const vj = U"\U00013430"s;
     auto const p = U"𓊪"s;
     auto const n = U"𓈖"s;
-    {
-      auto pn = p + vj + n;
-      HbBufferUniquePtr buf(CreateBuffer(pn, hbFont));
+
+    vector<u32string> sentences;
+    sentences.push_back(p);
+    sentences.push_back(p + vj + n);
+
+    for (auto const &sentence : sentences) {
+      HbBufferUniquePtr buf(CreateBuffer(sentence, hbFont));
       vector<GlyphInformation> infos;
       CreateGlyphInformations(buf, hbFont, infos);
       vector<string> names;
@@ -259,7 +434,7 @@ public:
         cout << n << endl;
       }
 
-      HbBufferUniquePtr refBuf(CreateBuffer(pn, hbRefFont));
+      HbBufferUniquePtr refBuf(CreateBuffer(sentence, hbRefFont));
       vector<GlyphInformation> refInfos;
       CreateGlyphInformations(refBuf, hbRefFont, refInfos);
       vector<string> refNames;
