@@ -1079,10 +1079,9 @@ public:
 
         std::vector<std::shared_ptr<Coverage>> lookaheadCoverage;
         for (size_t i = 0; i < right; i++) {
-          size_t index = right - i - 1;
           set<uint16_t> glyphIds;
           for (auto const &context : contexts) {
-            auto const &item = context->right[index];
+            auto const &item = context->right[i];
             collectGIDSet(item, glyphIds);
           }
           if (!glyphIds.empty()) {
