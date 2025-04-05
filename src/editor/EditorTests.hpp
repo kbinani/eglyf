@@ -99,6 +99,24 @@ class EditorTests : public juce::UnitTest {
     return true;
   }
 
+  static void RemoveFeaturesExcept(std::vector<SubtableCollection<Subtable>::Script> &scripts, std::set<Tag> const &tags) {
+    using namespace std;
+    for (auto &script : scripts) {
+      if (script.defaultLangSys) {
+        auto removed = ranges::remove_if(script.defaultLangSys->features,
+                                         [&tags](auto const &feature) { return tags.find(feature->tag) == tags.end(); });
+        script.defaultLangSys->features.erase(removed.begin(),
+                                              script.defaultLangSys->features.end());
+      }
+      for (auto &[langSysTag, langSys] : script.langSysTable) {
+        auto removed = ranges::remove_if(langSys->features,
+                                         [&tags](auto const &feature) { return tags.find(feature->tag) == tags.end(); });
+        langSys->features.erase(removed.begin(),
+                                langSys->features.end());
+      }
+    }
+  }
+
 public:
   EditorTests(juce::File sourceFontFile, juce::File referenceFontFile) : juce::UnitTest(""), sourceFontFile(sourceFontFile), referenceFontFile(referenceFontFile) {}
 
@@ -120,6 +138,20 @@ public:
       expect(false);
       return;
     }
+    auto tag =
+        //    FCC("abvs") // ok
+        //      FCC("blws") //ok
+        //      FCC("haln") //ok
+        //      FCC("mark")
+        //      FCC("mkmk")
+        FCC("pres") // ng
+                    //      FCC("psts") //ok
+                    //      FCC("ss01") //ok
+                    //      FCC("rlig")//ok
+                    //      FCC("rtlm")//ok
+                    //      FCC("vrt2")//ok
+        ;
+    RemoveFeaturesExcept(font->gsub->scripts, {tag});
     ByteOutputStream out;
     if (auto st = font->write(out); !st.ok()) {
       expect(false);
@@ -142,8 +174,15 @@ public:
       expect(false);
       return;
     }
-    hbRefBlob.reset(hb_blob_create(refData.data(),
-                                   refData.size(),
+    RemoveFeaturesExcept(ref->gsub->scripts, {tag});
+    ByteOutputStream tout;
+    if (auto st = ref->write(tout); !st.ok()) {
+      expect(false);
+      return;
+    }
+    auto rewrite = tout.data();
+    hbRefBlob.reset(hb_blob_create(rewrite.data(),
+                                   rewrite.size(),
                                    HB_MEMORY_MODE_READONLY,
                                    nullptr,
                                    nullptr));
@@ -153,22 +192,32 @@ public:
 
   void runTest() override {
     using namespace std;
+    beginTest("");
+
     auto const vj = U"\U00013430"s;
     auto const p = U"𓊪"s;
     auto const n = U"𓈖"s;
     {
-      auto pn = p + vj + n;
+      auto pn = p; // p + vj + n;
       HbBufferUniquePtr buf(CreateBuffer(pn, hbFont));
       vector<GlyphInformation> infos;
       CreateGlyphInformations(buf, hbFont, infos);
       vector<string> names;
       GlyphNames(infos, *font, names);
+      cout << "actual:" << endl;
+      for (auto const &n : names) {
+        cout << n << endl;
+      }
 
       HbBufferUniquePtr refBuf(CreateBuffer(pn, hbRefFont));
       vector<GlyphInformation> refInfos;
       CreateGlyphInformations(refBuf, hbRefFont, refInfos);
       vector<string> refNames;
       GlyphNames(refInfos, *ref, refNames);
+      cout << "expected:" << endl;
+      for (auto const &n : refNames) {
+        cout << n << endl;
+      }
 
       expect(names.size() == refNames.size());
       for (size_t i = 0; i < names.size(); i++) {
