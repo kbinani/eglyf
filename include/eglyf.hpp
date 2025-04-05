@@ -1,6 +1,11 @@
 // clang-format off
+#define HB_NO_PRAGMA_GCC_DIAGNOSTIC_WARNING
+#define HB_NO_PRAGMA_GCC_DIAGNOSTIC_ERROR
+
 #include <juce_core/juce_core.h>
 #include <juce_graphics/juce_graphics.h>
+#include <juce_graphics/fonts/harfbuzz/hb.hh>
+#include <juce_graphics/fonts/juce_FunctionPointerDestructor.h>
 
 #include "BinaryData.hpp"
 

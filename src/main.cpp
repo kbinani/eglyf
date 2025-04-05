@@ -1,5 +1,9 @@
 #include "eglyf.hpp"
 
+#if !defined(EGLYF_DISABLE_TESTS)
+#include "editor/EditorTests.hpp"
+#endif
+
 #include <juce_core/juce_core.h>
 
 static void Fail(eglyf::Status st) {
@@ -19,6 +23,17 @@ static void Run(juce::ArgumentList const &args) {
   if (!onlyLookupWithNameValue.empty()) {
     onlyLookupWithName = onlyLookupWithNameValue;
   }
+
+#if !defined(EGLYF_DISABLE_TESTS)
+  {
+    using namespace eglyf::tests;
+    juce::File reference = args.getExistingFileForOption("--reference");
+    EditorTests editorTest(input, reference);
+
+    juce::UnitTestRunner runner;
+    runner.runAllTests();
+  }
+#endif
 
   FileInputStream fis(input);
   shared_ptr<FontFile> ff;
