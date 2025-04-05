@@ -445,39 +445,89 @@ public:
 
     // Create mapping from input argument substitutions
     for (auto const &[input, outputs] : substitutions) {
-      // Extract glyph from input GG
-      vector<shared_ptr<Glyph>> inputGlyphs;
-      collectGlyphVector(input, inputGlyphs);
-
-      if (inputGlyphs.size() != 1) {
-        // Multiple substitution requires exactly one input glyph
-        continue;
+      shared_ptr<Group> group;
+      if (holds_alternative<shared_ptr<Group>>(input)) {
+        auto g = get<shared_ptr<Group>>(input);
+        if (group) {
+          if (group != g) {
+            return EGLYF_ERROR_WHAT("Inconsistent group in input substitution");
+          }
+        } else {
+          group = g;
+        }
       }
-
-      auto inputGlyph = inputGlyphs[0];
-      if (!inputGlyph->id) {
-        // Skip if glyph ID is not set
-        continue;
-      }
-
-      uint16_t inputGlyphId = *inputGlyph->id;
-
-      // Extract glyph IDs from output GGs
-      vector<uint16_t> outputGlyphIds;
       for (auto const &output : outputs) {
-        vector<shared_ptr<Glyph>> outputGlyphs;
-        collectGlyphVector(output, outputGlyphs);
-
-        for (auto const &outputGlyph : outputGlyphs) {
-          if (outputGlyph->id) {
-            outputGlyphIds.push_back(*outputGlyph->id);
+        if (holds_alternative<shared_ptr<Group>>(output)) {
+          auto g = get<shared_ptr<Group>>(output);
+          if (group) {
+            if (group != g) {
+              return EGLYF_ERROR_WHAT("Inconsistent group in output substitution");
+            }
+          } else {
+            return EGLYF_ERROR_WHAT("Output is a group but input is not a group");
           }
         }
       }
+      vector<shared_ptr<Glyph>> groupGlyphs;
+      if (group) {
+        collectGlyphVector(group, groupGlyphs);
+      }
 
-      if (!outputGlyphIds.empty()) {
-        // Add to mapping
-        mapping[inputGlyphId] = outputGlyphIds;
+      if (holds_alternative<shared_ptr<Group>>(input)) {
+        auto inputGroup = get<shared_ptr<Group>>(input);
+        if (inputGroup != group) {
+          return EGLYF_ERROR_WHAT("Input group does not match the common group");
+        }
+        for (size_t i = 0; i < groupGlyphs.size(); i++) {
+          auto glyph = groupGlyphs[i];
+          if (!glyph->id) {
+            continue;
+          }
+          vector<uint16_t> outputGlyphs;
+          for (auto const &output : outputs) {
+            if (holds_alternative<shared_ptr<Group>>(output)) {
+              auto outputGroup = get<shared_ptr<Group>>(output);
+              if (outputGroup != group) {
+                return EGLYF_ERROR_WHAT("Output group does not match the common group");
+              }
+              outputGlyphs.push_back(*glyph->id);
+            } else if (holds_alternative<shared_ptr<Glyph>>(output)) {
+              auto outputGlyph = get<shared_ptr<Glyph>>(output);
+              if (!outputGlyph->id) {
+                break;
+              }
+              outputGlyphs.push_back(*outputGlyph->id);
+            } else {
+              return EGLYF_ERROR_WHAT("Invalid variant type in output");
+            }
+          }
+          if (outputGlyphs.size() == outputs.size()) {
+            mapping[*glyph->id] = outputGlyphs;
+          }
+        }
+      } else if (holds_alternative<shared_ptr<Glyph>>(input)) {
+        auto inputGlyph = get<shared_ptr<Glyph>>(input);
+        if (!inputGlyph->id) {
+          continue;
+        }
+        uint16_t inputGlyphId = *inputGlyph->id;
+        vector<uint16_t> outputGlyphIds;
+        for (auto const &output : outputs) {
+          if (holds_alternative<shared_ptr<Group>>(output)) {
+            return EGLYF_ERROR_WHAT("Output contains a group which is not supported for single glyph input");
+          }
+          auto outputGlyph = get<shared_ptr<Glyph>>(output);
+          if (outputGlyph->id) {
+            outputGlyphIds.push_back(*outputGlyph->id);
+          } else {
+            break;
+          }
+        }
+        if (outputGlyphIds.size() == outputs.size()) {
+          mapping[inputGlyphId] = outputGlyphIds;
+        }
+      } else {
+        return EGLYF_ERROR_WHAT("Invalid variant type in input");
       }
     }
 
