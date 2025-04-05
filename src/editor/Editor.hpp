@@ -1762,7 +1762,9 @@ private:
                             std::deque<std::vector<std::shared_ptr<Lookup::Context>>> &merged) {
     using namespace std;
     for (auto const &context : contexts) {
-      if (merged.empty()) {
+      if (merged.empty() ||                                                                                         //
+          ranges::any_of(context->left, [](auto const &gg) { return holds_alternative<shared_ptr<Group>>(gg); }) || //
+          ranges::any_of(context->right, [](auto const &gg) { return holds_alternative<shared_ptr<Group>>(gg); })) {
         vector<shared_ptr<Lookup::Context>> v;
         v.push_back(context);
         merged.push_back(v);
@@ -1770,6 +1772,13 @@ private:
       }
       vector<shared_ptr<Lookup::Context>> &back = merged.back();
       assert(!back.empty());
+      if (ranges::any_of(back[0]->left, [](auto const &gg) { return holds_alternative<shared_ptr<Group>>(gg); }) || //
+          ranges::any_of(back[0]->right, [](auto const &gg) { return holds_alternative<shared_ptr<Group>>(gg); })) {
+        vector<shared_ptr<Lookup::Context>> v;
+        v.push_back(context);
+        merged.push_back(v);
+        continue;
+      }
       auto front = back.front();
       if (front->left.size() == context->left.size() && front->right.size() == context->right.size()) {
         back.push_back(context);
