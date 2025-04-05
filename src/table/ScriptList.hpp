@@ -208,7 +208,7 @@ public:
         return EGLYF_STATUS_PUSH(st);
       }
     }
-    return scriptListBeginning->commit();
+    return EGLYF_STATUS_PUSH(scriptListBeginning->commit());
   }
 
 public:
