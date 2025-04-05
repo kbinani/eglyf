@@ -117,6 +117,16 @@ class EditorTests : public juce::UnitTest {
     }
   }
 
+  void fail(Status st) {
+    using namespace std;
+    if (st.ok()) {
+      return;
+    }
+    stringstream out;
+    st.print(out);
+    expect(false, juce::String(out.str()));
+  }
+
 public:
   EditorTests(juce::File sourceFontFile, juce::File referenceFontFile) : juce::UnitTest(""), sourceFontFile(sourceFontFile), referenceFontFile(referenceFontFile) {}
 
@@ -124,37 +134,77 @@ public:
     using namespace std;
     FileInputStream fis(sourceFontFile);
     if (auto st = FontFile::Read(fis, font); !st.ok()) {
-      expect(false);
+      fail(st);
       return;
     }
     auto editor = make_shared<Editor>(font);
     VtpParser parser(editor);
     string_view vtp(BinaryData::EgyptianText_200_vtp, BinaryData::EgyptianText_200_vtpSize);
     if (auto st = parser.parseVtp(vtp); !st.ok()) {
-      expect(false);
+      fail(st);
       return;
     }
     if (auto st = editor->compile(); !st.ok()) {
-      expect(false);
+      fail(st);
       return;
     }
     auto tag =
-        //    FCC("abvs") // ok
-        //      FCC("blws") //ok
-        //      FCC("haln") //ok
-        //      FCC("mark")
-        //      FCC("mkmk")
-        FCC("pres") // ng
-                    //      FCC("psts") //ok
-                    //      FCC("ss01") //ok
-                    //      FCC("rlig")//ok
-                    //      FCC("rtlm")//ok
-                    //      FCC("vrt2")//ok
-        ;
-    RemoveFeaturesExcept(font->gsub->scripts, {tag});
+        // FCC("abvs")
+        // FCC("blws")
+        // FCC("haln")
+        // FCC("mark")
+        // FCC("mkmk")
+        // FCC("psts")
+        // FCC("ss01")
+        // FCC("rlig")
+        // FCC("rtlm")
+        FCC("vrt2");
+    /*
+     actual:
+       Qi
+       r0bA
+       c0bA
+       et33
+       tsh332211
+       Q3
+       c0eA
+       r0eA
+       Qf   <- excess
+       c0eA <- excess
+       r0eA <- excess
+       vj0A
+       r0bA
+       c0bA
+       et61
+       tsh615141312111
+       N35
+       c0eA
+       r0eA
+       Qf
+     expected:
+       Qi
+       r0bA
+       c0bA
+       et33
+       tsh332211
+       Q3
+       c0eA
+       r0eA
+       vj0A
+       r0bA
+       c0bA
+       et61
+       tsh615141312111
+       N35
+       c0eA
+       r0eA
+       Qf
+     */
+    set<Tag> tags = {FCC("pres")}; //, tag};
+    RemoveFeaturesExcept(font->gsub->scripts, tags);
     ByteOutputStream out;
     if (auto st = font->write(out); !st.ok()) {
-      expect(false);
+      fail(st);
       return;
     }
     string data = out.data();
@@ -171,13 +221,13 @@ public:
     string refData = refStream.readUntilEos();
     ByteInputStream input(refData);
     if (auto st = FontFile::Read(input, ref); !st.ok()) {
-      expect(false);
+      fail(st);
       return;
     }
-    RemoveFeaturesExcept(ref->gsub->scripts, {tag});
+    RemoveFeaturesExcept(ref->gsub->scripts, tags);
     ByteOutputStream tout;
     if (auto st = ref->write(tout); !st.ok()) {
-      expect(false);
+      fail(st);
       return;
     }
     auto rewrite = tout.data();
@@ -198,7 +248,7 @@ public:
     auto const p = U"𓊪"s;
     auto const n = U"𓈖"s;
     {
-      auto pn = p; // p + vj + n;
+      auto pn = p + vj + n;
       HbBufferUniquePtr buf(CreateBuffer(pn, hbFont));
       vector<GlyphInformation> infos;
       CreateGlyphInformations(buf, hbFont, infos);

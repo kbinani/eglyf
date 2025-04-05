@@ -34,6 +34,7 @@ static void Run(juce::ArgumentList const &args) {
 
     juce::UnitTestRunner runner;
     runner.runAllTests();
+    return;
   }
 #endif
 
