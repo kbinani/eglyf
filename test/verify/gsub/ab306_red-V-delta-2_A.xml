@@ -1,0 +1,150 @@
+<LookupList>
+      <Lookup index="1019">
+        <LookupType value="7"/>
+        <LookupFlag value="0"/>
+        <!-- SubTableCount=1 -->
+        <ExtensionSubst index="0" Format="1">
+          <ExtensionLookupType value="4"/>
+          <LigatureSubst>
+            <LigatureSet glyph="trg1">
+              <Ligature components="cv1" glyph="dv0"/>
+              <Ligature components="cv2" glyph="dv1"/>
+              <Ligature components="cv3" glyph="dv2"/>
+              <Ligature components="cv4" glyph="dv3"/>
+              <Ligature components="cv5" glyph="dv4"/>
+              <Ligature components="cv6" glyph="dv5"/>
+            </LigatureSet>
+            <LigatureSet glyph="trg2">
+              <Ligature components="cv1" glyph="ds1"/>
+              <Ligature components="cv2" glyph="dv0"/>
+              <Ligature components="cv3" glyph="dv1"/>
+              <Ligature components="cv4" glyph="dv2"/>
+              <Ligature components="cv5" glyph="dv3"/>
+              <Ligature components="cv6" glyph="dv4"/>
+              <Ligature components="cv7" glyph="dv5"/>
+              <Ligature components="cv8" glyph="dv6"/>
+              <Ligature components="cv9" glyph="dv7"/>
+              <Ligature components="cv10" glyph="dv8"/>
+              <Ligature components="cv11" glyph="dv9"/>
+              <Ligature components="cv12" glyph="dv10"/>
+            </LigatureSet>
+            <LigatureSet glyph="trg3">
+              <Ligature components="cv1" glyph="ds2"/>
+              <Ligature components="cv2" glyph="ds1"/>
+              <Ligature components="cv3" glyph="dv0"/>
+              <Ligature components="cv4" glyph="dv1"/>
+              <Ligature components="cv5" glyph="dv2"/>
+              <Ligature components="cv6" glyph="dv3"/>
+              <Ligature components="cv7" glyph="dv4"/>
+              <Ligature components="cv8" glyph="dv5"/>
+              <Ligature components="cv9" glyph="dv6"/>
+              <Ligature components="cv10" glyph="dv7"/>
+              <Ligature components="cv11" glyph="dv8"/>
+              <Ligature components="cv12" glyph="dv9"/>
+              <Ligature components="cv13" glyph="dv10"/>
+              <Ligature components="cv14" glyph="dv11"/>
+              <Ligature components="cv15" glyph="dv12"/>
+              <Ligature components="cv16" glyph="dv13"/>
+              <Ligature components="cv17" glyph="dv14"/>
+              <Ligature components="cv18" glyph="dv15"/>
+            </LigatureSet>
+            <LigatureSet glyph="trg4">
+              <Ligature components="cv1" glyph="ds3"/>
+              <Ligature components="cv2" glyph="ds2"/>
+              <Ligature components="cv3" glyph="ds1"/>
+              <Ligature components="cv4" glyph="dv0"/>
+              <Ligature components="cv5" glyph="dv1"/>
+              <Ligature components="cv6" glyph="dv2"/>
+              <Ligature components="cv7" glyph="dv3"/>
+              <Ligature components="cv8" glyph="dv4"/>
+              <Ligature components="cv9" glyph="dv5"/>
+              <Ligature components="cv10" glyph="dv6"/>
+              <Ligature components="cv11" glyph="dv7"/>
+              <Ligature components="cv12" glyph="dv8"/>
+              <Ligature components="cv13" glyph="dv9"/>
+              <Ligature components="cv14" glyph="dv10"/>
+              <Ligature components="cv15" glyph="dv11"/>
+              <Ligature components="cv16" glyph="dv12"/>
+              <Ligature components="cv17" glyph="dv13"/>
+              <Ligature components="cv18" glyph="dv14"/>
+              <Ligature components="cv19" glyph="dv15"/>
+              <Ligature components="cv20" glyph="dv16"/>
+              <Ligature components="cv21" glyph="dv17"/>
+              <Ligature components="cv22" glyph="dv18"/>
+              <Ligature components="cv23" glyph="dv19"/>
+              <Ligature components="cv24" glyph="dv20"/>
+            </LigatureSet>
+            <LigatureSet glyph="trg5">
+              <Ligature components="cv1" glyph="ds4"/>
+              <Ligature components="cv2" glyph="ds3"/>
+              <Ligature components="cv3" glyph="ds2"/>
+              <Ligature components="cv4" glyph="ds1"/>
+              <Ligature components="cv5" glyph="dv0"/>
+              <Ligature components="cv6" glyph="dv1"/>
+              <Ligature components="cv7" glyph="dv2"/>
+              <Ligature components="cv8" glyph="dv3"/>
+              <Ligature components="cv9" glyph="dv4"/>
+              <Ligature components="cv10" glyph="dv5"/>
+              <Ligature components="cv11" glyph="dv6"/>
+              <Ligature components="cv12" glyph="dv7"/>
+              <Ligature components="cv13" glyph="dv8"/>
+              <Ligature components="cv14" glyph="dv9"/>
+              <Ligature components="cv15" glyph="dv10"/>
+              <Ligature components="cv16" glyph="dv11"/>
+              <Ligature components="cv17" glyph="dv12"/>
+              <Ligature components="cv18" glyph="dv13"/>
+              <Ligature components="cv19" glyph="dv14"/>
+              <Ligature components="cv20" glyph="dv15"/>
+              <Ligature components="cv21" glyph="dv16"/>
+              <Ligature components="cv22" glyph="dv17"/>
+              <Ligature components="cv23" glyph="dv18"/>
+              <Ligature components="cv24" glyph="dv19"/>
+              <Ligature components="cv25" glyph="dv20"/>
+              <Ligature components="cv26" glyph="dv21"/>
+              <Ligature components="cv27" glyph="dv22"/>
+              <Ligature components="cv28" glyph="dv23"/>
+              <Ligature components="cv29" glyph="dv24"/>
+              <Ligature components="cv30" glyph="dv25"/>
+            </LigatureSet>
+            <LigatureSet glyph="trg6">
+              <Ligature components="cv1" glyph="ds5"/>
+              <Ligature components="cv2" glyph="ds4"/>
+              <Ligature components="cv3" glyph="ds3"/>
+              <Ligature components="cv4" glyph="ds2"/>
+              <Ligature components="cv5" glyph="ds1"/>
+              <Ligature components="cv6" glyph="dv0"/>
+              <Ligature components="cv7" glyph="dv1"/>
+              <Ligature components="cv8" glyph="dv2"/>
+              <Ligature components="cv9" glyph="dv3"/>
+              <Ligature components="cv10" glyph="dv4"/>
+              <Ligature components="cv11" glyph="dv5"/>
+              <Ligature components="cv12" glyph="dv6"/>
+              <Ligature components="cv13" glyph="dv7"/>
+              <Ligature components="cv14" glyph="dv8"/>
+              <Ligature components="cv15" glyph="dv9"/>
+              <Ligature components="cv16" glyph="dv10"/>
+              <Ligature components="cv17" glyph="dv11"/>
+              <Ligature components="cv18" glyph="dv12"/>
+              <Ligature components="cv19" glyph="dv13"/>
+              <Ligature components="cv20" glyph="dv14"/>
+              <Ligature components="cv21" glyph="dv15"/>
+              <Ligature components="cv22" glyph="dv16"/>
+              <Ligature components="cv23" glyph="dv17"/>
+              <Ligature components="cv24" glyph="dv18"/>
+              <Ligature components="cv25" glyph="dv19"/>
+              <Ligature components="cv26" glyph="dv20"/>
+              <Ligature components="cv27" glyph="dv21"/>
+              <Ligature components="cv28" glyph="dv22"/>
+              <Ligature components="cv29" glyph="dv23"/>
+              <Ligature components="cv30" glyph="dv24"/>
+              <Ligature components="cv31" glyph="dv25"/>
+              <Ligature components="cv32" glyph="dv26"/>
+              <Ligature components="cv33" glyph="dv27"/>
+              <Ligature components="cv34" glyph="dv28"/>
+              <Ligature components="cv35" glyph="dv29"/>
+              <Ligature components="cv36" glyph="dv30"/>
+            </LigatureSet>
+          </LigatureSubst>
+        </ExtensionSubst>
+      </Lookup>
+</LookupList>

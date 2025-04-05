@@ -1,0 +1,203 @@
+<LookupList>
+      <Lookup index="90">
+        <LookupType value="7"/>
+        <LookupFlag value="1536"/><!-- markAttachmentType[6] -->
+        <!-- SubTableCount=5 -->
+        <ExtensionSubst index="0" Format="1">
+          <ExtensionLookupType value="6"/>
+          <ChainContextSubst Format="3">
+            <!-- BacktrackGlyphCount=0 -->
+            <!-- InputGlyphCount=1 -->
+            <InputCoverage index="0">
+              <Glyph value="h0"/>
+            </InputCoverage>
+            <!-- LookAheadGlyphCount=9 -->
+            <LookAheadCoverage index="0">
+              <Glyph value="hj0B"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="1">
+              <Glyph value="h0"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="2">
+              <Glyph value="hj0B"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="3">
+              <Glyph value="h0"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="4">
+              <Glyph value="hj0B"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="5">
+              <Glyph value="h0"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="6">
+              <Glyph value="hj0B"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="7">
+              <Glyph value="h0"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="8">
+              <Glyph value="hj0B"/>
+            </LookAheadCoverage>
+            <!-- SubstCount=1 -->
+            <SubstLookupRecord index="0">
+              <SequenceIndex value="0"/>
+              <LookupListIndex value="1263"/>
+            </SubstLookupRecord>
+          </ChainContextSubst>
+        </ExtensionSubst>
+        <ExtensionSubst index="1" Format="1">
+          <ExtensionLookupType value="6"/>
+          <ChainContextSubst Format="3">
+            <!-- BacktrackGlyphCount=0 -->
+            <!-- InputGlyphCount=1 -->
+            <InputCoverage index="0">
+              <Glyph value="h0"/>
+            </InputCoverage>
+            <!-- LookAheadGlyphCount=8 -->
+            <LookAheadCoverage index="0">
+              <Glyph value="hj0B"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="1">
+              <Glyph value="hj0B"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="2">
+              <Glyph value="h0"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="3">
+              <Glyph value="hj0B"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="4">
+              <Glyph value="h0"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="5">
+              <Glyph value="hj0B"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="6">
+              <Glyph value="h0"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="7">
+              <Glyph value="hj0B"/>
+            </LookAheadCoverage>
+            <!-- SubstCount=1 -->
+            <SubstLookupRecord index="0">
+              <SequenceIndex value="0"/>
+              <LookupListIndex value="1263"/>
+            </SubstLookupRecord>
+          </ChainContextSubst>
+        </ExtensionSubst>
+        <ExtensionSubst index="2" Format="1">
+          <ExtensionLookupType value="6"/>
+          <ChainContextSubst Format="3">
+            <!-- BacktrackGlyphCount=0 -->
+            <!-- InputGlyphCount=1 -->
+            <InputCoverage index="0">
+              <Glyph value="h0"/>
+            </InputCoverage>
+            <!-- LookAheadGlyphCount=7 -->
+            <LookAheadCoverage index="0">
+              <Glyph value="hj0B"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="1">
+              <Glyph value="hj0B"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="2">
+              <Glyph value="hj0B"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="3">
+              <Glyph value="h0"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="4">
+              <Glyph value="hj0B"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="5">
+              <Glyph value="h0"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="6">
+              <Glyph value="hj0B"/>
+            </LookAheadCoverage>
+            <!-- SubstCount=1 -->
+            <SubstLookupRecord index="0">
+              <SequenceIndex value="0"/>
+              <LookupListIndex value="1263"/>
+            </SubstLookupRecord>
+          </ChainContextSubst>
+        </ExtensionSubst>
+        <ExtensionSubst index="3" Format="1">
+          <ExtensionLookupType value="6"/>
+          <ChainContextSubst Format="3">
+            <!-- BacktrackGlyphCount=0 -->
+            <!-- InputGlyphCount=1 -->
+            <InputCoverage index="0">
+              <Glyph value="h0"/>
+            </InputCoverage>
+            <!-- LookAheadGlyphCount=6 -->
+            <LookAheadCoverage index="0">
+              <Glyph value="hj0B"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="1">
+              <Glyph value="hj0B"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="2">
+              <Glyph value="hj0B"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="3">
+              <Glyph value="hj0B"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="4">
+              <Glyph value="h0"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="5">
+              <Glyph value="hj0B"/>
+            </LookAheadCoverage>
+            <!-- SubstCount=1 -->
+            <SubstLookupRecord index="0">
+              <SequenceIndex value="0"/>
+              <LookupListIndex value="1263"/>
+            </SubstLookupRecord>
+          </ChainContextSubst>
+        </ExtensionSubst>
+        <ExtensionSubst index="4" Format="1">
+          <ExtensionLookupType value="6"/>
+          <ChainContextSubst Format="3">
+            <!-- BacktrackGlyphCount=0 -->
+            <!-- InputGlyphCount=1 -->
+            <InputCoverage index="0">
+              <Glyph value="h0"/>
+            </InputCoverage>
+            <!-- LookAheadGlyphCount=5 -->
+            <LookAheadCoverage index="0">
+              <Glyph value="hj0B"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="1">
+              <Glyph value="hj0B"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="2">
+              <Glyph value="hj0B"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="3">
+              <Glyph value="hj0B"/>
+            </LookAheadCoverage>
+            <LookAheadCoverage index="4">
+              <Glyph value="hj0B"/>
+            </LookAheadCoverage>
+            <!-- SubstCount=1 -->
+            <SubstLookupRecord index="0">
+              <SequenceIndex value="0"/>
+              <LookupListIndex value="1263"/>
+            </SubstLookupRecord>
+          </ChainContextSubst>
+        </ExtensionSubst>
+      </Lookup>
+      <Lookup index="1263">
+        <LookupType value="7"/>
+        <LookupFlag value="1536"/><!-- markAttachmentType[6] -->
+        <!-- SubTableCount=1 -->
+        <ExtensionSubst index="0" Format="1">
+          <ExtensionLookupType value="1"/>
+          <SingleSubst>
+            <Substitution in="h0" out="h6"/>
+          </SingleSubst>
+        </ExtensionSubst>
+      </Lookup>
+</LookupList>

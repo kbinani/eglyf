@@ -1,0 +1,50 @@
+<LookupList>
+      <Lookup index="199">
+        <LookupType value="7"/>
+        <LookupFlag value="3072"/><!-- markAttachmentType[12] -->
+        <!-- SubTableCount=1 -->
+        <ExtensionSubst index="0" Format="1">
+          <ExtensionLookupType value="4"/>
+          <LigatureSubst>
+            <LigatureSet glyph="cv0">
+              <Ligature components="cv1" glyph="cv1"/>
+              <Ligature components="cv2" glyph="cv2"/>
+              <Ligature components="cv3" glyph="cv3"/>
+              <Ligature components="cv4" glyph="cv4"/>
+              <Ligature components="cv5" glyph="cv5"/>
+              <Ligature components="cv6" glyph="cv6"/>
+              <Ligature components="cv7" glyph="cv7"/>
+              <Ligature components="cv8" glyph="cv8"/>
+              <Ligature components="cv9" glyph="cv9"/>
+              <Ligature components="cv10" glyph="cv10"/>
+              <Ligature components="cv11" glyph="cv11"/>
+              <Ligature components="cv12" glyph="cv12"/>
+              <Ligature components="cv13" glyph="cv13"/>
+              <Ligature components="cv14" glyph="cv14"/>
+              <Ligature components="cv15" glyph="cv15"/>
+              <Ligature components="cv16" glyph="cv16"/>
+              <Ligature components="cv17" glyph="cv17"/>
+              <Ligature components="cv18" glyph="cv18"/>
+              <Ligature components="cv19" glyph="cv19"/>
+              <Ligature components="cv20" glyph="cv20"/>
+              <Ligature components="cv21" glyph="cv21"/>
+              <Ligature components="cv22" glyph="cv22"/>
+              <Ligature components="cv23" glyph="cv23"/>
+              <Ligature components="cv24" glyph="cv24"/>
+              <Ligature components="cv25" glyph="cv25"/>
+              <Ligature components="cv26" glyph="cv26"/>
+              <Ligature components="cv27" glyph="cv27"/>
+              <Ligature components="cv28" glyph="cv28"/>
+              <Ligature components="cv29" glyph="cv29"/>
+              <Ligature components="cv30" glyph="cv30"/>
+              <Ligature components="cv31" glyph="cv31"/>
+              <Ligature components="cv32" glyph="cv32"/>
+              <Ligature components="cv33" glyph="cv33"/>
+              <Ligature components="cv34" glyph="cv34"/>
+              <Ligature components="cv35" glyph="cv35"/>
+              <Ligature components="cv36" glyph="cv36"/>
+            </LigatureSet>
+          </LigatureSubst>
+        </ExtensionSubst>
+      </Lookup>
+</LookupList>

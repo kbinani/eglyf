@@ -1,21 +1,4 @@
 <LookupList>
-      <Lookup index="1202">
-        <LookupType value="7"/>
-        <LookupFlag value="16"/><!-- useMarkFilteringSet -->
-        <!-- SubTableCount=1 -->
-        <ExtensionSubst index="0" Format="1">
-          <ExtensionLookupType value="1"/>
-          <SingleSubst>
-            <Substitution in="tcab" out="tcab2"/>
-            <Substitution in="tcbb" out="tcbb2"/>
-            <Substitution in="tclb" out="tclb2"/>
-            <Substitution in="tcpb" out="tcpb2"/>
-            <Substitution in="tcrb" out="tcrb2"/>
-            <Substitution in="tcub" out="tcub2"/>
-          </SingleSubst>
-        </ExtensionSubst>
-        <MarkFilteringSet value="0"/>
-      </Lookup>
       <Lookup index="13">
         <LookupType value="7"/>
         <LookupFlag value="16"/><!-- useMarkFilteringSet -->
@@ -205,6 +188,23 @@
               <LookupListIndex value="1202"/>
             </SubstLookupRecord>
           </ChainContextSubst>
+        </ExtensionSubst>
+        <MarkFilteringSet value="0"/>
+      </Lookup>
+      <Lookup index="1202">
+        <LookupType value="7"/>
+        <LookupFlag value="16"/><!-- useMarkFilteringSet -->
+        <!-- SubTableCount=1 -->
+        <ExtensionSubst index="0" Format="1">
+          <ExtensionLookupType value="1"/>
+          <SingleSubst>
+            <Substitution in="tcab" out="tcab2"/>
+            <Substitution in="tcbb" out="tcbb2"/>
+            <Substitution in="tclb" out="tclb2"/>
+            <Substitution in="tcpb" out="tcpb2"/>
+            <Substitution in="tcrb" out="tcrb2"/>
+            <Substitution in="tcub" out="tcub2"/>
+          </SingleSubst>
         </ExtensionSubst>
         <MarkFilteringSet value="0"/>
       </Lookup>

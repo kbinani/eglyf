@@ -1,0 +1,30 @@
+<LookupList>
+      <Lookup index="178">
+        <LookupType value="7"/>
+        <LookupFlag value="0"/>
+        <!-- SubTableCount=1 -->
+        <ExtensionSubst index="0" Format="1">
+          <ExtensionLookupType value="4"/>
+          <LigatureSubst>
+            <LigatureSet glyph="dv0">
+              <Ligature components="r0bA" glyph="r0bA"/>
+            </LigatureSet>
+            <LigatureSet glyph="dv1">
+              <Ligature components="r0bA" glyph="r0bA"/>
+            </LigatureSet>
+            <LigatureSet glyph="dv2">
+              <Ligature components="r0bA" glyph="r0bA"/>
+            </LigatureSet>
+            <LigatureSet glyph="dv3">
+              <Ligature components="r0bA" glyph="r0bA"/>
+            </LigatureSet>
+            <LigatureSet glyph="dv4">
+              <Ligature components="r0bA" glyph="r0bA"/>
+            </LigatureSet>
+            <LigatureSet glyph="dv5">
+              <Ligature components="r0bA" glyph="r0bA"/>
+            </LigatureSet>
+          </LigatureSubst>
+        </ExtensionSubst>
+      </Lookup>
+</LookupList>

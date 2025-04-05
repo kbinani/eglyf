@@ -1,22 +1,4 @@
 <LookupList>
-      <Lookup index="1981">
-        <LookupType value="7"/>
-        <LookupFlag value="8"/><!-- ignoreMarks -->
-        <!-- SubTableCount=1 -->
-        <ExtensionSubst index="0" Format="1">
-          <ExtensionLookupType value="1"/>
-          <SingleSubst>
-            <Substitution in="QB1" out="QC1"/>
-            <Substitution in="QB2" out="QC2"/>
-            <Substitution in="QB3" out="QC3"/>
-            <Substitution in="QB4" out="QC4"/>
-            <Substitution in="QB5" out="QC5"/>
-            <Substitution in="QB6" out="QC6"/>
-            <Substitution in="QB7" out="QC7"/>
-            <Substitution in="QB8" out="QC8"/>
-          </SingleSubst>
-        </ExtensionSubst>
-      </Lookup>
       <Lookup index="1176">
         <LookupType value="7"/>
         <LookupFlag value="8"/><!-- ignoreMarks -->
@@ -76,6 +58,24 @@
               <LookupListIndex value="1981"/>
             </SubstLookupRecord>
           </ChainContextSubst>
+        </ExtensionSubst>
+      </Lookup>
+      <Lookup index="1981">
+        <LookupType value="7"/>
+        <LookupFlag value="8"/><!-- ignoreMarks -->
+        <!-- SubTableCount=1 -->
+        <ExtensionSubst index="0" Format="1">
+          <ExtensionLookupType value="1"/>
+          <SingleSubst>
+            <Substitution in="QB1" out="QC1"/>
+            <Substitution in="QB2" out="QC2"/>
+            <Substitution in="QB3" out="QC3"/>
+            <Substitution in="QB4" out="QC4"/>
+            <Substitution in="QB5" out="QC5"/>
+            <Substitution in="QB6" out="QC6"/>
+            <Substitution in="QB7" out="QC7"/>
+            <Substitution in="QB8" out="QC8"/>
+          </SingleSubst>
         </ExtensionSubst>
       </Lookup>
 </LookupList>

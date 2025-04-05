@@ -1,0 +1,21 @@
+<LookupList>
+      <Lookup index="96">
+        <LookupType value="7"/>
+        <LookupFlag value="0"/>
+        <!-- SubTableCount=1 -->
+        <ExtensionSubst index="0" Format="1">
+          <ExtensionLookupType value="2"/>
+          <MultipleSubst>
+            <Substitution in="eh1" out="ch1,eh1"/>
+            <Substitution in="eh2" out="ch2,eh2"/>
+            <Substitution in="eh3" out="ch3,eh3"/>
+            <Substitution in="eh4" out="ch4,eh4"/>
+            <Substitution in="eh5" out="ch5,eh5"/>
+            <Substitution in="eh6" out="ch6,eh6"/>
+            <Substitution in="eh7" out="ch7,eh7"/>
+            <Substitution in="eh8" out="ch8,eh8"/>
+            <Substitution in="r0bA" out="ch0,r0bA"/>
+          </MultipleSubst>
+        </ExtensionSubst>
+      </Lookup>
+</LookupList>

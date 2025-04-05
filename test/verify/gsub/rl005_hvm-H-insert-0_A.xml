@@ -1,0 +1,13 @@
+<LookupList>
+      <Lookup index="88">
+        <LookupType value="7"/>
+        <LookupFlag value="0"/>
+        <!-- SubTableCount=1 -->
+        <ExtensionSubst index="0" Format="1">
+          <ExtensionLookupType value="2"/>
+          <MultipleSubst>
+            <Substitution in="c0bA" out="c0bA,h0"/>
+          </MultipleSubst>
+        </ExtensionSubst>
+      </Lookup>
+</LookupList>

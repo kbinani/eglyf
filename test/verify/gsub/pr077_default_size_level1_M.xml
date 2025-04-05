@@ -1,15 +1,4 @@
 <LookupList>
-      <Lookup index="1260">
-        <LookupType value="7"/>
-        <LookupFlag value="1024"/><!-- markAttachmentType[4] -->
-        <!-- SubTableCount=1 -->
-        <ExtensionSubst index="0" Format="1">
-          <ExtensionLookupType value="1"/>
-          <SingleSubst>
-            <Substitution in="mt43" out="et66"/>
-          </SingleSubst>
-        </ExtensionSubst>
-      </Lookup>
       <Lookup index="83">
         <LookupType value="7"/>
         <LookupFlag value="1024"/><!-- markAttachmentType[4] -->
@@ -44,6 +33,17 @@
               <LookupListIndex value="1260"/>
             </SubstLookupRecord>
           </ChainContextSubst>
+        </ExtensionSubst>
+      </Lookup>
+      <Lookup index="1260">
+        <LookupType value="7"/>
+        <LookupFlag value="1024"/><!-- markAttachmentType[4] -->
+        <!-- SubTableCount=1 -->
+        <ExtensionSubst index="0" Format="1">
+          <ExtensionLookupType value="1"/>
+          <SingleSubst>
+            <Substitution in="mt43" out="et66"/>
+          </SingleSubst>
         </ExtensionSubst>
       </Lookup>
 </LookupList>

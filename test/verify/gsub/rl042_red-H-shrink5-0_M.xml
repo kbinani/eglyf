@@ -1,16 +1,4 @@
 <LookupList>
-      <Lookup index="1281">
-        <LookupType value="7"/>
-        <LookupFlag value="16"/><!-- useMarkFilteringSet -->
-        <!-- SubTableCount=1 -->
-        <ExtensionSubst index="0" Format="1">
-          <ExtensionLookupType value="2"/>
-          <MultipleSubst>
-            <Substitution in="th5" out="dda,eh4"/>
-          </MultipleSubst>
-        </ExtensionSubst>
-        <MarkFilteringSet value="7"/>
-      </Lookup>
       <Lookup index="125">
         <LookupType value="7"/>
         <LookupFlag value="16"/><!-- useMarkFilteringSet -->
@@ -347,6 +335,18 @@
               <LookupListIndex value="1281"/>
             </SubstLookupRecord>
           </ChainContextSubst>
+        </ExtensionSubst>
+        <MarkFilteringSet value="7"/>
+      </Lookup>
+      <Lookup index="1281">
+        <LookupType value="7"/>
+        <LookupFlag value="16"/><!-- useMarkFilteringSet -->
+        <!-- SubTableCount=1 -->
+        <ExtensionSubst index="0" Format="1">
+          <ExtensionLookupType value="2"/>
+          <MultipleSubst>
+            <Substitution in="th5" out="dda,eh4"/>
+          </MultipleSubst>
         </ExtensionSubst>
         <MarkFilteringSet value="7"/>
       </Lookup>
