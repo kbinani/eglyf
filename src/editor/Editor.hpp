@@ -1562,7 +1562,7 @@ private:
         if (gids.find(gid) != gids.end()) {
           return EGLYF_NULLOPT_WHAT("Failed to determine mark attachment class");
         }
-        maxClassValue = (std::min)(maxClassValue, cv);
+        maxClassValue = (std::max)(maxClassValue, cv);
       }
       uint16_t classValue = maxClassValue + 1;
       if (classValue > (uint16_t)numeric_limits<uint8_t>::max()) {
