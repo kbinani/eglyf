@@ -216,11 +216,13 @@ public:
     return f;
   }
 
-  Status convertLookup(std::shared_ptr<Lookup> const &lookup, std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> &result) {
+  Status convertLookup(std::shared_ptr<Lookup> const &lookup,
+                       std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> &result,
+                       std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> &indirect) {
     using namespace std;
 
     if (!lookup->substitutions.empty()) {
-      return EGLYF_STATUS_PUSH(convertGsubLookup(lookup, result));
+      return EGLYF_STATUS_PUSH(convertGsubLookup(lookup, result, indirect));
     } else if (lookup->adjustSingle || lookup->attach) {
       shared_ptr<SubtableCollection<Subtable>::Lookup> ret;
       if (auto st = convertGposLookup(lookup, ret); !st.ok()) {
@@ -734,7 +736,9 @@ public:
     return Status::Ok();
   }
 
-  Status convertGsubLookup(std::shared_ptr<Lookup> const &lookup, std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> &result) {
+  Status convertGsubLookup(std::shared_ptr<Lookup> const &lookup,
+                           std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> &result,
+                           std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> &indirect) {
     using namespace std;
 
     if (lookup->substitutions.empty()) {
@@ -846,18 +850,27 @@ public:
       return Status::Ok();
     }
 
-    if (singleLookup) {
-      result.push_back(singleLookup);
-    }
-    if (multipleLookup) {
-      result.push_back(multipleLookup);
-    }
-    if (ligatureLookup) {
-      result.push_back(ligatureLookup);
-    }
-
     if (lookup->inContexts.empty() && lookup->exceptContexts.empty()) {
+      if (singleLookup) {
+        result.push_back(singleLookup);
+      }
+      if (multipleLookup) {
+        result.push_back(multipleLookup);
+      }
+      if (ligatureLookup) {
+        result.push_back(ligatureLookup);
+      }
       return Status::Ok();
+    } else {
+      if (singleLookup) {
+        indirect.push_back(singleLookup);
+      }
+      if (multipleLookup) {
+        indirect.push_back(multipleLookup);
+      }
+      if (ligatureLookup) {
+        indirect.push_back(ligatureLookup);
+      }
     }
 
     auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
@@ -1062,7 +1075,11 @@ public:
 
     // Convert each Lookup and store in maps for GPOS and GSUB
     map<shared_ptr<Lookup>, vector<shared_ptr<SubtableCollection<Subtable>::Lookup>>> convertedGposLookups;
-    map<shared_ptr<Lookup>, vector<shared_ptr<SubtableCollection<Subtable>::Lookup>>> convertedGsubLookups;
+    struct ConvertedLookups {
+      vector<shared_ptr<SubtableCollection<Subtable>::Lookup>> direct;
+      vector<shared_ptr<SubtableCollection<Subtable>::Lookup>> indirect;
+    };
+    map<shared_ptr<Lookup>, ConvertedLookups> convertedGsubLookups;
 
     for (auto const &[name, lookup] : lookups) {
       // Determine if this is a GSUB or GPOS lookup
@@ -1074,7 +1091,8 @@ public:
       }
 
       vector<shared_ptr<SubtableCollection<Subtable>::Lookup>> converted;
-      if (auto st = convertLookup(lookup, converted); !st.ok()) {
+      vector<shared_ptr<SubtableCollection<Subtable>::Lookup>> indirect;
+      if (auto st = convertLookup(lookup, converted, indirect); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
 
@@ -1084,7 +1102,8 @@ public:
 
       // Store in appropriate map
       if (isGsubLookup) {
-        ranges::copy(converted, back_inserter(convertedGsubLookups[lookup]));
+        ranges::copy(converted, back_inserter(convertedGsubLookups[lookup].direct));
+        ranges::copy(indirect, back_inserter(convertedGsubLookups[lookup].indirect));
       } else {
         ranges::copy(converted, back_inserter(convertedGposLookups[lookup]));
       }
@@ -1159,8 +1178,9 @@ public:
               hasGsubLookup = true;
 
               auto converted = it->second;
-              ranges::copy(converted, back_inserter(gsubFeature->data->lookups));
-              ranges::copy(converted, back_inserter(gsub->lookups));
+              ranges::copy(converted.direct, back_inserter(gsubFeature->data->lookups));
+              ranges::copy(converted.direct, back_inserter(gsub->lookups));
+              ranges::copy(converted.indirect, back_inserter(gsub->lookups));
             }
           }
 
@@ -1177,7 +1197,7 @@ public:
                   sub = extension->extension;
                 }
                 if (auto chained = dynamic_pointer_cast<ChainedContexts>(sub); chained) {
-                  if (auto st = chained->updateLookupToLookupListIndex(gsubFeature->data->lookups); !st.ok()) {
+                  if (auto st = chained->updateLookupToLookupListIndex(gsub->lookups); !st.ok()) {
                     return EGLYF_STATUS_PUSH(st);
                   }
                 }
