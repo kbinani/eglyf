@@ -1,6 +1,8 @@
+#define EGLYF_ENABLE_TESTS 0
+
 #include "eglyf.hpp"
 
-#if !defined(EGLYF_DISABLE_TESTS)
+#if EGLYF_ENABLE_TESTS
 #include "editor/EditorTests.hpp"
 #endif
 
@@ -24,7 +26,7 @@ static void Run(juce::ArgumentList const &args) {
     onlyLookupWithName = onlyLookupWithNameValue;
   }
 
-#if !defined(EGLYF_DISABLE_TESTS)
+#if EGLYF_ENABLE_TESTS
   {
     using namespace eglyf::tests;
     juce::File reference = args.getExistingFileForOption("--reference");

@@ -1,6 +1,6 @@
 #pragma once
 
-#if !defined(EGLYF_DISABLE_TESTS)
+#if EGLYF_ENABLE_TESTS
 
 namespace eglyf::tests {
 
