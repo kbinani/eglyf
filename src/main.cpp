@@ -14,6 +14,18 @@ static void Fail(eglyf::Status st) {
   juce::ConsoleApplication::fail(juce::String(out.str()));
 }
 
+#if EGLYF_ENABLE_TESTS
+static void Test(juce::ArgumentList const &args) {
+  using namespace eglyf::tests;
+  juce::File input = args.getExistingFileForOption("--input");
+  juce::File reference = args.getExistingFileForOption("--reference");
+  EditorTests editorTest(input, reference);
+
+  juce::UnitTestRunner runner;
+  runner.runAllTests();
+}
+#endif
+
 static void Run(juce::ArgumentList const &args) {
   using namespace std;
   using namespace eglyf;
@@ -25,18 +37,6 @@ static void Run(juce::ArgumentList const &args) {
   if (!onlyLookupWithNameValue.empty()) {
     onlyLookupWithName = onlyLookupWithNameValue;
   }
-
-#if EGLYF_ENABLE_TESTS
-  {
-    using namespace eglyf::tests;
-    juce::File reference = args.getExistingFileForOption("--reference");
-    EditorTests editorTest(input, reference);
-
-    juce::UnitTestRunner runner;
-    runner.runAllTests();
-    return;
-  }
-#endif
 
   FileInputStream fis(input);
   shared_ptr<FontFile> ff;
@@ -68,5 +68,12 @@ int main(int argc, char *argv[]) {
                          juce::String(""),
                          juce::String(""),
                          [](auto const &args) { Run(args); }});
+#if EGLYF_ENABLE_TESTS
+  app.addCommand({juce::String("--test"),
+                  "",
+                  "",
+                  "",
+                  [](auto const &args) { Test(args); }});
+#endif
   return app.findAndRunCommand(argc, argv);
 }
