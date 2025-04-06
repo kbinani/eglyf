@@ -356,6 +356,7 @@ public:
 
     FeatureList featureList;
     map<shared_ptr<FeatureData>, shared_ptr<FeatureList::FeatureData>> convertedFeatures;
+    vector<shared_ptr<FeatureList::Feature>> featureOrder;
     for (size_t i = 0; i < features.size(); i++) {
       auto const &feature = features[i];
       auto f = make_shared<FeatureList::Feature>();
@@ -365,6 +366,7 @@ public:
       if (found != convertedFeatures.end()) {
         f->data = found->second;
         featureList.featureTable.push_back(f);
+        featureOrder.push_back(f);
         continue;
       }
 
@@ -383,8 +385,10 @@ public:
       }
       f->data = data;
       featureList.featureTable.push_back(f);
+      featureOrder.push_back(f);
       convertedFeatures[feature->data] = data;
     }
+    ranges::sort(featureList.featureTable, [](auto const &a, auto const &b) { return a->tag < b->tag; });
 
     ScriptList scriptList;
     map<shared_ptr<LangSys>, shared_ptr<ScriptList::LangSys>> langSysMap;
@@ -398,10 +402,16 @@ public:
             return nullptr;
           }
           auto index = distance(features.begin(), f);
-          if (index > numeric_limits<uint16_t>::max()) {
+          auto order = featureOrder[index];
+          auto found = ranges::find(featureList.featureTable, order);
+          if (found == featureList.featureTable.end()) {
             return nullptr;
           }
-          to->requiredFeatureIndex = index;
+          auto i = distance(featureList.featureTable.begin(), found);
+          if (i > numeric_limits<uint16_t>::max()) {
+            return nullptr;
+          }
+          to->requiredFeatureIndex = i;
         }
         for (auto const &f : from->features) {
           auto ff = ranges::find(features, f);
@@ -409,10 +419,16 @@ public:
             return nullptr;
           }
           auto index = distance(features.begin(), ff);
-          if (index > numeric_limits<uint16_t>::max()) {
+          auto order = featureOrder[index];
+          auto found = ranges::find(featureList.featureTable, order);
+          if (found == featureList.featureTable.end()) {
             return nullptr;
           }
-          to->featureIndices.push_back(index);
+          auto i = distance(featureList.featureTable.begin(), found);
+          if (i > numeric_limits<uint16_t>::max()) {
+            return nullptr;
+          }
+          to->featureIndices.push_back(i);
         }
         langSysMap[from] = to;
         return to;
