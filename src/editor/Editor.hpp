@@ -168,10 +168,11 @@ public:
 
   std::shared_ptr<Lookup> getLookupByName(std::string const &name) {
     using namespace std;
-    if (auto found = lookups.find(name); found == lookups.end()) {
+    auto found = ranges::find_if(lookups, [&name](auto const &item) { return item.first == name; });
+    if (found == lookups.end()) {
       auto l = make_shared<Lookup>();
       l->name = name;
-      lookups[name] = l;
+      lookups.push_back(make_pair(name, l));
       return l;
     } else {
       return found->second;
@@ -1163,12 +1164,13 @@ public:
     using namespace std;
 
     if (onlyLookupWithName) {
-      if (auto found = lookups.find(*onlyLookupWithName); found == lookups.end()) {
+      auto found = ranges::find_if(lookups, [&onlyLookupWithName](auto const &it) { return it.first == *onlyLookupWithName; });
+      if (found == lookups.end()) {
         lookups.clear();
       } else {
         auto lookup = found->second;
         lookups.clear();
-        lookups[*onlyLookupWithName] = lookup;
+        lookups.push_back(*found);
       }
     }
 
@@ -1214,9 +1216,15 @@ public:
       if (isGsubLookup) {
         ranges::copy(converted, back_inserter(convertedGsubLookups[lookup].direct));
         ranges::copy(indirect, back_inserter(convertedGsubLookups[lookup].indirect));
+
+        ranges::copy(converted, back_inserter(gsub->lookups));
+        ranges::copy(indirect, back_inserter(gsub->lookups));
       } else {
         ranges::copy(converted, back_inserter(convertedGposLookups[lookup].direct));
         ranges::copy(indirect, back_inserter(convertedGposLookups[lookup].indirect));
+
+        ranges::copy(converted, back_inserter(gpos->lookups));
+        ranges::copy(indirect, back_inserter(gpos->lookups));
       }
     }
 
@@ -1252,16 +1260,12 @@ public:
             if (auto it = convertedGposLookups.find(lookup); it != convertedGposLookups.end()) {
               auto converted = it->second;
               ranges::copy(converted.direct, back_inserter(gposLookups));
-              ranges::copy(converted.direct, back_inserter(gpos->lookups));
-              ranges::copy(converted.indirect, back_inserter(gpos->lookups));
             }
 
             // Add to GSUB if it's a GSUB lookup
             if (auto it = convertedGsubLookups.find(lookup); it != convertedGsubLookups.end()) {
               auto converted = it->second;
               ranges::copy(converted.direct, back_inserter(gsubLookups));
-              ranges::copy(converted.direct, back_inserter(gsub->lookups));
-              ranges::copy(converted.indirect, back_inserter(gsub->lookups));
             }
           }
 
@@ -1928,7 +1932,7 @@ public:
   std::unordered_map<uint16_t, std::shared_ptr<Glyph>> glyphsLut;
   std::unordered_map<std::string, std::shared_ptr<Group>> groups;
   std::unordered_map<std::string, std::shared_ptr<Anchor>> anchors;
-  std::unordered_map<std::string, std::shared_ptr<Lookup>> lookups;
+  std::deque<std::pair<std::string, std::shared_ptr<Lookup>>> lookups;
   std::unordered_map<std::string, std::shared_ptr<Script>> scripts;
 
   std::shared_ptr<std::map<std::set<uint16_t>, std::pair<std::shared_ptr<Coverage>, size_t>>> markFilteringSets;
