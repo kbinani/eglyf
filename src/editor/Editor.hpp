@@ -60,10 +60,10 @@ public:
       std::shared_ptr<Anchor> anchor;
     };
     struct Attach {
-      Attach(std::initializer_list<GG> input, std::initializer_list<AttachTarget> output) : input(input), output(output) {}
+      Attach(std::initializer_list<GG> receptor, std::initializer_list<AttachTarget> ligand) : receptor(receptor), ligand(ligand) {}
 
-      std::vector<GG> input;
-      std::vector<AttachTarget> output;
+      std::vector<GG> receptor;
+      std::vector<AttachTarget> ligand;
     };
     std::shared_ptr<Attach> attach;
 
@@ -1725,178 +1725,8 @@ private:
     using namespace std;
     using ClassId = uint16_t;
 
-    if (!attach || attach->input.empty() || attach->output.empty()) {
-      return Status::Ok();
-    }
-
-    // Check if input glyphs are all mark glyphs
-    size_t inputBase = 0;
-    size_t inputMark = 0;
-    bool inputIsAllMarks = true;
-    for (auto const &item : attach->input) {
-      countGlyphType(item, inputBase, inputMark);
-    }
-
-    // Check if output glyphs are all mark glyphs
-    size_t outputBase = 0;
-    size_t outputMark = 0;
-    bool outputIsAllMarks = true;
-    for (auto const &target : attach->output) {
-      countGlyphType(target.target, outputBase, outputMark);
-    }
-
-    // Determine lookup type based on output glyphs
-    if (inputBase * outputBase != 0) {
-      return EGLYF_ERROR_WHAT("Both input and output contain base glyphs");
-    }
-    if (outputBase != 0) {
-      return EGLYF_ERROR_WHAT("Output contains base glyphs");
-    }
-    if (outputBase == 0) {
-      lookupType = 6; // MarkToMarkAttachmentPositioning
-    } else {
-      lookupType = 4; // MarkToBaseAttachment
-    }
-
-    // 1. Create mapping from anchor names to mark class IDs
-    map<string, ClassId> anchorNameToClassId;
-    ClassId nextClassId = 0;
-
-    for (auto const &target : attach->output) {
-      if (auto anchor = target.anchor) {
-        // Get anchor name directly
-        string anchorName = anchor->name;
-
-        if (anchorNameToClassId.find(anchorName) == anchorNameToClassId.end()) {
-          anchorNameToClassId[anchorName] = nextClassId++;
-        }
-      }
-    }
-
-    if (anchorNameToClassId.empty()) {
-      return EGLYF_ERROR_WHAT("Cannot convert if no mark classes are found");
-    }
-
-    // 2. Collect mark and base glyph IDs
-    set<uint16_t> markGlyphIds;
-
-    for (auto const &item : attach->input) {
-      collectGIDSet(item, markGlyphIds);
-    }
-
-    set<uint16_t> baseGlyphIds;
-    map<uint16_t, vector<pair<ClassId, shared_ptr<Anchor>>>> baseGlyphAnchors; // glyphId -> [(classId, Anchor)]
-
-    for (auto const &target : attach->output) {
-      // Collect glyphs from target
-      set<uint16_t> targetGlyphIds;
-      collectGIDSet(target.target, targetGlyphIds);
-
-      // Assign anchors to each glyph
-      for (auto glyphId : targetGlyphIds) {
-        baseGlyphIds.insert(glyphId);
-
-        // Get class ID from anchor name
-        string anchorName = target.anchor->name;
-        if (anchorNameToClassId.find(anchorName) != anchorNameToClassId.end()) {
-          uint16_t classId = anchorNameToClassId[anchorName];
-          baseGlyphAnchors[glyphId].push_back(make_pair(classId, target.anchor));
-        }
-      }
-    }
-
-    // Return nullptr if no glyph IDs are found
-    if (markGlyphIds.empty() || baseGlyphIds.empty()) {
-      return Status::Ok();
-    }
-
-    // 3. Create Coverage
-    auto markCoverage = make_shared<Coverage1>();
-    markCoverage->glyphArray = markGlyphIds;
-
-    auto baseCoverage = make_shared<Coverage1>();
-    baseCoverage->glyphArray = baseGlyphIds;
-
-    // 4. Create MarkArray
-    gpos::MarkArray markArray;
-
-    // Find anchors corresponding to mark glyphs
-    for (auto const &[anchorName, classId] : anchorNameToClassId) {
-      for (auto const &[name, anchor] : anchors) {
-        if (anchor->name == anchorName) {
-          for (auto const &[glyph, coords] : anchor->glyphs) {
-            if (glyph->id && find(markGlyphIds.begin(), markGlyphIds.end(), *glyph->id) != markGlyphIds.end()) {
-              gpos::MarkRecord record;
-              record.markClass = classId;
-              record.markAnchor = convertToGposAnchor(anchor, glyph);
-              markArray.markRecords.push_back(record);
-            }
-          }
-        }
-      }
-    }
-
-    // 5. Create BaseArray or Mark2Array
-    if (lookupType == 4) {
-      // MarkToBaseAttachment
-
-      auto subtable = make_unique<gpos::MarkToBaseAttachment>();
-      subtable->markCoverage = markCoverage;
-      subtable->baseCoverage = baseCoverage;
-      subtable->markArray = markArray;
-
-      // Create BaseArray
-      gpos::MarkToBaseAttachment::BaseArray baseArray;
-      baseArray.markClassCount = nextClassId;
-
-      for (auto glyphId : baseGlyphIds) {
-        gpos::MarkToBaseAttachment::BaseRecord record;
-        record.baseAnchors.resize(nextClassId, nullptr); // Initialize with nullptr for all mark classes
-
-        // Set anchors corresponding to the glyph
-        if (baseGlyphAnchors.find(glyphId) != baseGlyphAnchors.end()) {
-          for (auto const &[classId, anchor] : baseGlyphAnchors[glyphId]) {
-            auto glyph = getGlyphById(glyphId);
-            record.baseAnchors[classId] = convertToGposAnchor(anchor, glyph);
-          }
-        }
-
-        baseArray.baseRecords.push_back(record);
-      }
-
-      subtable->baseArray = baseArray;
-      result.reset(subtable.release());
-      return Status::Ok();
-    } else {
-      // MarkToMarkAttachmentPositioning
-      auto subtable = make_unique<gpos::MarkToMarkAttachmentPositioning>();
-      subtable->mark1Coverage = markCoverage;
-      subtable->mark2Coverage = baseCoverage;
-      subtable->mark1Array = markArray;
-
-      // Create Mark2Array
-      gpos::MarkToMarkAttachmentPositioning::Mark2Array mark2Array;
-      mark2Array.markClassCount = nextClassId;
-
-      for (auto glyphId : baseGlyphIds) {
-        gpos::MarkToMarkAttachmentPositioning::Mark2 record;
-        record.mark2Anchors.resize(nextClassId, nullptr); // Initialize with nullptr for all mark classes
-
-        // Set anchors corresponding to the glyph
-        if (baseGlyphAnchors.find(glyphId) != baseGlyphAnchors.end()) {
-          for (auto const &[classId, anchor] : baseGlyphAnchors[glyphId]) {
-            auto glyph = getGlyphById(glyphId);
-            record.mark2Anchors[classId] = convertToGposAnchor(anchor, glyph);
-          }
-        }
-
-        mark2Array.mark2Records.push_back(record);
-      }
-
-      subtable->mark2Array = mark2Array;
-      result.reset(subtable.release());
-      return Status::Ok();
-    }
+    //TODO:
+    return EGLYF_ERROR;
   }
 
   static void MergeContexts(std::vector<std::shared_ptr<Lookup::Context>> const &contexts,

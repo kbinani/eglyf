@@ -500,10 +500,10 @@ private:
 
     if (type == "GLYPH") {
       auto glyph = editor->getGlyphByName(string(unquote(name)));
-      attach.input.push_back(glyph);
+      attach.receptor.push_back(glyph);
     } else if (type == "GROUP") {
       auto group = editor->getGroupByName(string(unquote(name)));
-      attach.input.push_back(group);
+      attach.receptor.push_back(group);
     } else {
       return EGLYF_ERROR_WHAT("Invalid ATTACH type: " + string(type));
     }
@@ -542,7 +542,7 @@ private:
         }
 
         auto anchor = editor->getAnchorByName(string(unquote(anchorName)));
-        attach.output.push_back(Editor::Lookup::AttachTarget(target, anchor));
+        attach.ligand.push_back(Editor::Lookup::AttachTarget(target, anchor));
 
         i++;
       } else {
