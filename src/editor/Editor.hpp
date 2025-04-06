@@ -1184,11 +1184,11 @@ public:
     gsub->minorVersion = 0;
 
     // Convert each Lookup and store in maps for GPOS and GSUB
-    map<shared_ptr<Lookup>, vector<shared_ptr<SubtableCollection<Subtable>::Lookup>>> convertedGposLookups;
     struct ConvertedLookups {
       vector<shared_ptr<SubtableCollection<Subtable>::Lookup>> direct;
       vector<shared_ptr<SubtableCollection<Subtable>::Lookup>> indirect;
     };
+    map<shared_ptr<Lookup>, ConvertedLookups> convertedGposLookups;
     map<shared_ptr<Lookup>, ConvertedLookups> convertedGsubLookups;
 
     for (auto const &[name, lookup] : lookups) {
@@ -1215,7 +1215,8 @@ public:
         ranges::copy(converted, back_inserter(convertedGsubLookups[lookup].direct));
         ranges::copy(indirect, back_inserter(convertedGsubLookups[lookup].indirect));
       } else {
-        ranges::copy(converted, back_inserter(convertedGposLookups[lookup]));
+        ranges::copy(converted, back_inserter(convertedGposLookups[lookup].direct));
+        ranges::copy(indirect, back_inserter(convertedGposLookups[lookup].indirect));
       }
     }
 
@@ -1242,64 +1243,62 @@ public:
 
         // Process each Feature
         for (auto const &feature : langSys->features) {
-          // Process GPOS features
-          bool hasGposLookup = false;
-          shared_ptr<SubtableCollection<Subtable>::Feature> gposFeature;
-
-          if (auto it = gposFeatureMap.find(feature->tag); it != gposFeatureMap.end()) {
-            gposFeature = it->second;
-          } else {
-            gposFeature = make_shared<SubtableCollection<Subtable>::Feature>();
-            gposFeature->tag = feature->tag;
-            auto featureData = make_shared<SubtableCollection<Subtable>::FeatureData>();
-            gposFeature->data = featureData;
-            gposFeatureMap[feature->tag] = gposFeature;
-            gpos->features.push_back(gposFeature);
-          }
-
-          // Process GSUB features
-          bool hasGsubLookup = false;
-          shared_ptr<SubtableCollection<Subtable>::Feature> gsubFeature;
-
-          if (auto it = gsubFeatureMap.find(feature->tag); it != gsubFeatureMap.end()) {
-            gsubFeature = it->second;
-          } else {
-            gsubFeature = make_shared<SubtableCollection<Subtable>::Feature>();
-            gsubFeature->tag = feature->tag;
-            auto featureData = make_shared<SubtableCollection<Subtable>::FeatureData>();
-            gsubFeature->data = featureData;
-            gsubFeatureMap[feature->tag] = gsubFeature;
-            gsub->features.push_back(gsubFeature);
-          }
+          vector<shared_ptr<SubtableCollection<Subtable>::Lookup>> gposLookups;
+          vector<shared_ptr<SubtableCollection<Subtable>::Lookup>> gsubLookups;
 
           // Process each Lookup
           for (auto const &lookup : feature->lookups) {
             // Add to GPOS if it's a GPOS lookup
             if (auto it = convertedGposLookups.find(lookup); it != convertedGposLookups.end()) {
-              hasGposLookup = true;
-
               auto converted = it->second;
-              ranges::copy(converted, back_inserter(gposFeature->data->lookups));
-              ranges::copy(converted, back_inserter(gpos->lookups));
+              ranges::copy(converted.direct, back_inserter(gposLookups));
+              ranges::copy(converted.direct, back_inserter(gpos->lookups));
+              ranges::copy(converted.indirect, back_inserter(gpos->lookups));
             }
 
             // Add to GSUB if it's a GSUB lookup
             if (auto it = convertedGsubLookups.find(lookup); it != convertedGsubLookups.end()) {
-              hasGsubLookup = true;
-
               auto converted = it->second;
-              ranges::copy(converted.direct, back_inserter(gsubFeature->data->lookups));
+              ranges::copy(converted.direct, back_inserter(gsubLookups));
               ranges::copy(converted.direct, back_inserter(gsub->lookups));
               ranges::copy(converted.indirect, back_inserter(gsub->lookups));
             }
           }
 
           // Add features to LangSys if they have lookups
-          if (hasGposLookup) {
+          if (!gposLookups.empty()) {
+            shared_ptr<SubtableCollection<Subtable>::Feature> gposFeature;
+
+            if (auto it = gposFeatureMap.find(feature->tag); it != gposFeatureMap.end()) {
+              gposFeature = it->second;
+            } else {
+              gposFeature = make_shared<SubtableCollection<Subtable>::Feature>();
+              gposFeature->tag = feature->tag;
+              auto featureData = make_shared<SubtableCollection<Subtable>::FeatureData>();
+              ranges::copy(gposLookups, back_inserter(featureData->lookups));
+              gposFeature->data = featureData;
+              gposFeatureMap[feature->tag] = gposFeature;
+              gpos->features.push_back(gposFeature);
+            }
+
             gposLangSys->features.push_back(gposFeature);
           }
 
-          if (hasGsubLookup) {
+          if (!gsubLookups.empty()) {
+            shared_ptr<SubtableCollection<Subtable>::Feature> gsubFeature;
+
+            if (auto it = gsubFeatureMap.find(feature->tag); it != gsubFeatureMap.end()) {
+              gsubFeature = it->second;
+            } else {
+              gsubFeature = make_shared<SubtableCollection<Subtable>::Feature>();
+              gsubFeature->tag = feature->tag;
+              auto featureData = make_shared<SubtableCollection<Subtable>::FeatureData>();
+              ranges::copy(gsubLookups, back_inserter(featureData->lookups));
+              gsubFeature->data = featureData;
+              gsubFeatureMap[feature->tag] = gsubFeature;
+              gsub->features.push_back(gsubFeature);
+            }
+
             for (auto &lookup : gsubFeature->data->lookups) {
               for (auto const &subtable : lookup->data->subtables) {
                 auto sub = subtable;
