@@ -225,7 +225,9 @@ public:
       if (auto st = convertGposLookup(lookup, ret); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
-      result.push_back(ret);
+      if (ret) {
+        result.push_back(ret);
+      }
     }
 
     return Status::Ok();
@@ -1751,15 +1753,90 @@ private:
     if (receptorBase > 0 && ligandMark > 0) {
       // mark
       lookupType = 4;
+
+      vector<shared_ptr<Glyph>> receptorGlyphs;
+      set<uint16_t> receptorGlyphIds;
+      collectGlyphVector(attach->receptor, receptorGlyphs);
+      for (auto const &glyph : receptorGlyphs) {
+        if (glyph->id) {
+          receptorGlyphIds.insert(*glyph->id);
+        }
+      }
+      if (receptorGlyphs.empty()) {
+        return Status::Ok();
+      }
+
+      auto markCoverage = make_shared<Coverage1>();
+
+      ClassId nextMarkClass = 0;
+      map<shared_ptr<Anchor>, ClassId> anchors;
+      vector<pair<shared_ptr<Glyph>, shared_ptr<Anchor>>> ligandGlyphs;
+      for (auto const &item : attach->ligands) {
+        if (auto found = anchors.find(item.anchor); found == anchors.end()) {
+          anchors[item.anchor] = nextMarkClass;
+          nextMarkClass++;
+        }
+        vector<shared_ptr<Glyph>> glyphs;
+        collectGlyphVector(item.ligand, glyphs);
+        for (auto const &glyph : glyphs) {
+          if (glyph->id) {
+            ligandGlyphs.push_back(make_pair(glyph, item.anchor));
+            markCoverage->glyphArray.insert(*glyph->id);
+          }
+        }
+      }
+      ranges::sort(ligandGlyphs, [](auto const &a, auto const &b) { return a.first->id < b.first->id; });
+
+      auto mark = make_unique<gpos::MarkToBaseAttachment>();
+      mark->markCoverage = markCoverage;
+
+      auto baseCoverage = make_shared<Coverage1>();
+      baseCoverage->glyphArray = receptorGlyphIds;
+      mark->baseCoverage = baseCoverage;
+
+      for (auto const &[ligand, anchor] : ligandGlyphs) {
+        auto found = anchors.find(anchor);
+        if (found == anchors.end()) {
+          return EGLYF_ERROR;
+        }
+        gpos::MarkRecord record;
+        record.markClass = found->second;
+        auto gposAnchor = make_shared<gpos::Anchor1>();
+        gposAnchor->xCoordinate = 0;
+        gposAnchor->yCoordinate = 0;
+        record.markAnchor = gposAnchor;
+        mark->markArray.markRecords.push_back(record);
+      }
+
+      for (auto const &receptor : receptorGlyphs) {
+        gpos::MarkToBaseAttachment::BaseRecord record;
+        record.baseAnchors.resize(nextMarkClass, nullptr);
+
+        for (auto const &[anchor, classId] : anchors) {
+          auto found = anchor->glyphs.find(receptor);
+          auto gposAnchor = make_shared<gpos::Anchor1>();
+          if (found == anchor->glyphs.end()) {
+            return EGLYF_ERROR;
+          } else {
+            gposAnchor->xCoordinate = found->second.x.value_or(0);
+            gposAnchor->yCoordinate = found->second.y.value_or(0);
+          }
+          record.baseAnchors[classId] = gposAnchor;
+        }
+        mark->baseArray.baseRecords.push_back(record);
+      }
+      mark->baseArray.markClassCount = nextMarkClass;
+
+      result.reset(mark.release());
+      return Status::Ok();
     } else if (receptorMark > 0 && ligandMark > 0) {
       // mkmk
       lookupType = 6;
+      // TODO:
+      return Status::Ok();
     } else {
       return EGLYF_ERROR;
     }
-
-    // TODO:
-    return Status::Ok();
   }
 
   static void MergeContexts(std::vector<std::shared_ptr<Lookup::Context>> const &contexts,
