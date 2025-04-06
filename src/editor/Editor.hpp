@@ -574,9 +574,6 @@ public:
 
     vector<pair<vector<uint16_t>, uint16_t>> mapping;
     for (auto const &[input, output] : substitutions) {
-      if (input.size() < 2) {
-        return EGLYF_ERROR_WHAT("Input size must be at least 2 for ligature substitution");
-      }
       shared_ptr<Group> inGroup;
       for (auto const &it : input) {
         if (holds_alternative<shared_ptr<Group>>(it)) {
@@ -760,6 +757,14 @@ public:
       } else {
         return EGLYF_ERROR_WHAT("Unsupported substitution pattern");
       }
+    }
+    if (ligature.size() > 0 && single.size() > 0) {
+      for (auto [input, output] : single) {
+        vector<GG> v;
+        v.push_back(input);
+        ligature.push_back(make_pair(v, output));
+      }
+      single.clear();
     }
 
     shared_ptr<SubtableCollection<Subtable>::Lookup> singleLookup;
