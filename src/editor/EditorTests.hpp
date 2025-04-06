@@ -392,6 +392,15 @@ public:
       for (size_t i = 0; i < names.size(); i++) {
         expect(names[i] == refNames[i]);
       }
+
+      expect(infos.size() == refInfos.size());
+      for (size_t i = 0; i < infos.size(); i++) {
+        GlyphInformation const &e = refInfos[i];
+        GlyphInformation const &a = infos[i];
+        expect(e.x == a.x);
+        expect(e.y == a.y);
+        expect(e.cluster == a.cluster);
+      }
     }
   }
 
