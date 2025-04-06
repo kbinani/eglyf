@@ -500,10 +500,10 @@ private:
 
     if (type == "GLYPH") {
       auto glyph = editor->getGlyphByName(string(unquote(name)));
-      attach.receptor.push_back(glyph);
+      attach.receptor = glyph;
     } else if (type == "GROUP") {
       auto group = editor->getGroupByName(string(unquote(name)));
-      attach.receptor.push_back(group);
+      attach.receptor = group;
     } else {
       return EGLYF_ERROR_WHAT("Invalid ATTACH type: " + string(type));
     }
@@ -542,7 +542,7 @@ private:
         }
 
         auto anchor = editor->getAnchorByName(string(unquote(anchorName)));
-        attach.ligand.push_back(Editor::Lookup::AttachTarget(target, anchor));
+        attach.ligands.push_back(Editor::Lookup::AttachLigand(target, anchor));
 
         i++;
       } else {
@@ -850,16 +850,14 @@ private:
         index = i + 1;
         return Status::Ok();
       } else if (l.find("ATTACH") == 0) {
-        auto attach = make_shared<Editor::Lookup::Attach>(
-            initializer_list<variant<shared_ptr<Editor::Glyph>, shared_ptr<Editor::Group>>>{},
-            initializer_list<Editor::Lookup::AttachTarget>{});
+        auto attach = make_shared<Editor::Lookup::Attach>();
         auto status = parseAttach(lines, i, *attach);
         if (!status.ok()) {
           return EGLYF_STATUS_PUSH(status);
         }
         lookup.attach = attach;
       } else if (l.find("ADJUST_SINGLE") == 0) {
-        auto adjustSingle = make_shared<Editor::Lookup::AdjustSingle>(initializer_list<Editor::Lookup::AdjustGlyph>{});
+        auto adjustSingle = make_shared<Editor::Lookup::AdjustSingle>();
         auto status = parseAdjustSingle(lines, i, *adjustSingle);
         if (!status.ok()) {
           return EGLYF_STATUS_PUSH(status);

@@ -53,17 +53,15 @@ public:
     std::vector<std::shared_ptr<Context>> exceptContexts;
     std::vector<std::shared_ptr<Context>> inContexts;
 
-    struct AttachTarget {
-      AttachTarget(GG target, std::shared_ptr<Anchor> const &anchor) : target(target), anchor(anchor) {}
+    struct AttachLigand {
+      AttachLigand(GG ligand, std::shared_ptr<Anchor> const &anchor) : ligand(ligand), anchor(anchor) {}
 
-      GG target;
+      GG ligand;
       std::shared_ptr<Anchor> anchor;
     };
     struct Attach {
-      Attach(std::initializer_list<GG> receptor, std::initializer_list<AttachTarget> ligand) : receptor(receptor), ligand(ligand) {}
-
-      std::vector<GG> receptor;
-      std::vector<AttachTarget> ligand;
+      GG receptor;
+      std::vector<AttachLigand> ligands;
     };
     std::shared_ptr<Attach> attach;
 
@@ -75,8 +73,6 @@ public:
       std::optional<int16_t> dy;
     };
     struct AdjustSingle {
-      explicit AdjustSingle(std::initializer_list<AdjustGlyph> glyphs) : glyphs(glyphs) {}
-
       std::vector<AdjustGlyph> glyphs;
     };
     std::shared_ptr<AdjustSingle> adjustSingle;
@@ -1725,8 +1721,45 @@ private:
     using namespace std;
     using ClassId = uint16_t;
 
-    //TODO:
-    return EGLYF_ERROR;
+    if (!attach || attach->ligands.empty()) {
+      return Status::Ok();
+    }
+
+    size_t receptorBase = 0;
+    size_t receptorMark = 0;
+    countGlyphType(attach->receptor, receptorBase, receptorMark);
+
+    size_t ligandBase = 0;
+    size_t ligandMark = 0;
+    for (auto const &item : attach->ligands) {
+      countGlyphType(item.ligand, ligandBase, ligandMark);
+    }
+
+    if (receptorBase * ligandBase != 0) {
+      return EGLYF_ERROR;
+    }
+    if (ligandBase != 0) {
+      return EGLYF_ERROR;
+    }
+    if (receptorBase * receptorMark != 0) {
+      return EGLYF_ERROR;
+    }
+    if (ligandBase * ligandMark != 0) {
+      return EGLYF_ERROR;
+    }
+
+    if (receptorBase > 0 && ligandMark > 0) {
+      // mark
+      lookupType = 4;
+    } else if (receptorMark > 0 && ligandMark > 0) {
+      // mkmk
+      lookupType = 6;
+    } else {
+      return EGLYF_ERROR;
+    }
+
+    // TODO:
+    return Status::Ok();
   }
 
   static void MergeContexts(std::vector<std::shared_ptr<Lookup::Context>> const &contexts,
