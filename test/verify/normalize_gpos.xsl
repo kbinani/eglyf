@@ -23,4 +23,16 @@
       <xsl:attribute name="value">0</xsl:attribute>
     </MarkFilteringSet>
   </xsl:template>
+
+  <!-- Normalize LookupListIndex values to a fixed value -->
+  <xsl:template match="LookupListIndex">
+    <LookupListIndex>
+      <!-- Copy all attributes except value -->
+      <xsl:for-each select="@*[name() != 'value']">
+        <xsl:copy/>
+      </xsl:for-each>
+      <!-- Set a fixed value for all LookupListIndex elements -->
+      <xsl:attribute name="value">0</xsl:attribute>
+    </LookupListIndex>
+  </xsl:template>
 </xsl:stylesheet>
