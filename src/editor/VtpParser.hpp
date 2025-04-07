@@ -490,22 +490,30 @@ private:
     if (tokens.empty() || tokens[0] != "ATTACH") {
       return EGLYF_ERROR_WHAT("Expected ATTACH");
     }
+    tokens.pop_front();
 
-    if (tokens.size() < 3) {
+    if (tokens.size() < 2) {
       return EGLYF_ERROR_WHAT("Invalid ATTACH format");
     }
 
-    auto type = tokens[1];
-    auto name = tokens[2];
+    while (tokens.size() > 1) {
+      auto type = tokens.front();
+      tokens.pop_front();
+      auto name = tokens.front();
+      tokens.pop_front();
 
-    if (type == "GLYPH") {
-      auto glyph = editor->getGlyphByName(string(unquote(name)));
-      attach.receptor = glyph;
-    } else if (type == "GROUP") {
-      auto group = editor->getGroupByName(string(unquote(name)));
-      attach.receptor = group;
-    } else {
-      return EGLYF_ERROR_WHAT("Invalid ATTACH type: " + string(type));
+      if (type == "GLYPH") {
+        auto glyph = editor->getGlyphByName(string(unquote(name)));
+        attach.receptors.push_back(glyph);
+      } else if (type == "GROUP") {
+        auto group = editor->getGroupByName(string(unquote(name)));
+        attach.receptors.push_back(group);
+      } else {
+        return EGLYF_ERROR_WHAT("Invalid ATTACH type: " + string(type));
+      }
+    }
+    if (!tokens.empty()) {
+      return EGLYF_ERROR;
     }
 
     for (size_t i = index + 1; i < lines.size();) {

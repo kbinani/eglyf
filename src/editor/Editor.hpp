@@ -60,7 +60,7 @@ public:
       std::shared_ptr<Anchor> anchor;
     };
     struct Attach {
-      GG receptor;
+      std::vector<GG> receptors;
       std::vector<AttachLigand> ligands;
     };
     std::shared_ptr<Attach> attach;
@@ -264,7 +264,7 @@ public:
     if (lookup->attach) {
       shared_ptr<Subtable> subtable;
       uint16_t lookupType = 0;
-      if (auto st = createAttachmentSubtable(lookup->attach, subtable, lookupType); !st.ok()) {
+      if (auto st = createAttachmentSubtable(lookup, subtable, lookupType); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
       if (subtable) {
@@ -1719,21 +1719,23 @@ private:
   }
 
   // Create attachment subtable (MarkToBase or MarkToMark) from Editor::Lookup::Attach
-  Status createAttachmentSubtable(std::shared_ptr<Lookup::Attach> const &attach, std::shared_ptr<Subtable> &result, uint16_t &lookupType) {
+  Status createAttachmentSubtable(std::shared_ptr<Lookup> const &lookup, std::shared_ptr<Subtable> &result, uint16_t &lookupType) {
     using namespace std;
     using ClassId = uint16_t;
 
-    if (!attach || attach->ligands.empty()) {
+    if (!lookup->attach || lookup->attach->ligands.empty()) {
       return Status::Ok();
     }
 
     size_t receptorBase = 0;
     size_t receptorMark = 0;
-    countGlyphType(attach->receptor, receptorBase, receptorMark);
+    for (auto const &receptor : lookup->attach->receptors) {
+      countGlyphType(receptor, receptorBase, receptorMark);
+    }
 
     size_t ligandBase = 0;
     size_t ligandMark = 0;
-    for (auto const &item : attach->ligands) {
+    for (auto const &item : lookup->attach->ligands) {
       countGlyphType(item.ligand, ligandBase, ligandMark);
     }
 
@@ -1752,11 +1754,16 @@ private:
 
     if (receptorBase > 0 && ligandMark > 0) {
       // mark
+      if (!lookup->inContexts.empty() || !lookup->exceptContexts.empty()) {
+        return EGLYF_ERROR;
+      }
       lookupType = 4;
 
       vector<shared_ptr<Glyph>> receptorGlyphs;
       set<uint16_t> receptorGlyphIds;
-      collectGlyphVector(attach->receptor, receptorGlyphs);
+      for (auto const &receptor : lookup->attach->receptors) {
+        collectGlyphVector(receptor, receptorGlyphs);
+      }
       for (auto const &glyph : receptorGlyphs) {
         if (glyph->id) {
           receptorGlyphIds.insert(*glyph->id);
@@ -1771,7 +1778,7 @@ private:
       ClassId nextMarkClass = 0;
       map<shared_ptr<Anchor>, ClassId> anchors;
       deque<pair<shared_ptr<Glyph>, shared_ptr<Anchor>>> ligandGlyphs;
-      for (auto const &item : attach->ligands) {
+      for (auto const &item : lookup->attach->ligands) {
         if (auto found = anchors.find(item.anchor); found == anchors.end()) {
           anchors[item.anchor] = nextMarkClass;
           nextMarkClass++;
