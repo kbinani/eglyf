@@ -1796,7 +1796,7 @@ private:
 
       for (auto const &[ligand, anchor] : ligandGlyphs) {
         auto found = anchors.find(anchor);
-        if (found == anchors.end()) {
+        if (found == anchors.end()) [[unlikely]] {
           return EGLYF_ERROR;
         }
         gpos::MarkRecord record;
@@ -1811,16 +1811,15 @@ private:
       for (auto const &receptor : receptorGlyphs) {
         gpos::MarkToBaseAttachment::BaseRecord record;
         record.baseAnchors.resize(nextMarkClass, nullptr);
-
+        
         for (auto const &[anchor, classId] : anchors) {
           auto found = anchor->glyphs.find(receptor);
-          auto gposAnchor = make_shared<gpos::Anchor1>();
-          if (found == anchor->glyphs.end()) {
+          if (found == anchor->glyphs.end()) [[unlikely]] {
             return EGLYF_ERROR;
-          } else {
-            gposAnchor->xCoordinate = found->second.x.value_or(0);
-            gposAnchor->yCoordinate = found->second.y.value_or(0);
           }
+          auto gposAnchor = make_shared<gpos::Anchor1>();
+          gposAnchor->xCoordinate = found->second.x.value_or(0);
+          gposAnchor->yCoordinate = found->second.y.value_or(0);
           record.baseAnchors[classId] = gposAnchor;
         }
         mark->baseArray.baseRecords.push_back(record);
