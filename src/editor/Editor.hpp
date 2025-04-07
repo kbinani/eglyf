@@ -223,20 +223,30 @@ public:
     if (!lookup->substitutions.empty()) {
       return EGLYF_STATUS_PUSH(convertGsubLookup(lookup, result, indirect));
     } else if (lookup->adjustSingle || lookup->attach) {
-      shared_ptr<SubtableCollection<Subtable>::Lookup> ret;
-      if (auto st = convertGposLookup(lookup, ret); !st.ok()) {
+      if (auto st = convertGposLookup(lookup, result, indirect); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
-      }
-      if (ret) {
-        result.push_back(ret);
       }
     }
 
     return Status::Ok();
   }
 
-  Status convertGposLookup(std::shared_ptr<Lookup> const &lookup, std::shared_ptr<SubtableCollection<Subtable>::Lookup> &result) {
+  Status convertGposLookup(std::shared_ptr<Lookup> const &lookup,
+                           std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> &result,
+                           std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> &indirect) {
     using namespace std;
+
+    // clang-format off
+    vector<
+      pair<
+        shared_ptr<SubtableCollection<Subtable>::Lookup>,
+        map<
+          size_t,
+          vector<shared_ptr<Coverage>>
+        >
+      >
+    > lookups;
+    // clang-format on
 
     if (lookup->adjustSingle) {
       auto originalSubtable = createAdjustSingleSubtable(lookup->adjustSingle);
@@ -258,11 +268,22 @@ public:
 
         auto gposLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
         gposLookup->data = lookupData;
-        result.swap(gposLookup);
+
+        map<size_t, vector<shared_ptr<Coverage>>> inputCoverage;
+        auto coverage = make_shared<Coverage1>();
+        for (auto const &adjust : lookup->adjustSingle->glyphs) {
+          if (adjust.glyph->id) {
+            coverage->glyphArray.insert(*adjust.glyph->id);
+          }
+        }
+        inputCoverage[1].push_back(coverage);
+
+        lookups.push_back(make_pair(gposLookup, inputCoverage));
+
+        result.push_back(gposLookup);
         return Status::Ok();
       }
     }
-
     if (lookup->attach) {
       shared_ptr<Subtable> subtable;
       uint16_t lookupType = 0;
@@ -287,11 +308,47 @@ public:
 
         auto gposLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
         gposLookup->data = lookupData;
-        result.swap(gposLookup);
-        return Status::Ok();
+
+        map<size_t, vector<shared_ptr<Coverage>>> inputCoverages;
+        auto coverage = make_shared<Coverage1>();
+        for (auto const &receptor : lookup->attach->receptors) {
+          collectGIDSet(receptor, coverage->glyphArray);
+        }
+        inputCoverages[1].push_back(coverage);
+
+        lookups.push_back(make_pair(gposLookup, inputCoverages));
       }
     }
 
+    auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
+    lookupData->name = lookup->name;
+    lookupData->lookupType = 9; // Position extension
+    auto lookupFlag = convertLookupFlag(lookup->base, lookup->marks, font->gdef);
+    if (!lookupFlag) {
+      return EGLYF_STATUS_PUSH(lookupFlag.status());
+    }
+    lookupData->lookupFlag = *lookupFlag;
+    lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
+
+    if (lookup->inContexts.empty() && lookup->exceptContexts.empty()) {
+      for (auto const &[lookup, inputCoverages] : lookups) {
+        result.push_back(lookup);
+      }
+      return Status::Ok();
+    } else {
+      for (auto const &[lookup, inputCoverages] : lookups) {
+        indirect.push_back(lookup);
+      }
+    }
+
+    addContextConditions<gpos::PositioningExtension, 8>(lookups,
+                                                        lookup->inContexts,
+                                                        lookup->exceptContexts,
+                                                        lookupData->subtables);
+    auto gposLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
+    gposLookup->data = lookupData;
+
+    result.push_back(gposLookup);
     return Status::Ok();
   }
 
@@ -1065,6 +1122,20 @@ public:
               gpos->features.push_back(gposFeature);
             }
 
+            for (auto &lookup : gposFeature->data->lookups) {
+              for (auto const &subtable : lookup->data->subtables) {
+                auto sub = subtable;
+                if (auto extension = dynamic_pointer_cast<gpos::PositioningExtension>(subtable); extension) {
+                  sub = extension->extension;
+                }
+                if (auto chained = dynamic_pointer_cast<ChainedContexts>(sub); chained) {
+                  if (auto st = chained->updateLookupToLookupListIndex(gpos->lookups); !st.ok()) {
+                    return EGLYF_STATUS_PUSH(st);
+                  }
+                }
+              }
+            }
+
             gposLangSys->features.push_back(gposFeature);
           }
 
@@ -1596,24 +1667,6 @@ private:
     }
   }
 
-  // Function to convert Editor::Anchor to GPOS::Anchor1
-  std::shared_ptr<gpos::Anchor> convertToGposAnchor(std::shared_ptr<Anchor> const &editorAnchor,
-                                                    std::shared_ptr<Glyph> const &glyph) const {
-    using namespace std;
-
-    auto it = editorAnchor->glyphs.find(glyph);
-    if (it == editorAnchor->glyphs.end()) {
-      return nullptr;
-    }
-
-    auto vec = it->second;
-    auto anchor = make_shared<gpos::Anchor1>();
-    anchor->xCoordinate = vec.x.value_or(0);
-    anchor->yCoordinate = vec.y.value_or(0);
-
-    return anchor;
-  }
-
   // Determine if a glyph is a mark glyph
   bool isMarkGlyph(std::shared_ptr<Glyph> const &glyph) const {
     return glyph->classDef == GlyphDefinitionTable::Class::Mark;
@@ -1691,9 +1744,6 @@ private:
 
     if (receptorBase > 0 && ligandMark > 0) {
       // mark
-      if (!lookup->inContexts.empty() || !lookup->exceptContexts.empty()) {
-        return EGLYF_ERROR;
-      }
       lookupType = 4;
 
       vector<shared_ptr<Glyph>> receptorGlyphs;
