@@ -1,5 +1,5 @@
 <LookupList>
-        <Lookup index="7">
+      <Lookup index="6">
         <LookupType value="9"/>
         <LookupFlag value="16"/><!-- useMarkFilteringSet -->
         <!-- SubTableCount=2 -->
@@ -12,23 +12,23 @@
             </BacktrackCoverage>
             <!-- InputGlyphCount=1 -->
             <InputCoverage index="0">
-              <Glyph value="c0s0p25R"/>
-              <Glyph value="c0s0p33R"/>
-              <Glyph value="c0s0p5R"/>
-              <Glyph value="c0s0p66R"/>
-              <Glyph value="c0s1p0R"/>
-              <Glyph value="c0s1p5R"/>
-              <Glyph value="c0s2p0R"/>
-              <Glyph value="c0s3p0R"/>
-              <Glyph value="c0s4p0R"/>
-              <Glyph value="c0h1R"/>
-              <Glyph value="c0h2R"/>
-              <Glyph value="c0h3R"/>
-              <Glyph value="c0h4R"/>
-              <Glyph value="c0h5R"/>
-              <Glyph value="c0h6R"/>
-              <Glyph value="c0h7R"/>
-              <Glyph value="c0h8R"/>
+              <Glyph value="c0s0p25"/>
+              <Glyph value="c0s0p33"/>
+              <Glyph value="c0s0p5"/>
+              <Glyph value="c0s0p66"/>
+              <Glyph value="c0s1p0"/>
+              <Glyph value="c0s1p5"/>
+              <Glyph value="c0s2p0"/>
+              <Glyph value="c0s3p0"/>
+              <Glyph value="c0s4p0"/>
+              <Glyph value="c0h1"/>
+              <Glyph value="c0h2"/>
+              <Glyph value="c0h3"/>
+              <Glyph value="c0h4"/>
+              <Glyph value="c0h5"/>
+              <Glyph value="c0h6"/>
+              <Glyph value="c0h7"/>
+              <Glyph value="c0h8"/>
             </InputCoverage>
             <!-- LookAheadGlyphCount=0 -->
             <!-- PosCount=0 -->
@@ -40,35 +40,35 @@
             <!-- BacktrackGlyphCount=0 -->
             <!-- InputGlyphCount=1 -->
             <InputCoverage index="0">
-              <Glyph value="c0s0p25R"/>
-              <Glyph value="c0s0p33R"/>
-              <Glyph value="c0s0p5R"/>
-              <Glyph value="c0s0p66R"/>
-              <Glyph value="c0s1p0R"/>
-              <Glyph value="c0s1p5R"/>
-              <Glyph value="c0s2p0R"/>
-              <Glyph value="c0s3p0R"/>
-              <Glyph value="c0s4p0R"/>
-              <Glyph value="c0h1R"/>
-              <Glyph value="c0h2R"/>
-              <Glyph value="c0h3R"/>
-              <Glyph value="c0h4R"/>
-              <Glyph value="c0h5R"/>
-              <Glyph value="c0h6R"/>
-              <Glyph value="c0h7R"/>
-              <Glyph value="c0h8R"/>
+              <Glyph value="c0s0p25"/>
+              <Glyph value="c0s0p33"/>
+              <Glyph value="c0s0p5"/>
+              <Glyph value="c0s0p66"/>
+              <Glyph value="c0s1p0"/>
+              <Glyph value="c0s1p5"/>
+              <Glyph value="c0s2p0"/>
+              <Glyph value="c0s3p0"/>
+              <Glyph value="c0s4p0"/>
+              <Glyph value="c0h1"/>
+              <Glyph value="c0h2"/>
+              <Glyph value="c0h3"/>
+              <Glyph value="c0h4"/>
+              <Glyph value="c0h5"/>
+              <Glyph value="c0h6"/>
+              <Glyph value="c0h7"/>
+              <Glyph value="c0h8"/>
             </InputCoverage>
             <!-- LookAheadGlyphCount=0 -->
             <!-- PosCount=1 -->
             <PosLookupRecord index="0">
               <SequenceIndex value="0"/>
-              <LookupListIndex value="88"/>
+              <LookupListIndex value="87"/>
             </PosLookupRecord>
           </ChainContextPos>
         </ExtensionPos>
-        <MarkFilteringSet value="36"/>
+        <MarkFilteringSet value="35"/>
       </Lookup>
-      <Lookup index="88">
+      <Lookup index="87">
         <LookupType value="9"/>
         <LookupFlag value="16"/><!-- useMarkFilteringSet -->
         <!-- SubTableCount=1 -->
@@ -76,42 +76,42 @@
           <ExtensionLookupType value="6"/>
           <MarkMarkPos Format="1">
             <Mark1Coverage>
-              <Glyph value="c0s0p25R"/>
-              <Glyph value="c0s0p33R"/>
-              <Glyph value="c0s0p5R"/>
-              <Glyph value="c0s0p66R"/>
-              <Glyph value="c0s1p0R"/>
-              <Glyph value="c0s1p5R"/>
-              <Glyph value="c0s2p0R"/>
-              <Glyph value="c0s3p0R"/>
-              <Glyph value="c0s4p0R"/>
-              <Glyph value="c0h1R"/>
-              <Glyph value="c0h2R"/>
-              <Glyph value="c0h3R"/>
-              <Glyph value="c0h4R"/>
-              <Glyph value="c0h5R"/>
-              <Glyph value="c0h6R"/>
-              <Glyph value="c0h7R"/>
-              <Glyph value="c0h8R"/>
+              <Glyph value="c0s0p25"/>
+              <Glyph value="c0s0p33"/>
+              <Glyph value="c0s0p5"/>
+              <Glyph value="c0s0p66"/>
+              <Glyph value="c0s1p0"/>
+              <Glyph value="c0s1p5"/>
+              <Glyph value="c0s2p0"/>
+              <Glyph value="c0s3p0"/>
+              <Glyph value="c0s4p0"/>
+              <Glyph value="c0h1"/>
+              <Glyph value="c0h2"/>
+              <Glyph value="c0h3"/>
+              <Glyph value="c0h4"/>
+              <Glyph value="c0h5"/>
+              <Glyph value="c0h6"/>
+              <Glyph value="c0h7"/>
+              <Glyph value="c0h8"/>
             </Mark1Coverage>
             <Mark2Coverage>
-              <Glyph value="c0s0p25R"/>
-              <Glyph value="c0s0p33R"/>
-              <Glyph value="c0s0p5R"/>
-              <Glyph value="c0s0p66R"/>
-              <Glyph value="c0s1p0R"/>
-              <Glyph value="c0s1p5R"/>
-              <Glyph value="c0s2p0R"/>
-              <Glyph value="c0s3p0R"/>
-              <Glyph value="c0s4p0R"/>
-              <Glyph value="c0h1R"/>
-              <Glyph value="c0h2R"/>
-              <Glyph value="c0h3R"/>
-              <Glyph value="c0h4R"/>
-              <Glyph value="c0h5R"/>
-              <Glyph value="c0h6R"/>
-              <Glyph value="c0h7R"/>
-              <Glyph value="c0h8R"/>
+              <Glyph value="c0s0p25"/>
+              <Glyph value="c0s0p33"/>
+              <Glyph value="c0s0p5"/>
+              <Glyph value="c0s0p66"/>
+              <Glyph value="c0s1p0"/>
+              <Glyph value="c0s1p5"/>
+              <Glyph value="c0s2p0"/>
+              <Glyph value="c0s3p0"/>
+              <Glyph value="c0s4p0"/>
+              <Glyph value="c0h1"/>
+              <Glyph value="c0h2"/>
+              <Glyph value="c0h3"/>
+              <Glyph value="c0h4"/>
+              <Glyph value="c0h5"/>
+              <Glyph value="c0h6"/>
+              <Glyph value="c0h7"/>
+              <Glyph value="c0h8"/>
             </Mark2Coverage>
             <!-- ClassCount=1 -->
             <Mark1Array>
@@ -240,109 +240,109 @@
               <!-- Mark2Count=17 -->
               <Mark2Record index="0">
                 <Mark2Anchor index="0" Format="1">
-                  <XCoordinate value="-78"/>
+                  <XCoordinate value="78"/>
                   <YCoordinate value="0"/>
                 </Mark2Anchor>
               </Mark2Record>
               <Mark2Record index="1">
                 <Mark2Anchor index="0" Format="1">
-                  <XCoordinate value="-103"/>
+                  <XCoordinate value="103"/>
                   <YCoordinate value="0"/>
                 </Mark2Anchor>
               </Mark2Record>
               <Mark2Record index="2">
                 <Mark2Anchor index="0" Format="1">
-                  <XCoordinate value="-157"/>
+                  <XCoordinate value="157"/>
                   <YCoordinate value="0"/>
                 </Mark2Anchor>
               </Mark2Record>
               <Mark2Record index="3">
                 <Mark2Anchor index="0" Format="1">
-                  <XCoordinate value="-207"/>
+                  <XCoordinate value="207"/>
                   <YCoordinate value="0"/>
                 </Mark2Anchor>
               </Mark2Record>
               <Mark2Record index="4">
                 <Mark2Anchor index="0" Format="1">
-                  <XCoordinate value="-315"/>
+                  <XCoordinate value="315"/>
                   <YCoordinate value="0"/>
                 </Mark2Anchor>
               </Mark2Record>
               <Mark2Record index="5">
                 <Mark2Anchor index="0" Format="1">
-                  <XCoordinate value="-472"/>
+                  <XCoordinate value="472"/>
                   <YCoordinate value="0"/>
                 </Mark2Anchor>
               </Mark2Record>
               <Mark2Record index="6">
                 <Mark2Anchor index="0" Format="1">
-                  <XCoordinate value="-630"/>
+                  <XCoordinate value="630"/>
                   <YCoordinate value="0"/>
                 </Mark2Anchor>
               </Mark2Record>
               <Mark2Record index="7">
                 <Mark2Anchor index="0" Format="1">
-                  <XCoordinate value="-945"/>
+                  <XCoordinate value="945"/>
                   <YCoordinate value="0"/>
                 </Mark2Anchor>
               </Mark2Record>
               <Mark2Record index="8">
                 <Mark2Anchor index="0" Format="1">
-                  <XCoordinate value="-1260"/>
+                  <XCoordinate value="1260"/>
                   <YCoordinate value="0"/>
                 </Mark2Anchor>
               </Mark2Record>
               <Mark2Record index="9">
                 <Mark2Anchor index="0" Format="1">
-                  <XCoordinate value="-315"/>
+                  <XCoordinate value="315"/>
                   <YCoordinate value="0"/>
                 </Mark2Anchor>
               </Mark2Record>
               <Mark2Record index="10">
                 <Mark2Anchor index="0" Format="1">
-                  <XCoordinate value="-630"/>
+                  <XCoordinate value="630"/>
                   <YCoordinate value="0"/>
                 </Mark2Anchor>
               </Mark2Record>
               <Mark2Record index="11">
                 <Mark2Anchor index="0" Format="1">
-                  <XCoordinate value="-945"/>
+                  <XCoordinate value="945"/>
                   <YCoordinate value="0"/>
                 </Mark2Anchor>
               </Mark2Record>
               <Mark2Record index="12">
                 <Mark2Anchor index="0" Format="1">
-                  <XCoordinate value="-1260"/>
+                  <XCoordinate value="1260"/>
                   <YCoordinate value="0"/>
                 </Mark2Anchor>
               </Mark2Record>
               <Mark2Record index="13">
                 <Mark2Anchor index="0" Format="1">
-                  <XCoordinate value="-1575"/>
+                  <XCoordinate value="1575"/>
                   <YCoordinate value="0"/>
                 </Mark2Anchor>
               </Mark2Record>
               <Mark2Record index="14">
                 <Mark2Anchor index="0" Format="1">
-                  <XCoordinate value="-1890"/>
+                  <XCoordinate value="1890"/>
                   <YCoordinate value="0"/>
                 </Mark2Anchor>
               </Mark2Record>
               <Mark2Record index="15">
                 <Mark2Anchor index="0" Format="1">
-                  <XCoordinate value="-2205"/>
+                  <XCoordinate value="2205"/>
                   <YCoordinate value="0"/>
                 </Mark2Anchor>
               </Mark2Record>
               <Mark2Record index="16">
                 <Mark2Anchor index="0" Format="1">
-                  <XCoordinate value="-2520"/>
+                  <XCoordinate value="2520"/>
                   <YCoordinate value="0"/>
                 </Mark2Anchor>
               </Mark2Record>
             </Mark2Array>
           </MarkMarkPos>
         </ExtensionPos>
-        <MarkFilteringSet value="36"/>
+        <MarkFilteringSet value="35"/>
       </Lookup>
 </LookupList>
