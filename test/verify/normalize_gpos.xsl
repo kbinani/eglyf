@@ -5,4 +5,15 @@
       <xsl:apply-templates select="@*|node()"/>
     </xsl:copy>
   </xsl:template>
+
+  <!-- Remove index attributes from Lookup elements -->
+  <xsl:template match="Lookup">
+    <Lookup>
+      <!-- Copy LookupType and LookupFlag attributes -->
+      <xsl:copy-of select="@LookupType"/>
+      <xsl:copy-of select="@LookupFlag"/>
+      <!-- Copy all child nodes -->
+      <xsl:apply-templates select="node()"/>
+    </Lookup>
+  </xsl:template>
 </xsl:stylesheet>

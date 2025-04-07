@@ -5,6 +5,7 @@ namespace eglyf {
 class Editor : public std::enable_shared_from_this<Editor> {
 public:
   struct Glyph {
+    std::string name;
     std::optional<uint16_t> id;
     GlyphDefinitionTable::Class classDef;
   };
@@ -116,6 +117,7 @@ public:
     using namespace std;
     if (auto found = glyphs.find(name); found == glyphs.end()) {
       auto g = make_shared<Glyph>();
+      g->name = name;
       glyphs[name] = g;
       return g;
     } else {
@@ -1630,8 +1632,12 @@ private:
   }
 
   // Function to extract glyph IDs from a variant (glyph or group) while preserving order
+  template <class C>
+    requires requires(C &container, std::shared_ptr<Glyph> const &g) {
+      container.push_back(g);
+    }
   void collectGlyphVector(GG const &item,
-                          std::vector<std::shared_ptr<Glyph>> &glyphs) const {
+                          C &glyphs) const {
     using namespace std;
 
     if (holds_alternative<shared_ptr<Glyph>>(item)) {
@@ -1644,8 +1650,12 @@ private:
   }
 
   // Function to recursively extract glyph IDs from a group while preserving order
+  template <class C>
+    requires requires(C &container, std::shared_ptr<Glyph> const &g) {
+      container.push_back(g);
+    }
   void collectGlyphVectorFromGroup(std::shared_ptr<Group> const &group,
-                                   std::vector<std::shared_ptr<Glyph>> &glyphs) const {
+                                   C &glyphs) const {
     using namespace std;
 
     for (auto const &member : group->members) {
@@ -1838,7 +1848,88 @@ private:
     } else if (receptorMark > 0 && ligandMark > 0) {
       // mkmk
       lookupType = 6;
-      // TODO:
+
+      // mark2: receptor
+      // mark: ligand
+
+      deque<shared_ptr<Glyph>> receptorGlyphs;
+      set<uint16_t> receptorGlyphIds;
+      for (auto const &receptor : lookup->attach->receptors) {
+        collectGlyphVector(receptor, receptorGlyphs);
+      }
+      for (auto const &glyph : receptorGlyphs) {
+        if (glyph->id) {
+          receptorGlyphIds.insert(*glyph->id);
+        }
+      }
+      if (receptorGlyphs.empty()) {
+        return Status::Ok();
+      }
+      ranges::sort(receptorGlyphs, [](auto const &a, auto const &b) { return *a->id < *b->id; });
+
+      auto markCoverage = make_shared<Coverage1>();
+
+      ClassId nextMarkClass = 0;
+      map<shared_ptr<Anchor>, ClassId> anchors;
+      deque<pair<shared_ptr<Glyph>, shared_ptr<Anchor>>> ligandGlyphs;
+      for (auto const &item : lookup->attach->ligands) {
+        if (auto found = anchors.find(item.anchor); found == anchors.end()) {
+          anchors[item.anchor] = nextMarkClass;
+          nextMarkClass++;
+        }
+        vector<shared_ptr<Glyph>> glyphs;
+        collectGlyphVector(item.ligand, glyphs);
+        for (auto const &glyph : glyphs) {
+          if (glyph->id) {
+            ligandGlyphs.push_back(make_pair(glyph, item.anchor));
+            markCoverage->glyphArray.insert(*glyph->id);
+          }
+        }
+      }
+      ranges::sort(ligandGlyphs, [](auto const &a, auto const &b) { return a.first->id < b.first->id; });
+
+      auto mark = make_unique<gpos::MarkToMarkAttachmentPositioning>();
+      mark->mark1Coverage = markCoverage;
+
+      auto baseCoverage = make_shared<Coverage1>();
+      baseCoverage->glyphArray = receptorGlyphIds;
+      mark->mark2Coverage = baseCoverage;
+
+      for (auto const &[ligand, anchor] : ligandGlyphs) {
+        auto found = anchors.find(anchor);
+        if (found == anchors.end()) [[unlikely]] {
+          return EGLYF_ERROR_WHAT("Anchor not found in anchors map");
+        }
+        gpos::MarkRecord record;
+        record.markClass = found->second;
+        auto gposAnchor = make_shared<gpos::Anchor1>();
+        gposAnchor->xCoordinate = 0;
+        gposAnchor->yCoordinate = 0;
+        record.markAnchor = gposAnchor;
+        mark->mark1Array.markRecords.push_back(record);
+      }
+
+      for (auto const &receptor : receptorGlyphs) {
+        gpos::MarkToMarkAttachmentPositioning::Mark2 record;
+        record.mark2Anchors.resize(nextMarkClass, nullptr);
+
+        for (auto const &[anchor, classId] : anchors) {
+          auto found = anchor->glyphs.find(receptor);
+          auto gposAnchor = make_shared<gpos::Anchor1>();
+          if (found == anchor->glyphs.end()) [[unlikely]] {
+            gposAnchor->xCoordinate = 0;
+            gposAnchor->yCoordinate = 0;
+          } else {
+            gposAnchor->xCoordinate = found->second.x.value_or(0);
+            gposAnchor->yCoordinate = found->second.y.value_or(0);
+          }
+          record.mark2Anchors[classId] = gposAnchor;
+        }
+        mark->mark2Array.mark2Records.push_back(record);
+      }
+      mark->mark2Array.markClassCount = nextMarkClass;
+
+      result.reset(mark.release());
       return Status::Ok();
     } else {
       return EGLYF_ERROR_WHAT("Invalid combination of receptor and ligand glyph types");
