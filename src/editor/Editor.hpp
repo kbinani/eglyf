@@ -279,9 +279,6 @@ public:
         inputCoverage[1].push_back(coverage);
 
         lookups.push_back(make_pair(gposLookup, inputCoverage));
-
-        result.push_back(gposLookup);
-        return Status::Ok();
       }
     }
     if (lookup->attach) {
@@ -318,6 +315,10 @@ public:
 
         lookups.push_back(make_pair(gposLookup, inputCoverages));
       }
+    }
+    
+    if (lookups.empty()) {
+      return Status::Ok();
     }
 
     auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
