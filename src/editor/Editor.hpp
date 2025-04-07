@@ -767,9 +767,17 @@ public:
       single.clear();
     }
 
-    shared_ptr<SubtableCollection<Subtable>::Lookup> singleLookup;
-    shared_ptr<SubtableCollection<Subtable>::Lookup> multipleLookup;
-    shared_ptr<SubtableCollection<Subtable>::Lookup> ligatureLookup;
+    // clang-format off
+    vector<
+      pair<
+        shared_ptr<SubtableCollection<Subtable>::Lookup>,
+        map<
+          size_t,
+          vector<shared_ptr<Coverage>>
+        >
+      >
+    > lookups;
+    // clang-format on
 
     if (!single.empty()) {
       shared_ptr<Subtable> subtable;
@@ -793,8 +801,19 @@ public:
         lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
         lookupData->subtables.push_back(extensionSubtable);
 
-        singleLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
+        auto singleLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
         singleLookup->data = lookupData;
+
+        set<uint16_t> inputGlyphIds;
+        for (auto const &[input, _] : single) {
+          collectGIDSet(input, inputGlyphIds);
+        }
+        auto coverage = make_shared<Coverage1>();
+        coverage->glyphArray = inputGlyphIds;
+        map<size_t, vector<shared_ptr<Coverage>>> inputCoverages;
+        inputCoverages[1].push_back(coverage);
+
+        lookups.push_back(make_pair(singleLookup, inputCoverages));
       }
     }
 
@@ -820,8 +839,19 @@ public:
         lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
         lookupData->subtables.push_back(extensionSubtable);
 
-        multipleLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
+        auto multipleLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
         multipleLookup->data = lookupData;
+
+        set<uint16_t> inputGlyphIds;
+        for (auto const &[input, _] : multiple) {
+          collectGIDSet(input, inputGlyphIds);
+        }
+        auto coverage = make_shared<Coverage1>();
+        coverage->glyphArray = inputGlyphIds;
+        map<size_t, vector<shared_ptr<Coverage>>> inputCoverages;
+        inputCoverages[1].push_back(coverage);
+
+        lookups.push_back(make_pair(multipleLookup, inputCoverages));
       }
     }
 
@@ -847,77 +877,34 @@ public:
         lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
         lookupData->subtables.push_back(extensionSubtable);
 
-        ligatureLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
+        auto ligatureLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
         ligatureLookup->data = lookupData;
-      }
-    }
 
-    if (!singleLookup && !ligatureLookup && !multipleLookup) {
-      return Status::Ok();
-    }
-
-    if (lookup->inContexts.empty() && lookup->exceptContexts.empty()) {
-      if (singleLookup) {
-        result.push_back(singleLookup);
-      }
-      if (multipleLookup) {
-        result.push_back(multipleLookup);
-      }
-      if (ligatureLookup) {
-        result.push_back(ligatureLookup);
-      }
-      return Status::Ok();
-    } else {
-      if (singleLookup) {
-        indirect.push_back(singleLookup);
-      }
-      if (multipleLookup) {
-        indirect.push_back(multipleLookup);
-      }
-      if (ligatureLookup) {
-        indirect.push_back(ligatureLookup);
-      }
-    }
-
-    std::vector<std::shared_ptr<Coverage>> singleInputCoverage;
-    std::vector<std::shared_ptr<Coverage>> multipleInputCoverage;
-    map<size_t, std::vector<std::shared_ptr<Coverage>>> ligatureInputCoverages;
-    if (!single.empty()) {
-      set<uint16_t> inputGlyphIds;
-      for (auto const &[input, _] : single) {
-        collectGIDSet(input, inputGlyphIds);
-      }
-      auto coverage = make_shared<Coverage1>();
-      coverage->glyphArray = inputGlyphIds;
-      singleInputCoverage.push_back(coverage);
-    }
-    if (!multiple.empty()) {
-      set<uint16_t> inputGlyphIds;
-      for (auto const &[input, _] : multiple) {
-        collectGIDSet(input, inputGlyphIds);
-      }
-      auto coverage = make_shared<Coverage1>();
-      coverage->glyphArray = inputGlyphIds;
-      multipleInputCoverage.push_back(coverage);
-    }
-    if (!ligature.empty()) {
-      map<size_t, vector<set<uint16_t>>> inputGlyphs;
-      for (auto const &[inputs, _] : ligature) {
-        auto &glyphs = inputGlyphs[inputs.size()];
-        glyphs.resize(inputs.size());
-        for (size_t i = 0; i < inputs.size(); i++) {
-          auto const &input = inputs[i];
-          collectGIDSet(input, glyphs[i]);
+        map<size_t, vector<shared_ptr<Coverage>>> inputCoverages;
+        map<size_t, vector<set<uint16_t>>> inputGlyphs;
+        for (auto const &[inputs, _] : ligature) {
+          auto &glyphs = inputGlyphs[inputs.size()];
+          glyphs.resize(inputs.size());
+          for (size_t i = 0; i < inputs.size(); i++) {
+            auto const &input = inputs[i];
+            collectGIDSet(input, glyphs[i]);
+          }
         }
-      }
-      for (auto const &[numInputs, glyphs] : inputGlyphs) {
-        auto &target = ligatureInputCoverages[numInputs];
-        for (auto const &v : glyphs) {
-          auto coverage = make_shared<Coverage1>();
-          coverage->glyphArray = v;
-          target.push_back(coverage);
+        for (auto const &[numInputs, glyphs] : inputGlyphs) {
+          auto &target = inputCoverages[numInputs];
+          for (auto const &v : glyphs) {
+            auto coverage = make_shared<Coverage1>();
+            coverage->glyphArray = v;
+            target.push_back(coverage);
+          }
         }
+
+        lookups.push_back(make_pair(ligatureLookup, inputCoverages));
       }
+    }
+
+    if (lookups.empty()) {
+      return Status::Ok();
     }
 
     auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
@@ -930,233 +917,21 @@ public:
     lookupData->lookupFlag = *lookupFlag;
     lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
 
-    deque<vector<shared_ptr<Lookup::Context>>> exceptContexts;
-    MergeContexts(lookup->exceptContexts, exceptContexts);
-
-    for (auto const &contexts : exceptContexts) {
-      size_t const left = contexts[0]->left.size();
-      size_t const right = contexts[0]->right.size();
-
-      std::vector<std::shared_ptr<Coverage>> backtrackCoverage;
-      for (size_t i = 0; i < left; i++) {
-        size_t index = left - i - 1;
-        set<uint16_t> glyphIds;
-        for (auto const &context : contexts) {
-          auto const &item = context->left[index];
-          collectGIDSet(item, glyphIds);
-        }
-        if (!glyphIds.empty()) {
-          auto coverage = make_shared<Coverage1>();
-          coverage->glyphArray = glyphIds;
-          backtrackCoverage.push_back(coverage);
-        }
+    if (lookup->inContexts.empty() && lookup->exceptContexts.empty()) {
+      for (auto const &[lookup, inputCoverages] : lookups) {
+        result.push_back(lookup);
       }
-
-      vector<shared_ptr<Coverage>> lookaheadCoverage;
-      for (size_t i = 0; i < right; i++) {
-        size_t index = right - i - 1;
-        set<uint16_t> glyphIds;
-        for (auto const &context : contexts) {
-          auto const &item = context->right[index];
-          collectGIDSet(item, glyphIds);
-        }
-        if (!glyphIds.empty()) {
-          auto coverage = make_shared<Coverage1>();
-          coverage->glyphArray = glyphIds;
-          lookaheadCoverage.push_back(coverage);
-        }
-      }
-      if (singleLookup) {
-        auto negative = make_shared<ChainedContexts3>();
-        negative->inputCoverage = singleInputCoverage;
-        negative->backtrackCoverage = backtrackCoverage;
-        negative->lookaheadCoverage = lookaheadCoverage;
-
-        // Wrap with extension subtable
-        auto extensionSubtable = make_shared<gsub::SubstitutionExtension>();
-        extensionSubtable->extensionLookupType = 6; // ChainedContexts
-        extensionSubtable->extension = negative;
-
-        lookupData->subtables.push_back(extensionSubtable);
-      }
-      if (multipleLookup) {
-        auto negative = make_shared<ChainedContexts3>();
-        negative->inputCoverage = multipleInputCoverage;
-        negative->backtrackCoverage = backtrackCoverage;
-        negative->lookaheadCoverage = lookaheadCoverage;
-
-        // Wrap with extension subtable
-        auto extensionSubtable = make_shared<gsub::SubstitutionExtension>();
-        extensionSubtable->extensionLookupType = 6; // ChainedContexts
-        extensionSubtable->extension = negative;
-
-        lookupData->subtables.push_back(extensionSubtable);
-      }
-      if (ligatureLookup) {
-        for (auto const &[_, ligatureInputCoverage] : ligatureInputCoverages) {
-          auto negative = make_shared<ChainedContexts3>();
-          negative->inputCoverage = ligatureInputCoverage;
-          negative->backtrackCoverage = backtrackCoverage;
-          negative->lookaheadCoverage = lookaheadCoverage;
-
-          // Wrap with extension subtable
-          auto extensionSubtable = make_shared<gsub::SubstitutionExtension>();
-          extensionSubtable->extensionLookupType = 6; // ChainedContexts
-          extensionSubtable->extension = negative;
-
-          lookupData->subtables.push_back(extensionSubtable);
-        }
-      }
-    }
-
-    deque<vector<shared_ptr<Lookup::Context>>> inContexts;
-    MergeContexts(lookup->inContexts, inContexts);
-
-    if (inContexts.empty()) {
-      if (singleLookup) {
-        auto positive = make_shared<ChainedContexts3>();
-        positive->inputCoverage = singleInputCoverage;
-
-        SequenceLookup seqLookup;
-        seqLookup.sequenceIndex = 0; // Replace the first input glyph
-        seqLookup.lookup = singleLookup;
-        positive->seqLookups.push_back(seqLookup);
-
-        // Wrap with extension subtable
-        auto extensionSubtable = make_shared<gsub::SubstitutionExtension>();
-        extensionSubtable->extensionLookupType = 6; // ChainedContexts
-        extensionSubtable->extension = positive;
-
-        lookupData->subtables.push_back(extensionSubtable);
-      }
-      if (multipleLookup) {
-        auto positive = make_shared<ChainedContexts3>();
-        positive->inputCoverage = multipleInputCoverage;
-
-        SequenceLookup seqLookup;
-        seqLookup.sequenceIndex = 0; // Replace the first input glyph
-        seqLookup.lookup = multipleLookup;
-        positive->seqLookups.push_back(seqLookup);
-
-        // Wrap with extension subtable
-        auto extensionSubtable = make_shared<gsub::SubstitutionExtension>();
-        extensionSubtable->extensionLookupType = 6; // ChainedContexts
-        extensionSubtable->extension = positive;
-
-        lookupData->subtables.push_back(extensionSubtable);
-      }
-      if (ligatureLookup) {
-        for (auto const &[_, ligatureInputCoverage] : ligatureInputCoverages) {
-          auto positive = make_shared<ChainedContexts3>();
-          positive->inputCoverage = ligatureInputCoverage;
-
-          SequenceLookup seqLookup;
-          seqLookup.sequenceIndex = 0; // Replace the first input glyph
-          seqLookup.lookup = ligatureLookup;
-          positive->seqLookups.push_back(seqLookup);
-
-          // Wrap with extension subtable
-          auto extensionSubtable = make_shared<gsub::SubstitutionExtension>();
-          extensionSubtable->extensionLookupType = 6; // ChainedContexts
-          extensionSubtable->extension = positive;
-
-          lookupData->subtables.push_back(extensionSubtable);
-        }
-      }
+      return Status::Ok();
     } else {
-      for (auto const &contexts : inContexts) {
-        size_t const left = contexts[0]->left.size();
-        size_t const right = contexts[0]->right.size();
-
-        std::vector<std::shared_ptr<Coverage>> backtrackCoverage;
-        for (size_t i = 0; i < left; i++) {
-          size_t index = left - i - 1;
-          set<uint16_t> glyphIds;
-          for (auto const &context : contexts) {
-            auto const &item = context->left[index];
-            collectGIDSet(item, glyphIds);
-          }
-          if (!glyphIds.empty()) {
-            auto coverage = make_shared<Coverage1>();
-            coverage->glyphArray = glyphIds;
-            backtrackCoverage.push_back(coverage);
-          }
-        }
-
-        std::vector<std::shared_ptr<Coverage>> lookaheadCoverage;
-        for (size_t i = 0; i < right; i++) {
-          set<uint16_t> glyphIds;
-          for (auto const &context : contexts) {
-            auto const &item = context->right[i];
-            collectGIDSet(item, glyphIds);
-          }
-          if (!glyphIds.empty()) {
-            auto coverage = make_shared<Coverage1>();
-            coverage->glyphArray = glyphIds;
-            lookaheadCoverage.push_back(coverage);
-          }
-        }
-
-        // Set up reference to substitution rule
-        if (singleLookup) {
-          auto positive = make_shared<ChainedContexts3>();
-          positive->inputCoverage = singleInputCoverage;
-          positive->backtrackCoverage = backtrackCoverage;
-          positive->lookaheadCoverage = lookaheadCoverage;
-
-          SequenceLookup seqLookup;
-          seqLookup.sequenceIndex = 0; // Replace the first input glyph
-          seqLookup.lookup = singleLookup;
-          positive->seqLookups.push_back(seqLookup);
-
-          // Wrap with extension subtable
-          auto extensionSubtable = make_shared<gsub::SubstitutionExtension>();
-          extensionSubtable->extensionLookupType = 6; // ChainedContexts
-          extensionSubtable->extension = positive;
-
-          lookupData->subtables.push_back(extensionSubtable);
-        }
-        if (multipleLookup) {
-          auto positive = make_shared<ChainedContexts3>();
-          positive->inputCoverage = multipleInputCoverage;
-          positive->backtrackCoverage = backtrackCoverage;
-          positive->lookaheadCoverage = lookaheadCoverage;
-
-          SequenceLookup seqLookup;
-          seqLookup.sequenceIndex = 0; // Replace the first input glyph
-          seqLookup.lookup = multipleLookup;
-          positive->seqLookups.push_back(seqLookup);
-
-          // Wrap with extension subtable
-          auto extensionSubtable = make_shared<gsub::SubstitutionExtension>();
-          extensionSubtable->extensionLookupType = 6; // ChainedContexts
-          extensionSubtable->extension = positive;
-
-          lookupData->subtables.push_back(extensionSubtable);
-        }
-        if (ligatureLookup) {
-          for (auto const &[_, ligatureInputCoverage] : ligatureInputCoverages) {
-            auto positive = make_shared<ChainedContexts3>();
-            positive->inputCoverage = ligatureInputCoverage;
-            positive->backtrackCoverage = backtrackCoverage;
-            positive->lookaheadCoverage = lookaheadCoverage;
-
-            SequenceLookup seqLookup;
-            seqLookup.sequenceIndex = 0; // Replace the first input glyph
-            seqLookup.lookup = ligatureLookup;
-            positive->seqLookups.push_back(seqLookup);
-
-            // Wrap with extension subtable
-            auto extensionSubtable = make_shared<gsub::SubstitutionExtension>();
-            extensionSubtable->extensionLookupType = 6; // ChainedContexts
-            extensionSubtable->extension = positive;
-
-            lookupData->subtables.push_back(extensionSubtable);
-          }
-        }
+      for (auto const &[lookup, inputCoverages] : lookups) {
+        indirect.push_back(lookup);
       }
     }
 
+    addContextConditions<gsub::SubstitutionExtension, 6>(lookups,
+                                                         lookup->inContexts,
+                                                         lookup->exceptContexts,
+                                                         lookupData->subtables);
     auto gsubLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
     gsubLookup->data = lookupData;
 
@@ -1361,6 +1136,158 @@ public:
   }
 
 private:
+  // clang-format off
+  template <class Extension, uint16_t ChainedContextLookupType /* 6 for GSUB, 8 for GPOS */>
+  void addContextConditions(std::vector<
+                              std::pair<
+                                std::shared_ptr<SubtableCollection<Subtable>::Lookup>,
+                                std::map<
+                                  size_t,
+                                  std::vector<std::shared_ptr<Coverage>>
+                                >
+                              >
+                            > const &lookups,
+                            std::vector<std::shared_ptr<Lookup::Context>> const &_inContexts,
+                            std::vector<std::shared_ptr<Lookup::Context>> const &_exceptContexts,
+                            std::vector<std::shared_ptr<Subtable>> &subtables) const {
+    // clang-format on
+    using namespace std;
+
+    assert(!_inContexts.empty() || !_exceptContexts.empty());
+
+    deque<vector<shared_ptr<Lookup::Context>>> exceptContexts;
+    MergeContexts(_exceptContexts, exceptContexts);
+
+    for (auto const &contexts : exceptContexts) {
+      size_t const left = contexts[0]->left.size();
+      size_t const right = contexts[0]->right.size();
+
+      vector<std::shared_ptr<Coverage>> backtrackCoverage;
+      for (size_t i = 0; i < left; i++) {
+        size_t index = left - i - 1;
+        set<uint16_t> glyphIds;
+        for (auto const &context : contexts) {
+          auto const &item = context->left[index];
+          collectGIDSet(item, glyphIds);
+        }
+        if (!glyphIds.empty()) {
+          auto coverage = make_shared<Coverage1>();
+          coverage->glyphArray = glyphIds;
+          backtrackCoverage.push_back(coverage);
+        }
+      }
+
+      vector<shared_ptr<Coverage>> lookaheadCoverage;
+      for (size_t i = 0; i < right; i++) {
+        size_t index = right - i - 1;
+        set<uint16_t> glyphIds;
+        for (auto const &context : contexts) {
+          auto const &item = context->right[index];
+          collectGIDSet(item, glyphIds);
+        }
+        if (!glyphIds.empty()) {
+          auto coverage = make_shared<Coverage1>();
+          coverage->glyphArray = glyphIds;
+          lookaheadCoverage.push_back(coverage);
+        }
+      }
+      for (auto const &[lookup, inputCoverages] : lookups) {
+        for (auto const &[numInput, inputCoverage] : inputCoverages) {
+          auto negative = make_shared<ChainedContexts3>();
+          negative->inputCoverage = inputCoverage;
+          negative->backtrackCoverage = backtrackCoverage;
+          negative->lookaheadCoverage = lookaheadCoverage;
+
+          // Wrap with extension subtable
+          auto extensionSubtable = make_shared<Extension>();
+          extensionSubtable->extensionLookupType = ChainedContextLookupType;
+          extensionSubtable->extension = negative;
+
+          subtables.push_back(extensionSubtable);
+        }
+      }
+    }
+
+    deque<vector<shared_ptr<Lookup::Context>>> inContexts;
+    MergeContexts(_inContexts, inContexts);
+
+    if (inContexts.empty()) {
+      for (auto const &[lookup, inputCoverages] : lookups) {
+        for (auto const &[numInput, inputCoverage] : inputCoverages) {
+          auto positive = make_shared<ChainedContexts3>();
+          positive->inputCoverage = inputCoverage;
+
+          SequenceLookup seqLookup;
+          seqLookup.sequenceIndex = 0; // Replace the first input glyph
+          seqLookup.lookup = lookup;
+          positive->seqLookups.push_back(seqLookup);
+
+          // Wrap with extension subtable
+          auto extensionSubtable = make_shared<Extension>();
+          extensionSubtable->extensionLookupType = ChainedContextLookupType;
+          extensionSubtable->extension = positive;
+
+          subtables.push_back(extensionSubtable);
+        }
+      }
+    } else {
+      for (auto const &contexts : inContexts) {
+        size_t const left = contexts[0]->left.size();
+        size_t const right = contexts[0]->right.size();
+
+        vector<shared_ptr<Coverage>> backtrackCoverage;
+        for (size_t i = 0; i < left; i++) {
+          size_t index = left - i - 1;
+          set<uint16_t> glyphIds;
+          for (auto const &context : contexts) {
+            auto const &item = context->left[index];
+            collectGIDSet(item, glyphIds);
+          }
+          if (!glyphIds.empty()) {
+            auto coverage = make_shared<Coverage1>();
+            coverage->glyphArray = glyphIds;
+            backtrackCoverage.push_back(coverage);
+          }
+        }
+
+        vector<shared_ptr<Coverage>> lookaheadCoverage;
+        for (size_t i = 0; i < right; i++) {
+          set<uint16_t> glyphIds;
+          for (auto const &context : contexts) {
+            auto const &item = context->right[i];
+            collectGIDSet(item, glyphIds);
+          }
+          if (!glyphIds.empty()) {
+            auto coverage = make_shared<Coverage1>();
+            coverage->glyphArray = glyphIds;
+            lookaheadCoverage.push_back(coverage);
+          }
+        }
+
+        for (auto const &[lookup, inputCoverages] : lookups) {
+          for (auto const &[numInput, inputCoverage] : inputCoverages) {
+            auto positive = make_shared<ChainedContexts3>();
+            positive->inputCoverage = inputCoverage;
+            positive->backtrackCoverage = backtrackCoverage;
+            positive->lookaheadCoverage = lookaheadCoverage;
+
+            SequenceLookup seqLookup;
+            seqLookup.sequenceIndex = 0; // Replace the first input glyph
+            seqLookup.lookup = lookup;
+            positive->seqLookups.push_back(seqLookup);
+
+            // Wrap with extension subtable
+            auto extensionSubtable = make_shared<Extension>();
+            extensionSubtable->extensionLookupType = ChainedContextLookupType;
+            extensionSubtable->extension = positive;
+
+            subtables.push_back(extensionSubtable);
+          }
+        }
+      }
+    }
+  }
+
   // Convert Editor::Lookup base and marks to OpenType lookupFlag
   Optional<uint16_t> convertLookupFlag(std::variant<Lookup::SkipBase, Lookup::ProcessBase> const &base,
                                        std::variant<Lookup::SkipMarks, Lookup::ProcessMarks> const &marks,
