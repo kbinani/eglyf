@@ -16,4 +16,11 @@
       <xsl:apply-templates select="node()"/>
     </Lookup>
   </xsl:template>
+
+  <!-- Normalize MarkFilteringSet values to a fixed value "0" -->
+  <xsl:template match="MarkFilteringSet">
+    <MarkFilteringSet>
+      <xsl:attribute name="value">0</xsl:attribute>
+    </MarkFilteringSet>
+  </xsl:template>
 </xsl:stylesheet>
