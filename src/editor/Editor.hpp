@@ -1738,16 +1738,16 @@ private:
     }
 
     if (receptorBase * ligandBase != 0) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Both receptor and ligand cannot be base glyphs simultaneously");
     }
     if (ligandBase != 0) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Ligand must be a mark glyph, not a base glyph");
     }
     if (receptorBase * receptorMark != 0) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Receptor cannot be both base and mark glyphs simultaneously");
     }
     if (ligandBase * ligandMark != 0) {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Ligand cannot be both base and mark glyphs simultaneously");
     }
 
     if (receptorBase > 0 && ligandMark > 0) {
@@ -1770,7 +1770,7 @@ private:
 
       ClassId nextMarkClass = 0;
       map<shared_ptr<Anchor>, ClassId> anchors;
-      vector<pair<shared_ptr<Glyph>, shared_ptr<Anchor>>> ligandGlyphs;
+      deque<pair<shared_ptr<Glyph>, shared_ptr<Anchor>>> ligandGlyphs;
       for (auto const &item : attach->ligands) {
         if (auto found = anchors.find(item.anchor); found == anchors.end()) {
           anchors[item.anchor] = nextMarkClass;
@@ -1797,7 +1797,7 @@ private:
       for (auto const &[ligand, anchor] : ligandGlyphs) {
         auto found = anchors.find(anchor);
         if (found == anchors.end()) [[unlikely]] {
-          return EGLYF_ERROR;
+          return EGLYF_ERROR_WHAT("Anchor not found in anchors map");
         }
         gpos::MarkRecord record;
         record.markClass = found->second;
@@ -1811,11 +1811,11 @@ private:
       for (auto const &receptor : receptorGlyphs) {
         gpos::MarkToBaseAttachment::BaseRecord record;
         record.baseAnchors.resize(nextMarkClass, nullptr);
-        
+
         for (auto const &[anchor, classId] : anchors) {
           auto found = anchor->glyphs.find(receptor);
           if (found == anchor->glyphs.end()) [[unlikely]] {
-            return EGLYF_ERROR;
+            return EGLYF_ERROR_WHAT("Receptor glyph not found in anchor glyphs map");
           }
           auto gposAnchor = make_shared<gpos::Anchor1>();
           gposAnchor->xCoordinate = found->second.x.value_or(0);
@@ -1834,7 +1834,7 @@ private:
       // TODO:
       return Status::Ok();
     } else {
-      return EGLYF_ERROR;
+      return EGLYF_ERROR_WHAT("Invalid combination of receptor and ligand glyph types");
     }
   }
 
