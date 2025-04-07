@@ -1,0 +1,129 @@
+<LookupList>
+      <Lookup index="25">
+        <LookupType value="9"/>
+        <LookupFlag value="0"/>
+        <!-- SubTableCount=4 -->
+        <ExtensionPos index="0" Format="1">
+          <ExtensionLookupType value="8"/>
+          <ChainContextPos Format="3">
+            <!-- BacktrackGlyphCount=2 -->
+            <BacktrackCoverage index="0">
+              <Glyph value="bs41"/>
+            </BacktrackCoverage>
+            <BacktrackCoverage index="1">
+              <Glyph value="D53"/>
+            </BacktrackCoverage>
+            <!-- InputGlyphCount=1 -->
+            <InputCoverage index="0">
+              <Glyph value="it33"/>
+              <Glyph value="it41"/>
+              <Glyph value="it33R"/>
+              <Glyph value="it41R"/>
+            </InputCoverage>
+            <!-- LookAheadGlyphCount=0 -->
+            <!-- PosCount=1 -->
+            <PosLookupRecord index="0">
+              <SequenceIndex value="0"/>
+              <LookupListIndex value="89"/>
+            </PosLookupRecord>
+          </ChainContextPos>
+        </ExtensionPos>
+        <ExtensionPos index="1" Format="1">
+          <ExtensionLookupType value="8"/>
+          <ChainContextPos Format="3">
+            <!-- BacktrackGlyphCount=2 -->
+            <BacktrackCoverage index="0">
+              <Glyph value="be41"/>
+            </BacktrackCoverage>
+            <BacktrackCoverage index="1">
+              <Glyph value="D53R"/>
+            </BacktrackCoverage>
+            <!-- InputGlyphCount=1 -->
+            <InputCoverage index="0">
+              <Glyph value="it33"/>
+              <Glyph value="it41"/>
+              <Glyph value="it33R"/>
+              <Glyph value="it41R"/>
+            </InputCoverage>
+            <!-- LookAheadGlyphCount=0 -->
+            <!-- PosCount=1 -->
+            <PosLookupRecord index="0">
+              <SequenceIndex value="0"/>
+              <LookupListIndex value="89"/>
+            </PosLookupRecord>
+          </ChainContextPos>
+        </ExtensionPos>
+        <ExtensionPos index="2" Format="1">
+          <ExtensionLookupType value="8"/>
+          <ChainContextPos Format="3">
+            <!-- BacktrackGlyphCount=2 -->
+            <BacktrackCoverage index="0">
+              <Glyph value="mi33"/>
+            </BacktrackCoverage>
+            <BacktrackCoverage index="1">
+              <Glyph value="O13a"/>
+            </BacktrackCoverage>
+            <!-- InputGlyphCount=1 -->
+            <InputCoverage index="0">
+              <Glyph value="it33"/>
+              <Glyph value="it41"/>
+              <Glyph value="it33R"/>
+              <Glyph value="it41R"/>
+            </InputCoverage>
+            <!-- LookAheadGlyphCount=0 -->
+            <!-- PosCount=1 -->
+            <PosLookupRecord index="0">
+              <SequenceIndex value="0"/>
+              <LookupListIndex value="89"/>
+            </PosLookupRecord>
+          </ChainContextPos>
+        </ExtensionPos>
+        <ExtensionPos index="3" Format="1">
+          <ExtensionLookupType value="8"/>
+          <ChainContextPos Format="3">
+            <!-- BacktrackGlyphCount=2 -->
+            <BacktrackCoverage index="0">
+              <Glyph value="mi33"/>
+            </BacktrackCoverage>
+            <BacktrackCoverage index="1">
+              <Glyph value="O13aR"/>
+            </BacktrackCoverage>
+            <!-- InputGlyphCount=1 -->
+            <InputCoverage index="0">
+              <Glyph value="it33"/>
+              <Glyph value="it41"/>
+              <Glyph value="it33R"/>
+              <Glyph value="it41R"/>
+            </InputCoverage>
+            <!-- LookAheadGlyphCount=0 -->
+            <!-- PosCount=1 -->
+            <PosLookupRecord index="0">
+              <SequenceIndex value="0"/>
+              <LookupListIndex value="89"/>
+            </PosLookupRecord>
+          </ChainContextPos>
+        </ExtensionPos>
+      </Lookup>
+      <Lookup index="89">
+        <LookupType value="9"/>
+        <LookupFlag value="0"/>
+        <!-- SubTableCount=1 -->
+        <ExtensionPos index="0" Format="1">
+          <ExtensionLookupType value="1"/>
+          <SinglePos Format="2">
+            <Coverage>
+              <Glyph value="it33"/>
+              <Glyph value="it41"/>
+              <Glyph value="it33R"/>
+              <Glyph value="it41R"/>
+            </Coverage>
+            <ValueFormat value="1"/>
+            <!-- ValueCount=4 -->
+            <Value index="0" XPlacement="94"/>
+            <Value index="1" XPlacement="94"/>
+            <Value index="2" XPlacement="94"/>
+            <Value index="3" XPlacement="94"/>
+          </SinglePos>
+        </ExtensionPos>
+      </Lookup>
+</LookupList>

@@ -1,0 +1,249 @@
+<LookupList>
+      <Lookup index="2">
+        <LookupType value="9"/>
+        <LookupFlag value="16"/><!-- useMarkFilteringSet -->
+        <!-- SubTableCount=1 -->
+        <ExtensionPos index="0" Format="1">
+          <ExtensionLookupType value="6"/>
+          <MarkMarkPos Format="1">
+            <Mark1Coverage>
+              <Glyph value="r0s0p25"/>
+              <Glyph value="r0s0p33"/>
+              <Glyph value="r0s0p5"/>
+              <Glyph value="r0s0p66"/>
+              <Glyph value="r0s1p0"/>
+              <Glyph value="r0s1p5"/>
+              <Glyph value="r0s2p0"/>
+              <Glyph value="r0s3p0"/>
+              <Glyph value="r0s4p0"/>
+              <Glyph value="r0v1"/>
+              <Glyph value="r0v2"/>
+              <Glyph value="r0v3"/>
+              <Glyph value="r0v4"/>
+              <Glyph value="r0v5"/>
+              <Glyph value="r0v6"/>
+            </Mark1Coverage>
+            <Mark2Coverage>
+              <Glyph value="r0s0p25"/>
+              <Glyph value="r0s0p33"/>
+              <Glyph value="r0s0p5"/>
+              <Glyph value="r0s0p66"/>
+              <Glyph value="r0s1p0"/>
+              <Glyph value="r0s1p5"/>
+              <Glyph value="r0s2p0"/>
+              <Glyph value="r0s3p0"/>
+              <Glyph value="r0s4p0"/>
+              <Glyph value="r0v1"/>
+              <Glyph value="r0v2"/>
+              <Glyph value="r0v3"/>
+              <Glyph value="r0v4"/>
+              <Glyph value="r0v5"/>
+              <Glyph value="r0v6"/>
+            </Mark2Coverage>
+            <!-- ClassCount=1 -->
+            <Mark1Array>
+              <!-- MarkCount=15 -->
+              <MarkRecord index="0">
+                <Class value="0"/>
+                <MarkAnchor Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="0"/>
+                </MarkAnchor>
+              </MarkRecord>
+              <MarkRecord index="1">
+                <Class value="0"/>
+                <MarkAnchor Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="0"/>
+                </MarkAnchor>
+              </MarkRecord>
+              <MarkRecord index="2">
+                <Class value="0"/>
+                <MarkAnchor Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="0"/>
+                </MarkAnchor>
+              </MarkRecord>
+              <MarkRecord index="3">
+                <Class value="0"/>
+                <MarkAnchor Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="0"/>
+                </MarkAnchor>
+              </MarkRecord>
+              <MarkRecord index="4">
+                <Class value="0"/>
+                <MarkAnchor Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="0"/>
+                </MarkAnchor>
+              </MarkRecord>
+              <MarkRecord index="5">
+                <Class value="0"/>
+                <MarkAnchor Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="0"/>
+                </MarkAnchor>
+              </MarkRecord>
+              <MarkRecord index="6">
+                <Class value="0"/>
+                <MarkAnchor Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="0"/>
+                </MarkAnchor>
+              </MarkRecord>
+              <MarkRecord index="7">
+                <Class value="0"/>
+                <MarkAnchor Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="0"/>
+                </MarkAnchor>
+              </MarkRecord>
+              <MarkRecord index="8">
+                <Class value="0"/>
+                <MarkAnchor Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="0"/>
+                </MarkAnchor>
+              </MarkRecord>
+              <MarkRecord index="9">
+                <Class value="0"/>
+                <MarkAnchor Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="0"/>
+                </MarkAnchor>
+              </MarkRecord>
+              <MarkRecord index="10">
+                <Class value="0"/>
+                <MarkAnchor Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="0"/>
+                </MarkAnchor>
+              </MarkRecord>
+              <MarkRecord index="11">
+                <Class value="0"/>
+                <MarkAnchor Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="0"/>
+                </MarkAnchor>
+              </MarkRecord>
+              <MarkRecord index="12">
+                <Class value="0"/>
+                <MarkAnchor Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="0"/>
+                </MarkAnchor>
+              </MarkRecord>
+              <MarkRecord index="13">
+                <Class value="0"/>
+                <MarkAnchor Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="0"/>
+                </MarkAnchor>
+              </MarkRecord>
+              <MarkRecord index="14">
+                <Class value="0"/>
+                <MarkAnchor Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="0"/>
+                </MarkAnchor>
+              </MarkRecord>
+            </Mark1Array>
+            <Mark2Array>
+              <!-- Mark2Count=15 -->
+              <Mark2Record index="0">
+                <Mark2Anchor index="0" Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="-77"/>
+                </Mark2Anchor>
+              </Mark2Record>
+              <Mark2Record index="1">
+                <Mark2Anchor index="0" Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="-102"/>
+                </Mark2Anchor>
+              </Mark2Record>
+              <Mark2Record index="2">
+                <Mark2Anchor index="0" Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="-155"/>
+                </Mark2Anchor>
+              </Mark2Record>
+              <Mark2Record index="3">
+                <Mark2Anchor index="0" Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="-204"/>
+                </Mark2Anchor>
+              </Mark2Record>
+              <Mark2Record index="4">
+                <Mark2Anchor index="0" Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="-310"/>
+                </Mark2Anchor>
+              </Mark2Record>
+              <Mark2Record index="5">
+                <Mark2Anchor index="0" Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="-465"/>
+                </Mark2Anchor>
+              </Mark2Record>
+              <Mark2Record index="6">
+                <Mark2Anchor index="0" Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="-620"/>
+                </Mark2Anchor>
+              </Mark2Record>
+              <Mark2Record index="7">
+                <Mark2Anchor index="0" Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="-930"/>
+                </Mark2Anchor>
+              </Mark2Record>
+              <Mark2Record index="8">
+                <Mark2Anchor index="0" Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="-1240"/>
+                </Mark2Anchor>
+              </Mark2Record>
+              <Mark2Record index="9">
+                <Mark2Anchor index="0" Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="-310"/>
+                </Mark2Anchor>
+              </Mark2Record>
+              <Mark2Record index="10">
+                <Mark2Anchor index="0" Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="-620"/>
+                </Mark2Anchor>
+              </Mark2Record>
+              <Mark2Record index="11">
+                <Mark2Anchor index="0" Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="-930"/>
+                </Mark2Anchor>
+              </Mark2Record>
+              <Mark2Record index="12">
+                <Mark2Anchor index="0" Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="-1240"/>
+                </Mark2Anchor>
+              </Mark2Record>
+              <Mark2Record index="13">
+                <Mark2Anchor index="0" Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="-1550"/>
+                </Mark2Anchor>
+              </Mark2Record>
+              <Mark2Record index="14">
+                <Mark2Anchor index="0" Format="1">
+                  <XCoordinate value="0"/>
+                  <YCoordinate value="-1860"/>
+                </Mark2Anchor>
+              </Mark2Record>
+            </Mark2Array>
+          </MarkMarkPos>
+        </ExtensionPos>
+        <MarkFilteringSet value="33"/>
+      </Lookup>
+</LookupList>
