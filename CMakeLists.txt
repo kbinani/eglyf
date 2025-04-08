@@ -113,7 +113,7 @@ target_sources(eglyf PRIVATE ${src_files} src/main.cpp)
 target_include_directories(eglyf PRIVATE src include)
 target_link_libraries(eglyf
   PRIVATE
-    juce::juce_gui_extra
+    juce::juce_graphics
     eglyf-binary-data
   PUBLIC
     juce::juce_recommended_config_flags
@@ -138,7 +138,7 @@ target_sources(resave PRIVATE ${src_files} test/resave.cpp)
 target_include_directories(resave PRIVATE src include)
 target_link_libraries(resave
   PRIVATE
-    juce::juce_gui_extra
+    juce::juce_graphics
     eglyf-binary-data
   PUBLIC
     juce::juce_recommended_config_flags
