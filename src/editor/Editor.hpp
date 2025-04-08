@@ -1219,29 +1219,24 @@ private:
                                 >
                               >
                             > const &lookups,
-                            std::vector<std::shared_ptr<Lookup::Context>> const &_inContexts,
-                            std::vector<std::shared_ptr<Lookup::Context>> const &_exceptContexts,
+                            std::vector<std::shared_ptr<Lookup::Context>> const &inContexts,
+                            std::vector<std::shared_ptr<Lookup::Context>> const &exceptContexts,
                             std::vector<std::shared_ptr<Subtable>> &subtables) const {
     // clang-format on
     using namespace std;
 
-    assert(!_inContexts.empty() || !_exceptContexts.empty());
+    assert(!inContexts.empty() || !exceptContexts.empty());
 
-    deque<vector<shared_ptr<Lookup::Context>>> exceptContexts;
-    MergeContexts(_exceptContexts, exceptContexts);
-
-    for (auto const &contexts : exceptContexts) {
-      size_t const left = contexts[0]->left.size();
-      size_t const right = contexts[0]->right.size();
+    for (auto const &context : exceptContexts) {
+      size_t const left = context->left.size();
+      size_t const right = context->right.size();
 
       vector<std::shared_ptr<Coverage>> backtrackCoverage;
       for (size_t i = 0; i < left; i++) {
         size_t index = left - i - 1;
         set<uint16_t> glyphIds;
-        for (auto const &context : contexts) {
-          auto const &item = context->left[index];
-          collectGIDSet(item, glyphIds);
-        }
+        auto const &item = context->left[index];
+        collectGIDSet(item, glyphIds);
         if (!glyphIds.empty()) {
           auto coverage = make_shared<Coverage1>();
           coverage->glyphArray = glyphIds;
@@ -1253,10 +1248,8 @@ private:
       for (size_t i = 0; i < right; i++) {
         size_t index = right - i - 1;
         set<uint16_t> glyphIds;
-        for (auto const &context : contexts) {
-          auto const &item = context->right[index];
-          collectGIDSet(item, glyphIds);
-        }
+        auto const &item = context->right[index];
+        collectGIDSet(item, glyphIds);
         if (!glyphIds.empty()) {
           auto coverage = make_shared<Coverage1>();
           coverage->glyphArray = glyphIds;
@@ -1280,9 +1273,6 @@ private:
       }
     }
 
-    deque<vector<shared_ptr<Lookup::Context>>> inContexts;
-    MergeContexts(_inContexts, inContexts);
-
     if (inContexts.empty()) {
       for (auto const &[lookup, inputCoverages] : lookups) {
         for (auto const &[numInput, inputCoverage] : inputCoverages) {
@@ -1303,18 +1293,16 @@ private:
         }
       }
     } else {
-      for (auto const &contexts : inContexts) {
-        size_t const left = contexts[0]->left.size();
-        size_t const right = contexts[0]->right.size();
+      for (auto const &context : inContexts) {
+        size_t const left = context->left.size();
+        size_t const right = context->right.size();
 
         vector<shared_ptr<Coverage>> backtrackCoverage;
         for (size_t i = 0; i < left; i++) {
           size_t index = left - i - 1;
           set<uint16_t> glyphIds;
-          for (auto const &context : contexts) {
-            auto const &item = context->left[index];
-            collectGIDSet(item, glyphIds);
-          }
+          auto const &item = context->left[index];
+          collectGIDSet(item, glyphIds);
           if (!glyphIds.empty()) {
             auto coverage = make_shared<Coverage1>();
             coverage->glyphArray = glyphIds;
@@ -1325,10 +1313,8 @@ private:
         vector<shared_ptr<Coverage>> lookaheadCoverage;
         for (size_t i = 0; i < right; i++) {
           set<uint16_t> glyphIds;
-          for (auto const &context : contexts) {
-            auto const &item = context->right[i];
-            collectGIDSet(item, glyphIds);
-          }
+          auto const &item = context->right[i];
+          collectGIDSet(item, glyphIds);
           if (!glyphIds.empty()) {
             auto coverage = make_shared<Coverage1>();
             coverage->glyphArray = glyphIds;
@@ -1917,38 +1903,6 @@ private:
       return Status::Ok();
     } else {
       return EGLYF_ERROR_WHAT("Invalid combination of receptor and ligand glyph types");
-    }
-  }
-
-  static void MergeContexts(std::vector<std::shared_ptr<Lookup::Context>> const &contexts,
-                            std::deque<std::vector<std::shared_ptr<Lookup::Context>>> &merged) {
-    using namespace std;
-    for (auto const &context : contexts) {
-      if (merged.empty() ||                                                                                         //
-          ranges::any_of(context->left, [](auto const &gg) { return holds_alternative<shared_ptr<Group>>(gg); }) || //
-          ranges::any_of(context->right, [](auto const &gg) { return holds_alternative<shared_ptr<Group>>(gg); })) {
-        vector<shared_ptr<Lookup::Context>> v;
-        v.push_back(context);
-        merged.push_back(v);
-        continue;
-      }
-      vector<shared_ptr<Lookup::Context>> &back = merged.back();
-      assert(!back.empty());
-      if (ranges::any_of(back[0]->left, [](auto const &gg) { return holds_alternative<shared_ptr<Group>>(gg); }) || //
-          ranges::any_of(back[0]->right, [](auto const &gg) { return holds_alternative<shared_ptr<Group>>(gg); })) {
-        vector<shared_ptr<Lookup::Context>> v;
-        v.push_back(context);
-        merged.push_back(v);
-        continue;
-      }
-      auto front = back.front();
-      if (front->left.size() == context->left.size() && front->right.size() == context->right.size()) {
-        back.push_back(context);
-      } else {
-        vector<shared_ptr<Lookup::Context>> v;
-        v.push_back(context);
-        merged.push_back(v);
-      }
     }
   }
 
