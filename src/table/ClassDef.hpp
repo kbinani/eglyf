@@ -56,7 +56,7 @@ public:
     if (glyphId < startGlyphID) {
       int num = startGlyphID - glyphId;
       classValues.resize(classValues.size() + num);
-      for (int i = (int)classValues.size() - 1; i >= num; i++) {
+      for (int i = (int)classValues.size() - 1; i >= num; i--) {
         classValues[i] = classValues[i - num];
       }
       for (int i = 0; i < num; i++) {
