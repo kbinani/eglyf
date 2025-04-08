@@ -316,7 +316,7 @@ public:
         lookups.push_back(make_pair(gposLookup, inputCoverages));
       }
     }
-    
+
     if (lookups.empty()) {
       return Status::Ok();
     }
@@ -1881,8 +1881,14 @@ private:
         gpos::MarkRecord record;
         record.markClass = found->second;
         auto gposAnchor = make_shared<gpos::Anchor1>();
-        gposAnchor->xCoordinate = 0;
-        gposAnchor->yCoordinate = 0;
+        auto markAnchor = getAnchorByName("MARK_" + anchor->name);
+        if (auto f = markAnchor->glyphs.find(ligand); f == markAnchor->glyphs.end()) {
+          gposAnchor->xCoordinate = 0;
+          gposAnchor->yCoordinate = 0;
+        } else {
+          gposAnchor->xCoordinate = f->second.x.value_or(0);
+          gposAnchor->yCoordinate = f->second.y.value_or(0);
+        }
         record.markAnchor = gposAnchor;
         mark->mark1Array.markRecords.push_back(record);
       }
