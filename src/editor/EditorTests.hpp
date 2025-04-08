@@ -109,37 +109,6 @@ class EditorTests : public juce::UnitTest {
     expect(false, juce::String(out.str()));
   }
 
-  static void RemoveFeaturesExcept(std::vector<SubtableCollection<Subtable>::Script> &scripts, std::set<Tag> const &tags) {
-    using namespace std;
-    for (auto &script : scripts) {
-      if (script.defaultLangSys) {
-        auto removed = ranges::remove_if(script.defaultLangSys->features,
-                                         [&tags](auto const &feature) { return tags.find(feature->tag) == tags.end(); });
-        script.defaultLangSys->features.erase(removed.begin(),
-                                              script.defaultLangSys->features.end());
-        //                auto feat = ranges::find_if(script.defaultLangSys->features, [](auto const &f) { return f->tag == FCC("psts"); });
-        //                size_t clip =
-        ////        0 //ok
-        ////        39//ok
-        ////        59//ok
-        ////        69//ok
-        ////        72//ok
-        ////        73//ng
-        ////        74//ng
-        ////        78//ng
-        //        (*feat)->data->lookups.size()
-        //                    ;
-        //                (*feat)->data->lookups.resize(clip);
-      }
-      for (auto &[langSysTag, langSys] : script.langSysTable) {
-        auto removed = ranges::remove_if(langSys->features,
-                                         [&tags](auto const &feature) { return tags.find(feature->tag) == tags.end(); });
-        langSys->features.erase(removed.begin(),
-                                langSys->features.end());
-      }
-    }
-  }
-
 public:
   EditorTests(juce::File sourceFontFile, juce::File referenceFontFile) : juce::UnitTest(""), sourceFontFile(sourceFontFile), referenceFontFile(referenceFontFile) {}
 
@@ -161,23 +130,6 @@ public:
       fail(st);
       return;
     }
-    auto tag =
-        //                        FCC("abvs")//ok
-        //                FCC("blws")//ok
-        //                 FCC("haln")//ok
-        //                 FCC("pres")//ok 35
-        //                 FCC("psts")//ok 28
-        //                 FCC("ss01")//ok
-        //                 FCC("rlig")//ok 41
-        //        FCC("rtlm")//ok
-        FCC("vrt2") // ok
-        ;
-    set<Tag> tags = {
-        FCC("pres"), // 35
-        FCC("rlig"), // 41
-        FCC("psts"), // 28,
-        tag};
-    //    RemoveFeaturesExcept(font->gsub->scripts, tags);
 
     ByteOutputStream out;
     if (auto st = font->write(out); !st.ok()) {
@@ -201,7 +153,6 @@ public:
       fail(st);
       return;
     }
-    //    RemoveFeaturesExcept(ref->gsub->scripts, tags);
     ByteOutputStream tout;
     if (auto st = ref->write(tout); !st.ok()) {
       fail(st);
@@ -373,8 +324,9 @@ public:
       vector<string> names;
       GlyphNames(infos, *font, names);
       cout << "actual:" << endl;
-      for (auto const &n : names) {
-        cout << n << endl;
+      for (size_t j = 0; j < names.size(); j++) {
+        auto const &n = names[j];
+        cout << "  [" << j << "] " << n << endl;
       }
 
       HbBufferUniquePtr refBuf(CreateBuffer(sentence, hbRefFont));
@@ -383,8 +335,9 @@ public:
       vector<string> refNames;
       GlyphNames(refInfos, *ref, refNames);
       cout << "expected:" << endl;
-      for (auto const &n : refNames) {
-        cout << n << endl;
+      for (size_t j = 0; j < refNames.size(); j++) {
+        auto const &n = refNames[j];
+        cout << "  [" << j << "] " << n << endl;
       }
 
       cout << "actual = " << names.size() << ", expected = " << refNames.size() << endl;
