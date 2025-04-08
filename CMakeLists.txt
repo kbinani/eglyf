@@ -24,7 +24,6 @@ endif()
 add_subdirectory(deps/JUCE)
 
 list(APPEND src_files
-  src/defer.hpp
   src/Type.hpp
   src/Tag.hpp
   src/TableRecord.hpp
@@ -68,9 +67,8 @@ list(APPEND src_files
   src/io/OffsetWriter.hpp
   src/table/gsub/Alternate.hpp
   include/eglyf.hpp
-  src/status.hpp
-  src/errno.hpp
-  src/optional.hpp
+  src/Status.hpp
+  src/Optional.hpp
   src/table/Contextual.hpp
   src/table/FeatureVariations.hpp
   src/table/gpos/SingleAdjustment.hpp

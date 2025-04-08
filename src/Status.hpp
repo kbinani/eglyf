@@ -121,7 +121,5 @@ private:
 #define EGLYF_ERROR _EGLYF_ERROR_HELPER(__FILE__, __LINE__, std::string())
 #define EGLYF_ERROR_WHAT(what) _EGLYF_ERROR_HELPER(__FILE__, __LINE__, (what))
 
-#define EGLYF_ERROR_ERRNO _EGLYF_ERROR_HELPER(__FILE__, __LINE__, Errno::StringFromErrno(errno))
-
 #define _EGLYF_STATUS_PUSH_HELPER(base, file, line) (base).pushed((file), (line))
 #define EGLYF_STATUS_PUSH(base) _EGLYF_STATUS_PUSH_HELPER((base), __FILE__, __LINE__)
