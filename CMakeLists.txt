@@ -133,29 +133,4 @@ else()
   )
 endif()
 
-juce_add_console_app(resave)
-target_sources(resave PRIVATE ${src_files} test/resave.cpp)
-target_include_directories(resave PRIVATE src include)
-target_link_libraries(resave
-  PRIVATE
-    juce::juce_graphics
-    eglyf-binary-data
-  PUBLIC
-    juce::juce_recommended_config_flags
-    juce::juce_recommended_lto_flags
-)
-if (MSVC)
-  target_compile_definitions(resave
-    PRIVATE
-      NOMINMAX
-      WIN32_LEAN_AND_MEAN
-      JUCE_DISABLE_JUCE_VERSION_PRINTING=1
-  )
-else()
-  target_compile_definitions(resave
-    PRIVATE
-      JUCE_DISABLE_JUCE_VERSION_PRINTING=1
-  )
-endif()
-
 source_group(TREE ${CMAKE_CURRENT_LIST_DIR} FILES ${src_files})
