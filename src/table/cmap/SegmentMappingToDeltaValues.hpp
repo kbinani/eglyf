@@ -266,16 +266,6 @@ public:
       return Status::Ok();
     }
 
-    if (!found->glyphIdArray.empty()) {
-      assert(found->glyphIdArray.size() == found->endCode - found->startCode + 1);
-      size_t index = codepoint - found->startCode;
-      found->glyphIdArray[index] = glyphId;
-      return Status::Ok();
-    }
-    if (delta != 0 && found->idDelta == delta) {
-      return Status::Ok();
-    }
-
     size_t const index = distance(segments.begin(), found);
     if (index > 0) {
       Segment &left = segments[index - 1];
@@ -307,48 +297,112 @@ public:
     }
 
     Segment &center = segments[index];
-    if (codepoint < center.startCode) {
+    if (cp < center.startCode) {
       segments.insert(segments.begin() + index, single);
       return Status::Ok();
     }
 
-    if (center.startCode == codepoint) {
-      center.startCode += 1;
-      assert(center.startCode <= center.endCode);
-      if (!center.glyphIdArray.empty()) {
-        center.glyphIdArray.erase(center.glyphIdArray.begin());
-      }
-      segments.insert(segments.begin() + index, single);
+    if (center.startCode == cp && cp == center.endCode) {
+      segments[index] = single;
       return Status::Ok();
-    } else if (center.endCode == codepoint) {
-      center.endCode -= 1;
-      assert(center.startCode <= center.endCode);
-      if (!center.glyphIdArray.empty()) {
-        center.glyphIdArray.pop_back();
-      }
-      segments.insert(segments.begin() + index + 1, single);
-      return Status::Ok();
-    } else {
-      Segment copy = center;
+    }
+    assert(center.startCode <= cp && cp <= center.endCode);
 
-      center.endCode = codepoint - 1;
-      assert(center.startCode <= center.endCode);
-      if (!center.glyphIdArray.empty()) {
-        center.glyphIdArray.resize(center.endCode - center.startCode + 1);
-      }
-      Segment right;
-      right.startCode = codepoint + 1;
-      right.endCode = copy.endCode;
-      assert(right.startCode <= right.endCode);
-      right.idDelta = copy.idDelta;
-      if (!copy.glyphIdArray.empty()) {
-        for (uint32_t code = codepoint + 1; code <= copy.endCode; code++) {
-          right.glyphIdArray.push_back(copy.glyphIdArray[code - copy.startCode]);
+    if (single.glyphIdArray.empty()) {
+      assert(single.idDelta != 0);
+      if (center.glyphIdArray.empty()) {
+        if (single.idDelta == center.idDelta) {
+          return Status::Ok();
+        } else {
+          if (cp == center.startCode) {
+            Segment right;
+            right.startCode = cp + 1;
+            right.endCode = center.endCode;
+            right.idDelta = center.idDelta;
+
+            center.endCode = cp;
+            center.idDelta = single.idDelta;
+
+            segments.insert(segments.begin() + index + 1, right);
+            return Status::Ok();
+          } else if (cp == center.endCode) {
+            Segment left;
+            left.startCode = center.startCode;
+            left.endCode = cp - 1;
+            left.idDelta = center.idDelta;
+
+            center.startCode = cp;
+            center.idDelta = single.idDelta;
+            segments.insert(segments.begin() + index, left);
+            return Status::Ok();
+          } else {
+            Segment left;
+            left.startCode = center.startCode;
+            left.endCode = cp - 1;
+            left.idDelta = center.idDelta;
+
+            Segment right;
+            right.startCode = cp + 1;
+            right.endCode = center.endCode;
+            right.idDelta = center.idDelta;
+
+            center.startCode = cp;
+            center.endCode = cp;
+            center.idDelta = single.idDelta;
+
+            segments.insert(segments.begin() + index + 1, right);
+            segments.insert(segments.begin() + index, left);
+            return Status::Ok();
+          }
         }
+      } else {
+        size_t idx = cp - center.startCode;
+        center.glyphIdArray[idx] = glyphId;
+        return Status::Ok();
       }
-      segments.insert(segments.begin() + index + 1, single);
-      segments.insert(segments.begin() + index + 2, right);
-      return Status::Ok();
+    } else {
+      assert(single.idDelta == 0);
+      if (center.glyphIdArray.empty()) {
+        if (cp == center.startCode) {
+          Segment right;
+          right.startCode = cp + 1;
+          right.endCode = center.endCode;
+          right.idDelta = center.idDelta;
+
+          segments[index] = single;
+          segments.insert(segments.begin() + index + 1, right);
+          return Status::Ok();
+        } else if (cp == center.endCode) {
+          Segment left;
+          left.startCode = center.startCode;
+          left.endCode = cp - 1;
+          left.idDelta = center.idDelta;
+
+          segments[index] = single;
+          segments.insert(segments.begin() + index, left);
+          return Status::Ok();
+        } else {
+          Segment left;
+          left.startCode = center.startCode;
+          left.endCode = cp - 1;
+          left.idDelta = center.idDelta;
+
+          Segment right;
+          right.startCode = cp + 1;
+          right.endCode = center.endCode;
+          right.idDelta = center.idDelta;
+
+          segments[index] = single;
+
+          segments.insert(segments.begin() + index + 1, right);
+          segments.insert(segments.begin() + index, left);
+          return Status::Ok();
+        }
+      } else {
+        size_t idx = cp - center.startCode;
+        center.glyphIdArray[idx] = glyphId;
+        return Status::Ok();
+      }
     }
   }
 
