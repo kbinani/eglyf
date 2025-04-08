@@ -270,13 +270,13 @@ public:
         gposLookup->data = lookupData;
 
         map<size_t, vector<shared_ptr<Coverage>>> inputCoverage;
-        auto coverage = make_shared<Coverage1>();
+        set<uint16_t> coverage;
         for (auto const &adjust : lookup->adjustSingle->glyphs) {
           if (adjust.glyph->id) {
-            coverage->glyphArray.insert(*adjust.glyph->id);
+            coverage.insert(*adjust.glyph->id);
           }
         }
-        inputCoverage[1].push_back(coverage);
+        inputCoverage[1].push_back(CoverageBuilder::Build(coverage));
 
         lookups.push_back(make_pair(gposLookup, inputCoverage));
       }
@@ -307,11 +307,11 @@ public:
         gposLookup->data = lookupData;
 
         map<size_t, vector<shared_ptr<Coverage>>> inputCoverages;
-        auto coverage = make_shared<Coverage1>();
+        set<uint16_t> coverage;
         for (auto const &receptor : lookup->attach->receptors) {
-          collectGIDSet(receptor, coverage->glyphArray);
+          collectGIDSet(receptor, coverage);
         }
-        inputCoverages[1].push_back(coverage);
+        inputCoverages[1].push_back(CoverageBuilder::Build(coverage));
 
         lookups.push_back(make_pair(gposLookup, inputCoverages));
       }
@@ -458,9 +458,9 @@ public:
     }
 
     // Create Coverage
-    auto coverage = make_shared<Coverage1>();
+    set<uint16_t> coverage;
     for (auto glyphId : coverageGlyphIds) {
-      coverage->glyphArray.insert(glyphId);
+      coverage.insert(glyphId);
     }
 
     // Check if all substitutions have the same deltaGlyphID
@@ -479,16 +479,16 @@ public:
     if (allSameDelta) {
       // Use SingleFormat1 if all substitutions have the same deltaGlyphID
       auto format1 = make_shared<gsub::SingleFormat1>();
-      format1->coverage = coverage;
+      format1->coverage = CoverageBuilder::Build(coverage);
       format1->deltaGlyphID = firstDelta;
       subtable = format1;
     } else {
       // Use SingleFormat2 if substitutions have different deltaGlyphIDs
       auto format2 = make_shared<gsub::SingleFormat2>();
-      format2->coverage = coverage;
+      format2->coverage = CoverageBuilder::Build(coverage);
 
       // Create substituteGlyphIDs (in the same order as Coverage)
-      for (auto glyphId : coverage->glyphArray) {
+      for (auto glyphId : coverage) {
         format2->substituteGlyphIDs.push_back(glyphMap[glyphId]);
       }
 
@@ -597,13 +597,9 @@ public:
       return Status::Ok();
     }
 
-    // Create Coverage1 object from input glyph IDs
-    auto coverage = make_shared<Coverage1>();
-    vector<uint16_t> coverageGlyphIds; // Vector to preserve order
-
+    set<uint16_t> coverageGlyphIds;
     for (auto const &[inputGlyphId, outputGlyphIds] : mapping) {
-      coverage->glyphArray.insert(inputGlyphId);
-      coverageGlyphIds.push_back(inputGlyphId);
+      coverageGlyphIds.insert(inputGlyphId);
     }
 
     // Create Sequence objects for each input glyph ID
@@ -617,7 +613,7 @@ public:
 
     // Create gsub::Multiple object and set coverage and sequences
     auto multiple = make_shared<gsub::Multiple>();
-    multiple->coverage = coverage;
+    multiple->coverage = CoverageBuilder::Build(coverageGlyphIds);
     multiple->sequences = sequences;
 
     // Set result to subtable argument
@@ -759,14 +755,14 @@ public:
     }
 
     // Create Coverage table with first glyph IDs
-    auto coverage = make_shared<Coverage1>();
+    set<uint16_t> coverage;
     for (auto const &[firstGlyphId, _] : groupedMapping) {
-      coverage->glyphArray.insert(firstGlyphId);
+      coverage.insert(firstGlyphId);
     }
 
     // Create Ligature object and set coverage
     auto ligature = make_shared<gsub::Ligature>();
-    ligature->coverage = coverage;
+    ligature->coverage = CoverageBuilder::Build(coverage);
 
     // Create LigatureSet for each first glyph ID
     for (auto const &[firstGlyphId, mappings] : groupedMapping) {
@@ -866,10 +862,8 @@ public:
         for (auto const &[input, _] : single) {
           collectGIDSet(input, inputGlyphIds);
         }
-        auto coverage = make_shared<Coverage1>();
-        coverage->glyphArray = inputGlyphIds;
         map<size_t, vector<shared_ptr<Coverage>>> inputCoverages;
-        inputCoverages[1].push_back(coverage);
+        inputCoverages[1].push_back(CoverageBuilder::Build(inputGlyphIds));
 
         lookups.push_back(make_pair(singleLookup, inputCoverages));
       }
@@ -904,10 +898,8 @@ public:
         for (auto const &[input, _] : multiple) {
           collectGIDSet(input, inputGlyphIds);
         }
-        auto coverage = make_shared<Coverage1>();
-        coverage->glyphArray = inputGlyphIds;
         map<size_t, vector<shared_ptr<Coverage>>> inputCoverages;
-        inputCoverages[1].push_back(coverage);
+        inputCoverages[1].push_back(CoverageBuilder::Build(inputGlyphIds));
 
         lookups.push_back(make_pair(multipleLookup, inputCoverages));
       }
@@ -951,9 +943,7 @@ public:
         for (auto const &[numInputs, glyphs] : inputGlyphs) {
           auto &target = inputCoverages[numInputs];
           for (auto const &v : glyphs) {
-            auto coverage = make_shared<Coverage1>();
-            coverage->glyphArray = v;
-            target.push_back(coverage);
+            target.push_back(CoverageBuilder::Build(v));
           }
         }
 
@@ -1238,9 +1228,7 @@ private:
         auto const &item = context->left[index];
         collectGIDSet(item, glyphIds);
         if (!glyphIds.empty()) {
-          auto coverage = make_shared<Coverage1>();
-          coverage->glyphArray = glyphIds;
-          backtrackCoverage.push_back(coverage);
+          backtrackCoverage.push_back(CoverageBuilder::Build(glyphIds));
         }
       }
 
@@ -1251,9 +1239,7 @@ private:
         auto const &item = context->right[index];
         collectGIDSet(item, glyphIds);
         if (!glyphIds.empty()) {
-          auto coverage = make_shared<Coverage1>();
-          coverage->glyphArray = glyphIds;
-          lookaheadCoverage.push_back(coverage);
+          lookaheadCoverage.push_back(CoverageBuilder::Build(glyphIds));
         }
       }
       for (auto const &[lookup, inputCoverages] : lookups) {
@@ -1304,9 +1290,7 @@ private:
           auto const &item = context->left[index];
           collectGIDSet(item, glyphIds);
           if (!glyphIds.empty()) {
-            auto coverage = make_shared<Coverage1>();
-            coverage->glyphArray = glyphIds;
-            backtrackCoverage.push_back(coverage);
+            backtrackCoverage.push_back(CoverageBuilder::Build(glyphIds));
           }
         }
 
@@ -1316,9 +1300,7 @@ private:
           auto const &item = context->right[i];
           collectGIDSet(item, glyphIds);
           if (!glyphIds.empty()) {
-            auto coverage = make_shared<Coverage1>();
-            coverage->glyphArray = glyphIds;
-            lookaheadCoverage.push_back(coverage);
+            lookaheadCoverage.push_back(CoverageBuilder::Build(glyphIds));
           }
         }
 
@@ -1430,8 +1412,7 @@ private:
       glyphIds.insert(glyphId);
     }
 
-    auto coverage = make_shared<Coverage1>();
-    coverage->glyphArray = glyphIds;
+    auto coverage = CoverageBuilder::Build(glyphIds);
 
     // Create SingleAdjustment
     if (allSameValueRecord) {
@@ -1519,8 +1500,7 @@ private:
     }
 
     if (auto found = markFilteringSets->find(glyphIds); found == markFilteringSets->end()) {
-      auto coverage = make_shared<Coverage1>();
-      coverage->glyphArray = glyphIds;
+      auto coverage = CoverageBuilder::Build(glyphIds);
       auto index = gdef->markGlyphSets->coverages.size();
       gdef->markGlyphSets->coverages.push_back(coverage);
       (*markFilteringSets)[glyphIds] = make_pair(coverage, index);
@@ -1747,7 +1727,7 @@ private:
         return Status::Ok();
       }
 
-      auto markCoverage = make_shared<Coverage1>();
+      set<uint16_t> markCoverage;
 
       ClassId nextMarkClass = 0;
       map<shared_ptr<Anchor>, ClassId> anchors;
@@ -1762,18 +1742,15 @@ private:
         for (auto const &glyph : glyphs) {
           if (glyph->id) {
             ligandGlyphs.push_back(make_pair(glyph, item.anchor));
-            markCoverage->glyphArray.insert(*glyph->id);
+            markCoverage.insert(*glyph->id);
           }
         }
       }
       ranges::sort(ligandGlyphs, [](auto const &a, auto const &b) { return a.first->id < b.first->id; });
 
       auto mark = make_unique<gpos::MarkToBaseAttachment>();
-      mark->markCoverage = markCoverage;
-
-      auto baseCoverage = make_shared<Coverage1>();
-      baseCoverage->glyphArray = receptorGlyphIds;
-      mark->baseCoverage = baseCoverage;
+      mark->markCoverage = CoverageBuilder::Build(markCoverage);
+      mark->baseCoverage = CoverageBuilder::Build(receptorGlyphIds);
 
       for (auto const &[ligand, anchor] : ligandGlyphs) {
         auto found = anchors.find(anchor);
@@ -1831,7 +1808,7 @@ private:
       }
       ranges::sort(receptorGlyphs, [](auto const &a, auto const &b) { return *a->id < *b->id; });
 
-      auto markCoverage = make_shared<Coverage1>();
+      set<uint16_t> markCoverage;
 
       ClassId nextMarkClass = 0;
       map<shared_ptr<Anchor>, ClassId> anchors;
@@ -1846,18 +1823,15 @@ private:
         for (auto const &glyph : glyphs) {
           if (glyph->id) {
             ligandGlyphs.push_back(make_pair(glyph, item.anchor));
-            markCoverage->glyphArray.insert(*glyph->id);
+            markCoverage.insert(*glyph->id);
           }
         }
       }
       ranges::sort(ligandGlyphs, [](auto const &a, auto const &b) { return a.first->id < b.first->id; });
 
       auto mark = make_unique<gpos::MarkToMarkAttachmentPositioning>();
-      mark->mark1Coverage = markCoverage;
-
-      auto baseCoverage = make_shared<Coverage1>();
-      baseCoverage->glyphArray = receptorGlyphIds;
-      mark->mark2Coverage = baseCoverage;
+      mark->mark1Coverage = CoverageBuilder::Build(markCoverage);
+      mark->mark2Coverage = CoverageBuilder::Build(receptorGlyphIds);
 
       for (auto const &[ligand, anchor] : ligandGlyphs) {
         auto found = anchors.find(anchor);

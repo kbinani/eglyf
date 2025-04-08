@@ -51,6 +51,7 @@
 #include "table/coverage/Coverage1.hpp"
 #include "table/coverage/Coverage2.hpp"
 #include "table/coverage/CoverageReader.hpp"
+#include "table/coverage/CoverageBuilder.hpp"
 #include "table/ClassDef.hpp"
 #include "table/SubtableCollection.hpp"
 #include "table/Subtable.hpp"

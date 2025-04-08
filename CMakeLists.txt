@@ -99,6 +99,7 @@ list(APPEND src_files
   src/editor/Editor.hpp
   src/editor/VtpParser.hpp
   src/editor/EditorTests.hpp
+  src/table/coverage/CoverageBuilder.hpp
 )
 
 juce_add_binary_data(eglyf-binary-data
