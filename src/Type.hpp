@@ -81,4 +81,15 @@ struct Vec {
   Vec(T x, T y) : x(x), y(y) {}
 };
 
+template <class T>
+struct Rect {
+  T xMin;
+  T yMin;
+  T xMax;
+  T yMax;
+
+  Rect() : xMin(0), yMin(0), xMax(0), yMax(0) {}
+  Rect(T xMin, T yMin, T xMax, T yMax) : xMin(xMin), yMin(yMin), xMax(xMax), yMax(yMax) {}
+};
+
 } // namespace eglyf

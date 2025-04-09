@@ -988,8 +988,68 @@ public:
     return Status::Ok();
   }
 
+  Status categorizeGlyphSize() {
+    using namespace std;
+
+    map<uint32_t, Rect<int16_t>> bounds;
+
+    if (holds_alternative<FontFile::TrueTypeOutlines>(font->outlines)) {
+      auto const &outline = get<FontFile::TrueTypeOutlines>(font->outlines);
+      auto const &glyf = outline.glyf;
+      for (uint32_t cp = 0x13000; cp <= 0x1342f; cp++) {
+        if (auto gid = font->cmap->getGlyphID(cp); gid) {
+          auto g = glyf->glyphs[*gid];
+          if (holds_alternative<GlyphDataTable::ReadonlyGlyph>(g)) {
+            auto const &r = get<GlyphDataTable::ReadonlyGlyph>(g);
+            bounds[*gid] = Rect<int16_t>(r.header.xMin, r.header.yMin, r.header.xMax, r.header.yMax);
+          } else if (holds_alternative<GlyphDataTable::CompositeGlyph>(g)) {
+            auto const &c = get<GlyphDataTable::CompositeGlyph>(g);
+            bounds[*gid] = Rect<int16_t>(c.header.xMin, c.header.yMin, c.header.xMax, c.header.yMax);
+          }
+        }
+      }
+      for (uint32_t cp = 0x13460; cp <= 0x143fa; cp++) {
+        if (auto gid = font->cmap->getGlyphID(cp); gid) {
+          auto g = glyf->glyphs[*gid];
+          if (holds_alternative<GlyphDataTable::ReadonlyGlyph>(g)) {
+            auto const &r = get<GlyphDataTable::ReadonlyGlyph>(g);
+            bounds[*gid] = Rect<int16_t>(r.header.xMin, r.header.yMin, r.header.xMax, r.header.yMax);
+          } else if (holds_alternative<GlyphDataTable::CompositeGlyph>(g)) {
+            auto const &c = get<GlyphDataTable::CompositeGlyph>(g);
+            bounds[*gid] = Rect<int16_t>(c.header.xMin, c.header.yMin, c.header.xMax, c.header.yMax);
+          }
+        }
+      }
+    } else {
+      return EGLYF_ERROR;
+    }
+
+    if (bounds.empty()) {
+      return EGLYF_ERROR;
+    }
+    int16_t xMax = numeric_limits<int16_t>::lowest();
+    int16_t xMin = numeric_limits<int16_t>::max();
+    int16_t yMax = numeric_limits<int16_t>::lowest();
+    int16_t yMin = numeric_limits<int16_t>::max();
+
+    for (auto [cp, rect] : bounds) {
+      xMin = min(xMin, rect.xMin);
+      yMin = min(yMin, rect.yMin);
+      xMax = max(xMax, rect.xMax);
+      yMax = max(yMax, rect.yMax);
+    }
+
+    origin = Vec<int16_t>((xMin + xMax) / 2, yMin);
+
+    return Status::Ok();
+  }
+
   Status compile(std::optional<std::string> onlyLookupWithName = std::nullopt) {
     using namespace std;
+
+    if (auto st = categorizeGlyphSize(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
 
     if (onlyLookupWithName) {
       auto found = ranges::find_if(lookups, [&onlyLookupWithName](auto const &it) { return it.first == *onlyLookupWithName; });
@@ -1891,6 +1951,8 @@ public:
 
   std::shared_ptr<std::map<std::set<uint16_t>, std::pair<std::shared_ptr<Coverage>, size_t>>> markFilteringSets;
   std::shared_ptr<std::unordered_map<uint16_t, uint16_t>> markAttachClasses;
+
+  Vec<int16_t> origin;
 };
 
 } // namespace eglyf
