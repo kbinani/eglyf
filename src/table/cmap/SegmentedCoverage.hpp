@@ -96,7 +96,7 @@ public:
   Optional<uint16_t> getGlyphID(uint32_t codepoint) const {
     using namespace std;
     auto found = ranges::find_if(groups, [=](auto const &group) {
-      return group.startCharCode <= codepoint && group.endCharCode <= codepoint;
+      return group.startCharCode <= codepoint && codepoint <= group.endCharCode;
     });
     if (found == groups.end()) {
       return 0;
