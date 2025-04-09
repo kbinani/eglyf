@@ -991,37 +991,45 @@ public:
   Status categorizeGlyphSize() {
     using namespace std;
 
-    map<uint32_t, Rect<int16_t>> bounds;
+    map<shared_ptr<Glyph>, pair<uint32_t, Rect<int16_t>>> bounds;
 
-    if (holds_alternative<FontFile::TrueTypeOutlines>(font->outlines)) {
-      auto const &outline = get<FontFile::TrueTypeOutlines>(font->outlines);
-      auto const &glyf = outline.glyf;
-      for (uint32_t cp = 0x13000; cp <= 0x1342f; cp++) {
-        if (auto gid = font->cmap->getGlyphID(cp); gid) {
-          auto g = glyf->glyphs[*gid];
-          if (holds_alternative<GlyphDataTable::ReadonlyGlyph>(g)) {
-            auto const &r = get<GlyphDataTable::ReadonlyGlyph>(g);
-            bounds[*gid] = Rect<int16_t>(r.header.xMin, r.header.yMin, r.header.xMax, r.header.yMax);
-          } else if (holds_alternative<GlyphDataTable::CompositeGlyph>(g)) {
-            auto const &c = get<GlyphDataTable::CompositeGlyph>(g);
-            bounds[*gid] = Rect<int16_t>(c.header.xMin, c.header.yMin, c.header.xMax, c.header.yMax);
-          }
-        }
-      }
-      for (uint32_t cp = 0x13460; cp <= 0x143fa; cp++) {
-        if (auto gid = font->cmap->getGlyphID(cp); gid) {
-          auto g = glyf->glyphs[*gid];
-          if (holds_alternative<GlyphDataTable::ReadonlyGlyph>(g)) {
-            auto const &r = get<GlyphDataTable::ReadonlyGlyph>(g);
-            bounds[*gid] = Rect<int16_t>(r.header.xMin, r.header.yMin, r.header.xMax, r.header.yMax);
-          } else if (holds_alternative<GlyphDataTable::CompositeGlyph>(g)) {
-            auto const &c = get<GlyphDataTable::CompositeGlyph>(g);
-            bounds[*gid] = Rect<int16_t>(c.header.xMin, c.header.yMin, c.header.xMax, c.header.yMax);
-          }
-        }
-      }
-    } else {
+    if (!holds_alternative<FontFile::TrueTypeOutlines>(font->outlines)) {
       return EGLYF_ERROR;
+    }
+    auto &outline = get<FontFile::TrueTypeOutlines>(font->outlines);
+    auto &glyf = outline.glyf;
+    auto const process = [&, this](uint32_t cp) {
+      auto gid = font->cmap->getGlyphID(cp);
+      if (!gid) {
+        return;
+      }
+      auto g = glyf->glyphs[*gid];
+      auto glyph = getGlyphById(*gid);
+      if (holds_alternative<GlyphDataTable::ReadonlyGlyph>(g)) {
+        auto const &r = get<GlyphDataTable::ReadonlyGlyph>(g);
+        bounds[glyph] = make_pair(cp, Rect<int16_t>(r.header.xMin, r.header.yMin, r.header.xMax, r.header.yMax));
+      } else if (holds_alternative<GlyphDataTable::CompositeGlyph>(g)) {
+        auto const &c = get<GlyphDataTable::CompositeGlyph>(g);
+        bounds[glyph] = make_pair(cp, Rect<int16_t>(c.header.xMin, c.header.yMin, c.header.xMax, c.header.yMax));
+      }
+    };
+    for (uint32_t cp = 0x13000; cp <= 0x13257; cp++) {
+      process(cp);
+    }
+    for (uint32_t cp = 0x1325E; cp <= 0x13285; cp++) {
+      process(cp);
+    }
+    for (uint32_t cp = 0x1328A; cp <= 0x13378; cp++) {
+      process(cp);
+    }
+    for (uint32_t cp = 0x1337C; cp <= 0x1342E; cp++) {
+      process(cp);
+    }
+    for (uint32_t cp = 0x13000; cp <= 0x1342f; cp++) {
+      process(cp);
+    }
+    for (uint32_t cp = 0x13460; cp <= 0x143fa; cp++) {
+      process(cp);
     }
 
     if (bounds.empty()) {
@@ -1032,14 +1040,31 @@ public:
     int16_t yMax = numeric_limits<int16_t>::lowest();
     int16_t yMin = numeric_limits<int16_t>::max();
 
-    for (auto [cp, rect] : bounds) {
+    for (auto const &[glyph, item] : bounds) {
+      auto const &[cp, rect] = item;
       xMin = min(xMin, rect.xMin);
       yMin = min(yMin, rect.yMin);
       xMax = max(xMax, rect.xMax);
       yMax = max(yMax, rect.yMax);
     }
 
-    origin = Vec<int16_t>((xMin + xMax) / 2, yMin);
+    Vec<int16_t> origin((xMin + xMax) / 2, yMin);
+    for (auto const &[glyph, item] : bounds) {
+      auto const &[cp, rect] = item;
+      assert(glyph->id);
+      string name = format("u{0:x}", cp);
+      if (auto currentName = font->post->getName(*glyph->id); currentName) {
+        if (name == *currentName) {
+          if (auto st = font->post->setName(*glyph->id, "." + name); !st.ok()) {
+            return EGLYF_ERROR;
+          }
+        }
+      }
+      auto newGid = font->addCompositeGlyph(name, GlyphDataTable::CompositeGlyph::GlyphRecord::New(*glyph->id, -origin.x, -origin.y), 0, 0);
+      if (!newGid) {
+        return EGLYF_STATUS_PUSH(newGid.status());
+      }
+    }
 
     return Status::Ok();
   }

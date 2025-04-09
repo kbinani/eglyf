@@ -14,6 +14,7 @@
 #include <variant>
 #include <filesystem>
 #include <cassert>
+#include <format>
 
 #include "Status.hpp"
 #include "Optional.hpp"
