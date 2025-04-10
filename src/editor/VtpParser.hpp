@@ -63,10 +63,12 @@ private:
     auto font = editor->font;
     uint16_t glyphId = 0;
     if (unicode) {
-      if (auto gid = font->cmap->getGlyphId(*unicode); gid) {
-        glyphId = *gid;
-      } else {
+      auto gid = font->cmap->getGlyphId(*unicode);
+      if (!gid) {
         return Status::Ok();
+      }
+      if (auto st = font->post->setName(*gid, name); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
     } else {
       if (auto gid = font->post->getGlyphId(name); gid) {
