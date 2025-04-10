@@ -1041,15 +1041,19 @@ public:
     int16_t yMax = numeric_limits<int16_t>::lowest();
     int16_t yMin = numeric_limits<int16_t>::max();
 
+    int16_t yMinA = numeric_limits<int16_t>::max();
+
     for (auto const &[glyph, item] : bounds) {
       auto const &[cp, rect] = item;
       xMin = min(xMin, rect.xMin);
       yMin = min(yMin, rect.yMin);
       xMax = max(xMax, rect.xMax);
       yMax = max(yMax, rect.yMax);
+      if (0x13000 <= cp && cp <= 0x1304f) {
+        yMinA = min(yMinA, rect.yMin);
+      }
     }
 
-    Vec<int16_t> origin((xMin + xMax) / 2, yMin);
     for (auto const &[glyph, item] : bounds) {
       auto const &[cp, rect] = item;
       assert(glyph->id);
@@ -1061,7 +1065,8 @@ public:
           }
         }
       }
-      auto newGid = font->addCompositeGlyph(name, GlyphDataTable::CompositeGlyph::GlyphRecord::New(*glyph->id, -origin.x, -origin.y), 0, 0);
+      int16_t xMid = (rect.xMin + rect.xMax) / 2;
+      auto newGid = font->addCompositeGlyph(name, GlyphDataTable::CompositeGlyph::GlyphRecord::New(*glyph->id, -xMid, -yMinA), 0, 0);
       if (!newGid) {
         return EGLYF_STATUS_PUSH(newGid.status());
       }
