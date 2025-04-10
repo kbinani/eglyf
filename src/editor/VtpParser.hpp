@@ -84,8 +84,9 @@ private:
     if (!font->gdef->glyphClassDef) {
       font->gdef->glyphClassDef = make_shared<ClassDef2>();
     }
-    if (auto st = font->gdef->glyphClassDef->add(glyphId, static_cast<uint16_t>(classDef)); !st.ok()) {
-      return EGLYF_NULLOPT_PUSH(st);
+    if (auto def1 = dynamic_pointer_cast<ClassDef1>(font->gdef->glyphClassDef); def1) {
+      auto def2 = ClassDef2::FromClassDef1(*def1);
+      font->gdef->glyphClassDef = def2;
     }
     g->id = glyphId;
     g->classDef = classDef;

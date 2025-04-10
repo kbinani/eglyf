@@ -81,6 +81,11 @@ public:
     }
   }
 
+  bool writeMayFail() const {
+    using namespace std;
+    return classValues.size() > (size_t)numeric_limits<uint16_t>::max();
+  }
+
 public:
   uint16_t startGlyphID;
   std::vector<uint16_t> classValues;
@@ -234,6 +239,28 @@ public:
         cb(gid, range.classValue);
       }
     }
+  }
+
+  static std::shared_ptr<ClassDef2> FromClassDef1(ClassDef1 const &def1) {
+    using namespace std;
+    auto def2 = make_shared<ClassDef2>();
+    ClassRange *last = nullptr;
+    def1.enumerateClassValues([&](uint16_t gid, uint16_t classValue) {
+      if (classValue == 0) {
+        return;
+      }
+      if (last && last->classValue == classValue && last->endGlyphID + 1 == gid) {
+        last->endGlyphID = gid;
+      } else {
+        ClassRange r;
+        r.startGlyphID = gid;
+        r.endGlyphID = gid;
+        r.classValue = classValue;
+        def2->classRanges.push_back(r);
+        last = &def2->classRanges.back();
+      }
+    });
+    return def2;
   }
 
 public:
