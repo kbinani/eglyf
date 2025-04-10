@@ -136,6 +136,7 @@ public:
     }
     if (auto name = font->post->getName(gid); name) {
       auto g = getGlyphByName(*name);
+      g->id = gid;
       glyphsLut[gid] = g;
       return g;
     }
