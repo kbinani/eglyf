@@ -90,6 +90,9 @@ struct Rect {
 
   Rect() : xMin(0), yMin(0), xMax(0), yMax(0) {}
   Rect(T xMin, T yMin, T xMax, T yMax) : xMin(xMin), yMin(yMin), xMax(xMax), yMax(yMax) {}
+
+  T width() const { return xMax - xMin; }
+  T height() const { return yMax - yMin; }
 };
 
 } // namespace eglyf
