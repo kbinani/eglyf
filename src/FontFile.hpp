@@ -490,7 +490,7 @@ public:
   }
 
   Optional<uint16_t> getGlyphID(uint32_t codepoint) const {
-    if (auto gid = cmap->getGlyphID(codepoint); gid) {
+    if (auto gid = cmap->getGlyphId(codepoint); gid) {
       return *gid;
     } else {
       return EGLYF_NULLOPT_PUSH(gid.status());

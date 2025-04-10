@@ -166,7 +166,7 @@ public:
     return EncodeResult(out.data());
   }
 
-  Optional<uint16_t> getGlyphID(uint32_t codepoint) const {
+  Optional<uint16_t> getGlyphId(uint32_t codepoint) const {
     using namespace std;
     auto p0e4 = find_if(encodingRecords.rbegin(), encodingRecords.rend(), [](EncodingRecord const &r) {
       return r.platformID == 0 && (r.encodingID == 4 || r.encodingID == 6);

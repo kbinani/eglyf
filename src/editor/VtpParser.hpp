@@ -57,23 +57,26 @@ private:
     }
   }
 
-  Optional<uint16_t> defineGlyph(std::string const &name, std::optional<uint32_t> unicode, GlyphDefinitionTable::Class classDef) {
+  Status defineGlyph(std::string const &name, std::optional<uint32_t> unicode, GlyphDefinitionTable::Class classDef) {
     using namespace std;
     auto g = editor->getGlyphByName(name);
     auto font = editor->font;
     uint16_t glyphId = 0;
-    if (auto gid = font->post->getGlyphId(name); gid) {
-      glyphId = *gid;
-    } else {
-      if (auto gid = font->addEmptyGlyph(name, 0, 0); gid) {
+    if (unicode) {
+      if (auto gid = font->cmap->getGlyphId(*unicode); gid) {
         glyphId = *gid;
       } else {
-        return EGLYF_NULLOPT_PUSH(gid.status());
+        return Status::Ok();
       }
-    }
-    if (unicode) {
-      if (auto st = font->cmap->map(*unicode, glyphId); !st.ok()) {
-        return EGLYF_NULLOPT_PUSH(st);
+    } else {
+      if (auto gid = font->post->getGlyphId(name); gid) {
+        glyphId = *gid;
+      } else {
+        if (auto gid = font->addEmptyGlyph(name, 0, 0); gid) {
+          glyphId = *gid;
+        } else {
+          return EGLYF_STATUS_PUSH(gid.status());
+        }
       }
     }
     if (!font->gdef) {
@@ -90,7 +93,8 @@ private:
     }
     g->id = glyphId;
     g->classDef = classDef;
-    return glyphId;
+
+    return Status::Ok();
   }
 
   std::shared_ptr<Editor::Script> defineScript(std::string const &name, Tag const &tag) {
@@ -837,8 +841,8 @@ private:
     }
 
     // Define the glyph
-    if (auto gid = defineGlyph(string(name), unicode, classDef); !gid) {
-      return EGLYF_STATUS_PUSH(gid.status());
+    if (auto st = defineGlyph(string(name), unicode, classDef); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
 
     return Status::Ok();

@@ -999,7 +999,7 @@ public:
     auto &outline = get<FontFile::TrueTypeOutlines>(font->outlines);
     auto &glyf = outline.glyf;
     auto const process = [&, this](uint32_t cp) {
-      auto gid = font->cmap->getGlyphID(cp);
+      auto gid = font->cmap->getGlyphId(cp);
       if (!gid) {
         return;
       }
