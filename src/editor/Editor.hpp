@@ -1065,6 +1065,9 @@ public:
       if (!newGid) {
         return EGLYF_STATUS_PUSH(newGid.status());
       }
+      if (auto st = font->cmap->map(cp, *newGid); !st.ok()) {
+        return EGLYF_ERROR;
+      }
     }
 
     return Status::Ok();
