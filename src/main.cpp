@@ -45,6 +45,11 @@ static void Run(juce::ArgumentList const &args) {
     return;
   }
   auto editor = make_shared<Editor>(ff);
+  if (auto st = editor->preprocess(); !st.ok()) {
+    Fail(st);
+    return;
+  }
+
   VtpParser parser(editor);
   string_view vtp(BinaryData::EgyptianText_200_vtp, BinaryData::EgyptianText_200_vtpSize);
   if (auto st = parser.parseVtp(vtp); !st.ok()) {

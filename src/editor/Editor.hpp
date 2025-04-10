@@ -1069,12 +1069,15 @@ public:
     return Status::Ok();
   }
 
-  Status compile(std::optional<std::string> onlyLookupWithName = std::nullopt) {
-    using namespace std;
-
+  Status preprocess() {
     if (auto st = categorizeGlyphSize(); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
+    return Status::Ok();
+  }
+
+  Status compile(std::optional<std::string> onlyLookupWithName = std::nullopt) {
+    using namespace std;
 
     if (onlyLookupWithName) {
       auto found = ranges::find_if(lookups, [&onlyLookupWithName](auto const &it) { return it.first == *onlyLookupWithName; });
