@@ -116,9 +116,9 @@ public:
       std::optional<std::variant<F2DOT14, Vec<F2DOT14>>> scale;
       std::optional<Vec<F2DOT14>> scale2;
 
-      static GlyphRecord New(uint16_t gyphIndex, int16_t dx, int16_t dy, std::optional<F2DOT14> scale = std::nullopt) {
+      static GlyphRecord New(uint16_t glyphIndex, int16_t dx, int16_t dy, std::optional<F2DOT14> scale = std::nullopt) {
         GlyphRecord r;
-        r.glyphIndex = 0;
+        r.glyphIndex = glyphIndex;
         r.flags = ARGS_ARE_XY_VALUES | ARG_1_AND_2_ARE_WORDS;
         if (scale) {
           r.flags |= WE_HAVE_A_SCALE;
