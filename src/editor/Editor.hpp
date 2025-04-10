@@ -1053,9 +1053,9 @@ public:
         yMinA = min(yMinA, rect.yMin);
       }
     }
-    hg = (int16_t)std::ceilf((xMax - xMin) * 3.0f / 26.0f);
+    hg = (int16_t)std::ceilf((xMax - xMin) * 3.0f / (2 + kHGrids * 3));
     hg0 = 2 * hg / 3;
-    vg = (int16_t)std::ceilf((yMax - yMin) * 3.0f / 20.0f);
+    vg = (int16_t)std::ceilf((yMax - yMin) * 3.0f / (2 + kVGrids * 3));
     vg0 = 2 * vg / 3;
 
     for (auto const &[glyph, item] : bounds) {
@@ -1070,11 +1070,25 @@ public:
         }
       }
       int16_t xMid = (rect.xMin + rect.xMax) / 2;
-      auto newGid = font->addCompositeGlyph(name, GlyphDataTable::CompositeGlyph::GlyphRecord::New(*glyph->id, -xMid, -yMinA), 0, 0);
+      auto newGid = font->addCompositeGlyph(name, GlyphDataTable::CompositeGlyph::GlyphRecord::New(*glyph->id, -xMid, -yMinA), 0, -xMid);
       if (!newGid) {
         return EGLYF_STATUS_PUSH(newGid.status());
       }
       if (auto st = font->cmap->map(cp, *newGid); !st.ok()) {
+        return EGLYF_ERROR;
+      }
+    }
+
+    for (int h = 1; h <= kHGrids; h++) {
+      string name = format("QB{0}", h);
+      if (auto gid = font->post->getGlyphId(name); gid) {
+        if (auto st = font->post->setName(*gid, "." + name); !st.ok()) {
+          return EGLYF_ERROR;
+        }
+      }
+      int16_t width = hg0 + h * hg;
+      auto newGid = font->addEmptyGlyph(name, width, 0);
+      if (!newGid) {
         return EGLYF_ERROR;
       }
     }
@@ -1982,6 +1996,9 @@ private:
   }
 
 public:
+  static int constexpr kHGrids = 8;
+  static int constexpr kVGrids = 6;
+
   std::shared_ptr<FontFile> font;
   std::unordered_map<std::string, std::shared_ptr<Glyph>> glyphs;
   std::unordered_map<uint16_t, std::shared_ptr<Glyph>> glyphsLut;
