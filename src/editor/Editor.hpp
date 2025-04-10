@@ -989,7 +989,7 @@ public:
     return Status::Ok();
   }
 
-  Status categorizeGlyphSize() {
+  Status createSizeVariants() {
     using namespace std;
 
     map<shared_ptr<Glyph>, pair<uint32_t, Rect<int16_t>>> bounds;
@@ -1061,7 +1061,12 @@ public:
     for (auto const &[glyph, item] : bounds) {
       auto const &[cp, rect] = item;
       assert(glyph->id);
-      string name = format("u{0:x}", cp);
+      string name;
+      if (auto found = GlyphNames::Get(cp); found) {
+        name = *found;
+      } else {
+        name = format("u{0:x}", cp);
+      }
       if (auto currentName = font->post->getName(*glyph->id); currentName) {
         if (name == *currentName) {
           if (auto st = font->post->setName(*glyph->id, "." + name); !st.ok()) {
@@ -1097,7 +1102,7 @@ public:
   }
 
   Status preprocess() {
-    if (auto st = categorizeGlyphSize(); !st.ok()) {
+    if (auto st = createSizeVariants(); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
     return Status::Ok();
