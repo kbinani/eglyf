@@ -114,74 +114,62 @@ public:
     auto found = ranges::find_if(groups, [=](auto const &g) {
       return codepoint <= g.endCharCode;
     });
+    SequentialMapGroup single;
+    single.startCharCode = codepoint;
+    single.endCharCode = codepoint;
+    single.startGlyphID = glyphId;
     if (found == groups.end()) {
-      SequentialMapGroup g;
-      g.startCharCode = codepoint;
-      g.endCharCode = codepoint;
-      g.startGlyphID = glyphId;
-      groups.push_back(g);
+      groups.push_back(single);
       return Status::Ok();
     }
-    if (found->startGlyphID + codepoint - found->startCharCode == glyphId) {
+    if (found->startGlyphID + (codepoint - found->startCharCode) == glyphId) {
       if (found->startCharCode <= codepoint) {
-        return Status::Ok();
-      }
-      if (codepoint + 1 == found->startCharCode) {
-        found->startCharCode = codepoint;
         return Status::Ok();
       }
     }
     size_t const index = distance(groups.begin(), found);
     auto &center = groups[index];
-    if (codepoint < center.startCharCode) {
-      SequentialMapGroup g;
-      g.startCharCode = codepoint;
-      g.endCharCode = codepoint;
-      g.startGlyphID = glyphId;
-      groups.insert(groups.begin() + index, g);
+    if (center.startCharCode == codepoint && codepoint == center.endCharCode) {
+      groups[index] = single;
       return Status::Ok();
-    }
-    if (index + 1 < groups.size()) {
-      auto &right = groups[index + 1];
-      if (codepoint + 1 == right.startCharCode && right.startGlyphID + codepoint - right.startCharCode == glyphId) {
-        right.startCharCode = codepoint;
+    } else if (center.startCharCode <= codepoint) {
+      if (center.startCharCode == codepoint) {
+        center.startCharCode += 1;
+        center.startGlyphID += 1;
+        groups.insert(groups.begin() + index, single);
+        return Status::Ok();
+      } else if (center.endCharCode == codepoint) {
+        center.endCharCode = codepoint - 1;
+        groups.insert(groups.begin() + index + 1, single);
+        return Status::Ok();
+      } else {
+        SequentialMapGroup left;
+        left.startCharCode = center.startCharCode;
+        left.endCharCode = codepoint - 1;
+        left.startGlyphID = center.startGlyphID;
+
+        SequentialMapGroup right;
+        right.startCharCode = codepoint + 1;
+        right.endCharCode = center.endCharCode;
+        right.startGlyphID = center.startGlyphID + (codepoint + 1) - center.startCharCode;
+
+        groups[index] = left;
+        groups.insert(groups.begin() + index + 1, single);
+        groups.insert(groups.begin() + index + 2, right);
         return Status::Ok();
       }
-    }
-    if (index > 0) {
-      auto &left = groups[index - 1];
-      if (left.endCharCode + 1 == codepoint && left.startGlyphID + codepoint - left.startCharCode == glyphId) {
-        left.endCharCode = codepoint;
-        return Status::Ok();
-      }
-    }
-    SequentialMapGroup g;
-    g.startCharCode = codepoint;
-    g.endCharCode = codepoint;
-    g.startGlyphID = glyphId;
-    if (center.startCharCode == codepoint) {
-      center.startCharCode += 1;
-      center.startGlyphID += 1;
-      groups.insert(groups.begin() + index, g);
-      return Status::Ok();
-    } else if (center.endCharCode == codepoint) {
-      center.endCharCode -= 1;
-      groups.insert(groups.begin() + index + 1, g);
+    } else if (index == 0) {
+      groups.insert(groups.begin(), single);
       return Status::Ok();
     } else {
-      SequentialMapGroup copy = center;
-
-      center.endCharCode = codepoint - 1;
-      assert(center.startCharCode <= center.endCharCode);
-
-      SequentialMapGroup right;
-      right.startCharCode = codepoint + 1;
-      right.endCharCode = copy.endCharCode;
-      assert(right.startCharCode <= right.endCharCode);
-      right.startGlyphID = copy.startGlyphID + (codepoint + 1) - copy.startCharCode;
-      groups.insert(groups.begin() + index + 1, g);
-      groups.insert(groups.begin() + index + 2, right);
-      return Status::Ok();
+      auto &left = groups[index - 1];
+      if (left.endCharCode + 1 == codepoint && left.startGlyphID + (codepoint - left.startCharCode) == glyphId) {
+        left.endCharCode = codepoint;
+        return Status::Ok();
+      } else {
+        groups.insert(groups.begin() + index - 1, single);
+        return Status::Ok();
+      }
     }
   }
 
