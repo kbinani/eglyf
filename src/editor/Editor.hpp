@@ -1053,6 +1053,10 @@ public:
         yMinA = min(yMinA, rect.yMin);
       }
     }
+    hg = (int16_t)std::ceilf((xMax - xMin) * 3.0f / 26.0f);
+    hg0 = 2 * hg / 3;
+    vg = (int16_t)std::ceilf((yMax - yMin) * 3.0f / 20.0f);
+    vg0 = 2 * vg / 3;
 
     for (auto const &[glyph, item] : bounds) {
       auto const &[cp, rect] = item;
@@ -1989,7 +1993,14 @@ public:
   std::shared_ptr<std::map<std::set<uint16_t>, std::pair<std::shared_ptr<Coverage>, size_t>>> markFilteringSets;
   std::shared_ptr<std::unordered_map<uint16_t, uint16_t>> markAttachClasses;
 
-  Vec<int16_t> origin;
+  // unit per horizontal grid
+  int16_t hg;
+  // grid width = hg0 + n * hg;
+  int16_t hg0;
+  // unit per vertical grid
+  int16_t vg;
+  // grid height = vg0 + n * vg;
+  int16_t vg0;
 };
 
 } // namespace eglyf
