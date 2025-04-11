@@ -56,6 +56,10 @@ static void Run(juce::ArgumentList const &args) {
     Fail(st);
     return;
   }
+  if (auto st = editor->postprocess(); !st.ok()) {
+    Fail(st);
+    return;
+  }
   if (auto st = editor->compile(onlyLookupWithName); !st.ok()) {
     Fail(st);
     return;

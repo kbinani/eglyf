@@ -1241,6 +1241,326 @@ public:
     return Status::Ok();
   }
 
+  Status replaceLookups() {
+    if (auto st = replaceLookup_pr021_tsg_A(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    if (auto st = replaceLookup_ps045_targetglyphs_0_A(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    if (auto st = replaceLookup_ps046_targetglyphs_1_A(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    return Status::Ok();
+  }
+
+  void setupSubst(Lookup &lookup, std::initializer_list<std::string> input, std::initializer_list<std::string> output) {
+    using namespace std;
+    auto s = make_shared<Lookup::Substitution>();
+    for (auto i : input) {
+      auto g = getGlyphByName(i);
+      s->input.push_back(g);
+    }
+    for (auto o : output) {
+      auto g = getGlyphByName(o);
+      s->output.push_back(g);
+    }
+    lookup.substitutions.push_back(s);
+  }
+
+  Status replaceLookup_pr021_tsg_A() {
+    using namespace std;
+    auto a = getLookupByName("pr021_tsg_A");
+    if (!a) {
+      return EGLYF_ERROR;
+    }
+    a->substitutions.clear();
+    setupSubst(*a, {"BF1"}, {"et66", "tsh666564636261565554535251464544434241363534333231262524232221161514131211", "BF1", "Qf"});
+    setupSubst(*a, {"BQ1"}, {"et33", "tsh33", "BQ1", "Qf"});
+    setupSubst(*a, {"LF1"}, {"et66", "tsh666564636261565554535251464544434241363534333231262524232221161514131211", "LF1", "Qf"});
+    setupSubst(*a, {"LQ1"}, {"et33", "tsh332211", "LQ1", "Qf"});
+    setupSubst(*a, {"LT1"}, {"et36", "tsh363534262524231615141312", "LT1", "Qf"});
+    setupSubst(*a, {"LW1"}, {"et63", "tsh636261535251434241323121", "LW1", "Qf"});
+    setupSubst(*a, {"LF2"}, {"et66", "tsh666564636261565554535251464544434241363534333231262524232221161514131211", "LF2", "Qf"});
+    setupSubst(*a, {"LQ2"}, {"et33", "tsh332211", "LQ2", "Qf"});
+    setupSubst(*a, {"LT2"}, {"et36", "tsh363534262524231615141312", "LT2", "Qf"});
+    setupSubst(*a, {"LW2"}, {"et63", "tsh636261535251434241323121", "LW2", "Qf"});
+    for (auto const &[name, sv] : sizeVariants) {
+      // SUB GLYPH "A1"
+      // WITH GLYPH "et56" GLYPH "tsh56454435332211" GLYPH "A1" GLYPH "Qf"
+
+      auto s = make_shared<Lookup::Substitution>();
+      s->input.push_back(sv.base);
+      auto et = getGlyphByName(format("et{0}{1}", sv.hGrids, sv.vGrids));
+      s->output.push_back(et);
+      string tsh = "tsh";
+      for (auto const &[variant, glyph] : sv.variants) {
+        tsh += format("{0}", variant);
+      }
+      s->output.push_back(getGlyphByName(tsh));
+      s->output.push_back(sv.base);
+      s->output.push_back(getGlyphByName("Qf"));
+      a->substitutions.push_back(s);
+    }
+
+    return Status::Ok();
+  }
+
+  Status replaceLookup_ps045_targetglyphs_0_A() {
+    using namespace std;
+    auto a = getLookupByName("ps045_targetglyphs_0_A");
+    if (!a) {
+      return EGLYF_ERROR;
+    }
+    a->substitutions.clear();
+    setupSubst(*a, {"et66", "BF1"}, {"BF1"});
+    setupSubst(*a, {"et33", "BQ1"}, {"BQ1"});
+    setupSubst(*a, {"et66", "LF1"}, {"LF1"});
+    setupSubst(*a, {"et33", "LQ1"}, {"LQ1"});
+    setupSubst(*a, {"et36", "LT1"}, {"LT1"});
+    setupSubst(*a, {"et63", "LW1"}, {"LW1"});
+    setupSubst(*a, {"et54", "GB1"}, {"GB1"});
+    setupSubst(*a, {"et66", "GB1"}, {"GB1_66"});
+    setupSubst(*a, {"et65", "GB1"}, {"GB1_65"});
+    setupSubst(*a, {"et64", "GB1"}, {"GB1_64"});
+    setupSubst(*a, {"et63", "GB1"}, {"GB1_63"});
+    setupSubst(*a, {"et62", "GB1"}, {"GB1_62"});
+    setupSubst(*a, {"et61", "GB1"}, {"GB1_61"});
+    setupSubst(*a, {"et56", "GB1"}, {"GB1_56"});
+    setupSubst(*a, {"et55", "GB1"}, {"GB1_55"});
+    setupSubst(*a, {"et54", "GB1"}, {"GB1_54"});
+    setupSubst(*a, {"et53", "GB1"}, {"GB1_53"});
+    setupSubst(*a, {"et52", "GB1"}, {"GB1_52"});
+    setupSubst(*a, {"et51", "GB1"}, {"GB1_51"});
+    setupSubst(*a, {"et46", "GB1"}, {"GB1_46"});
+    setupSubst(*a, {"et45", "GB1"}, {"GB1_45"});
+    setupSubst(*a, {"et44", "GB1"}, {"GB1_44"});
+    setupSubst(*a, {"et43", "GB1"}, {"GB1_43"});
+    setupSubst(*a, {"et42", "GB1"}, {"GB1_42"});
+    setupSubst(*a, {"et41", "GB1"}, {"GB1_41"});
+    setupSubst(*a, {"et36", "GB1"}, {"GB1_36"});
+    setupSubst(*a, {"et35", "GB1"}, {"GB1_35"});
+    setupSubst(*a, {"et34", "GB1"}, {"GB1_34"});
+    setupSubst(*a, {"et33", "GB1"}, {"GB1_33"});
+    setupSubst(*a, {"et32", "GB1"}, {"GB1_32"});
+    setupSubst(*a, {"et31", "GB1"}, {"GB1_31"});
+    setupSubst(*a, {"et26", "GB1"}, {"GB1_26"});
+    setupSubst(*a, {"et25", "GB1"}, {"GB1_25"});
+    setupSubst(*a, {"et24", "GB1"}, {"GB1_24"});
+    setupSubst(*a, {"et23", "GB1"}, {"GB1_23"});
+    setupSubst(*a, {"et22", "GB1"}, {"GB1_22"});
+    setupSubst(*a, {"et21", "GB1"}, {"GB1_21"});
+    setupSubst(*a, {"et16", "GB1"}, {"GB1_16"});
+    setupSubst(*a, {"et15", "GB1"}, {"GB1_15"});
+    setupSubst(*a, {"et14", "GB1"}, {"GB1_14"});
+    setupSubst(*a, {"et13", "GB1"}, {"GB1_13"});
+    setupSubst(*a, {"et12", "GB1"}, {"GB1_12"});
+    setupSubst(*a, {"et11", "GB1"}, {"GB1_11"});
+    setupSubst(*a, {"et65", "LF1"}, {"LF1_65"});
+    setupSubst(*a, {"et64", "LF1"}, {"LF1_64"});
+    setupSubst(*a, {"et63", "LF1"}, {"LF1_63"});
+    setupSubst(*a, {"et62", "LF1"}, {"LF1_62"});
+    setupSubst(*a, {"et61", "LF1"}, {"LF1_61"});
+    setupSubst(*a, {"et56", "LF1"}, {"LF1_56"});
+    setupSubst(*a, {"et55", "LF1"}, {"LF1_55"});
+    setupSubst(*a, {"et54", "LF1"}, {"LF1_54"});
+    setupSubst(*a, {"et53", "LF1"}, {"LF1_53"});
+    setupSubst(*a, {"et52", "LF1"}, {"LF1_52"});
+    setupSubst(*a, {"et51", "LF1"}, {"LF1_51"});
+    setupSubst(*a, {"et46", "LF1"}, {"LF1_46"});
+    setupSubst(*a, {"et45", "LF1"}, {"LF1_45"});
+    setupSubst(*a, {"et44", "LF1"}, {"LF1_44"});
+    setupSubst(*a, {"et43", "LF1"}, {"LF1_43"});
+    setupSubst(*a, {"et42", "LF1"}, {"LF1_42"});
+    setupSubst(*a, {"et41", "LF1"}, {"LF1_41"});
+    setupSubst(*a, {"et36", "LF1"}, {"LF1_36"});
+    setupSubst(*a, {"et35", "LF1"}, {"LF1_35"});
+    setupSubst(*a, {"et34", "LF1"}, {"LF1_34"});
+    setupSubst(*a, {"et33", "LF1"}, {"LF1_33"});
+    setupSubst(*a, {"et32", "LF1"}, {"LF1_32"});
+    setupSubst(*a, {"et31", "LF1"}, {"LF1_31"});
+    setupSubst(*a, {"et26", "LF1"}, {"LF1_26"});
+    setupSubst(*a, {"et25", "LF1"}, {"LF1_25"});
+    setupSubst(*a, {"et24", "LF1"}, {"LF1_24"});
+    setupSubst(*a, {"et23", "LF1"}, {"LF1_23"});
+    setupSubst(*a, {"et22", "LF1"}, {"LF1_22"});
+    setupSubst(*a, {"et21", "LF1"}, {"LF1_21"});
+    setupSubst(*a, {"et16", "LF1"}, {"LF1_16"});
+    setupSubst(*a, {"et15", "LF1"}, {"LF1_15"});
+    setupSubst(*a, {"et14", "LF1"}, {"LF1_14"});
+    setupSubst(*a, {"et13", "LF1"}, {"LF1_13"});
+    setupSubst(*a, {"et12", "LF1"}, {"LF1_12"});
+    setupSubst(*a, {"et11", "LF1"}, {"LF1_11"});
+    setupSubst(*a, {"et66", "LF2"}, {"LF2"});
+    setupSubst(*a, {"et65", "LF2"}, {"LF2_65"});
+    setupSubst(*a, {"et64", "LF2"}, {"LF2_64"});
+    setupSubst(*a, {"et63", "LF2"}, {"LF2_63"});
+    setupSubst(*a, {"et62", "LF2"}, {"LF2_62"});
+    setupSubst(*a, {"et61", "LF2"}, {"LF2_61"});
+    setupSubst(*a, {"et56", "LF2"}, {"LF2_56"});
+    setupSubst(*a, {"et55", "LF2"}, {"LF2_55"});
+    setupSubst(*a, {"et54", "LF2"}, {"LF2_54"});
+    setupSubst(*a, {"et53", "LF2"}, {"LF2_53"});
+    setupSubst(*a, {"et52", "LF2"}, {"LF2_52"});
+    setupSubst(*a, {"et51", "LF2"}, {"LF2_51"});
+    setupSubst(*a, {"et46", "LF2"}, {"LF2_46"});
+    setupSubst(*a, {"et45", "LF2"}, {"LF2_45"});
+    setupSubst(*a, {"et44", "LF2"}, {"LF2_44"});
+    setupSubst(*a, {"et43", "LF2"}, {"LF2_43"});
+    setupSubst(*a, {"et42", "LF2"}, {"LF2_42"});
+    setupSubst(*a, {"et41", "LF2"}, {"LF2_41"});
+    setupSubst(*a, {"et36", "LF2"}, {"LF2_36"});
+    setupSubst(*a, {"et35", "LF2"}, {"LF2_35"});
+    setupSubst(*a, {"et34", "LF2"}, {"LF2_34"});
+    setupSubst(*a, {"et33", "LF2"}, {"LF2_33"});
+    setupSubst(*a, {"et32", "LF2"}, {"LF2_32"});
+    setupSubst(*a, {"et31", "LF2"}, {"LF2_31"});
+    setupSubst(*a, {"et26", "LF2"}, {"LF2_26"});
+    setupSubst(*a, {"et25", "LF2"}, {"LF2_25"});
+    setupSubst(*a, {"et24", "LF2"}, {"LF2_24"});
+    setupSubst(*a, {"et23", "LF2"}, {"LF2_23"});
+    setupSubst(*a, {"et22", "LF2"}, {"LF2_22"});
+    setupSubst(*a, {"et21", "LF2"}, {"LF2_21"});
+    setupSubst(*a, {"et16", "LF2"}, {"LF2_16"});
+    setupSubst(*a, {"et15", "LF2"}, {"LF2_15"});
+    setupSubst(*a, {"et14", "LF2"}, {"LF2_14"});
+    setupSubst(*a, {"et13", "LF2"}, {"LF2_13"});
+    setupSubst(*a, {"et12", "LF2"}, {"LF2_12"});
+    setupSubst(*a, {"et11", "LF2"}, {"LF2_11"});
+    setupSubst(*a, {"et22", "LQ1"}, {"LQ1_22"});
+    setupSubst(*a, {"et11", "LQ1"}, {"LQ1_11"});
+    setupSubst(*a, {"et33", "LQ2"}, {"LQ2"});
+    setupSubst(*a, {"et22", "LQ2"}, {"LQ2_22"});
+    setupSubst(*a, {"et11", "LQ2"}, {"LQ2_11"});
+    setupSubst(*a, {"et35", "LT1"}, {"LT1_35"});
+    setupSubst(*a, {"et34", "LT1"}, {"LT1_34"});
+    setupSubst(*a, {"et26", "LT1"}, {"LT1_26"});
+    setupSubst(*a, {"et25", "LT1"}, {"LT1_25"});
+    setupSubst(*a, {"et24", "LT1"}, {"LT1_24"});
+    setupSubst(*a, {"et23", "LT1"}, {"LT1_23"});
+    setupSubst(*a, {"et16", "LT1"}, {"LT1_16"});
+    setupSubst(*a, {"et15", "LT1"}, {"LT1_15"});
+    setupSubst(*a, {"et14", "LT1"}, {"LT1_14"});
+    setupSubst(*a, {"et13", "LT1"}, {"LT1_13"});
+    setupSubst(*a, {"et12", "LT1"}, {"LT1_12"});
+    setupSubst(*a, {"et36", "LT2"}, {"LT2"});
+    setupSubst(*a, {"et35", "LT2"}, {"LT2_35"});
+    setupSubst(*a, {"et34", "LT2"}, {"LT2_34"});
+    setupSubst(*a, {"et26", "LT2"}, {"LT2_26"});
+    setupSubst(*a, {"et25", "LT2"}, {"LT2_25"});
+    setupSubst(*a, {"et24", "LT2"}, {"LT2_24"});
+    setupSubst(*a, {"et23", "LT2"}, {"LT2_23"});
+    setupSubst(*a, {"et16", "LT2"}, {"LT2_16"});
+    setupSubst(*a, {"et15", "LT2"}, {"LT2_15"});
+    setupSubst(*a, {"et14", "LT2"}, {"LT2_14"});
+    setupSubst(*a, {"et13", "LT2"}, {"LT2_13"});
+    setupSubst(*a, {"et12", "LT2"}, {"LT2_12"});
+    setupSubst(*a, {"et62", "LW1"}, {"LW1_62"});
+    setupSubst(*a, {"et61", "LW1"}, {"LW1_61"});
+    setupSubst(*a, {"et53", "LW1"}, {"LW1_53"});
+    setupSubst(*a, {"et52", "LW1"}, {"LW1_52"});
+    setupSubst(*a, {"et51", "LW1"}, {"LW1_51"});
+    setupSubst(*a, {"et43", "LW1"}, {"LW1_43"});
+    setupSubst(*a, {"et42", "LW1"}, {"LW1_42"});
+    setupSubst(*a, {"et41", "LW1"}, {"LW1_41"});
+    setupSubst(*a, {"et32", "LW1"}, {"LW1_32"});
+    setupSubst(*a, {"et31", "LW1"}, {"LW1_31"});
+    setupSubst(*a, {"et21", "LW1"}, {"LW1_21"});
+    setupSubst(*a, {"et63", "LW2"}, {"LW2"});
+    setupSubst(*a, {"et62", "LW2"}, {"LW2_62"});
+    setupSubst(*a, {"et61", "LW2"}, {"LW2_61"});
+    setupSubst(*a, {"et53", "LW2"}, {"LW2_53"});
+    setupSubst(*a, {"et52", "LW2"}, {"LW2_52"});
+    setupSubst(*a, {"et51", "LW2"}, {"LW2_51"});
+    setupSubst(*a, {"et43", "LW2"}, {"LW2_43"});
+    setupSubst(*a, {"et42", "LW2"}, {"LW2_42"});
+    setupSubst(*a, {"et41", "LW2"}, {"LW2_41"});
+    setupSubst(*a, {"et32", "LW2"}, {"LW2_32"});
+    setupSubst(*a, {"et31", "LW2"}, {"LW2_31"});
+    setupSubst(*a, {"et21", "LW2"}, {"LW2_21"});
+    for (auto const &[name, sv] : sizeVariants) {
+      // SUB GLYPH "et56" GLYPH "A1"
+      // WITH GLYPH "A1"
+
+      auto s = make_shared<Lookup::Substitution>();
+      auto et = format("et{0}{1}", sv.hGrids, sv.vGrids);
+      s->input.push_back(getGlyphByName(et));
+      s->input.push_back(sv.base);
+      s->output.push_back(sv.base);
+      a->substitutions.push_back(s);
+    }
+
+    return Status::Ok();
+  }
+
+  Status replaceLookup_ps046_targetglyphs_1_A() {
+    using namespace std;
+    using namespace std;
+    auto a = getLookupByName("ps046_targetglyphs_1_A");
+    if (!a) {
+      return EGLYF_ERROR;
+    }
+    a->substitutions.clear();
+    for (auto const &[name, sv] : sizeVariants) {
+      for (auto const [key, glyph] : sv.variants) {
+        // SUB GLYPH "et45" GLYPH "A1"
+        // WITH GLYPH "A1_45"
+
+        auto s = make_shared<Lookup::Substitution>();
+        auto et = format("et{0}", key);
+        s->input.push_back(getGlyphByName(et));
+        s->input.push_back(sv.base);
+        auto v = format("{0}_{1}", name, key);
+        s->output.push_back(getGlyphByName(v));
+        a->substitutions.push_back(s);
+      }
+    }
+    setupSubst(*a, {"et11", "BF1"}, {"BF1_11"});
+    setupSubst(*a, {"et12", "BF1"}, {"BF1_12"});
+    setupSubst(*a, {"et13", "BF1"}, {"BF1_13"});
+    setupSubst(*a, {"et14", "BF1"}, {"BF1_14"});
+    setupSubst(*a, {"et15", "BF1"}, {"BF1_15"});
+    setupSubst(*a, {"et16", "BF1"}, {"BF1_16"});
+    setupSubst(*a, {"et21", "BF1"}, {"BF1_21"});
+    setupSubst(*a, {"et22", "BF1"}, {"BF1_22"});
+    setupSubst(*a, {"et23", "BF1"}, {"BF1_23"});
+    setupSubst(*a, {"et24", "BF1"}, {"BF1_24"});
+    setupSubst(*a, {"et25", "BF1"}, {"BF1_25"});
+    setupSubst(*a, {"et26", "BF1"}, {"BF1_26"});
+    setupSubst(*a, {"et31", "BF1"}, {"BF1_31"});
+    setupSubst(*a, {"et32", "BF1"}, {"BF1_32"});
+    setupSubst(*a, {"et33", "BF1"}, {"BF1_33"});
+    setupSubst(*a, {"et34", "BF1"}, {"BF1_34"});
+    setupSubst(*a, {"et35", "BF1"}, {"BF1_35"});
+    setupSubst(*a, {"et36", "BF1"}, {"BF1_36"});
+    setupSubst(*a, {"et41", "BF1"}, {"BF1_41"});
+    setupSubst(*a, {"et42", "BF1"}, {"BF1_42"});
+    setupSubst(*a, {"et43", "BF1"}, {"BF1_43"});
+    setupSubst(*a, {"et44", "BF1"}, {"BF1_44"});
+    setupSubst(*a, {"et45", "BF1"}, {"BF1_45"});
+    setupSubst(*a, {"et46", "BF1"}, {"BF1_46"});
+    setupSubst(*a, {"et51", "BF1"}, {"BF1_51"});
+    setupSubst(*a, {"et52", "BF1"}, {"BF1_52"});
+    setupSubst(*a, {"et53", "BF1"}, {"BF1_53"});
+    setupSubst(*a, {"et54", "BF1"}, {"BF1_54"});
+    setupSubst(*a, {"et55", "BF1"}, {"BF1_55"});
+    setupSubst(*a, {"et56", "BF1"}, {"BF1_56"});
+    setupSubst(*a, {"et61", "BF1"}, {"BF1_61"});
+    setupSubst(*a, {"et62", "BF1"}, {"BF1_62"});
+    setupSubst(*a, {"et63", "BF1"}, {"BF1_63"});
+    setupSubst(*a, {"et64", "BF1"}, {"BF1_64"});
+    setupSubst(*a, {"et65", "BF1"}, {"BF1_65"});
+
+    return Status::Ok();
+  }
+
+  Status postprocess() {
+    if (auto st = replaceLookups(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    return Status::Ok();
+  }
+
   Status compile(std::optional<std::string> onlyLookupWithName = std::nullopt) {
     using namespace std;
 
