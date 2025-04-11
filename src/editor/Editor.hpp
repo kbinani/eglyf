@@ -1074,21 +1074,22 @@ public:
     if (bounds.empty()) {
       return EGLYF_ERROR;
     }
-    int16_t widthMax = 0;
-    int16_t heightMax = 0;
+    int16_t widthMaxA = 0;
+    int16_t heightMaxA = 0;
     int16_t yMinA = numeric_limits<int16_t>::max();
 
     for (auto const &[glyph, item] : bounds) {
       auto const &[cp, rect] = item;
-      widthMax = max(widthMax, rect.width());
-      heightMax = max(heightMax, rect.height());
       if (0x13000 <= cp && cp <= 0x1304f) {
         yMinA = min(yMinA, rect.yMin);
+        widthMaxA = max(widthMaxA, rect.width());
+        heightMaxA = max(heightMaxA, rect.height());
       }
     }
-    hg = (int16_t)std::ceilf(widthMax * 3.0f / (2 + kHGrids * 3));
+    int grids = min(kHGrids, kVGrids);
+    hg = (int16_t)std::ceilf(widthMaxA * 3.0f / (2 + grids * 3));
     hg0 = 2 * hg / 3;
-    vg = (int16_t)std::ceilf(heightMax * 3.0f / (2 + kVGrids * 3));
+    vg = (int16_t)std::ceilf(heightMaxA * 3.0f / (2 + grids * 3));
     vg0 = 2 * vg / 3;
 
     map<string, shared_ptr<Glyph>> baseGlyphs;
@@ -1110,8 +1111,17 @@ public:
           }
         }
       }
+      int width = rect.width();
+      int height = rect.height();
+      float scale = max({1.0f, rect.width() / (float)this->width(kHGrids), rect.height() / (float)this->height(kVGrids)});
       int16_t xMid = (rect.xMin + rect.xMax) / 2;
-      auto newGid = font->addCompositeGlyph(name, GlyphDataTable::CompositeGlyph::GlyphRecord::New(*glyph->id, -xMid, -yMinA), 0, -xMid);
+      GlyphDataTable::CompositeGlyph::GlyphRecord record;
+      if (scale > 1) {
+        record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(*glyph->id, (int16_t)roundf(-xMid * scale), (int16_t)roundf(-yMinA * scale), F2DOT14::FromFloat(scale));
+      } else {
+        record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(*glyph->id, -xMid, -yMinA);
+      }
+      auto newGid = font->addCompositeGlyph(name, record, 0, -xMid);
       if (!newGid) {
         return EGLYF_STATUS_PUSH(newGid.status());
       }
