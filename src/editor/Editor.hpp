@@ -999,6 +999,37 @@ public:
   Status createSizeVariants() {
     using namespace std;
 
+    map<int, vector<int>> variationChain;
+    variationChain[66] = {55, 44, 33, 22, 11};
+    variationChain[65] = {55, 54, 45, 44, 32, 21, 11};
+    variationChain[64] = {62, 54, 52, 43, 42, 32, 22, 11};
+    variationChain[63] = {62, 61, 43, 33, 32, 31, 21, 11};
+    variationChain[62] = {61, 52, 51, 42, 32, 31, 21, 11};
+    variationChain[61] = {51, 41, 31, 21, 11};
+    variationChain[56] = {45, 44, 35, 33, 22, 11};
+    variationChain[55] = {55, 44, 33, 22, 11};
+    variationChain[54] = {53, 43, 33, 22, 21, 11};
+    variationChain[53] = {52, 42, 32, 31, 21, 11};
+    variationChain[52] = {51, 42, 31, 21, 11};
+    variationChain[46] = {35, 23, 11};
+    variationChain[45] = {44, 34, 33, 22, 11};
+    variationChain[44] = {33, 22, 11};
+    variationChain[43] = {32, 31, 21, 11};
+    variationChain[42] = {41, 32, 31, 21, 11};
+    variationChain[36] = {34, 33, 26, 23, 22, 16, 12, 11};
+    variationChain[35] = {25, 24, 23, 13, 12, 11};
+    variationChain[34] = {24, 23, 13, 12, 11};
+    variationChain[33] = {22, 11};
+    variationChain[32] = {32, 31, 21, 11};
+    variationChain[26] = {25, 24, 23, 16, 14, 13, 12, 11};
+    variationChain[25] = {24, 15, 14, 11};
+    variationChain[24] = {23, 14, 13, 12, 11};
+    variationChain[23] = {13, 12, 11};
+    variationChain[22] = {11};
+    variationChain[21] = {11};
+    variationChain[16] = {15, 14, 13, 12, 11};
+    variationChain[12] = {11};
+
     map<shared_ptr<Glyph>, pair<uint32_t, Rect<int16_t>>> bounds;
 
     if (!holds_alternative<FontFile::TrueTypeOutlines>(font->outlines)) {
@@ -1116,12 +1147,20 @@ public:
       height = min(max(height, 1), kVGrids);
       int16_t xMid = (size.xMin + size.xMax) / 2;
 
+      auto chain = variationChain.find(width * 10 + height);
+      if (chain == variationChain.end()) {
+        continue;
+      }
+
       SizeVariants sv;
       sv.base = glyph;
       sv.hGrids = width;
       sv.vGrids = height;
 
-      auto addVariant = [&, this](int xLevel, int yLevel) -> Status {
+      for (auto key : chain->second) {
+        int yLevel = key % 10;
+        int xLevel = key / 10;
+
         string n = format("{0}_{1}{2}", name, xLevel, yLevel);
         float xScale = this->width(xLevel) / (float)this->width(width);
         float yScale = this->height(yLevel) / (float)this->height(height);
@@ -1138,86 +1177,7 @@ public:
         if (!newGlyph) {
           return EGLYF_ERROR;
         }
-        int key = xLevel * 10 + yLevel;
         sv.variants[key] = newGlyph;
-        return Status::Ok();
-      };
-
-      if (width == height) {
-        // For glyphs that fit into a square grid, assign smaller square grids starting from the original size and decreasing by 1.
-        for (int i = width - 1; i >= 1; i--) {
-          if (auto st = addVariant(i, i); !st.ok()) {
-            return EGLYF_STATUS_PUSH(st);
-          }
-        }
-      } else if (width > height) {
-        // Horizontally elongated glyph. Decrease the width grid from the original size by 1 while scanning for which height grid to adopt.
-        float const aspect = width / (float)height;
-        for (int xLevel = width; xLevel >= 1; xLevel--) {
-          // List aspect ratios for all types of height grids, calculate the difference from the target aspect ratio, and sort by smaller differences.
-          // Adopt the one with the smallest difference from the target aspect ratio, and others with differences below the threshold.
-          deque<pair<int, float>> aspectList;
-          int w = this->width(xLevel);
-          for (int yLevel = 1; yLevel <= kVGrids; yLevel++) {
-            int h = this->height(yLevel);
-            float xScale = this->width(xLevel) / (float)this->width(width);
-            float yScale = this->height(yLevel) / (float)this->height(height);
-            float scale = min(xScale, yScale);
-            if (scale < 1) {
-              aspectList.push_back(make_pair(yLevel, w / (float)h));
-            }
-          }
-          if (aspectList.empty()) {
-            continue;
-          }
-          ranges::sort(aspectList, [aspect](auto const &a, auto const &b) { return fabs(a.second - aspect) < fabs(b.second - aspect); });
-          auto [yLevel, _] = aspectList.front();
-          aspectList.pop_front();
-          if (auto st = addVariant(xLevel, yLevel); !st.ok()) {
-            return EGLYF_STATUS_PUSH(st);
-          }
-          for (auto const &[yLevel, a] : aspectList) {
-            if (fabs(a - aspect) > kAspectDiffThreshold) {
-              continue;
-            }
-            if (auto st = addVariant(xLevel, yLevel); !st.ok()) {
-              return EGLYF_STATUS_PUSH(st);
-            }
-          }
-        }
-      } else {
-        // Vertically elongated glyph. Process similarly to horizontally elongated glyphs, but with height and width roles reversed.
-        float const aspect = height / (float)width;
-        for (int yLevel = height; yLevel >= 1; yLevel--) {
-          deque<pair<int, float>> aspectList;
-          int h = this->height(yLevel);
-          for (int xLevel = 1; xLevel <= kHGrids; xLevel++) {
-            int w = this->width(xLevel);
-            float xScale = this->width(xLevel) / (float)this->width(width);
-            float yScale = this->height(yLevel) / (float)this->height(height);
-            float scale = min(xScale, yScale);
-            if (scale < 1) {
-              aspectList.push_back(make_pair(xLevel, h / (float)w));
-            }
-          }
-          if (aspectList.empty()) {
-            continue;
-          }
-          ranges::sort(aspectList, [aspect](auto const &a, auto const &b) { return fabs(a.second - aspect) < fabs(b.second - aspect); });
-          auto [xLevel, _] = aspectList.front();
-          aspectList.pop_front();
-          if (auto st = addVariant(xLevel, yLevel); !st.ok()) {
-            return EGLYF_STATUS_PUSH(st);
-          }
-          for (auto const &[xLevel, a] : aspectList) {
-            if (fabs(a - aspect) > kAspectDiffThreshold) {
-              continue;
-            }
-            if (auto st = addVariant(xLevel, yLevel); !st.ok()) {
-              return EGLYF_STATUS_PUSH(st);
-            }
-          }
-        }
       }
 
       sizeVariants[name] = sv;
