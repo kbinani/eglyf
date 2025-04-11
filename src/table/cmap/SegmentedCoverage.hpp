@@ -5,13 +5,6 @@ namespace eglyf::cmap {
 // format 12
 class SegmentedCoverage : public CmapSubtable {
 public:
-  struct SequentialMapGroup {
-    uint32_t startCharCode;
-    uint32_t endCharCode;
-    uint32_t startGlyphID;
-  };
-
-public:
   static Status Read(InputStream &stream, std::shared_ptr<SegmentedCoverage> &out) {
     using namespace std;
     uint16_t reserved;
@@ -40,17 +33,21 @@ public:
       return EGLYF_ERROR;
     }
     for (uint32_t i = 0; i < numGroups; i++) {
-      SequentialMapGroup g;
-      if (!in.u32(&g.startCharCode)) {
+      uint32_t startCharCode;
+      if (!in.u32(&startCharCode)) {
         return EGLYF_ERROR;
       }
-      if (!in.u32(&g.endCharCode)) {
+      uint32_t endCharCode;
+      if (!in.u32(&endCharCode)) {
         return EGLYF_ERROR;
       }
-      if (!in.u32(&g.startGlyphID)) {
+      uint32_t startGlyphID;
+      if (!in.u32(&startGlyphID)) {
         return EGLYF_ERROR;
       }
-      ret->groups.push_back(g);
+      for (uint32_t charCode = startCharCode; charCode <= endCharCode; charCode++) {
+        ret->mapping[charCode] = startGlyphID + (charCode - startCharCode);
+      }
     }
     out.reset(ret.release());
     return Status::Ok();
@@ -73,109 +70,84 @@ public:
     if (!out.u32(language)) {
       return EGLYF_ERROR;
     }
-    if (!out.sizeU32(groups.size())) {
+    auto pos = out.position();
+    if (!out.sizeU32(0)) {
       return EGLYF_ERROR;
     }
-    for (auto const &group : groups) {
-      if (!out.u32(group.startCharCode)) {
+    struct Group {
+      uint32_t startCharCode;
+      uint32_t startGlyphID;
+      uint32_t endCharCode;
+
+      Group(uint32_t startCharCode, uint32_t startGlyphID) : startCharCode(startCharCode), startGlyphID(startGlyphID), endCharCode(startCharCode) {}
+    };
+    optional<Group> current;
+    uint32_t numGroups = 0;
+    for (auto [codepoint, gid] : mapping) {
+      if (current) {
+        if (current->endCharCode + 1 == codepoint && current->startGlyphID + (codepoint - current->startCharCode) == gid) {
+          current->endCharCode = codepoint;
+        } else {
+          if (!out.u32(current->startCharCode)) {
+            return EGLYF_ERROR;
+          }
+          if (!out.u32(current->endCharCode)) {
+            return EGLYF_ERROR;
+          }
+          if (!out.u32(current->startGlyphID)) {
+            return EGLYF_ERROR;
+          }
+          numGroups++;
+          current = Group(codepoint, gid);
+        }
+      } else {
+        numGroups++;
+        current = Group(codepoint, gid);
+      }
+    }
+    if (current) {
+      if (!out.u32(current->startCharCode)) {
         return EGLYF_ERROR;
       }
-      if (!out.u32(group.endCharCode)) {
+      if (!out.u32(current->endCharCode)) {
         return EGLYF_ERROR;
       }
-      if (!out.u32(group.startGlyphID)) {
+      if (!out.u32(current->startGlyphID)) {
         return EGLYF_ERROR;
       }
     }
     if (auto st = lengthPos->mark(); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
+    if (!out.seek(pos)) {
+      return EGLYF_ERROR;
+    }
+    if (!out.u32(numGroups)) {
+      return EGLYF_ERROR;
+    }
     return EGLYF_STATUS_PUSH(writer->commit());
   }
 
   Optional<uint16_t> getGlyphID(uint32_t codepoint) const {
     using namespace std;
-    auto found = ranges::find_if(groups, [=](auto const &group) {
-      return group.startCharCode <= codepoint && codepoint <= group.endCharCode;
-    });
-    if (found == groups.end()) {
-      return 0;
+    if (auto found = mapping.find(codepoint); found != mapping.end()) {
+      if (found->second > numeric_limits<uint16_t>::max()) {
+        return EGLYF_NULLOPT;
+      } else {
+        return (uint16_t)found->second;
+      }
     }
-    uint32_t r = found->startGlyphID + codepoint - found->startCharCode;
-    if (r > (uint32_t)numeric_limits<uint16_t>::max()) {
-      return EGLYF_NULLOPT;
-    } else {
-      return static_cast<uint16_t>(r);
-    }
+    return EGLYF_NULLOPT;
   }
 
   Status map(uint32_t codepoint, uint16_t glyphId) {
-    using namespace std;
-    auto found = ranges::find_if(groups, [=](auto const &g) {
-      return codepoint <= g.endCharCode;
-    });
-    SequentialMapGroup single;
-    single.startCharCode = codepoint;
-    single.endCharCode = codepoint;
-    single.startGlyphID = glyphId;
-    if (found == groups.end()) {
-      groups.push_back(single);
-      return Status::Ok();
-    }
-    if (found->startGlyphID + (codepoint - found->startCharCode) == glyphId) {
-      if (found->startCharCode <= codepoint) {
-        return Status::Ok();
-      }
-    }
-    size_t const index = distance(groups.begin(), found);
-    auto &center = groups[index];
-    if (center.startCharCode == codepoint && codepoint == center.endCharCode) {
-      groups[index] = single;
-      return Status::Ok();
-    } else if (center.startCharCode <= codepoint) {
-      if (center.startCharCode == codepoint) {
-        center.startCharCode += 1;
-        center.startGlyphID += 1;
-        groups.insert(groups.begin() + index, single);
-        return Status::Ok();
-      } else if (center.endCharCode == codepoint) {
-        center.endCharCode = codepoint - 1;
-        groups.insert(groups.begin() + index + 1, single);
-        return Status::Ok();
-      } else {
-        SequentialMapGroup left;
-        left.startCharCode = center.startCharCode;
-        left.endCharCode = codepoint - 1;
-        left.startGlyphID = center.startGlyphID;
-
-        SequentialMapGroup right;
-        right.startCharCode = codepoint + 1;
-        right.endCharCode = center.endCharCode;
-        right.startGlyphID = center.startGlyphID + (codepoint + 1) - center.startCharCode;
-
-        groups[index] = left;
-        groups.insert(groups.begin() + index + 1, single);
-        groups.insert(groups.begin() + index + 2, right);
-        return Status::Ok();
-      }
-    } else if (index == 0) {
-      groups.insert(groups.begin(), single);
-      return Status::Ok();
-    } else {
-      auto &left = groups[index - 1];
-      if (left.endCharCode + 1 == codepoint && left.startGlyphID + (codepoint - left.startCharCode) == glyphId) {
-        left.endCharCode = codepoint;
-        return Status::Ok();
-      } else {
-        groups.insert(groups.begin() + index - 1, single);
-        return Status::Ok();
-      }
-    }
+    mapping[codepoint] = glyphId;
+    return Status::Ok();
   }
 
 public:
   uint32_t language;
-  std::vector<SequentialMapGroup> groups;
+  std::map<uint32_t, uint32_t> mapping;
 };
 
 } // namespace eglyf::cmap
