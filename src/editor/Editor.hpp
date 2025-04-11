@@ -1293,10 +1293,11 @@ public:
       s->input.push_back(sv.base);
       auto et = getGlyphByName(format("et{0}{1}", sv.hGrids, sv.vGrids));
       s->output.push_back(et);
-      string tsh = "tsh";
+      string tsh = "";
       for (auto const &[variant, glyph] : sv.variants) {
-        tsh += format("{0}", variant);
+        tsh = format("{0}", variant) + tsh;
       }
+      tsh = "tsh" + tsh;
       s->output.push_back(getGlyphByName(tsh));
       s->output.push_back(sv.base);
       s->output.push_back(getGlyphByName("Qf"));
