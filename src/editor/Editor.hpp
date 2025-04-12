@@ -1082,8 +1082,12 @@ public:
 
     map<string, pair<uint16_t, shared_ptr<Glyph>>> baseGlyphs;
 
-    for (auto const &[gid, item] : bounds) {
-      auto const &[cp, rect] = item;
+    for (auto const &it : bounds) {
+      auto const &gid = it.first;
+      auto const &item = it.second;
+      auto const &cp = item.first;
+      auto const &rect = item.second;
+
       string name;
       auto found = GlyphNames::Get(cp);
       if (found) {
@@ -1094,13 +1098,11 @@ public:
       if (auto currentName = font->post->getName(gid); currentName) {
         if (name == *currentName) {
           if (auto st = font->post->setName(gid, "." + name); !st.ok()) {
-            return EGLYF_ERROR;
+            return EGLYF_STATUS_PUSH(st);
           }
         }
       }
-      int width = rect.width();
-      int height = rect.height();
-      float scale = max({1.0f, rect.width() / (float)this->width(kHGrids), rect.height() / (float)this->height(kVGrids)});
+      float scale = max({1.0f, rect.width() / (float)this->width(grids), rect.height() / (float)this->height(grids)});
       int16_t xMid = (rect.xMin + rect.xMax) / 2;
       GlyphDataTable::CompositeGlyph::GlyphRecord record;
       if (scale > 1) {
@@ -1113,7 +1115,7 @@ public:
         return EGLYF_STATUS_PUSH(newGid.status());
       }
       if (auto st = font->cmap->map(cp, *newGid); !st.ok()) {
-        return EGLYF_ERROR;
+        return EGLYF_STATUS_PUSH(st);
       }
       if (found) {
         auto newGlyph = getGlyphByName(name);
@@ -1128,19 +1130,23 @@ public:
       string name = format("QB{0}", h);
       if (auto gid = font->post->getGlyphId(name); gid) {
         if (auto st = font->post->setName(*gid, "." + name); !st.ok()) {
-          return EGLYF_ERROR;
+          return EGLYF_STATUS_PUSH(st);
         }
       }
-      int16_t width = hg0 + h * hg;
+      int16_t width = this->width(h);
       auto newGid = font->addEmptyGlyph(name, width, 0);
       if (!newGid) {
-        return EGLYF_ERROR;
+        return EGLYF_STATUS_PUSH(newGid.status());
       }
     }
 
     float constexpr kAspectDiffThreshold = 0.2f;
-    for (auto const &[name, glyphs] : baseGlyphs) {
-      auto const &[originalGID, newGlyph] = glyphs;
+    for (auto const &it : baseGlyphs) {
+      auto const &name = it.first;
+      auto const &glyphs = it.second;
+      auto const &originalGID = glyphs.first;
+      auto const &newGlyph = glyphs.second;
+
       auto found = bounds.find(originalGID);
       if (found == bounds.end()) {
         continue;
@@ -1148,8 +1154,8 @@ public:
       auto const &[cp, size] = found->second;
       int width = (int)ceilf(((float)size.width() - (float)hg0) / hg);
       int height = (int)ceilf(((float)size.height() - (float)vg0) / vg);
-      width = min(max(width, 1), kHGrids);
-      height = min(max(height, 1), kVGrids);
+      width = min(max(width, 1), grids);
+      height = min(max(height, 1), grids);
       int16_t xMid = (size.xMin + size.xMax) / 2;
 
       SizeVariants sv;
@@ -1252,9 +1258,12 @@ public:
     setupSubst(*a, {"LT2"}, {"et36", "tsh363534262524231615141312", "LT2", "Qf"});
     setupSubst(*a, {"LW2"}, {"et63", "tsh636261535251434241323121", "LW2", "Qf"});
     auto Qf = getGlyphByName("Qf");
-    for (auto const &[name, sv] : sizeVariants) {
+    for (auto const &it : sizeVariants) {
       // SUB GLYPH "A1"
       // WITH GLYPH "et56" GLYPH "tsh56454435332211" GLYPH "A1" GLYPH "Qf"
+
+      auto const &name = it.first;
+      auto const &sv = it.second;
 
       auto s = make_shared<Lookup::Substitution>();
       s->input.push_back(sv.base);
@@ -1447,9 +1456,12 @@ public:
     setupSubst(*a, {"et32", "LW2"}, {"LW2_32"});
     setupSubst(*a, {"et31", "LW2"}, {"LW2_31"});
     setupSubst(*a, {"et21", "LW2"}, {"LW2_21"});
-    for (auto const &[name, sv] : sizeVariants) {
+    for (auto const &it : sizeVariants) {
       // SUB GLYPH "et56" GLYPH "A1"
       // WITH GLYPH "A1"
+
+      auto const &name = it.first;
+      auto const &sv = it.second;
 
       auto s = make_shared<Lookup::Substitution>();
       auto et = format("et{0}{1}", sv.hGrids, sv.vGrids);
@@ -1470,7 +1482,9 @@ public:
       return EGLYF_ERROR;
     }
     a->substitutions.clear();
-    for (auto const &[name, sv] : sizeVariants) {
+    for (auto const &it : sizeVariants) {
+      auto const &name = it.first;
+      auto const &sv = it.second;
       {
         // SUB GLYPH "et45" GLYPH "A1"
         // WITH GLYPH "A1_45"
