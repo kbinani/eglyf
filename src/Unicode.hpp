@@ -12,7 +12,6 @@ private:
       v->push_back(make_pair(0x1325E, 0x13285));
       v->push_back(make_pair(0x1328A, 0x13378));
       v->push_back(make_pair(0x1337C, 0x1342E));
-      v->push_back(make_pair(0x13000, 0x1342f));
       v->push_back(make_pair(0x13460, 0x143fa));
       return std::move(v);
     }());
