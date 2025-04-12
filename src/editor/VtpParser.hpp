@@ -79,6 +79,9 @@ private:
             return EGLYF_STATUS_PUSH(gid.status());
           }
         }
+        if (auto st = font->cmap->map(*unicode, glyphId); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
       }
       if (auto st = font->post->setName(glyphId, name); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
