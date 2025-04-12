@@ -1263,6 +1263,7 @@ public:
       for (auto const &[variant, glyph] : sv.variants) {
         tsh = format("{0}", variant) + tsh;
       }
+      tsh = format("{0}{1}", sv.hGrids, sv.vGrids) + tsh;
       tsh = "tsh" + tsh;
       s->output.push_back(getGlyphByName(tsh));
       s->output.push_back(sv.base);
