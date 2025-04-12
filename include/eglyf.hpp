@@ -30,6 +30,7 @@
 #include "io/OffsetWriter.hpp"
 #include "io/DataFragmentWriter.hpp"
 #include "Tag.hpp"
+#include "Unicode.hpp"
 #include "TableRecord.hpp"
 #include "TableDirectory.hpp"
 #include "table/Table.hpp"

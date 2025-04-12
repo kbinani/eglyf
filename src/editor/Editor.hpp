@@ -125,6 +125,10 @@ public:
     if (auto found = glyphs.find(name); found == glyphs.end()) {
       auto g = make_shared<Glyph>();
       g->name = name;
+      auto gid = font->post->getGlyphId(name);
+      if (gid) {
+        g->id = *gid;
+      }
       glyphs[name] = g;
       return g;
     } else {
@@ -1030,7 +1034,7 @@ public:
     variationChain[16] = {15, 14, 13, 12, 11};
     variationChain[12] = {11};
 
-    map<shared_ptr<Glyph>, pair<uint32_t, Rect<int16_t>>> bounds;
+    map<uint16_t, pair<uint32_t, Rect<int16_t>>> bounds;
 
     if (!holds_alternative<FontFile::TrueTypeOutlines>(font->outlines)) {
       return EGLYF_ERROR;
@@ -1043,33 +1047,17 @@ public:
         return;
       }
       auto g = glyf->glyphs[*gid];
-      auto glyph = getGlyphById(*gid);
       if (holds_alternative<GlyphDataTable::ReadonlyGlyph>(g)) {
         auto const &r = get<GlyphDataTable::ReadonlyGlyph>(g);
-        bounds[glyph] = make_pair(cp, Rect<int16_t>(r.header.xMin, r.header.yMin, r.header.xMax, r.header.yMax));
+        bounds[*gid] = make_pair(cp, Rect<int16_t>(r.header.xMin, r.header.yMin, r.header.xMax, r.header.yMax));
       } else if (holds_alternative<GlyphDataTable::CompositeGlyph>(g)) {
         auto const &c = get<GlyphDataTable::CompositeGlyph>(g);
-        bounds[glyph] = make_pair(cp, Rect<int16_t>(c.header.xMin, c.header.yMin, c.header.xMax, c.header.yMax));
+        bounds[*gid] = make_pair(cp, Rect<int16_t>(c.header.xMin, c.header.yMin, c.header.xMax, c.header.yMax));
       }
     };
-    for (uint32_t cp = 0x13000; cp <= 0x13257; cp++) {
+    Unicode::EnumerateHieroglyphUnicode([&](uint32_t cp) {
       process(cp);
-    }
-    for (uint32_t cp = 0x1325E; cp <= 0x13285; cp++) {
-      process(cp);
-    }
-    for (uint32_t cp = 0x1328A; cp <= 0x13378; cp++) {
-      process(cp);
-    }
-    for (uint32_t cp = 0x1337C; cp <= 0x1342E; cp++) {
-      process(cp);
-    }
-    for (uint32_t cp = 0x13000; cp <= 0x1342f; cp++) {
-      process(cp);
-    }
-    for (uint32_t cp = 0x13460; cp <= 0x143fa; cp++) {
-      process(cp);
-    }
+    });
 
     if (bounds.empty()) {
       return EGLYF_ERROR;
@@ -1078,7 +1066,7 @@ public:
     int16_t heightMaxA = 0;
     int16_t yMinA = numeric_limits<int16_t>::max();
 
-    for (auto const &[glyph, item] : bounds) {
+    for (auto const &[gid, item] : bounds) {
       auto const &[cp, rect] = item;
       if (0x13000 <= cp && cp <= 0x1304f) {
         yMinA = min(yMinA, rect.yMin);
@@ -1092,21 +1080,20 @@ public:
     vg = (int16_t)std::ceilf(heightMaxA * 3.0f / (2 + grids * 3));
     vg0 = 2 * vg / 3;
 
-    map<string, shared_ptr<Glyph>> baseGlyphs;
+    map<string, pair<uint16_t, shared_ptr<Glyph>>> baseGlyphs;
 
-    for (auto const &[glyph, item] : bounds) {
+    for (auto const &[gid, item] : bounds) {
       auto const &[cp, rect] = item;
-      assert(glyph->id);
       string name;
-      if (auto found = GlyphNames::Get(cp); found) {
+      auto found = GlyphNames::Get(cp);
+      if (found) {
         name = *found;
-        baseGlyphs[name] = glyph;
       } else {
         name = format("u{0:x}", cp);
       }
-      if (auto currentName = font->post->getName(*glyph->id); currentName) {
+      if (auto currentName = font->post->getName(gid); currentName) {
         if (name == *currentName) {
-          if (auto st = font->post->setName(*glyph->id, "." + name); !st.ok()) {
+          if (auto st = font->post->setName(gid, "." + name); !st.ok()) {
             return EGLYF_ERROR;
           }
         }
@@ -1117,9 +1104,9 @@ public:
       int16_t xMid = (rect.xMin + rect.xMax) / 2;
       GlyphDataTable::CompositeGlyph::GlyphRecord record;
       if (scale > 1) {
-        record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(*glyph->id, (int16_t)roundf(-xMid * scale), (int16_t)roundf(-yMinA * scale), F2DOT14::FromFloat(scale));
+        record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(gid, (int16_t)roundf(-xMid * scale), (int16_t)roundf(-yMinA * scale), F2DOT14::FromFloat(scale));
       } else {
-        record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(*glyph->id, -xMid, -yMinA);
+        record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(gid, -xMid, -yMinA);
       }
       auto newGid = font->addCompositeGlyph(name, record, 0, -xMid);
       if (!newGid) {
@@ -1127,6 +1114,13 @@ public:
       }
       if (auto st = font->cmap->map(cp, *newGid); !st.ok()) {
         return EGLYF_ERROR;
+      }
+      if (found) {
+        auto newGlyph = getGlyphByName(name);
+        if (!newGlyph) {
+          return EGLYF_ERROR;
+        }
+        baseGlyphs[name] = make_pair(gid, newGlyph);
       }
     }
 
@@ -1145,8 +1139,9 @@ public:
     }
 
     float constexpr kAspectDiffThreshold = 0.2f;
-    for (auto const &[name, glyph] : baseGlyphs) {
-      auto found = bounds.find(glyph);
+    for (auto const &[name, glyphs] : baseGlyphs) {
+      auto const &[originalGID, newGlyph] = glyphs;
+      auto found = bounds.find(originalGID);
       if (found == bounds.end()) {
         continue;
       }
@@ -1157,15 +1152,16 @@ public:
       height = min(max(height, 1), kVGrids);
       int16_t xMid = (size.xMin + size.xMax) / 2;
 
-      auto chain = variationChain.find(width * 10 + height);
-      if (chain == variationChain.end()) {
-        continue;
-      }
-
       SizeVariants sv;
-      sv.base = glyph;
+      sv.base = newGlyph;
       sv.hGrids = width;
       sv.vGrids = height;
+
+      auto chain = variationChain.find(width * 10 + height);
+      if (chain == variationChain.end()) {
+        sizeVariants[name] = sv;
+        continue;
+      }
 
       for (auto key : chain->second) {
         int yLevel = key % 10;
@@ -1175,7 +1171,7 @@ public:
         float xScale = this->width(xLevel) / (float)this->width(width);
         float yScale = this->height(yLevel) / (float)this->height(height);
         float scale = min(xScale, yScale);
-        auto record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(*glyph->id,
+        auto record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(originalGID,
                                                                        (int16_t)roundf(-xMid * scale),
                                                                        (int16_t)roundf(-yMinA * scale),
                                                                        F2DOT14::FromFloat(scale));

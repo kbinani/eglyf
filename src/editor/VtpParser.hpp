@@ -64,10 +64,23 @@ private:
     uint16_t glyphId = 0;
     if (unicode) {
       auto gid = font->cmap->getGlyphId(*unicode);
-      if (!gid) {
-        return Status::Ok();
+      if (gid) {
+        glyphId = *gid;
+      } else {
+        if (Unicode::IsHieroglyph(*unicode)) {
+          return Status::Ok();
+        }
+        if (auto gid1 = font->post->getGlyphId(name); gid1) {
+          glyphId = *gid1;
+        } else {
+          if (auto gid2 = font->addEmptyGlyph(name, 0, 0); gid2) {
+            glyphId = *gid2;
+          } else {
+            return EGLYF_STATUS_PUSH(gid.status());
+          }
+        }
       }
-      if (auto st = font->post->setName(*gid, name); !st.ok()) {
+      if (auto st = font->post->setName(glyphId, name); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     } else {

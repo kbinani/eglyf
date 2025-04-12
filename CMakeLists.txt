@@ -99,6 +99,7 @@ list(APPEND src_files
   src/editor/EditorTests.hpp
   src/table/coverage/CoverageBuilder.hpp
   src/GlyphNames.hpp
+  src/Unicode.hpp
 )
 
 juce_add_binary_data(eglyf-binary-data
