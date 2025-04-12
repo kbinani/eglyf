@@ -62,39 +62,18 @@ private:
     auto g = editor->getGlyphByName(name);
     auto font = editor->font;
     uint16_t glyphId = 0;
-    if (unicode) {
-      auto gid = font->cmap->getGlyphId(*unicode);
-      if (gid) {
-        glyphId = *gid;
-      } else {
-        if (Unicode::IsHieroglyph(*unicode)) {
-          return Status::Ok();
-        }
-        if (auto gid1 = font->post->getGlyphId(name); gid1) {
-          glyphId = *gid1;
-        } else {
-          if (auto gid2 = font->addEmptyGlyph(name, 0, 0); gid2) {
-            glyphId = *gid2;
-          } else {
-            return EGLYF_STATUS_PUSH(gid.status());
-          }
-        }
-        if (auto st = font->cmap->map(*unicode, glyphId); !st.ok()) {
-          return EGLYF_STATUS_PUSH(st);
-        }
-      }
-      if (auto st = font->post->setName(glyphId, name); !st.ok()) {
-        return EGLYF_STATUS_PUSH(st);
-      }
+    if (auto gid = font->post->getGlyphId(name); gid) {
+      glyphId = *gid;
     } else {
-      if (auto gid = font->post->getGlyphId(name); gid) {
-        glyphId = *gid;
+      if (auto gid1 = font->addEmptyGlyph(name, 0, 0); gid1) {
+        glyphId = *gid1;
       } else {
-        if (auto gid = font->addEmptyGlyph(name, 0, 0); gid) {
-          glyphId = *gid;
-        } else {
-          return EGLYF_STATUS_PUSH(gid.status());
-        }
+        return EGLYF_STATUS_PUSH(gid1.status());
+      }
+    }
+    if (unicode) {
+      if (auto st = font->cmap->map(*unicode, glyphId); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
     }
     if (!font->gdef) {
@@ -105,13 +84,11 @@ private:
     if (!font->gdef->glyphClassDef) {
       font->gdef->glyphClassDef = make_shared<ClassDef2>();
     }
-    if (auto def1 = dynamic_pointer_cast<ClassDef1>(font->gdef->glyphClassDef); def1) {
-      auto def2 = ClassDef2::FromClassDef1(*def1);
-      font->gdef->glyphClassDef = def2;
+    if (auto st = font->gdef->glyphClassDef->add(glyphId, static_cast<uint16_t>(classDef)); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
     g->id = glyphId;
     g->classDef = classDef;
-
     return Status::Ok();
   }
 
