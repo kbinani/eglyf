@@ -32,11 +32,6 @@ static void Run(juce::ArgumentList const &args) {
 
   juce::File input = args.getExistingFileForOption("--input");
   juce::File output = args.getFileForOption("--output");
-  string onlyLookupWithNameValue = args.getValueForOption("--only-lookup-with-name").toStdString();
-  optional<string> onlyLookupWithName;
-  if (!onlyLookupWithNameValue.empty()) {
-    onlyLookupWithName = onlyLookupWithNameValue;
-  }
 
   FileInputStream fis(input);
   shared_ptr<FontFile> ff;
@@ -60,7 +55,7 @@ static void Run(juce::ArgumentList const &args) {
     Fail(st);
     return;
   }
-  if (auto st = editor->compile(onlyLookupWithName); !st.ok()) {
+  if (auto st = editor->compile(); !st.ok()) {
     Fail(st);
     return;
   }

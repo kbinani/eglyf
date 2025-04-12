@@ -1542,17 +1542,12 @@ public:
     return Status::Ok();
   }
 
-  Status compile(std::optional<std::string> onlyLookupWithName = std::nullopt) {
+  Status compile(std::optional<size_t> maxNumLookup = std::nullopt) {
     using namespace std;
 
-    if (onlyLookupWithName) {
-      auto found = ranges::find_if(lookups, [&onlyLookupWithName](auto const &it) { return it.first == *onlyLookupWithName; });
-      if (found == lookups.end()) {
-        lookups.clear();
-      } else {
-        auto lookup = found->second;
-        lookups.clear();
-        lookups.push_back(*found);
+    if (maxNumLookup) {
+      while (lookups.size() > *maxNumLookup) {
+        lookups.pop_back();
       }
     }
 
