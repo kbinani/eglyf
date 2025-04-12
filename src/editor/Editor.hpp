@@ -1004,6 +1004,7 @@ public:
     using namespace std;
 
     map<int, vector<int>> variationChain;
+    variationChain[76] = {75, 56, 55, 45, 44, 33, 22, 11};
     variationChain[66] = {55, 44, 33, 22, 11};
     variationChain[65] = {55, 54, 45, 44, 32, 21, 11};
     variationChain[64] = {62, 54, 52, 43, 42, 32, 22, 11};
@@ -1062,22 +1063,33 @@ public:
     if (bounds.empty()) {
       return EGLYF_ERROR;
     }
-    int16_t widthMaxA = 0;
-    int16_t heightMaxA = 0;
-    int16_t yMinA = numeric_limits<int16_t>::max();
+
+    int const presentationHeight = font->hhea->ascender - font->hhea->descender;
+    int const fontHeight = font->head->unitsPerEm;
+    float const presentationScale = fontHeight / (float)presentationHeight;
+    int const topMargin = (int)round(fontHeight * 0.0322);
+    int const bottomMargin = (int)round(fontHeight * 0.0615);
+    int const maxHeight = fontHeight - topMargin - bottomMargin;
+    int const bottom = (int)roundf(font->hhea->descender * presentationScale + bottomMargin);
+    int maxWidth = 0;
 
     for (auto const &[gid, item] : bounds) {
       auto const &[cp, rect] = item;
-      if (0x13000 <= cp && cp <= 0x1304f) {
-        yMinA = min(yMinA, rect.yMin);
-        widthMaxA = max(widthMaxA, rect.width());
-        heightMaxA = max(heightMaxA, rect.height());
+      auto const w = rect.width();
+      auto const h = rect.height();
+      float const scale = h / (float)maxHeight;
+      int scaledWidth;
+      if (scale > 1) {
+        scaledWidth = (int)round(w / scale);
+      } else {
+        scaledWidth = w;
       }
+      maxWidth = max(maxWidth, scaledWidth);
     }
-    int grids = min(kHGrids, kVGrids);
-    hg = (int16_t)std::ceilf(widthMaxA * 3.0f / (2 + grids * 3));
+
+    hg = (int16_t)std::ceilf(maxWidth * 3.0f / (2 + kHGrids * 3));
     hg0 = 2 * hg / 3;
-    vg = (int16_t)std::ceilf(heightMaxA * 3.0f / (2 + grids * 3));
+    vg = (int16_t)std::ceilf(maxHeight * 3.0f / (2 + kVGrids * 3));
     vg0 = 2 * vg / 3;
 
     map<string, pair<uint16_t, shared_ptr<Glyph>>> baseGlyphs;
@@ -1102,15 +1114,26 @@ public:
           }
         }
       }
-      float scale = max({1.0f, rect.width() / (float)this->width(grids), rect.height() / (float)this->height(grids)});
+      auto w = rect.width();
+      auto h = rect.height();
+      float const scale = min(1.0f, maxHeight / (float)h);
       int16_t xMid = (rect.xMin + rect.xMax) / 2;
-      GlyphDataTable::CompositeGlyph::GlyphRecord record;
-      if (scale > 1) {
-        record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(gid, (int16_t)roundf(-xMid * scale), (int16_t)roundf(-yMinA * scale), F2DOT14::FromFloat(scale));
+      int16_t dx;
+      int16_t dy;
+      if (scale < 1) {
+        dx = (int16_t)roundf(-xMid * scale);
+        dy = (int16_t)roundf((bottom - rect.yMin) * scale);
       } else {
-        record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(gid, -xMid, -yMinA);
+        dx = -xMid;
+        dy = bottom - rect.yMin;
       }
-      auto newGid = font->addCompositeGlyph(name, record, 0, -xMid);
+      GlyphDataTable::CompositeGlyph::GlyphRecord record;
+      if (scale < 1) {
+        record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(gid, dx, dy, F2DOT14::FromFloat(scale));
+      } else {
+        record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(gid, dx, dy);
+      }
+      auto newGid = font->addCompositeGlyph(name, record, 0, dx);
       if (!newGid) {
         return EGLYF_STATUS_PUSH(newGid.status());
       }
@@ -1151,12 +1174,12 @@ public:
       if (found == bounds.end()) {
         continue;
       }
-      auto const &[cp, size] = found->second;
-      int width = (int)ceilf(((float)size.width() - (float)hg0) / hg);
-      int height = (int)ceilf(((float)size.height() - (float)vg0) / vg);
-      width = min(max(width, 1), grids);
-      height = min(max(height, 1), grids);
-      int16_t xMid = (size.xMin + size.xMax) / 2;
+      auto const &[cp, rect] = found->second;
+      int width = (int)ceilf(((float)rect.width() - (float)hg0) / hg);
+      int height = (int)ceilf(((float)rect.height() - (float)vg0) / vg);
+      width = min(max(width, 1), kHGrids);
+      height = min(max(height, 1), kVGrids);
+      int16_t xMid = (rect.xMin + rect.xMax) / 2;
 
       SizeVariants sv;
       sv.base = newGlyph;
@@ -1177,11 +1200,17 @@ public:
         float xScale = this->width(xLevel) / (float)this->width(width);
         float yScale = this->height(yLevel) / (float)this->height(height);
         float scale = min(xScale, yScale);
-        auto record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(originalGID,
-                                                                       (int16_t)roundf(-xMid * scale),
-                                                                       (int16_t)roundf(-yMinA * scale),
-                                                                       F2DOT14::FromFloat(scale));
-        auto newGid = font->addCompositeGlyph(n, record, 0, (int16_t)roundf(-xMid * scale));
+        int16_t dx;
+        int16_t dy;
+        if (scale < 1) {
+          dx = (int16_t)roundf(-xMid * scale);
+          dx = (int16_t)roundf((bottom - rect.yMin) * scale);
+        } else {
+          dx = -xMid;
+          dy = bottom - rect.yMin;
+        }
+        auto record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(originalGID, dx, dy, F2DOT14::FromFloat(scale));
+        auto newGid = font->addCompositeGlyph(n, record, 0, dx);
         if (!newGid) {
           return EGLYF_STATUS_PUSH(newGid.status());
         }
