@@ -1251,6 +1251,7 @@ public:
     setupSubst(*a, {"LQ2"}, {"et33", "tsh332211", "LQ2", "Qf"});
     setupSubst(*a, {"LT2"}, {"et36", "tsh363534262524231615141312", "LT2", "Qf"});
     setupSubst(*a, {"LW2"}, {"et63", "tsh636261535251434241323121", "LW2", "Qf"});
+    auto Qf = getGlyphByName("Qf");
     for (auto const &[name, sv] : sizeVariants) {
       // SUB GLYPH "A1"
       // WITH GLYPH "et56" GLYPH "tsh56454435332211" GLYPH "A1" GLYPH "Qf"
@@ -1267,7 +1268,7 @@ public:
       tsh = "tsh" + tsh;
       s->output.push_back(getGlyphByName(tsh));
       s->output.push_back(sv.base);
-      s->output.push_back(getGlyphByName("Qf"));
+      s->output.push_back(Qf);
       a->substitutions.push_back(s);
     }
 
@@ -1470,9 +1471,21 @@ public:
     }
     a->substitutions.clear();
     for (auto const &[name, sv] : sizeVariants) {
-      for (auto const [key, glyph] : sv.variants) {
+      {
         // SUB GLYPH "et45" GLYPH "A1"
         // WITH GLYPH "A1_45"
+
+        auto s = make_shared<Lookup::Substitution>();
+        auto et = format("et{0}{1}", sv.hGrids, sv.vGrids);
+        s->input.push_back(getGlyphByName(et));
+        s->input.push_back(sv.base);
+        auto sized = name + format("{0}{1}", sv.hGrids, sv.vGrids);
+        s->output.push_back(getGlyphByName(sized));
+        a->substitutions.push_back(s);
+      }
+      for (auto const [key, glyph] : sv.variants) {
+        // SUB GLYPH "et44" GLYPH "A1"
+        // WITH GLYPH "A1_44"
 
         auto s = make_shared<Lookup::Substitution>();
         auto et = format("et{0}", key);
