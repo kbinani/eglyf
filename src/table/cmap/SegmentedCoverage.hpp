@@ -55,7 +55,7 @@ public:
 
   Status write(OutputStream &out) const override {
     using namespace std;
-    auto writer = make_shared<OffsetWriter>(out);
+    auto start = out.position();
     if (!out.u16(12)) {
       return EGLYF_ERROR;
     }
@@ -63,15 +63,15 @@ public:
     if (!out.u16(0)) {
       return EGLYF_ERROR;
     }
-    auto const lengthPos = writer->o32();
-    if (!lengthPos) {
+    auto const lengthPos = out.position();
+    if (!out.u32(0)) {
       return EGLYF_ERROR;
     }
     if (!out.u32(language)) {
       return EGLYF_ERROR;
     }
-    auto pos = out.position();
-    if (!out.sizeU32(0)) {
+    auto numGroupsPos = out.position();
+    if (!out.u32(0)) {
       return EGLYF_ERROR;
     }
     struct Group {
@@ -83,7 +83,9 @@ public:
     };
     optional<Group> current;
     uint32_t numGroups = 0;
-    for (auto [codepoint, gid] : mapping) {
+    for (auto it : mapping) {
+      auto codepoint = it.first;
+      auto gid = it.second;
       if (current) {
         if (current->endCharCode + 1 == codepoint && current->startGlyphID + (codepoint - current->startCharCode) == gid) {
           current->endCharCode = codepoint;
@@ -101,7 +103,6 @@ public:
           current = Group(codepoint, gid);
         }
       } else {
-        numGroups++;
         current = Group(codepoint, gid);
       }
     }
@@ -115,17 +116,32 @@ public:
       if (!out.u32(current->startGlyphID)) {
         return EGLYF_ERROR;
       }
+      numGroups++;
     }
-    if (auto st = lengthPos->mark(); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
-    }
-    if (!out.seek(pos)) {
+    int64_t last = out.position();
+    int64_t length = last - start;
+    if (length > numeric_limits<uint32_t>::max()) {
       return EGLYF_ERROR;
     }
-    if (!out.u32(numGroups)) {
+    if (!out.seek(lengthPos)) {
       return EGLYF_ERROR;
     }
-    return EGLYF_STATUS_PUSH(writer->commit());
+    if (!out.u32((uint32_t)length)) {
+      return EGLYF_ERROR;
+    }
+    if (numGroups > numeric_limits<uint32_t>::max()) {
+      return EGLYF_ERROR;
+    }
+    if (!out.seek(numGroupsPos)) {
+      return EGLYF_ERROR;
+    }
+    if (!out.u32((uint32_t)numGroups)) {
+      return EGLYF_ERROR;
+    }
+    if (!out.seek(last)) {
+      return EGLYF_ERROR;
+    }
+    return Status::Ok();
   }
 
   Optional<uint16_t> getGlyphID(uint32_t codepoint) const {
