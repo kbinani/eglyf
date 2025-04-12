@@ -174,8 +174,8 @@ public:
 #include "Glyphs.hpp"
 
     vector<u32string> sentences;
-    sentences.push_back(p);
-    sentences.push_back(p + vj + n);
+    sentences.push_back(Q3);
+    sentences.push_back(Q3 + vj + N35);
     sentences.push_back(U"𓇋𓅱𓏞𓏜𓀀𓂋𓐰𓏤𓈖𓆎𓅓𓏏𓐰𓊖"s);
     sentences.push_back(U"𓍹𓐼𓇋𓏠𓐰𓈖𓅱𓐳𓏏𓐴𓏏𓋹𓐽𓍺"s);
     sentences.push_back(U"𓆓𓐳𓐷𓂧𓐰𓂧𓐸𓐴𓏏𓅓𓍛𓏤𓐰𓈖𓍉𓐰𓎂𓉐𓋹𓍑𓋴"s);
