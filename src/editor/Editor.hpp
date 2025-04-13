@@ -1088,10 +1088,10 @@ public:
       maxWidth = max(maxWidth, scaledWidth);
     }
 
-    hg = (int16_t)std::ceilf(maxWidth * 3.0f / (2 + kHGrids * 3));
-    hg0 = 2 * hg / 3;
-    vg = (int16_t)std::ceilf(maxHeight * 3.0f / (2 + kVGrids * 3));
-    vg0 = 2 * vg / 3;
+    hfu = (int16_t)std::ceilf(maxWidth * 3.0f / (2 + kHGrids * 3));
+    hg0 = 2 * hfu / 3;
+    vfu = (int16_t)std::ceilf(maxHeight * 3.0f / (2 + kVGrids * 3));
+    vg0 = 2 * vfu / 3;
 
     map<string, pair<uint16_t, shared_ptr<Glyph>>> baseGlyphs;
 
@@ -1176,8 +1176,8 @@ public:
         continue;
       }
       auto const &[cp, rect] = found->second;
-      int width = (int)ceilf(((float)rect.width() - (float)hg0) / hg);
-      int height = (int)ceilf(((float)rect.height() - (float)vg0) / vg);
+      int width = (int)ceilf(((float)rect.width() - (float)hg0) / hfu);
+      int height = (int)ceilf(((float)rect.height() - (float)vg0) / vfu);
       width = min(max(width, 1), kHGrids);
       height = min(max(height, 1), kVGrids);
       int16_t xMid = (rect.xMin + rect.xMax) / 2;
@@ -1229,11 +1229,11 @@ public:
   }
 
   int width(int level) const {
-    return (int)hg0 + (int)hg * level;
+    return (int)hg0 + (int)hfu * level;
   }
 
   int height(int level) const {
-    return (int)vg0 + (int)vg * level;
+    return (int)vg0 + (int)vfu * level;
   }
 
   Status preprocess() {
@@ -1592,13 +1592,13 @@ public:
   Status relocateMarks() {
     using namespace std;
     if (auto a1 = anchors.find("a1"); a1 != anchors.end()) {
-      int16_t const dy = vg * kVGrids;
+      int16_t const dy = vfu * kVGrids;
       for (auto &it : a1->second->glyphs) {
         it.second = Vec<optional<int16_t>>(sb, dy);
       }
     }
     if (auto r1 = anchors.find("r1"); r1 != anchors.end()) {
-      int16_t const dy = vg * kVGrids;
+      int16_t const dy = vfu * kVGrids;
       for (auto const &[prefix, suffix] : initializer_list<pair<string, string>>{{"QB", ""}, {"QD", ""}, {"QD", "V"}, {"QF", ""}, {"QF", "V"}, {"QO", ""}, {"QO", "V"}, {"QC", ""}, {"QC", "V"}, {"QW", ""}, {"QW", "V"}}) {
         for (int i = 1; i <= kHGrids; i++) {
           auto name = format("{}{}{}", prefix, i, suffix);
@@ -1607,7 +1607,88 @@ public:
           if (found == r1->second->glyphs.end()) {
             continue;
           }
-          int16_t const dx = sb + hg * i;
+          int16_t const dx = sb + hfu * i;
+          found->second = Vec<optional<int16_t>>(dx, dy);
+        }
+      }
+    }
+    if (auto bottom = anchors.find("bottom"); bottom != anchors.end()) {
+      for (auto const &prefix : {"r0v", "r1v", "r2v"}) {
+        for (int v = 1; v <= kVGrids; v++) {
+          for (auto const &suffix : {"", "R"}) {
+            auto name = format("{}{}{}", prefix, v, suffix);
+            auto glyph = getGlyphByName(name);
+            auto found = bottom->second->glyphs.find(glyph);
+            if (found == bottom->second->glyphs.end()) {
+              continue;
+            }
+            int16_t const dy = -v * vfu;
+            found->second = Vec<optional<int16_t>>(nullopt, dy);
+          }
+        }
+      }
+    }
+#if 0
+    DEF_ANCHOR "bottom" ON None GLYPH r0s0p25 COMPONENT 1 AT  POS DY -77 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r0s0p33 COMPONENT 1 AT  POS DY -102 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r0s0p5 COMPONENT 1 AT  POS DY -155 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r0s0p66 COMPONENT 1 AT  POS DY -204 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r0s1p0 COMPONENT 1 AT  POS DY -310 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r0s1p5 COMPONENT 1 AT  POS DY -465 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r0s2p0 COMPONENT 1 AT  POS DY -620 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r0s3p0 COMPONENT 1 AT  POS DY -930 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r0s4p0 COMPONENT 1 AT  POS DY -1240 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r0s0p25R COMPONENT 1 AT  POS DY -77 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r0s0p33R COMPONENT 1 AT  POS DY -102 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r0s0p5R COMPONENT 1 AT  POS DY -155 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r0s0p66R COMPONENT 1 AT  POS DY -204 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r0s1p0R COMPONENT 1 AT  POS DY -310 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r0s1p5R COMPONENT 1 AT  POS DY -465 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r0s2p0R COMPONENT 1 AT  POS DY -620 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r0s3p0R COMPONENT 1 AT  POS DY -930 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r0s4p0R COMPONENT 1 AT  POS DY -1240 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r1s0p33 COMPONENT 1 AT  POS DY -102 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r1s0p5 COMPONENT 1 AT  POS DY -155 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r1s1p0 COMPONENT 1 AT  POS DY -310 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r1s2p0 COMPONENT 1 AT  POS DY -620 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r1s3p0 COMPONENT 1 AT  POS DY -930 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r1s4p0 COMPONENT 1 AT  POS DY -1240 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r1s0p33R COMPONENT 1 AT  POS DY -102 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r1s0p5R COMPONENT 1 AT  POS DY -155 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r1s1p0R COMPONENT 1 AT  POS DY -310 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r1s2p0R COMPONENT 1 AT  POS DY -620 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r1s3p0R COMPONENT 1 AT  POS DY -930 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r1s4p0R COMPONENT 1 AT  POS DY -1240 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r2s1p0 COMPONENT 1 AT  POS DY -310 END_POS END_ANCHOR
+    DEF_ANCHOR "bottom" ON None GLYPH r2s1p0R COMPONENT 1 AT  POS DY -310 END_POS END_ANCHOR
+#endif
+    if (auto MARK_top = anchors.find("MARK_top"); MARK_top != anchors.end()) {
+      for (auto const &key : {"a", "b", "l", "p", "r", "u"}) {
+        for (int i = 0; i <= 2; i++) {
+          for (int v = 1; v <= kVGrids; v++) {
+            auto name = format("tc{}b{}_{}", key, i, v);
+            auto glyph = getGlyphByName(name);
+            auto found = MARK_top->second->glyphs.find(glyph);
+            if (found == MARK_top->second->glyphs.end()) {
+              continue;
+            }
+            int16_t const dy = v * vfu;
+            found->second = Vec<optional<int16_t>>(nullopt, dy);
+          }
+        }
+      }
+    }
+    if (auto MARK_right = anchors.find("MARK_right"); MARK_right != anchors.end()) {
+      for (int h = 1; h <= kHGrids; h++) {
+        for (int v = 1; v <= kVGrids; v++) {
+          auto name = format("es{}{}", h, v);
+          auto glyph = getGlyphByName(name);
+          auto found = MARK_right->second->glyphs.find(glyph);
+          if (found == MARK_right->second->glyphs.end()) {
+            continue;
+          }
+          int16_t const dx = h * hfu;
+          int16_t const dy = v * vfu;
           found->second = Vec<optional<int16_t>>(dx, dy);
         }
       }
@@ -2518,11 +2599,11 @@ public:
   std::shared_ptr<std::unordered_map<uint16_t, uint16_t>> markAttachClasses;
 
   // unit per horizontal grid
-  int16_t hg;
+  int16_t hfu;
   // grid width = hg0 + n * hg; where 1 <= n <= kHGrids
   int16_t hg0;
   // unit per vertical grid
-  int16_t vg;
+  int16_t vfu;
   // grid height = vg0 + n * vg; where 1 <= n <= kVGrids
   int16_t vg0;
   std::unordered_map<std::string, SizeVariants> sizeVariants;
