@@ -34,6 +34,12 @@ public:
     if (gsub) {
       all[FCC("GSUB")] = gsub;
     }
+    if (vhea) {
+      all[FCC("vhea")] = vhea;
+    }
+    if (vmtx) {
+      all[FCC("vmtx")] = vmtx;
+    }
     numTables = all.size();
     numTables += 1; // hmtx
     if (holds_alternative<TrueTypeOutlines>(outlines)) {
@@ -224,26 +230,39 @@ public:
     return Status::Ok();
   }
 
-  Optional<uint16_t> addEmptyGlyph(std::string const &name, uint16_t advanceWidth, uint16_t lsb) {
-    return addTrueTypeGlyph(name, [&](GlyphDataTable &glyf, HorizontalMetricsTable &hmtx) -> Optional<uint16_t> {
+  Optional<uint16_t> addEmptyGlyph(std::string const &name, uint16_t advanceWidth, int16_t lsb, uint16_t height, int16_t tsb) {
+    return addTrueTypeGlyph(name, [&](GlyphDataTable &glyf, HorizontalMetricsTable &hmtx, VerticalMetricsTable &vmtx) -> Optional<uint16_t> {
       HorizontalMetricsTable::LongHorMetric hm;
       hm.advanceWidth = advanceWidth;
       hm.lsb = lsb;
       hmtx.metrics.push_back(hm);
+
+      VerticalMetricsTable::Metric vm;
+      vm.advanceHeight = height;
+      vm.topSideBearing = tsb;
+      vmtx.metrics.push_back(vm);
+
       return glyf.addEmptyGlyph();
     });
   }
 
-  Optional<uint16_t> addCompositeGlyph(std::string const &name, GlyphDataTable::CompositeGlyph::GlyphRecord child, uint16_t advanceWidth, uint16_t lsb) {
-    return addTrueTypeGlyph(name, [&](GlyphDataTable &glyf, HorizontalMetricsTable &hmtx) -> Optional<uint16_t> {
+  Optional<uint16_t> addCompositeGlyph(std::string const &name, GlyphDataTable::CompositeGlyph::GlyphRecord child, uint16_t advanceWidth, int16_t lsb, uint16_t height, int16_t tsb) {
+    return addTrueTypeGlyph(name, [&](GlyphDataTable &glyf, HorizontalMetricsTable &hmtx, VerticalMetricsTable &vmtx) -> Optional<uint16_t> {
       auto gid = glyf.addCompositeGlyph(child);
       if (!gid) {
         return EGLYF_NULLOPT_WHAT("Failed to add composite glyph");
       }
+
       HorizontalMetricsTable::LongHorMetric hm;
       hm.advanceWidth = advanceWidth;
       hm.lsb = lsb;
       hmtx.metrics.push_back(hm);
+
+      VerticalMetricsTable::Metric vm;
+      vm.advanceHeight = height;
+      vm.topSideBearing = tsb;
+      vmtx.metrics.push_back(vm);
+
       return *gid;
     });
   }
@@ -458,8 +477,8 @@ public:
         }
       }
 
-      ff->tables[vheaRecord->second.tag] = vhea;
-      ff->tables[vmtxRecord->second.tag] = vmtx;
+      ff->vhea = vhea;
+      ff->vmtx = vmtx;
       records.erase(vheaRecord);
       records.erase(vmtxRecord);
     }
@@ -498,14 +517,40 @@ public:
   }
 
 private:
-  Optional<uint16_t> addTrueTypeGlyph(std::string const &name, std::function<Optional<uint16_t>(GlyphDataTable &glyf, HorizontalMetricsTable &hmtx)> addOp) {
+  Optional<uint16_t> addTrueTypeGlyph(std::string const &name, std::function<Optional<uint16_t>(GlyphDataTable &glyf, HorizontalMetricsTable &hmtx, VerticalMetricsTable &vmtx)> addOp) {
     using namespace std;
     if (!holds_alternative<TrueTypeOutlines>(outlines)) {
       return EGLYF_NULLOPT_WHAT("TrueType outlines not available");
     }
     TrueTypeOutlines &tto = get<TrueTypeOutlines>(outlines);
 
-    auto gid = addOp(*tto.glyf, *hmtx);
+    if (!vmtx) {
+      vmtx = make_shared<VerticalMetricsTable>();
+      VerticalMetricsTable::Metric vm;
+      vm.advanceHeight = 0;
+      vm.topSideBearing = 0;
+      for (uint16_t i = 0; i < maxp->numGlyphs; i++) {
+        vmtx->metrics.push_back(vm);
+      }
+    }
+    if (!vhea) {
+      vhea = make_shared<VerticalHeaderTable>();
+      VerticalHeaderTable::Data11 data;
+      auto ascender = head->unitsPerEm / 2;
+      data.vertTypoAscender = ascender;
+      data.vertTypoDescender = head->unitsPerEm - ascender;
+      data.vertTypoLineGap = 0;
+      data.advanceHeightMax = head->unitsPerEm;
+      data.minTopSideBearing = 0;
+      data.minBottomSideBearing = 0;
+      data.yMaxExtent = head->unitsPerEm;
+      data.caretSlopeRise = 0;
+      data.caretSlopeRun = 1;
+      data.caretOffset = 0;
+      vhea->data = data;
+    }
+
+    auto gid = addOp(*tto.glyf, *hmtx, *vmtx);
     if (!gid) {
       return EGLYF_NULLOPT_WHAT("Failed to add glyph");
     }
@@ -545,6 +590,8 @@ public:
   std::shared_ptr<GlyphPositioningTable> gpos;
   std::shared_ptr<GlyphSubstitutionTable> gsub;
   std::shared_ptr<GlyphDefinitionTable> gdef;
+  std::shared_ptr<VerticalHeaderTable> vhea;
+  std::shared_ptr<VerticalMetricsTable> vmtx;
 
   std::map<std::array<uint8_t, 4>, std::shared_ptr<Table>> tables;
 };
