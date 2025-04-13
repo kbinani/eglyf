@@ -1204,8 +1204,8 @@ public:
         int16_t dx;
         int16_t dy;
         if (scale < 1) {
-          dx = (int16_t)roundf(-xMid * scale);
-          dx = (int16_t)roundf((bottom - rect.yMin) * scale);
+          dx = (int16_t)round(-xMid * scale);
+          dy = (int16_t)round((bottom - rect.yMin) * scale);
         } else {
           dx = -xMid;
           dy = bottom - rect.yMin;
