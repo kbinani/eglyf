@@ -2022,6 +2022,226 @@ public:
         }
       }
     }
+    // TODO: MARK_ti
+    // TODO: ti
+    // TODO: MARK_bi
+    // TODO: bi
+    if (auto MARK_center = anchors.find("MARK_center"); MARK_center != anchors.end()) {
+      for (int h = 1; h <= chu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "MARK_center" ON None GLYPH it12 COMPONENT 1 AT  POS DX 157 DY -310 END_POS END_ANCHOR
+          auto name = format("it{}{}", h, v);
+          auto glyph = getGlyphByName(name);
+          int16_t dx = h * hfu / 2;
+          int16_t dy = -v * vfu / 2;
+          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
+            found->second = Vec<optional<int16_t>>(dx, dy);
+          }
+        }
+      }
+      for (int h = 1; h <= chu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "MARK_center" ON None GLYPH it11R COMPONENT 1 AT  POS DX -157 DY -155 END_POS END_ANCHOR
+          auto name = format("it{}{}R", h, v);
+          auto glyph = getGlyphByName(name);
+          int16_t dx = -h * hfu / 2;
+          int16_t dy = -v * vfu / 2;
+          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
+            found->second = Vec<optional<int16_t>>(dx, dy);
+          }
+        }
+      }
+      for (int h = 1; h <= chu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "MARK_center" ON None GLYPH it211 COMPONENT 1 AT  POS DX 157 DY -155 END_POS END_ANCHOR
+          auto name = format("it2{}{}", h, v);
+          auto glyph = getGlyphByName(name);
+          int16_t dx = h * hfu / 2;
+          int16_t dy = -v * vfu / 2;
+          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
+            found->second = Vec<optional<int16_t>>(dx, dy);
+          }
+        }
+      }
+      for (int h = 1; h <= chu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "MARK_center" ON None GLYPH it211R COMPONENT 1 AT  POS DX -157 DY -155 END_POS END_ANCHOR
+          auto name = format("it2{}{}R", h, v);
+          auto glyph = getGlyphByName(name);
+          int16_t dx = -h * hfu / 2;
+          int16_t dy = -v * vfu / 2;
+          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
+            found->second = Vec<optional<int16_t>>(dx, dy);
+          }
+        }
+      }
+      for (int h = 1; h <= chu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "MARK_center" ON None GLYPH om11 COMPONENT 1 AT  POS DX 157 DY -155 END_POS END_ANCHOR
+          auto name = format("om{}{}", h, v);
+          auto glyph = getGlyphByName(name);
+          int16_t dx = h * hfu / 2;
+          int16_t dy = -v * vfu / 2;
+          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
+            found->second = Vec<optional<int16_t>>(dx, dy);
+          }
+        }
+      }
+      for (int h = 1; h <= chu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "MARK_center" ON None GLYPH om211 COMPONENT 1 AT  POS DX 157 DY -155 END_POS END_ANCHOR
+          auto name = format("om2{}{}", h, v);
+          auto glyph = getGlyphByName(name);
+          int16_t dx = h * hfu / 2;
+          int16_t dy = -v * vfu / 2;
+          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
+            found->second = Vec<optional<int16_t>>(dx, dy);
+          }
+        }
+      }
+      for (int h = 1; h <= chu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "MARK_center" ON None GLYPH ti11 COMPONENT 1 AT  POS DX 157 DY -155 END_POS END_ANCHOR
+          auto name = format("ti{}{}", h, v);
+          auto glyph = getGlyphByName(name);
+          int16_t dx = h * hfu / 2;
+          int16_t dy = -v * vfu / 2;
+          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
+            found->second = Vec<optional<int16_t>>(dx, dy);
+          }
+        }
+      }
+      for (int h = 1; h <= chu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "MARK_center" ON None GLYPH ti211 COMPONENT 1 AT  POS DX 157 DY -155 END_POS END_ANCHOR
+          auto name = format("ti2{}{}", h, v);
+          auto glyph = getGlyphByName(name);
+          int16_t dx = h * hfu / 2;
+          int16_t dy = -v * vfu / 2;
+          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
+            found->second = Vec<optional<int16_t>>(dx, dy);
+          }
+        }
+      }
+      for (int h = 1; h <= chu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "MARK_center" ON None GLYPH mi11 COMPONENT 1 AT  POS DX 157 DY -155 END_POS END_ANCHOR
+          auto name = format("mi{}{}", h, v);
+          auto glyph = getGlyphByName(name);
+          int16_t dx = h * hfu / 2;
+          int16_t dy = -v * vfu / 2;
+          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
+            found->second = Vec<optional<int16_t>>(dx, dy);
+          }
+        }
+      }
+      for (int h = 1; h <= chu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "MARK_center" ON None GLYPH mi211 COMPONENT 1 AT  POS DX 157 DY -155 END_POS END_ANCHOR
+          auto name = format("mi2{}{}", h, v);
+          auto glyph = getGlyphByName(name);
+          int16_t dx = h * hfu / 2;
+          int16_t dy = -v * vfu / 2;
+          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
+            found->second = Vec<optional<int16_t>>(dx, dy);
+          }
+        }
+      }
+      for (int h = 1; h <= chu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "MARK_center" ON None GLYPH bi11 COMPONENT 1 AT  POS DX 157 DY -155 END_POS END_ANCHOR
+          auto name = format("bi{}{}", h, v);
+          auto glyph = getGlyphByName(name);
+          int16_t dx = h * hfu / 2;
+          int16_t dy = -v * vfu / 2;
+          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
+            found->second = Vec<optional<int16_t>>(dx, dy);
+          }
+        }
+      }
+      for (int h = 1; h <= chu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "MARK_center" ON None GLYPH bi211 COMPONENT 1 AT  POS DX 157 DY -155 END_POS END_ANCHOR
+          auto name = format("bi2{}{}", h, v);
+          auto glyph = getGlyphByName(name);
+          int16_t dx = h * hfu / 2;
+          int16_t dy = -v * vfu / 2;
+          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
+            found->second = Vec<optional<int16_t>>(dx, dy);
+          }
+        }
+      }
+      for (int h = 1; h <= chu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "MARK_center" ON None GLYPH es11 COMPONENT 1 AT  POS DX 157 DY 155 END_POS END_ANCHOR
+          auto name = format("es{}{}", h, v);
+          auto glyph = getGlyphByName(name);
+          int16_t dx = h * hfu / 2;
+          int16_t dy = v * vfu / 2;
+          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
+            found->second = Vec<optional<int16_t>>(dx, dy);
+          }
+        }
+      }
+      for (int h = 1; h <= chu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "MARK_center" ON None GLYPH df11 COMPONENT 1 AT  POS DX 157 DY 155 END_POS END_ANCHOR
+          auto name = format("df{}{}", h, v);
+          auto glyph = getGlyphByName(name);
+          int16_t dx = h * hfu / 2;
+          int16_t dy = v * vfu / 2;
+          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
+            found->second = Vec<optional<int16_t>>(dx, dy);
+          }
+        }
+      }
+      for (auto const &prefix : {"dq1234", "dq123", "dq124", "dq12", "dq134", "dq13", "dq14", "dq1", "dq234", "dq23", "dq24", "dq2", "dq34", "dq3", "dq4"}) {
+        for (int h = 1; h <= hhu; h++) {
+          for (int v = 1; v <= vhu; v++) {
+            // DEF_ANCHOR "MARK_center" ON 1472 GLYPH dq1234_11 COMPONENT 1 AT  POS DY 155 END_POS END_ANCHOR
+            // DEF_ANCHOR "MARK_center" ON 1136 GLYPH dq123_11 COMPONENT 1 AT  POS DY 155 END_POS END_ANCHOR
+            // DEF_ANCHOR "MARK_center" ON 1280 GLYPH dq124_11 COMPONENT 1 AT  POS DY 155 END_POS END_ANCHOR
+            // DEF_ANCHOR "MARK_center" ON 992 GLYPH dq12_11 COMPONENT 1 AT  POS DY 155 END_POS END_ANCHOR
+            // DEF_ANCHOR "MARK_center" ON 1376 GLYPH dq134_11 COMPONENT 1 AT  POS DY 155 END_POS END_ANCHOR
+            // DEF_ANCHOR "MARK_center" ON 1040 GLYPH dq13_11 COMPONENT 1 AT  POS DY 155 END_POS END_ANCHOR
+            // DEF_ANCHOR "MARK_center" ON 1184 GLYPH dq14_11 COMPONENT 1 AT  POS DY 155 END_POS END_ANCHOR
+            // DEF_ANCHOR "MARK_center" ON 800 GLYPH dq1_11 COMPONENT 1 AT  POS DY 155 END_POS END_ANCHOR
+            // DEF_ANCHOR "MARK_center" ON 1424 GLYPH dq234_11 COMPONENT 1 AT  POS DY 155 END_POS END_ANCHOR
+            // DEF_ANCHOR "MARK_center" ON 1088 GLYPH dq23_11 COMPONENT 1 AT  POS DY 155 END_POS END_ANCHOR
+            // DEF_ANCHOR "MARK_center" ON 1232 GLYPH dq24_11 COMPONENT 1 AT  POS DY 155 END_POS END_ANCHOR
+            // DEF_ANCHOR "MARK_center" ON 848 GLYPH dq2_11 COMPONENT 1 AT  POS DY 155 END_POS END_ANCHOR
+            // DEF_ANCHOR "MARK_center" ON 1328 GLYPH dq34_11 COMPONENT 1 AT  POS DY 155 END_POS END_ANCHOR
+            // DEF_ANCHOR "MARK_center" ON 896 GLYPH dq3_11 COMPONENT 1 AT  POS DY 155 END_POS END_ANCHOR
+            // DEF_ANCHOR "MARK_center" ON 944 GLYPH dq4_11 COMPONENT 1 AT  POS DY 155 END_POS END_ANCHOR
+            auto name = format("{}_{}{}", prefix, h, v);
+            auto glyph = getGlyphByName(name);
+            int16_t dy = v * vfu / 2;
+            if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
+              found->second = Vec<optional<int16_t>>(nullopt, dy);
+            }
+          }
+        }
+      }
+      for (auto const &[n, sv] : sizeVariants) {
+        // A1 = 5x6
+        // DEF_ANCHOR "MARK_center" ON 1811 GLYPH A1 COMPONENT 1 AT  POS DY 930 END_POS END_ANCHOR
+        {
+          auto glyph = getGlyphByName(n);
+          int16_t dy = sv.vGrids * vfu / 2;
+          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
+            found->second = Vec<optional<int16_t>>(nullopt, dy);
+          }
+        }
+        for (auto const &[key, glyph] : sv.variants) {
+          // DEF_ANCHOR "MARK_center" ON 2888 GLYPH A1_11 COMPONENT 1 AT  POS DY 144 END_POS END_ANCHOR
+          int v = key % 10;
+          int16_t dy = v * vfu / 2; // TODO: this equation is not sure
+          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
+            found->second = Vec<optional<int16_t>>(nullopt, dy);
+          }
+        }
+      }
+    }
     return Status::Ok();
   }
 
