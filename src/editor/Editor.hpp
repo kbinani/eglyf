@@ -1071,6 +1071,7 @@ public:
     int const bottomMargin = (int)round(fontHeight * 0.0615);
     int const maxHeight = fontHeight - topMargin - bottomMargin;
     int const bottom = (int)roundf(font->hhea->descender * presentationScale + bottomMargin);
+    sb = (int16_t)roundf(fontHeight * 0.0513f);
     int maxWidth = 0;
 
     for (auto const &[gid, item] : bounds) {
@@ -1581,6 +1582,35 @@ public:
   Status postprocess() {
     if (auto st = replaceLookups(); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
+    }
+    if (auto st = relocateMarks(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    return Status::Ok();
+  }
+
+  Status relocateMarks() {
+    using namespace std;
+    if (auto a1 = anchors.find("a1"); a1 != anchors.end()) {
+      int16_t const dy = vg * kVGrids;
+      for (auto &it : a1->second->glyphs) {
+        it.second = Vec<optional<int16_t>>(sb, dy);
+      }
+    }
+    if (auto r1 = anchors.find("r1"); r1 != anchors.end()) {
+      int16_t const dy = vg * kVGrids;
+      for (auto const &[prefix, suffix] : initializer_list<pair<string, string>>{{"QB", ""}, {"QD", ""}, {"QD", "V"}, {"QF", ""}, {"QF", "V"}, {"QO", ""}, {"QO", "V"}, {"QC", ""}, {"QC", "V"}, {"QW", ""}, {"QW", "V"}}) {
+        for (int i = 1; i <= kHGrids; i++) {
+          auto name = format("{}{}{}", prefix, i, suffix);
+          auto glyph = getGlyphByName(name);
+          auto found = r1->second->glyphs.find(glyph);
+          if (found == r1->second->glyphs.end()) {
+            continue;
+          }
+          int16_t const dx = sb + hg * i;
+          found->second = Vec<optional<int16_t>>(dx, dy);
+        }
+      }
     }
     return Status::Ok();
   }
@@ -2496,6 +2526,8 @@ public:
   // grid height = vg0 + n * vg; where 1 <= n <= kVGrids
   int16_t vg0;
   std::unordered_map<std::string, SizeVariants> sizeVariants;
+  // font side bearing: unitsPerEm * 0.0513
+  int16_t sb;
 };
 
 } // namespace eglyf
