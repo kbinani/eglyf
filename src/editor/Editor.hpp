@@ -1071,7 +1071,6 @@ public:
     int const bottomMargin = (int)round(fontHeight * 0.0615);
     int const maxHeight = fontHeight - topMargin - bottomMargin;
     int const bottom = (int)roundf(font->hhea->descender * presentationScale + bottomMargin);
-    sb = (int16_t)roundf(fontHeight * 0.0513f);
     int maxWidth = 0;
 
     for (auto const &[gid, item] : bounds) {
@@ -1092,6 +1091,7 @@ public:
     hg0 = 2 * hfu / 3;
     vfu = (int16_t)std::ceilf(maxHeight * 3.0f / (2 + vhu * 3));
     vg0 = 2 * vfu / 3;
+    sb = hfu / 3;
 
     map<string, pair<uint16_t, shared_ptr<Glyph>>> baseGlyphs;
 
@@ -1592,6 +1592,7 @@ public:
   Status relocateMarks() {
     using namespace std;
     if (auto a1 = anchors.find("a1"); a1 != anchors.end()) {
+      // DEF_ANCHOR "a1" ON 469 GLYPH QB1 COMPONENT 1 AT  POS DX 105 DY 1860 END_POS END_ANCHOR
       int16_t const dy = vfu * vhu;
       for (auto &it : a1->second->glyphs) {
         it.second = Vec<optional<int16_t>>(sb, dy);
@@ -1601,6 +1602,7 @@ public:
       int16_t const dy = vfu * vhu;
       for (auto const &[prefix, suffix] : initializer_list<pair<string, string>>{{"QB", ""}, {"QD", ""}, {"QD", "V"}, {"QF", ""}, {"QF", "V"}, {"QO", ""}, {"QO", "V"}, {"QC", ""}, {"QC", "V"}, {"QW", ""}, {"QW", "V"}}) {
         for (int i = 1; i <= hhu; i++) {
+          // DEF_ANCHOR "r1" ON 469 GLYPH QB1 COMPONENT 1 AT  POS DX 420 DY 1860 END_POS END_ANCHOR
           auto name = format("{}{}{}", prefix, i, suffix);
           auto glyph = getGlyphByName(name);
           auto found = r1->second->glyphs.find(glyph);
@@ -1859,6 +1861,21 @@ public:
           auto glyph = getGlyphByName(name);
           auto found = MARK_left->second->glyphs.find(glyph);
           if (found == MARK_left->second->glyphs.end()) {
+            continue;
+          }
+          int16_t const dy = v * vfu;
+          found->second = Vec<optional<int16_t>>(nullopt, dy);
+        }
+      }
+    }
+    if (auto MARK_ts = anchors.find("MARK_ts"); MARK_ts != anchors.end()) {
+      for (int i = 1; i <= chu; i++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "MARK_ts" ON None GLYPH es11 COMPONENT 1 AT  POS DY 310 END_POS END_ANCHOR
+          auto name = format("es{}{}", i, v);
+          auto glyph = getGlyphByName(name);
+          auto found = MARK_ts->second->glyphs.find(glyph);
+          if (found == MARK_ts->second->glyphs.end()) {
             continue;
           }
           int16_t const dy = v * vfu;
@@ -2781,7 +2798,7 @@ public:
   // grid height = vg0 + n * vg; where 1 <= n <= kVGrids
   int16_t vg0;
   std::unordered_map<std::string, SizeVariants> sizeVariants;
-  // font side bearing: unitsPerEm * 0.0513
+  // font side bearings: hfu / 3
   int16_t sb;
 };
 
