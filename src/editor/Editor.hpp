@@ -1795,6 +1795,62 @@ public:
         }
       }
     }
+    if (auto left = anchors.find("left"); left != anchors.end()) {
+      for (int h = 1; h <= hhu; h++) {
+        // DEF_ANCHOR "left" ON None GLYPH c0h1R COMPONENT 1 AT  POS DX -315 END_POS END_ANCHOR
+        auto name = format("c0h{}R", h);
+        auto glyph = getGlyphByName(name);
+        auto found = left->second->glyphs.find(glyph);
+        if (found == left->second->glyphs.end()) {
+          continue;
+        }
+        int16_t const dx = -h * hfu;
+        found->second = Vec<optional<int16_t>>(dx, nullopt);
+      }
+      for (int i = 1; i <= 2; i++) {
+        for (int h = 1; h <= chu; h++) {
+          // DEF_ANCHOR "left" ON None GLYPH c1h1R COMPONENT 1 AT  POS DX -315 END_POS END_ANCHOR
+          auto name = format("c{}h{}R", i, h);
+          auto glyph = getGlyphByName(name);
+          auto found = left->second->glyphs.find(glyph);
+          if (found == left->second->glyphs.end()) {
+            continue;
+          }
+          int16_t const dx = -h * hfu;
+          found->second = Vec<optional<int16_t>>(dx, nullopt);
+        }
+      }
+#if 0
+      DEF_ANCHOR "left" ON None GLYPH c0s0p25R COMPONENT 1 AT  POS DX -78 END_POS END_ANCHOR
+      DEF_ANCHOR "left" ON None GLYPH c0s0p33R COMPONENT 1 AT  POS DX -103 END_POS END_ANCHOR
+      DEF_ANCHOR "left" ON None GLYPH c0s0p5R COMPONENT 1 AT  POS DX -157 END_POS END_ANCHOR
+      DEF_ANCHOR "left" ON None GLYPH c0s0p66R COMPONENT 1 AT  POS DX -207 END_POS END_ANCHOR
+      DEF_ANCHOR "left" ON None GLYPH c0s1p0R COMPONENT 1 AT  POS DX -315 END_POS END_ANCHOR
+      DEF_ANCHOR "left" ON None GLYPH c0s1p5R COMPONENT 1 AT  POS DX -472 END_POS END_ANCHOR
+      DEF_ANCHOR "left" ON None GLYPH c0s2p0R COMPONENT 1 AT  POS DX -630 END_POS END_ANCHOR
+      DEF_ANCHOR "left" ON None GLYPH c0s3p0R COMPONENT 1 AT  POS DX -945 END_POS END_ANCHOR
+      DEF_ANCHOR "left" ON None GLYPH c0s4p0R COMPONENT 1 AT  POS DX -1260 END_POS END_ANCHOR
+      DEF_ANCHOR "left" ON None GLYPH c1s0p33R COMPONENT 1 AT  POS DX -103 END_POS END_ANCHOR
+      DEF_ANCHOR "left" ON None GLYPH c1s0p5R COMPONENT 1 AT  POS DX -157 END_POS END_ANCHOR
+      DEF_ANCHOR "left" ON None GLYPH c1s1p0R COMPONENT 1 AT  POS DX -315 END_POS END_ANCHOR
+      DEF_ANCHOR "left" ON None GLYPH c1s2p0R COMPONENT 1 AT  POS DX -630 END_POS END_ANCHOR
+      DEF_ANCHOR "left" ON None GLYPH c1s3p0R COMPONENT 1 AT  POS DX -945 END_POS END_ANCHOR
+      DEF_ANCHOR "left" ON None GLYPH c2s1p0R COMPONENT 1 AT  POS DX -315 END_POS END_ANCHOR
+#endif
+      for (int i = 1; i <= chu; i++) {
+        for (int h = 1; h <= chu; h++) {
+          // DEF_ANCHOR "left" ON None GLYPH es11 COMPONENT 1 AT  POS DY 310 END_POS END_ANCHOR
+          auto name = format("es{}{}", i, h);
+          auto glyph = getGlyphByName(name);
+          auto found = left->second->glyphs.find(glyph);
+          if (found == left->second->glyphs.end()) {
+            continue;
+          }
+          int16_t const dx = h * hfu;
+          found->second = Vec<optional<int16_t>>(dx, nullopt);
+        }
+      }
+    }
     return Status::Ok();
   }
 
