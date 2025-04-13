@@ -1883,6 +1883,51 @@ public:
         }
       }
     }
+    auto bs = anchors.find("bs");
+    auto te = anchors.find("te");
+    auto be = anchors.find("be");
+    if (bs != anchors.end() && bs != anchors.end() && be != anchors.end()) {
+      for (int h = 1; h <= hhu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "bs" ON None GLYPH o8(6) COMPONENT 1 AT  POS DY -(1860) END_POS END_ANCHOR
+          // DEF_ANCHOR "te" ON None GLYPH o[8]6 COMPONENT 1 AT  POS DX [2520] END_POS END_ANCHOR
+          // DEF_ANCHOR "be" ON None GLYPH o[8](6) COMPONENT 1 AT  POS DX [2520] DY -(1860) END_POS END_ANCHOR
+          auto name = format("o{}{}", h, v);
+          auto glyph = getGlyphByName(name);
+          int16_t dx = h * hfu;
+          int16_t dy = -v * vfu;
+          if (auto fbs = bs->second->glyphs.find(glyph); fbs != bs->second->glyphs.end()) {
+            fbs->second = Vec<optional<int16_t>>(nullopt, dy);
+          }
+          if (auto fte = te->second->glyphs.find(glyph); fte != te->second->glyphs.end()) {
+            fte->second = Vec<optional<int16_t>>(dx, nullopt);
+          }
+          if (auto fbe = be->second->glyphs.find(glyph); fbe != be->second->glyphs.end()) {
+            fbe->second = Vec<optional<int16_t>>(dx, dy);
+          }
+        }
+      }
+      for (int h = 1; h <= chu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "bs" ON None GLYPH s6(5) COMPONENT 1 AT  POS DY -(1550) END_POS END_ANCHOR
+          // DEF_ANCHOR "te" ON None GLYPH s[6]5 COMPONENT 1 AT  POS DX [1890] END_POS END_ANCHOR
+          // DEF_ANCHOR "be" ON None GLYPH s[6](5) COMPONENT 1 AT  POS DX [1890] DY -(1550) END_POS END_ANCHOR
+          auto name = format("s{}{}", h, v);
+          auto glyph = getGlyphByName(name);
+          int16_t dx = h * hfu;
+          int16_t dy = -v * vfu;
+          if (auto fbs = bs->second->glyphs.find(glyph); fbs != bs->second->glyphs.end()) {
+            fbs->second = Vec<optional<int16_t>>(nullopt, dy);
+          }
+          if (auto fte = te->second->glyphs.find(glyph); fte != te->second->glyphs.end()) {
+            fte->second = Vec<optional<int16_t>>(dx, nullopt);
+          }
+          if (auto fbe = be->second->glyphs.find(glyph); fbe != be->second->glyphs.end()) {
+            fbe->second = Vec<optional<int16_t>>(dx, dy);
+          }
+        }
+      }
+    }
     return Status::Ok();
   }
 
