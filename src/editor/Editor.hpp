@@ -1988,6 +1988,40 @@ public:
         }
       }
     }
+    if (MARK_bs != anchors.end() && MARK_be != anchors.end()) {
+      for (int h = 1; h <= chu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "MARK_be" ON None GLYPH be66 COMPONENT 1 AT  POS DX 1890 DY -1860 END_POS END_ANCHOR
+          // DEF_ANCHOR "MARK_bs" ON None GLYPH be66 COMPONENT 1 AT  POS DY -1860 END_POS END_ANCHOR
+          auto name = format("be{}{}", h, v);
+          auto glyph = getGlyphByName(name);
+          int16_t dx = h * hfu;
+          int16_t dy = -v * vfu;
+          if (auto fbe = MARK_be->second->glyphs.find(glyph); fbe != MARK_be->second->glyphs.end()) {
+            fbe->second = Vec<optional<int16_t>>(dx, dy);
+          }
+          if (auto fbs = MARK_bs->second->glyphs.find(glyph); fbs != MARK_bs->second->glyphs.end()) {
+            fbs->second = Vec<optional<int16_t>>(nullopt, dy);
+          }
+        }
+      }
+      for (int h = 1; h <= chu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "MARK_be" ON None GLYPH be266 COMPONENT 1 AT  POS DX 1890 DY -1860 END_POS END_ANCHOR
+          // DEF_ANCHOR "MARK_bs" ON None GLYPH be266 COMPONENT 1 AT  POS DY -1860 END_POS END_ANCHOR
+          auto name = format("be2{}{}", h, v);
+          auto glyph = getGlyphByName(name);
+          int16_t dx = h * hfu;
+          int16_t dy = -v * vfu;
+          if (auto fbe = MARK_be->second->glyphs.find(glyph); fbe != MARK_be->second->glyphs.end()) {
+            fbe->second = Vec<optional<int16_t>>(dx, dy);
+          }
+          if (auto fbs = MARK_bs->second->glyphs.find(glyph); fbs != MARK_bs->second->glyphs.end()) {
+            fbs->second = Vec<optional<int16_t>>(nullopt, dy);
+          }
+        }
+      }
+    }
     return Status::Ok();
   }
 
