@@ -1964,6 +1964,30 @@ public:
         }
       }
     }
+    if (auto MARK_te = anchors.find("MARK_te"); MARK_te != anchors.end()) {
+      for (int h = 1; h <= chu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "MARK_te" ON None GLYPH te65 COMPONENT 1 AT  POS DX 1890 END_POS END_ANCHOR
+          auto name = format("te{}{}", h, v);
+          auto glyph = getGlyphByName(name);
+          int16_t dx = h * hfu;
+          if (auto found = MARK_te->second->glyphs.find(glyph); found != MARK_te->second->glyphs.end()) {
+            found->second = Vec<optional<int16_t>>(dx, nullopt);
+          }
+        }
+      }
+      for (int h = 1; h <= chu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "MARK_te" ON None GLYPH te266 COMPONENT 1 AT  POS DX 1890 END_POS END_ANCHOR
+          auto name = format("te2{}{}", h, v);
+          auto glyph = getGlyphByName(name);
+          int16_t dx = h * hfu;
+          if (auto found = MARK_te->second->glyphs.find(glyph); found != MARK_te->second->glyphs.end()) {
+            found->second = Vec<optional<int16_t>>(dx, nullopt);
+          }
+        }
+      }
+    }
     return Status::Ok();
   }
 
