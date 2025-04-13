@@ -1851,6 +1851,21 @@ public:
         }
       }
     }
+    if (auto MARK_left = anchors.find("MARK_left"); MARK_left != anchors.end()) {
+      for (int i = 1; i <= chu; i++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "MARK_left" ON None GLYPH es11 COMPONENT 1 AT  POS DY 310 END_POS END_ANCHOR
+          auto name = format("es{}{}", i, v);
+          auto glyph = getGlyphByName(name);
+          auto found = MARK_left->second->glyphs.find(glyph);
+          if (found == MARK_left->second->glyphs.end()) {
+            continue;
+          }
+          int16_t const dy = v * vfu;
+          found->second = Vec<optional<int16_t>>(nullopt, dy);
+        }
+      }
+    }
     return Status::Ok();
   }
 
