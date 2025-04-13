@@ -1088,9 +1088,9 @@ public:
       maxWidth = max(maxWidth, scaledWidth);
     }
 
-    hfu = (int16_t)std::ceilf(maxWidth * 3.0f / (2 + kHGrids * 3));
+    hfu = (int16_t)std::ceilf(maxWidth * 3.0f / (2 + hhu * 3));
     hg0 = 2 * hfu / 3;
-    vfu = (int16_t)std::ceilf(maxHeight * 3.0f / (2 + kVGrids * 3));
+    vfu = (int16_t)std::ceilf(maxHeight * 3.0f / (2 + vhu * 3));
     vg0 = 2 * vfu / 3;
 
     map<string, pair<uint16_t, shared_ptr<Glyph>>> baseGlyphs;
@@ -1150,7 +1150,7 @@ public:
       }
     }
 
-    for (int h = 1; h <= kHGrids; h++) {
+    for (int h = 1; h <= hhu; h++) {
       string name = format("QB{0}", h);
       if (auto gid = font->post->getGlyphId(name); gid) {
         if (auto st = font->post->setName(*gid, "." + name); !st.ok()) {
@@ -1178,8 +1178,8 @@ public:
       auto const &[cp, rect] = found->second;
       int width = (int)ceilf(((float)rect.width() - (float)hg0) / hfu);
       int height = (int)ceilf(((float)rect.height() - (float)vg0) / vfu);
-      width = min(max(width, 1), kHGrids);
-      height = min(max(height, 1), kVGrids);
+      width = min(max(width, 1), hhu);
+      height = min(max(height, 1), vhu);
       int16_t xMid = (rect.xMin + rect.xMax) / 2;
 
       SizeVariants sv;
@@ -1592,15 +1592,15 @@ public:
   Status relocateMarks() {
     using namespace std;
     if (auto a1 = anchors.find("a1"); a1 != anchors.end()) {
-      int16_t const dy = vfu * kVGrids;
+      int16_t const dy = vfu * vhu;
       for (auto &it : a1->second->glyphs) {
         it.second = Vec<optional<int16_t>>(sb, dy);
       }
     }
     if (auto r1 = anchors.find("r1"); r1 != anchors.end()) {
-      int16_t const dy = vfu * kVGrids;
+      int16_t const dy = vfu * vhu;
       for (auto const &[prefix, suffix] : initializer_list<pair<string, string>>{{"QB", ""}, {"QD", ""}, {"QD", "V"}, {"QF", ""}, {"QF", "V"}, {"QO", ""}, {"QO", "V"}, {"QC", ""}, {"QC", "V"}, {"QW", ""}, {"QW", "V"}}) {
-        for (int i = 1; i <= kHGrids; i++) {
+        for (int i = 1; i <= hhu; i++) {
           auto name = format("{}{}{}", prefix, i, suffix);
           auto glyph = getGlyphByName(name);
           auto found = r1->second->glyphs.find(glyph);
@@ -1614,7 +1614,7 @@ public:
     }
     if (auto bottom = anchors.find("bottom"); bottom != anchors.end()) {
       for (auto const &prefix : {"r0v", "r1v", "r2v"}) {
-        for (int v = 1; v <= kVGrids; v++) {
+        for (int v = 1; v <= vhu; v++) {
           for (auto const &suffix : {"", "R"}) {
             auto name = format("{}{}{}", prefix, v, suffix);
             auto glyph = getGlyphByName(name);
@@ -1665,7 +1665,7 @@ public:
     if (auto MARK_top = anchors.find("MARK_top"); MARK_top != anchors.end()) {
       for (auto const &key : {"a", "b", "l", "p", "r", "u"}) {
         for (int i = 0; i <= 2; i++) {
-          for (int v = 1; v <= kVGrids; v++) {
+          for (int v = 1; v <= vhu; v++) {
             auto name = format("tc{}b{}_{}", key, i, v);
             auto glyph = getGlyphByName(name);
             auto found = MARK_top->second->glyphs.find(glyph);
@@ -1679,8 +1679,8 @@ public:
       }
     }
     if (auto MARK_right = anchors.find("MARK_right"); MARK_right != anchors.end()) {
-      for (int h = 1; h <= kHGrids; h++) {
-        for (int v = 1; v <= kVGrids; v++) {
+      for (int h = 1; h <= hhu; h++) {
+        for (int v = 1; v <= vhu; v++) {
           auto name = format("es{}{}", h, v);
           auto glyph = getGlyphByName(name);
           auto found = MARK_right->second->glyphs.find(glyph);
@@ -1690,6 +1690,108 @@ public:
           int16_t const dx = h * hfu;
           int16_t const dy = v * vfu;
           found->second = Vec<optional<int16_t>>(dx, dy);
+        }
+      }
+      for (auto const &key : {"a", "b", "l", "p", "r", "u"}) {
+        for (int i = 0; i <= 2; i++) {
+          for (int v = 1; v <= vhu; v++) {
+            auto name = format("tc{}e{}_{}", key, i, v);
+            auto glyph = getGlyphByName(name);
+            auto found = MARK_right->second->glyphs.find(glyph);
+            if (found == MARK_right->second->glyphs.end()) {
+              continue;
+            }
+            int16_t const dy = v * vfu;
+            found->second = Vec<optional<int16_t>>(nullopt, dy);
+          }
+        }
+      }
+    }
+    if (auto right = anchors.find("right"); right != anchors.end()) {
+      for (int h = 1; h <= hhu; h++) {
+        // DEF_ANCHOR "right" ON None GLYPH c0h1 COMPONENT 1 AT  POS DX 315 END_POS END_ANCHOR
+        auto name = format("c0h{}", h);
+        auto glyph = getGlyphByName(name);
+        auto found = right->second->glyphs.find(glyph);
+        if (found == right->second->glyphs.end()) {
+          continue;
+        }
+        int16_t const dx = h * hfu;
+        found->second = Vec<optional<int16_t>>(dx, nullopt);
+      }
+      for (int i = 1; i <= 2; i++) {
+        for (int h = 1; h <= chu; h++) {
+          // DEF_ANCHOR "right" ON None GLYPH c1h1 COMPONENT 1 AT  POS DX 315 END_POS END_ANCHOR
+          auto name = format("c{}h{}", i, h);
+          auto glyph = getGlyphByName(name);
+          auto found = right->second->glyphs.find(glyph);
+          if (found == right->second->glyphs.end()) {
+            continue;
+          }
+          int16_t const dx = h * hfu;
+          found->second = Vec<optional<int16_t>>(dx, nullopt);
+        }
+      }
+#if 0
+      DEF_ANCHOR "right" ON None GLYPH c0s0p25 COMPONENT 1 AT  POS DX 78 END_POS END_ANCHOR
+      DEF_ANCHOR "right" ON None GLYPH c0s0p33 COMPONENT 1 AT  POS DX 103 END_POS END_ANCHOR
+      DEF_ANCHOR "right" ON None GLYPH c0s0p5 COMPONENT 1 AT  POS DX 157 END_POS END_ANCHOR
+      DEF_ANCHOR "right" ON None GLYPH c0s0p66 COMPONENT 1 AT  POS DX 207 END_POS END_ANCHOR
+      DEF_ANCHOR "right" ON None GLYPH c0s1p0 COMPONENT 1 AT  POS DX 315 END_POS END_ANCHOR
+      DEF_ANCHOR "right" ON None GLYPH c0s1p5 COMPONENT 1 AT  POS DX 472 END_POS END_ANCHOR
+      DEF_ANCHOR "right" ON None GLYPH c0s2p0 COMPONENT 1 AT  POS DX 630 END_POS END_ANCHOR
+      DEF_ANCHOR "right" ON None GLYPH c0s3p0 COMPONENT 1 AT  POS DX 945 END_POS END_ANCHOR
+      DEF_ANCHOR "right" ON None GLYPH c0s4p0 COMPONENT 1 AT  POS DX 1260 END_POS END_ANCHOR
+      DEF_ANCHOR "right" ON None GLYPH c1s0p33 COMPONENT 1 AT  POS DX 103 END_POS END_ANCHOR
+      DEF_ANCHOR "right" ON None GLYPH c1s0p5 COMPONENT 1 AT  POS DX 157 END_POS END_ANCHOR
+      DEF_ANCHOR "right" ON None GLYPH c1s1p0 COMPONENT 1 AT  POS DX 315 END_POS END_ANCHOR
+      DEF_ANCHOR "right" ON None GLYPH c1s2p0 COMPONENT 1 AT  POS DX 630 END_POS END_ANCHOR
+      DEF_ANCHOR "right" ON None GLYPH c1s3p0 COMPONENT 1 AT  POS DX 945 END_POS END_ANCHOR
+      DEF_ANCHOR "right" ON None GLYPH c2s1p0 COMPONENT 1 AT  POS DX 315 END_POS END_ANCHOR
+#endif
+      for (int h = 1; h <= hhu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "right" ON None GLYPH o11 COMPONENT 1 AT  POS DX 315 END_POS END_ANCHOR
+          auto name = format("o{}{}", h, v);
+          auto glyph = getGlyphByName(name);
+          auto found = right->second->glyphs.find(glyph);
+          if (found == right->second->glyphs.end()) {
+            continue;
+          }
+          int16_t const dx = h * hfu;
+          found->second = Vec<optional<int16_t>>(dx, nullopt);
+        }
+      }
+      for (auto const &key : {"s", "i", "es", "om", "om2"}) {
+        // DEF_ANCHOR "right" ON None GLYPH s11 COMPONENT 1 AT  POS DX 315 END_POS END_ANCHOR
+        // DEF_ANCHOR "right" ON None GLYPH i11 COMPONENT 1 AT  POS DX 315 END_POS END_ANCHOR
+        // DEF_ANCHOR "right" ON None GLYPH es11 COMPONENT 1 AT  POS DX 315 DY 310 END_POS END_ANCHOR
+        // DEF_ANCHOR "right" ON None GLYPH om11 COMPONENT 1 AT  POS DX 315 END_POS END_ANCHOR
+        // DEF_ANCHOR "right" ON None GLYPH om211 COMPONENT 1 AT  POS DX 315 END_POS END_ANCHOR
+        for (int h = 1; h <= chu; h++) {
+          for (int v = 1; v <= vhu; v++) {
+            auto name = format("{}{}{}", key, h, v);
+            auto glyph = getGlyphByName(name);
+            auto found = right->second->glyphs.find(glyph);
+            if (found == right->second->glyphs.end()) {
+              continue;
+            }
+            int16_t const dx = h * hfu;
+            found->second = Vec<optional<int16_t>>(dx, nullopt);
+          }
+        }
+      }
+      for (int h = 1; h <= chu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "right" ON None GLYPH it11R COMPONENT 1 AT  POS DX 315 END_POS END_ANCHOR
+          auto name = format("it{}{}R", h, v);
+          auto glyph = getGlyphByName(name);
+          auto found = right->second->glyphs.find(glyph);
+          if (found == right->second->glyphs.end()) {
+            continue;
+          }
+          int16_t const dx = h * hfu;
+          found->second = Vec<optional<int16_t>>(dx, nullopt);
         }
       }
     }
@@ -2584,8 +2686,9 @@ private:
   }
 
 public:
-  static int constexpr kHGrids = 8;
-  static int constexpr kVGrids = 6;
+  static int constexpr hhu = 8;
+  static int constexpr vhu = 6;
+  static int constexpr chu = 6;
 
   std::shared_ptr<FontFile> font;
   std::unordered_map<std::string, std::shared_ptr<Glyph>> glyphs;
