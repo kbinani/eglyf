@@ -496,25 +496,25 @@ public:
     if (holds_alternative<ReadonlyGlyph>(g)) {
       auto rg = get<ReadonlyGlyph>(g);
       add.header = rg.header;
-      Vec<float> topLeft = Vec<float>(rg.header.xMin, rg.header.yMin).transform(xscale, scale01, scale10, yscale, dx, dy);
-      Vec<float> topRight = Vec<float>(rg.header.xMax, rg.header.yMin).transform(xscale, scale01, scale10, yscale, dx, dy);
-      Vec<float> bottomLeft = Vec<float>(rg.header.xMin, rg.header.yMax).transform(xscale, scale01, scale10, yscale, dx, dy);
-      Vec<float> bottomRight = Vec<float>(rg.header.xMax, rg.header.yMax).transform(xscale, scale01, scale10, yscale, dx, dy);
-      add.header.xMin = (int16_t)round(min({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
-      add.header.xMax = (int16_t)round(max({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
-      add.header.yMin = (int16_t)round(min({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y}));
-      add.header.yMax = (int16_t)round(max({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y}));
+      Vec<float> topLeft = Vec<float>(rg.header.xMin, rg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
+      Vec<float> topRight = Vec<float>(rg.header.xMax, rg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
+      Vec<float> bottomLeft = Vec<float>(rg.header.xMin, rg.header.yMax).transform(xscale, scale10, scale01, yscale, dx, dy);
+      Vec<float> bottomRight = Vec<float>(rg.header.xMax, rg.header.yMax).transform(xscale, scale10, scale01, yscale, dx, dy);
+      add.header.xMin = (int16_t)floor(min({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
+      add.header.xMax = (int16_t)ceil(max({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
+      add.header.yMin = (int16_t)floor(min({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y}));
+      add.header.yMax = (int16_t)ceil(max({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y}));
     } else if (holds_alternative<CompositeGlyph>(g)) {
       auto cg = get<CompositeGlyph>(g);
       add.header = cg.header;
-      Vec<float> topLeft = Vec<float>(cg.header.xMin, cg.header.yMin).transform(xscale, scale01, scale10, yscale, dx, dy);
-      Vec<float> topRight = Vec<float>(cg.header.xMax, cg.header.yMin).transform(xscale, scale01, scale10, yscale, dx, dy);
-      Vec<float> bottomLeft = Vec<float>(cg.header.xMin, cg.header.yMax).transform(xscale, scale01, scale10, yscale, dx, dy);
-      Vec<float> bottomRight = Vec<float>(cg.header.xMax, cg.header.yMax).transform(xscale, scale01, scale10, yscale, dx, dy);
-      add.header.xMin = (int16_t)round(min({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
-      add.header.xMax = (int16_t)round(max({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
-      add.header.yMin = (int16_t)round(min({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y}));
-      add.header.yMax = (int16_t)round(max({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y}));
+      Vec<float> topLeft = Vec<float>(cg.header.xMin, cg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
+      Vec<float> topRight = Vec<float>(cg.header.xMax, cg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
+      Vec<float> bottomLeft = Vec<float>(cg.header.xMin, cg.header.yMax).transform(xscale, scale10, scale01, yscale, dx, dy);
+      Vec<float> bottomRight = Vec<float>(cg.header.xMax, cg.header.yMax).transform(xscale, scale10, scale01, yscale, dx, dy);
+      add.header.xMin = (int16_t)floor(min({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
+      add.header.xMax = (int16_t)ceil(max({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
+      add.header.yMin = (int16_t)floor(min({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y}));
+      add.header.yMax = (int16_t)ceil(max({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y}));
     } else {
       return EGLYF_NULLOPT_WHAT("Cannot create composite glyph from empty glyph");
     }
