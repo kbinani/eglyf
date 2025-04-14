@@ -1129,12 +1129,15 @@ public:
       int16_t xMid = (rect.xMin + rect.xMax) / 2;
       int16_t dx;
       int16_t dy;
+      int16_t lsb;
       if (scale < 1) {
         dx = (int16_t)round(-xMid * scale);
         dy = (int16_t)round((bottom - rect.yMin) * scale);
+        lsb = (int16_t)round((rect.xMin - xMid) * scale);
       } else {
         dx = -xMid;
         dy = bottom - rect.yMin;
+        lsb = rect.xMin - xMid;
       }
       GlyphDataTable::CompositeGlyph::GlyphRecord record;
       if (scale < 1) {
@@ -1142,7 +1145,7 @@ public:
       } else {
         record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(gid, dx, dy);
       }
-      auto newGid = font->addCompositeGlyph(name, record, 0, dx, 0, 0);
+      auto newGid = font->addCompositeGlyph(name, record, 0, lsb, 0, 0);
       if (!newGid) {
         return EGLYF_STATUS_PUSH(newGid.status());
       }
