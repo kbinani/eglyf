@@ -1035,6 +1035,14 @@ public:
     variationChain[16] = {15, 14, 13, 12, 11};
     variationChain[12] = {11};
 
+    deque<pair<int, float>> sizeList;
+    for (auto const &[key, _] : variationChain) {
+      int h = key / 10;
+      int v = key % 10;
+      sizeList.push_back(make_pair(h * 10 + v, h * v));
+    }
+    ranges::stable_sort(sizeList, [](auto const &a, auto const &b) { return a.second < b.second; });
+
     map<uint16_t, pair<uint32_t, Rect<int16_t>>> bounds;
 
     if (!holds_alternative<FontFile::TrueTypeOutlines>(font->outlines)) {
@@ -1070,7 +1078,7 @@ public:
     int const topMargin = (int)round(fontHeight * 0.0322);
     int const bottomMargin = (int)round(fontHeight * 0.0615);
     int const maxHeight = fontHeight - topMargin - bottomMargin;
-    int const bottom = (int)roundf(font->hhea->descender * presentationScale + bottomMargin);
+    int const bottom = (int)round(font->hhea->descender * presentationScale + bottomMargin);
     int maxWidth = 0;
 
     for (auto const &[gid, item] : bounds) {
@@ -1122,8 +1130,8 @@ public:
       int16_t dx;
       int16_t dy;
       if (scale < 1) {
-        dx = (int16_t)roundf(-xMid * scale);
-        dy = (int16_t)roundf((bottom - rect.yMin) * scale);
+        dx = (int16_t)round(-xMid * scale);
+        dy = (int16_t)round((bottom - rect.yMin) * scale);
       } else {
         dx = -xMid;
         dy = bottom - rect.yMin;
@@ -1176,18 +1184,42 @@ public:
         continue;
       }
       auto const &[cp, rect] = found->second;
-      int width = (int)ceilf(((float)rect.width() - (float)hg0) / hfu);
-      int height = (int)ceilf(((float)rect.height() - (float)vg0) / vfu);
+
+      float const baseScale = min(1.0f, maxHeight / (float)rect.height());
+
+      int width = (int)ceilf((rect.width() * baseScale - (float)hg0) / hfu);
+      int height = (int)ceilf((rect.height() * baseScale - (float)vg0) / vfu);
       width = min(max(width, 1), hhu);
       height = min(max(height, 1), vhu);
       int16_t xMid = (rect.xMin + rect.xMax) / 2;
+
+      auto chain = variationChain.find(width * 10 + height);
+      if (chain == variationChain.end()) {
+        if (auto first = ranges::find_if(sizeList, [=](auto const &it) { return it.second >= width * height; }); first != sizeList.end()) {
+          auto index = distance(sizeList.begin(), first);
+          for (size_t i = index; i < sizeList.size(); i++) {
+            auto const &it = sizeList[i];
+            int key = it.first;
+            int h = key / 10;
+            int v = key % 10;
+            if (h < width || v < height) {
+              continue;
+            }
+            chain = variationChain.find(key);
+            if (chain != variationChain.end()) {
+              width = h;
+              height = v;
+              break;
+            }
+          }
+        }
+      }
 
       SizeVariants sv;
       sv.base = newGlyph;
       sv.hGrids = width;
       sv.vGrids = height;
 
-      auto chain = variationChain.find(width * 10 + height);
       if (chain == variationChain.end()) {
         sizeVariants[name] = sv;
         continue;
@@ -1198,9 +1230,9 @@ public:
         int xLevel = key / 10;
 
         string n = format("{0}_{1}{2}", name, xLevel, yLevel);
-        float xScale = this->width(xLevel) / (float)this->width(width);
-        float yScale = this->height(yLevel) / (float)this->height(height);
-        float scale = min(xScale, yScale);
+        float xScale = this->width(xLevel) / (float)this->width(width) * baseScale;
+        float yScale = this->height(yLevel) / (float)this->height(height) * baseScale;
+        float scale = min({1.0f, xScale, yScale});
         int16_t dx;
         int16_t dy;
         if (scale < 1) {
@@ -1215,11 +1247,11 @@ public:
         if (!newGid) {
           return EGLYF_STATUS_PUSH(newGid.status());
         }
-        auto newGlyph = getGlyphById(*newGid);
-        if (!newGlyph) {
+        auto variationGlyph = getGlyphById(*newGid);
+        if (!variationGlyph) {
           return EGLYF_ERROR;
         }
-        sv.variants[key] = newGlyph;
+        sv.variants[key] = variationGlyph;
       }
 
       sizeVariants[name] = sv;
