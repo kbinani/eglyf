@@ -122,9 +122,9 @@ public:
         r.flags = ARGS_ARE_XY_VALUES | ARG_1_AND_2_ARE_WORDS;
         if (scale) {
           r.flags |= WE_HAVE_A_SCALE;
+          r.scale = scale;
         }
         r.offset = Vec<int16_t>(dx, dy);
-        r.scale = scale;
         return r;
       }
     };
@@ -269,7 +269,7 @@ public:
         } else if (instructions) {
           flg |= WE_HAVE_INSTRUCTIONS;
         }
-        if (!out.u16(rec.flags)) {
+        if (!out.u16(flg)) {
           return EGLYF_ERROR_WHAT("Failed to write flags");
         }
         if (!out.u16(rec.glyphIndex)) {
