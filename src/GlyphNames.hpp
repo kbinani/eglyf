@@ -1071,15 +1071,39 @@ private:
     return n.release();
   }
 
+  static std::unordered_map<uint32_t, std::string> const &GetTable() {
+    using namespace std;
+    static unique_ptr<unordered_map<uint32_t, string> const> const sTable(CreateGlyphNameTable());
+    return *sTable;
+  }
+
+  static std::unordered_map<std::string, uint32_t> const &GetReverseTable() {
+    using namespace std;
+    static unique_ptr<unordered_map<string, uint32_t> const> const sTable([]() {
+      auto ret = make_unique<unordered_map<string, uint32_t>>();
+      for (auto const &[cp, name] : GetTable()) {
+        (*ret)[name] = cp;
+      }
+      return ret.release();
+    }());
+    return *sTable;
+  }
+
 public:
   static std::optional<std::string> Get(uint32_t codepoint) {
     using namespace std;
-    static unique_ptr<unordered_map<uint32_t, string> const> const sTable(CreateGlyphNameTable());
-    if (auto found = sTable->find(codepoint); found == sTable->end()) {
+    auto const &table = GetTable();
+    if (auto found = table.find(codepoint); found == table.end()) {
       return nullopt;
     } else {
       return found->second;
     }
+  }
+
+  static bool IsNamedGlyph(std::string const &name) {
+    using namespace std;
+    auto const &table = GetReverseTable();
+    return table.find(name) != table.end();
   }
 };
 

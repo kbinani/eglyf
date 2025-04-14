@@ -2995,10 +2995,12 @@ private:
 
     if (holds_alternative<shared_ptr<Glyph>>(item)) {
       auto glyph = get<shared_ptr<Glyph>>(item);
-      if (isMarkGlyph(glyph)) {
-        mark++;
-      } else {
-        base++;
+      if (glyph->id) {
+        if (isMarkGlyph(glyph)) {
+          mark++;
+        } else {
+          base++;
+        }
       }
     } else if (holds_alternative<shared_ptr<Group>>(item)) {
       auto group = get<shared_ptr<Group>>(item);
@@ -3013,10 +3015,12 @@ private:
     for (auto const &member : group->members) {
       if (holds_alternative<shared_ptr<Glyph>>(member)) {
         auto glyph = get<shared_ptr<Glyph>>(member);
-        if (isMarkGlyph(glyph)) {
-          mark++;
-        } else {
-          base++;
+        if (glyph->id) {
+          if (isMarkGlyph(glyph)) {
+            mark++;
+          } else {
+            base++;
+          }
         }
       } else if (holds_alternative<shared_ptr<Group>>(member)) {
         auto subgroup = get<shared_ptr<Group>>(member);
