@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=UTF-8'/>
+<style type='text/css'>
+@font-face {
+  font-family: 'TestFont';
+  src: url("test.ttf");
+  font-display: block;
+}
+@font-face {
+  font-family: 'ReferenceFont';
+  src: url("eot.ttf");
+  font-display: block;
+}
+.reference {
+  font-size: 60px;
+  font-family: 'ReferenceFont';
+}
+.test {
+  font-size: 60px;
+  font-family: 'TestFont';
+}
+</style>
+</head>
+<body>
+<table border=1 id="table"></table>
+<script type="text/javascript">
+  const data = [
+    ["A1", "&#x13000;"],
+    ["A1 vj O1", "&#x13000;&#x13430;&#x13250;"],
+    ["N35 vj X1", "&#x13216;&#x13430;&#x133cf;"],
+  ];
+  const table = document.getElementById("table");
+  for (const [label, hieroglyph] of data) {
+    const tr = document.createElement("tr");
+
+    const title = document.createElement("td");
+    title.innerHTML = label;
+    tr.appendChild(title);
+
+    const reference = document.createElement("td");
+    reference.innerHTML = hieroglyph;
+    reference.classList.add("reference");
+    tr.appendChild(reference);
+
+    const test = document.createElement("td");
+    test.innerHTML = hieroglyph;
+    test.classList.add("test");
+    tr.appendChild(test);
+    table.appendChild(tr);
+  }
+</script>
+</body>
+</html>
