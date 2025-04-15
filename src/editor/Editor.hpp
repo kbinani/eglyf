@@ -2076,7 +2076,51 @@ public:
         }
       }
     }
-    // TODO: MARK_ti
+    auto MARK_ti = anchors.find("MARK_ti");
+    if (MARK_ti != anchors.end()) {
+      for (auto const &prefix : {"ti", "ti2", "it", "it2"}) {
+        for (int h = 1; h <= chu; h++) {
+          for (int v = 1; v <= vhu; v++) {
+            // DEF_ANCHOR "MARK_ti" ON None GLYPH ti11 COMPONENT 1 AT  POS DX 157 END_POS END_ANCHOR
+            // DEF_ANCHOR "MARK_ti" ON None GLYPH ti211 COMPONENT 1 AT  POS DX 157 END_POS END_ANCHOR
+            // DEF_ANCHOR "MARK_ti" ON None GLYPH it11 COMPONENT 1 AT  POS DX 157 END_POS END_ANCHOR
+            // DEF_ANCHOR "MARK_ti" ON None GLYPH it211 COMPONENT 1 AT  POS DX 157 END_POS END_ANCHOR
+            auto name = format("{}{}{}", prefix, h, v);
+            auto glyph = getGlyphByName(name);
+            int16_t dx = h * hfu / 2;
+            if (auto found = MARK_ti->second->glyphs.find(glyph); found != MARK_ti->second->glyphs.end()) {
+              found->second = Vec<optional<int16_t>>(dx, nullopt);
+            }
+          }
+        }
+      }
+      for (auto const &prefix : {"it", "it2"}) {
+        for (int h = 1; h <= chu; h++) {
+          for (int v = 1; v <= vhu; v++) {
+            // DEF_ANCHOR "MARK_ti" ON None GLYPH it11R COMPONENT 1 AT  POS DX -157 END_POS END_ANCHOR
+            // DEF_ANCHOR "MARK_ti" ON None GLYPH it211R COMPONENT 1 AT  POS DX -157 END_POS END_ANCHOR
+            auto name = format("it{}{}R", h, v);
+            auto glyph = getGlyphByName(name);
+            int16_t dx = -h * hfu / 2;
+            if (auto found = MARK_ti->second->glyphs.find(glyph); found != MARK_ti->second->glyphs.end()) {
+              found->second = Vec<optional<int16_t>>(dx, nullopt);
+            }
+          }
+        }
+      }
+      for (int h = 1; h <= chu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "MARK_ti" ON None GLYPH es11 COMPONENT 1 AT  POS DX 157 DY 310 END_POS END_ANCHOR
+          auto name = format("es{}{}", h, v);
+          auto glyph = getGlyphByName(name);
+          int16_t dx = h * hfu / 2;
+          int16_t dy = v * vfu;
+          if (auto found = MARK_ti->second->glyphs.find(glyph); found != MARK_ti->second->glyphs.end()) {
+            found->second = Vec<optional<int16_t>>(dx, dy);
+          }
+        }
+      }
+    }
     // TODO: ti
     // TODO: MARK_bi
     // TODO: bi
