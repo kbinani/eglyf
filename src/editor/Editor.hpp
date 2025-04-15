@@ -1237,15 +1237,18 @@ public:
         float scale = min({1.0f, xScale, yScale});
         int16_t dx;
         int16_t dy;
+        int16_t lsb;
         if (scale < 1) {
           dx = (int16_t)round(-xMid * scale);
           dy = (int16_t)round((bottom - rect.yMin) * scale);
+          lsb = (int16_t)round((rect.xMin - xMid) * scale);
         } else {
           dx = -xMid;
           dy = bottom - rect.yMin;
+          lsb = rect.xMin - xMid;
         }
         auto record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(originalGID, dx, dy, F2DOT14::FromFloat(scale));
-        auto newGid = font->addCompositeGlyph(n, record, 0, dx, 0, 0);
+        auto newGid = font->addCompositeGlyph(n, record, 0, lsb, 0, 0);
         if (!newGid) {
           return EGLYF_STATUS_PUSH(newGid.status());
         }
