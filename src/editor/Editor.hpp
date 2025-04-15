@@ -1168,14 +1168,13 @@ public:
           return EGLYF_STATUS_PUSH(st);
         }
       }
-      int16_t width = this->width(h);
-      auto newGid = font->addEmptyGlyph(name, width, 0, fontHeight, fontHeight - topMargin);
+      int16_t width = sb + this->width(h) + sb;
+      auto newGid = font->addEmptyGlyph(name, width, sb, fontHeight, fontHeight - topMargin);
       if (!newGid) {
         return EGLYF_STATUS_PUSH(newGid.status());
       }
     }
 
-    float constexpr kAspectDiffThreshold = 0.2f;
     for (auto const &it : baseGlyphs) {
       auto const &name = it.first;
       auto const &glyphs = it.second;
