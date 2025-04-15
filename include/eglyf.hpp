@@ -15,6 +15,7 @@
 #include <filesystem>
 #include <cassert>
 #include <format>
+#include <regex>
 
 #include "Status.hpp"
 #include "Optional.hpp"

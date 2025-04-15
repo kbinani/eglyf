@@ -1638,15 +1638,15 @@ public:
     if (auto r1 = anchors.find("r1"); r1 != anchors.end()) {
       int16_t const dy = vfu * vhu;
       for (auto const &[prefix, suffix] : initializer_list<pair<string, string>>{{"QB", ""}, {"QD", ""}, {"QD", "V"}, {"QF", ""}, {"QF", "V"}, {"QO", ""}, {"QO", "V"}, {"QC", ""}, {"QC", "V"}, {"QW", ""}, {"QW", "V"}}) {
-        for (int i = 1; i <= hhu; i++) {
+        for (int h = 1; h <= hhu; h++) {
           // DEF_ANCHOR "r1" ON 469 GLYPH QB1 COMPONENT 1 AT  POS DX 420 DY 1860 END_POS END_ANCHOR
-          auto name = format("{}{}{}", prefix, i, suffix);
+          auto name = format("{}{}{}", prefix, h, suffix);
           auto glyph = getGlyphByName(name);
           auto found = r1->second->glyphs.find(glyph);
           if (found == r1->second->glyphs.end()) {
             continue;
           }
-          int16_t const dx = sb + hfu * i;
+          int16_t const dx = sb + hfu * h;
           found->second = Vec<optional<int16_t>>(dx, dy);
         }
       }
@@ -1667,41 +1667,25 @@ public:
           }
         }
       }
+      for (auto &it : bottom->second->glyphs) {
+        auto const &glyph = it.first;
+        auto const &name = glyph->name;
+        // type == 'NYSPC'): # Negative Y spacer
+        static regex const re("^r[012]s([0-9])p([0-9]+)R?");
+        smatch m;
+        if (regex_search(name, m, re)) {
+          string sp = m.format("$1.$2");
+          float fsp;
+          try {
+            fsp = stof(sp);
+          } catch (...) {
+            continue;
+          }
+          int16_t dy = (int16_t)round(-fsp * vfu);
+          it.second = Vec<optional<int16_t>>(nullopt, dy);
+        }
+      }
     }
-#if 0
-    DEF_ANCHOR "bottom" ON None GLYPH r0s0p25 COMPONENT 1 AT  POS DY -77 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r0s0p33 COMPONENT 1 AT  POS DY -102 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r0s0p5 COMPONENT 1 AT  POS DY -155 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r0s0p66 COMPONENT 1 AT  POS DY -204 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r0s1p0 COMPONENT 1 AT  POS DY -310 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r0s1p5 COMPONENT 1 AT  POS DY -465 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r0s2p0 COMPONENT 1 AT  POS DY -620 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r0s3p0 COMPONENT 1 AT  POS DY -930 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r0s4p0 COMPONENT 1 AT  POS DY -1240 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r0s0p25R COMPONENT 1 AT  POS DY -77 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r0s0p33R COMPONENT 1 AT  POS DY -102 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r0s0p5R COMPONENT 1 AT  POS DY -155 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r0s0p66R COMPONENT 1 AT  POS DY -204 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r0s1p0R COMPONENT 1 AT  POS DY -310 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r0s1p5R COMPONENT 1 AT  POS DY -465 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r0s2p0R COMPONENT 1 AT  POS DY -620 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r0s3p0R COMPONENT 1 AT  POS DY -930 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r0s4p0R COMPONENT 1 AT  POS DY -1240 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r1s0p33 COMPONENT 1 AT  POS DY -102 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r1s0p5 COMPONENT 1 AT  POS DY -155 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r1s1p0 COMPONENT 1 AT  POS DY -310 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r1s2p0 COMPONENT 1 AT  POS DY -620 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r1s3p0 COMPONENT 1 AT  POS DY -930 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r1s4p0 COMPONENT 1 AT  POS DY -1240 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r1s0p33R COMPONENT 1 AT  POS DY -102 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r1s0p5R COMPONENT 1 AT  POS DY -155 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r1s1p0R COMPONENT 1 AT  POS DY -310 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r1s2p0R COMPONENT 1 AT  POS DY -620 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r1s3p0R COMPONENT 1 AT  POS DY -930 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r1s4p0R COMPONENT 1 AT  POS DY -1240 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r2s1p0 COMPONENT 1 AT  POS DY -310 END_POS END_ANCHOR
-    DEF_ANCHOR "bottom" ON None GLYPH r2s1p0R COMPONENT 1 AT  POS DY -310 END_POS END_ANCHOR
-#endif
     if (auto MARK_top = anchors.find("MARK_top"); MARK_top != anchors.end()) {
       for (auto const &key : {"a", "b", "l", "p", "r", "u"}) {
         for (int i = 0; i <= 2; i++) {
