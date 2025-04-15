@@ -18,7 +18,7 @@ public:
       if (!in.u16(&componentCount)) {
         return EGLYF_NULLOPT;
       }
-      if (componentCount < 0) {
+      if (componentCount < 1) {
         return EGLYF_NULLOPT;
       }
       if (!in.u16a(r.componentGlyphIDs, componentCount - 1)) {
