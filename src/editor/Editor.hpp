@@ -1940,7 +1940,7 @@ public:
     auto bs = anchors.find("bs");
     auto te = anchors.find("te");
     auto be = anchors.find("be");
-    if (bs != anchors.end() && bs != anchors.end() && be != anchors.end()) {
+    if (bs != anchors.end() && te != anchors.end() && be != anchors.end()) {
       for (int h = 1; h <= hhu; h++) {
         for (int v = 1; v <= vhu; v++) {
           // DEF_ANCHOR "bs" ON None GLYPH o8(6) COMPONENT 1 AT  POS DY -(1860) END_POS END_ANCHOR
