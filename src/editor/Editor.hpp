@@ -1125,7 +1125,7 @@ public:
       }
       auto w = rect.width();
       auto h = rect.height();
-      float const scale = min(1.0f, maxHeight / (float)h);
+      float const scale = min({1.0f, maxHeight / (float)h, this->width(chu) / (float)w});
       int16_t xMid = (rect.xMin + rect.xMax) / 2;
       int16_t dx;
       int16_t dy;
@@ -1187,7 +1187,7 @@ public:
       }
       auto const &[cp, rect] = found->second;
 
-      float const baseScale = min(1.0f, maxHeight / (float)rect.height());
+      float const baseScale = min({1.0f, maxHeight / (float)rect.height(), this->width(chu) / (float)rect.width()});
 
       int width = (int)ceilf((rect.width() * baseScale - (float)hg0) / hfu);
       int height = (int)ceilf((rect.height() * baseScale - (float)vg0) / vfu);
