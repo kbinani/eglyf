@@ -1169,7 +1169,7 @@ public:
         }
       }
       int16_t width = sb + this->width(h) + sb;
-      auto newGid = font->addEmptyGlyph(name, width, sb, fontHeight, fontHeight - topMargin);
+      auto newGid = font->addEmptyGlyph(name, width, 0, maxHeight, fontHeight - topMargin);
       if (!newGid) {
         return EGLYF_STATUS_PUSH(newGid.status());
       }
