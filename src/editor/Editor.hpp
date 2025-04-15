@@ -1653,6 +1653,7 @@ public:
       for (auto const &prefix : {"r0v", "r1v", "r2v"}) {
         for (int v = 1; v <= vhu; v++) {
           for (auto const &suffix : {"", "R"}) {
+            // DEF_ANCHOR "bottom" ON None GLYPH r0v1 COMPONENT 1 AT  POS DY -310 END_POS END_ANCHOR
             auto name = format("{}{}{}", prefix, v, suffix);
             auto glyph = getGlyphByName(name);
             auto found = bottom->second->glyphs.find(glyph);
@@ -1703,6 +1704,7 @@ public:
       for (auto const &key : {"a", "b", "l", "p", "r", "u"}) {
         for (int i = 0; i <= 2; i++) {
           for (int v = 1; v <= vhu; v++) {
+            // DEF_ANCHOR "MARK_top" ON 1600 GLYPH tcab0_1 COMPONENT 1 AT  POS DY 310 END_POS END_ANCHOR
             auto name = format("tc{}b{}_{}", key, i, v);
             auto glyph = getGlyphByName(name);
             auto found = MARK_top->second->glyphs.find(glyph);
@@ -1718,6 +1720,7 @@ public:
     if (auto MARK_right = anchors.find("MARK_right"); MARK_right != anchors.end()) {
       for (int h = 1; h <= hhu; h++) {
         for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "MARK_right" ON None GLYPH es11 COMPONENT 1 AT  POS DX 315 DY 310 END_POS END_ANCHOR
           auto name = format("es{}{}", h, v);
           auto glyph = getGlyphByName(name);
           auto found = MARK_right->second->glyphs.find(glyph);
@@ -1732,6 +1735,7 @@ public:
       for (auto const &key : {"a", "b", "l", "p", "r", "u"}) {
         for (int i = 0; i <= 2; i++) {
           for (int v = 1; v <= vhu; v++) {
+            // DEF_ANCHOR "MARK_right" ON 1618 GLYPH tcae0_1 COMPONENT 1 AT  POS DY 310 END_POS END_ANCHOR
             auto name = format("tc{}e{}_{}", key, i, v);
             auto glyph = getGlyphByName(name);
             auto found = MARK_right->second->glyphs.find(glyph);
@@ -1799,10 +1803,37 @@ public:
           found->second = Vec<optional<int16_t>>(dx, nullopt);
         }
       }
-      for (auto const &key : {"s", "i", "es", "om", "om2"}) {
+      for (auto const &key : {"s", "i"}) {
         // DEF_ANCHOR "right" ON None GLYPH s11 COMPONENT 1 AT  POS DX 315 END_POS END_ANCHOR
         // DEF_ANCHOR "right" ON None GLYPH i11 COMPONENT 1 AT  POS DX 315 END_POS END_ANCHOR
-        // DEF_ANCHOR "right" ON None GLYPH es11 COMPONENT 1 AT  POS DX 315 DY 310 END_POS END_ANCHOR
+        for (int h = 1; h <= chu; h++) {
+          for (int v = 1; v <= vhu; v++) {
+            auto name = format("{}{}{}", key, h, v);
+            auto glyph = getGlyphByName(name);
+            auto found = right->second->glyphs.find(glyph);
+            if (found == right->second->glyphs.end()) {
+              continue;
+            }
+            int16_t const dx = h * hfu;
+            found->second = Vec<optional<int16_t>>(dx, nullopt);
+          }
+        }
+      }
+      for (int h = 1; h <= chu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "right" ON None GLYPH es12 COMPONENT 1 AT  POS DX 315 DY 620 END_POS END_ANCHOR
+          auto name = format("es{}{}", h, v);
+          auto glyph = getGlyphByName(name);
+          auto found = right->second->glyphs.find(glyph);
+          if (found == right->second->glyphs.end()) {
+            continue;
+          }
+          int16_t dx = h * hfu;
+          int16_t dy = v * vfu;
+          found->second = Vec<optional<int16_t>>(dx, dy);
+        }
+      }
+      for (auto const &key : {"om", "om2"}) {
         // DEF_ANCHOR "right" ON None GLYPH om11 COMPONENT 1 AT  POS DX 315 END_POS END_ANCHOR
         // DEF_ANCHOR "right" ON None GLYPH om211 COMPONENT 1 AT  POS DX 315 END_POS END_ANCHOR
         for (int h = 1; h <= chu; h++) {
@@ -1875,16 +1906,16 @@ public:
       DEF_ANCHOR "left" ON None GLYPH c2s1p0R COMPONENT 1 AT  POS DX -315 END_POS END_ANCHOR
 #endif
       for (int i = 1; i <= chu; i++) {
-        for (int h = 1; h <= chu; h++) {
+        for (int v = 1; v <= vhu; v++) {
           // DEF_ANCHOR "left" ON None GLYPH es11 COMPONENT 1 AT  POS DY 310 END_POS END_ANCHOR
-          auto name = format("es{}{}", i, h);
+          auto name = format("es{}{}", i, v);
           auto glyph = getGlyphByName(name);
           auto found = left->second->glyphs.find(glyph);
           if (found == left->second->glyphs.end()) {
             continue;
           }
-          int16_t const dx = h * hfu;
-          found->second = Vec<optional<int16_t>>(dx, nullopt);
+          int16_t const dy = v * vfu;
+          found->second = Vec<optional<int16_t>>(nullopt, dy);
         }
       }
     }
