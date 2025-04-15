@@ -1759,23 +1759,24 @@ public:
           found->second = Vec<optional<int16_t>>(dx, nullopt);
         }
       }
-#if 0
-      DEF_ANCHOR "right" ON None GLYPH c0s0p25 COMPONENT 1 AT  POS DX 78 END_POS END_ANCHOR
-      DEF_ANCHOR "right" ON None GLYPH c0s0p33 COMPONENT 1 AT  POS DX 103 END_POS END_ANCHOR
-      DEF_ANCHOR "right" ON None GLYPH c0s0p5 COMPONENT 1 AT  POS DX 157 END_POS END_ANCHOR
-      DEF_ANCHOR "right" ON None GLYPH c0s0p66 COMPONENT 1 AT  POS DX 207 END_POS END_ANCHOR
-      DEF_ANCHOR "right" ON None GLYPH c0s1p0 COMPONENT 1 AT  POS DX 315 END_POS END_ANCHOR
-      DEF_ANCHOR "right" ON None GLYPH c0s1p5 COMPONENT 1 AT  POS DX 472 END_POS END_ANCHOR
-      DEF_ANCHOR "right" ON None GLYPH c0s2p0 COMPONENT 1 AT  POS DX 630 END_POS END_ANCHOR
-      DEF_ANCHOR "right" ON None GLYPH c0s3p0 COMPONENT 1 AT  POS DX 945 END_POS END_ANCHOR
-      DEF_ANCHOR "right" ON None GLYPH c0s4p0 COMPONENT 1 AT  POS DX 1260 END_POS END_ANCHOR
-      DEF_ANCHOR "right" ON None GLYPH c1s0p33 COMPONENT 1 AT  POS DX 103 END_POS END_ANCHOR
-      DEF_ANCHOR "right" ON None GLYPH c1s0p5 COMPONENT 1 AT  POS DX 157 END_POS END_ANCHOR
-      DEF_ANCHOR "right" ON None GLYPH c1s1p0 COMPONENT 1 AT  POS DX 315 END_POS END_ANCHOR
-      DEF_ANCHOR "right" ON None GLYPH c1s2p0 COMPONENT 1 AT  POS DX 630 END_POS END_ANCHOR
-      DEF_ANCHOR "right" ON None GLYPH c1s3p0 COMPONENT 1 AT  POS DX 945 END_POS END_ANCHOR
-      DEF_ANCHOR "right" ON None GLYPH c2s1p0 COMPONENT 1 AT  POS DX 315 END_POS END_ANCHOR
-#endif
+      for (auto &it : right->second->glyphs) {
+        auto const &glyph = it.first;
+        auto const &name = glyph->name;
+        // type == 'XSPC'
+        static regex const re("^c[012]s([0-9])p([0-9]+)R?");
+        smatch m;
+        if (regex_search(name, m, re)) {
+          string sp = m.format("$1.$2");
+          float fsp;
+          try {
+            fsp = stof(sp);
+          } catch (...) {
+            continue;
+          }
+          int16_t dx = (int16_t)round(fsp * hfu);
+          it.second = Vec<optional<int16_t>>(dx, nullopt);
+        }
+      }
       for (int h = 1; h <= hhu; h++) {
         for (int v = 1; v <= vhu; v++) {
           // DEF_ANCHOR "right" ON None GLYPH o11 COMPONENT 1 AT  POS DX 315 END_POS END_ANCHOR
