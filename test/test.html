@@ -14,10 +14,12 @@
   font-display: block;
 }
 .reference {
+  background-color: rgba(0, 0, 0, 0.2);
   font-size: 60px;
   font-family: 'ReferenceFont';
 }
 .test {
+  background-color: rgba(0, 0, 0, 0.2);
   font-size: 60px;
   font-family: 'TestFont';
 }
@@ -32,6 +34,14 @@
     ["N35 vj X1", "&#x13216;&#x13430;&#x133cf;"],
   ];
   const table = document.getElementById("table");
+  const makeTd = (content, klass) => {
+    const td = document.createElement("td");
+    const div = document.createElement("div");
+    div.innerHTML = content;
+    div.classList.add(klass);
+    td.appendChild(div);
+    return td;
+  };
   for (const [label, hieroglyph] of data) {
     const tr = document.createElement("tr");
 
@@ -39,15 +49,12 @@
     title.innerHTML = label;
     tr.appendChild(title);
 
-    const reference = document.createElement("td");
-    reference.innerHTML = hieroglyph;
-    reference.classList.add("reference");
+    const reference = makeTd(hieroglyph, "reference");
     tr.appendChild(reference);
 
-    const test = document.createElement("td");
-    test.innerHTML = hieroglyph;
-    test.classList.add("test");
+    const test = makeTd(hieroglyph, "test");
     tr.appendChild(test);
+
     table.appendChild(tr);
   }
 </script>
