@@ -1078,7 +1078,7 @@ public:
     int const topMargin = (int)round(fontHeight * 0.0322);
     int const bottomMargin = (int)round(fontHeight * 0.0615);
     int const maxHeight = fontHeight - topMargin - bottomMargin;
-    int const bottom = (int)round(font->hhea->descender * presentationScale + bottomMargin);
+    int const bottom = 0;
     int maxWidth = 0;
 
     for (auto const &[gid, item] : bounds) {
