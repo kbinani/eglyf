@@ -3155,6 +3155,36 @@ private:
       return EGLYF_ERROR_WHAT("Ligand cannot be both base and mark glyphs simultaneously");
     }
 
+#define DBG_MARK_ATTACH 1
+#if DBG_MARK_ATTACH
+    vector<shared_ptr<Glyph>> line;
+    vector<string> chars =
+        /* A1 hj B1 vj Z2
+         0 QB5 <- r0v4 by a1 (ma001_a1_A)
+         1 r0v4 <- c0h3 by top (mk003_rows-cols0_A)
+         2 c0h3 <- o34 by left (mk007_cols-shapes0_M)
+         3 o34 <- m0 by center (mk065_m0b0_A)
+         7 c0h2 <- o24 by left (mk007_cols-shapes0_M)
+         8 o24 <- m0 by center (mk065_m0b0_A)
+         13 r0v2 <- c0h5 by top (mk003_rows-cols0_A)
+         14 c0h5 <- o52 by left (mk007_cols-shapes0_M)
+         15 o52 <- m0 by center (mk065_m0b0_A)
+         */
+        {"QB5", "r0v4", "c0h3", "o34", "m0", "A1_34", "c0eA", "c0h2", "o24", "m0", "B1_24", "c0eA", "r0eB", "r0v2", "c0h5", "o52", "m0", "Z2_32", "c0eA", "r0eB"};
+    /* A1
+     0 QB4 <- r0v6 by a1 (ma001_a1_A)
+     1 r0v6 <- c0h4 by top (mk003_rows-cols0_A)
+     2 c0h4 <- o46 by left (mk007_cols-shapes0_M)
+     3 o46 <- m0 by center (mk065_m0b0_A)
+     4 m0 <- A1 by center (mk066_glyphs_m1_A)
+     */
+    //{"QB4", "r0v6", "c0h4", "o46", "m0", "A1", "c0eA", "r0eB"};
+    for (string const &name : chars) {
+      auto g = getGlyphByName(name);
+      line.push_back(g);
+    }
+#endif
+
     if (receptorBase > 0 && ligandMark > 0) {
       // mark
       lookupType = 4;
@@ -3193,6 +3223,18 @@ private:
         }
       }
       ranges::sort(ligandGlyphs, [](auto const &a, auto const &b) { return a.first->id < b.first->id; });
+
+#if DBG_MARK_ATTACH
+      for (int i = 0; i < line.size() - 1; i++) {
+        auto receptor = line[i];
+        auto ligand = line[i + 1];
+        auto r = ranges::find(receptorGlyphs, receptor);
+        auto l = ranges::find_if(ligandGlyphs, [&](auto const &it) { return it.first == ligand; });
+        if (r != receptorGlyphs.end() && l != ligandGlyphs.end()) {
+          cout << i << " " << receptor->name << " <- " << ligand->name << " by " << l->second->name << " (" << lookup->name << ")" << endl;
+        }
+      }
+#endif
 
       auto mark = make_unique<gpos::MarkToBaseAttachment>();
       mark->markCoverage = CoverageBuilder::Build(markCoverage);
@@ -3274,6 +3316,18 @@ private:
         }
       }
       ranges::sort(ligandGlyphs, [](auto const &a, auto const &b) { return a.first->id < b.first->id; });
+
+#if DBG_MARK_ATTACH
+      for (int i = 0; i < line.size() - 1; i++) {
+        auto receptor = line[i];
+        auto ligand = line[i + 1];
+        auto r = ranges::find(receptorGlyphs, receptor);
+        auto l = ranges::find_if(ligandGlyphs, [&](auto const &it) { return it.first == ligand; });
+        if (r != receptorGlyphs.end() && l != ligandGlyphs.end()) {
+          cout << i << " " << receptor->name << " <- " << ligand->name << " by " << l->second->name << " (" << lookup->name << ")" << endl;
+        }
+      }
+#endif
 
       auto mark = make_unique<gpos::MarkToMarkAttachmentPositioning>();
       mark->mark1Coverage = CoverageBuilder::Build(markCoverage);
