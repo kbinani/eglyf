@@ -169,6 +169,7 @@ public:
     using namespace std;
     if (auto found = anchors.find(name); found == anchors.end()) {
       auto a = make_shared<Anchor>();
+      a->name = name;
       anchors[name] = a;
       return a;
     } else {
@@ -1162,7 +1163,7 @@ public:
     }
 
     for (int h = 1; h <= hhu; h++) {
-      string name = format("QB{0}", h);
+      string name = format("QB{}", h);
       if (auto gid = font->post->getGlyphId(name); gid) {
         if (auto st = font->post->setName(*gid, "." + name); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
@@ -3189,7 +3190,7 @@ private:
       // mark
       lookupType = 4;
 
-      vector<shared_ptr<Glyph>> receptorGlyphs;
+      deque<shared_ptr<Glyph>> receptorGlyphs;
       set<uint16_t> receptorGlyphIds;
       for (auto const &receptor : lookup->attach->receptors) {
         collectGlyphVector(receptor, receptorGlyphs);
@@ -3202,6 +3203,7 @@ private:
       if (receptorGlyphs.empty()) {
         return Status::Ok();
       }
+      ranges::sort(receptorGlyphs, [](auto const &a, auto const &b) { return a->id < b->id; });
 
       set<uint16_t> markCoverage;
 
