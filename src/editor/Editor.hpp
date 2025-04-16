@@ -1647,12 +1647,8 @@ public:
           // DEF_ANCHOR "r1" ON 469 GLYPH QB1 COMPONENT 1 AT  POS DX 420 DY 1860 END_POS END_ANCHOR
           auto name = format("{}{}{}", prefix, h, suffix);
           auto glyph = getGlyphByName(name);
-          auto found = r1->second->glyphs.find(glyph);
-          if (found == r1->second->glyphs.end()) {
-            continue;
-          }
           int16_t const dx = sb + hfu * h;
-          found->second = Vec<optional<int16_t>>(dx, dy);
+          r1->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
         }
       }
     }
@@ -1663,12 +1659,8 @@ public:
             // DEF_ANCHOR "bottom" ON None GLYPH r0v1 COMPONENT 1 AT  POS DY -310 END_POS END_ANCHOR
             auto name = format("{}{}{}", prefix, v, suffix);
             auto glyph = getGlyphByName(name);
-            auto found = bottom->second->glyphs.find(glyph);
-            if (found == bottom->second->glyphs.end()) {
-              continue;
-            }
             int16_t const dy = -v * vfu;
-            found->second = Vec<optional<int16_t>>(nullopt, dy);
+            bottom->second->glyphs[glyph] = Vec<optional<int16_t>>(nullopt, dy);
           }
         }
       }
@@ -1698,12 +1690,8 @@ public:
             // DEF_ANCHOR "MARK_top" ON 1600 GLYPH tcab0_1 COMPONENT 1 AT  POS DY 310 END_POS END_ANCHOR
             auto name = format("tc{}b{}_{}", key, i, v);
             auto glyph = getGlyphByName(name);
-            auto found = MARK_top->second->glyphs.find(glyph);
-            if (found == MARK_top->second->glyphs.end()) {
-              continue;
-            }
             int16_t const dy = v * vfu;
-            found->second = Vec<optional<int16_t>>(nullopt, dy);
+            MARK_top->second->glyphs[glyph] = Vec<optional<int16_t>>(nullopt, dy);
           }
         }
       }
@@ -1714,13 +1702,9 @@ public:
           // DEF_ANCHOR "MARK_right" ON None GLYPH es11 COMPONENT 1 AT  POS DX 315 DY 310 END_POS END_ANCHOR
           auto name = format("es{}{}", h, v);
           auto glyph = getGlyphByName(name);
-          auto found = MARK_right->second->glyphs.find(glyph);
-          if (found == MARK_right->second->glyphs.end()) {
-            continue;
-          }
           int16_t const dx = h * hfu;
           int16_t const dy = v * vfu;
-          found->second = Vec<optional<int16_t>>(dx, dy);
+          MARK_right->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
         }
       }
       for (auto const &key : {"a", "b", "l", "p", "r", "u"}) {
@@ -1729,12 +1713,8 @@ public:
             // DEF_ANCHOR "MARK_right" ON 1618 GLYPH tcae0_1 COMPONENT 1 AT  POS DY 310 END_POS END_ANCHOR
             auto name = format("tc{}e{}_{}", key, i, v);
             auto glyph = getGlyphByName(name);
-            auto found = MARK_right->second->glyphs.find(glyph);
-            if (found == MARK_right->second->glyphs.end()) {
-              continue;
-            }
             int16_t const dy = v * vfu;
-            found->second = Vec<optional<int16_t>>(nullopt, dy);
+            MARK_right->second->glyphs[glyph] = Vec<optional<int16_t>>(nullopt, dy);
           }
         }
       }
@@ -1744,24 +1724,16 @@ public:
         // DEF_ANCHOR "right" ON None GLYPH c0h1 COMPONENT 1 AT  POS DX 315 END_POS END_ANCHOR
         auto name = format("c0h{}", h);
         auto glyph = getGlyphByName(name);
-        auto found = right->second->glyphs.find(glyph);
-        if (found == right->second->glyphs.end()) {
-          continue;
-        }
         int16_t const dx = h * hfu;
-        found->second = Vec<optional<int16_t>>(dx, nullopt);
+        right->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, nullopt);
       }
       for (int i = 1; i <= 2; i++) {
         for (int h = 1; h <= chu; h++) {
           // DEF_ANCHOR "right" ON None GLYPH c1h1 COMPONENT 1 AT  POS DX 315 END_POS END_ANCHOR
           auto name = format("c{}h{}", i, h);
           auto glyph = getGlyphByName(name);
-          auto found = right->second->glyphs.find(glyph);
-          if (found == right->second->glyphs.end()) {
-            continue;
-          }
           int16_t const dx = h * hfu;
-          found->second = Vec<optional<int16_t>>(dx, nullopt);
+          right->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, nullopt);
         }
       }
       for (auto &it : right->second->glyphs) {
@@ -1787,12 +1759,8 @@ public:
           // DEF_ANCHOR "right" ON None GLYPH o11 COMPONENT 1 AT  POS DX 315 END_POS END_ANCHOR
           auto name = format("o{}{}", h, v);
           auto glyph = getGlyphByName(name);
-          auto found = right->second->glyphs.find(glyph);
-          if (found == right->second->glyphs.end()) {
-            continue;
-          }
           int16_t const dx = h * hfu;
-          found->second = Vec<optional<int16_t>>(dx, nullopt);
+          right->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, nullopt);
         }
       }
       for (auto const &key : {"s", "i"}) {
@@ -1802,12 +1770,8 @@ public:
           for (int v = 1; v <= vhu; v++) {
             auto name = format("{}{}{}", key, h, v);
             auto glyph = getGlyphByName(name);
-            auto found = right->second->glyphs.find(glyph);
-            if (found == right->second->glyphs.end()) {
-              continue;
-            }
             int16_t const dx = h * hfu;
-            found->second = Vec<optional<int16_t>>(dx, nullopt);
+            right->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, nullopt);
           }
         }
       }
@@ -1816,13 +1780,9 @@ public:
           // DEF_ANCHOR "right" ON None GLYPH es12 COMPONENT 1 AT  POS DX 315 DY 620 END_POS END_ANCHOR
           auto name = format("es{}{}", h, v);
           auto glyph = getGlyphByName(name);
-          auto found = right->second->glyphs.find(glyph);
-          if (found == right->second->glyphs.end()) {
-            continue;
-          }
           int16_t dx = h * hfu;
           int16_t dy = v * vfu;
-          found->second = Vec<optional<int16_t>>(dx, dy);
+          right->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
         }
       }
       for (auto const &key : {"om", "om2"}) {
@@ -1832,12 +1792,8 @@ public:
           for (int v = 1; v <= vhu; v++) {
             auto name = format("{}{}{}", key, h, v);
             auto glyph = getGlyphByName(name);
-            auto found = right->second->glyphs.find(glyph);
-            if (found == right->second->glyphs.end()) {
-              continue;
-            }
             int16_t const dx = h * hfu;
-            found->second = Vec<optional<int16_t>>(dx, nullopt);
+            right->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, nullopt);
           }
         }
       }
@@ -1846,12 +1802,8 @@ public:
           // DEF_ANCHOR "right" ON None GLYPH it11R COMPONENT 1 AT  POS DX 315 END_POS END_ANCHOR
           auto name = format("it{}{}R", h, v);
           auto glyph = getGlyphByName(name);
-          auto found = right->second->glyphs.find(glyph);
-          if (found == right->second->glyphs.end()) {
-            continue;
-          }
           int16_t const dx = h * hfu;
-          found->second = Vec<optional<int16_t>>(dx, nullopt);
+          right->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, nullopt);
         }
       }
     }
@@ -1860,24 +1812,16 @@ public:
         // DEF_ANCHOR "left" ON None GLYPH c0h1R COMPONENT 1 AT  POS DX -315 END_POS END_ANCHOR
         auto name = format("c0h{}R", h);
         auto glyph = getGlyphByName(name);
-        auto found = left->second->glyphs.find(glyph);
-        if (found == left->second->glyphs.end()) {
-          continue;
-        }
         int16_t const dx = -h * hfu;
-        found->second = Vec<optional<int16_t>>(dx, nullopt);
+        left->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, nullopt);
       }
       for (int i = 1; i <= 2; i++) {
         for (int h = 1; h <= chu; h++) {
           // DEF_ANCHOR "left" ON None GLYPH c1h1R COMPONENT 1 AT  POS DX -315 END_POS END_ANCHOR
           auto name = format("c{}h{}R", i, h);
           auto glyph = getGlyphByName(name);
-          auto found = left->second->glyphs.find(glyph);
-          if (found == left->second->glyphs.end()) {
-            continue;
-          }
           int16_t const dx = -h * hfu;
-          found->second = Vec<optional<int16_t>>(dx, nullopt);
+          left->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, nullopt);
         }
       }
       for (auto &it : left->second->glyphs) {
@@ -1903,12 +1847,8 @@ public:
           // DEF_ANCHOR "left" ON None GLYPH es11 COMPONENT 1 AT  POS DY 310 END_POS END_ANCHOR
           auto name = format("es{}{}", i, v);
           auto glyph = getGlyphByName(name);
-          auto found = left->second->glyphs.find(glyph);
-          if (found == left->second->glyphs.end()) {
-            continue;
-          }
           int16_t const dy = v * vfu;
-          found->second = Vec<optional<int16_t>>(nullopt, dy);
+          left->second->glyphs[glyph] = Vec<optional<int16_t>>(nullopt, dy);
         }
       }
     }
@@ -1918,12 +1858,8 @@ public:
           // DEF_ANCHOR "MARK_left" ON None GLYPH es11 COMPONENT 1 AT  POS DY 310 END_POS END_ANCHOR
           auto name = format("es{}{}", i, v);
           auto glyph = getGlyphByName(name);
-          auto found = MARK_left->second->glyphs.find(glyph);
-          if (found == MARK_left->second->glyphs.end()) {
-            continue;
-          }
           int16_t const dy = v * vfu;
-          found->second = Vec<optional<int16_t>>(nullopt, dy);
+          MARK_left->second->glyphs[glyph] = Vec<optional<int16_t>>(nullopt, dy);
         }
       }
     }
@@ -1933,12 +1869,8 @@ public:
           // DEF_ANCHOR "MARK_ts" ON None GLYPH es11 COMPONENT 1 AT  POS DY 310 END_POS END_ANCHOR
           auto name = format("es{}{}", i, v);
           auto glyph = getGlyphByName(name);
-          auto found = MARK_ts->second->glyphs.find(glyph);
-          if (found == MARK_ts->second->glyphs.end()) {
-            continue;
-          }
           int16_t const dy = v * vfu;
-          found->second = Vec<optional<int16_t>>(nullopt, dy);
+          MARK_ts->second->glyphs[glyph] = Vec<optional<int16_t>>(nullopt, dy);
         }
       }
     }
@@ -1955,15 +1887,9 @@ public:
           auto glyph = getGlyphByName(name);
           int16_t dx = h * hfu;
           int16_t dy = -v * vfu;
-          if (auto fbs = bs->second->glyphs.find(glyph); fbs != bs->second->glyphs.end()) {
-            fbs->second = Vec<optional<int16_t>>(nullopt, dy);
-          }
-          if (auto fte = te->second->glyphs.find(glyph); fte != te->second->glyphs.end()) {
-            fte->second = Vec<optional<int16_t>>(dx, nullopt);
-          }
-          if (auto fbe = be->second->glyphs.find(glyph); fbe != be->second->glyphs.end()) {
-            fbe->second = Vec<optional<int16_t>>(dx, dy);
-          }
+          bs->second->glyphs[glyph] = Vec<optional<int16_t>>(nullopt, dy);
+          te->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, nullopt);
+          be->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
         }
       }
       for (int h = 1; h <= chu; h++) {
@@ -1975,15 +1901,9 @@ public:
           auto glyph = getGlyphByName(name);
           int16_t dx = h * hfu;
           int16_t dy = -v * vfu;
-          if (auto fbs = bs->second->glyphs.find(glyph); fbs != bs->second->glyphs.end()) {
-            fbs->second = Vec<optional<int16_t>>(nullopt, dy);
-          }
-          if (auto fte = te->second->glyphs.find(glyph); fte != te->second->glyphs.end()) {
-            fte->second = Vec<optional<int16_t>>(dx, nullopt);
-          }
-          if (auto fbe = be->second->glyphs.find(glyph); fbe != be->second->glyphs.end()) {
-            fbe->second = Vec<optional<int16_t>>(dx, dy);
-          }
+          bs->second->glyphs[glyph] = Vec<optional<int16_t>>(nullopt, dy);
+          te->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, nullopt);
+          be->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
         }
       }
     }
@@ -1998,12 +1918,8 @@ public:
           auto glyph = getGlyphByName(name);
           int16_t dx = h * hfu;
           int16_t dy = -v * vfu;
-          if (auto fbs = MARK_bs->second->glyphs.find(glyph); fbs != MARK_bs->second->glyphs.end()) {
-            fbs->second = Vec<optional<int16_t>>(nullopt, dy);
-          }
-          if (auto fbe = MARK_be->second->glyphs.find(glyph); fbe != MARK_be->second->glyphs.end()) {
-            fbe->second = Vec<optional<int16_t>>(dx, dy);
-          }
+          MARK_bs->second->glyphs[glyph] = Vec<optional<int16_t>>(nullopt, dy);
+          MARK_be->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
         }
       }
       for (int h = 1; h <= chu; h++) {
@@ -2014,12 +1930,8 @@ public:
           auto glyph = getGlyphByName(name);
           int16_t dx = h * hfu;
           int16_t dy = -v * vfu;
-          if (auto fbs = MARK_bs->second->glyphs.find(glyph); fbs != MARK_bs->second->glyphs.end()) {
-            fbs->second = Vec<optional<int16_t>>(nullopt, dy);
-          }
-          if (auto fbe = MARK_be->second->glyphs.find(glyph); fbe != MARK_be->second->glyphs.end()) {
-            fbe->second = Vec<optional<int16_t>>(dx, dy);
-          }
+          MARK_bs->second->glyphs[glyph] = Vec<optional<int16_t>>(nullopt, dy);
+          MARK_be->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
         }
       }
     }
@@ -2030,9 +1942,7 @@ public:
           auto name = format("te{}{}", h, v);
           auto glyph = getGlyphByName(name);
           int16_t dx = h * hfu;
-          if (auto found = MARK_te->second->glyphs.find(glyph); found != MARK_te->second->glyphs.end()) {
-            found->second = Vec<optional<int16_t>>(dx, nullopt);
-          }
+          MARK_te->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, nullopt);
         }
       }
       for (int h = 1; h <= chu; h++) {
@@ -2041,9 +1951,7 @@ public:
           auto name = format("te2{}{}", h, v);
           auto glyph = getGlyphByName(name);
           int16_t dx = h * hfu;
-          if (auto found = MARK_te->second->glyphs.find(glyph); found != MARK_te->second->glyphs.end()) {
-            found->second = Vec<optional<int16_t>>(dx, nullopt);
-          }
+          MARK_te->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, nullopt);
         }
       }
     }
@@ -2056,12 +1964,8 @@ public:
           auto glyph = getGlyphByName(name);
           int16_t dx = h * hfu;
           int16_t dy = -v * vfu;
-          if (auto fbe = MARK_be->second->glyphs.find(glyph); fbe != MARK_be->second->glyphs.end()) {
-            fbe->second = Vec<optional<int16_t>>(dx, dy);
-          }
-          if (auto fbs = MARK_bs->second->glyphs.find(glyph); fbs != MARK_bs->second->glyphs.end()) {
-            fbs->second = Vec<optional<int16_t>>(nullopt, dy);
-          }
+          MARK_be->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
+          MARK_bs->second->glyphs[glyph] = Vec<optional<int16_t>>(nullopt, dy);
         }
       }
       for (int h = 1; h <= chu; h++) {
@@ -2072,12 +1976,8 @@ public:
           auto glyph = getGlyphByName(name);
           int16_t dx = h * hfu;
           int16_t dy = -v * vfu;
-          if (auto fbe = MARK_be->second->glyphs.find(glyph); fbe != MARK_be->second->glyphs.end()) {
-            fbe->second = Vec<optional<int16_t>>(dx, dy);
-          }
-          if (auto fbs = MARK_bs->second->glyphs.find(glyph); fbs != MARK_bs->second->glyphs.end()) {
-            fbs->second = Vec<optional<int16_t>>(nullopt, dy);
-          }
+          MARK_be->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
+          MARK_bs->second->glyphs[glyph] = Vec<optional<int16_t>>(nullopt, dy);
         }
       }
     }
@@ -2092,9 +1992,7 @@ public:
             auto name = format("{}{}{}", prefix, h, v);
             auto glyph = getGlyphByName(name);
             int16_t dx = h * hfu / 2;
-            if (auto found = MARK_ti->second->glyphs.find(glyph); found != MARK_ti->second->glyphs.end()) {
-              found->second = Vec<optional<int16_t>>(dx, nullopt);
-            }
+            MARK_ti->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, nullopt);
           }
         }
       }
@@ -2106,9 +2004,7 @@ public:
             auto name = format("it{}{}R", h, v);
             auto glyph = getGlyphByName(name);
             int16_t dx = -h * hfu / 2;
-            if (auto found = MARK_ti->second->glyphs.find(glyph); found != MARK_ti->second->glyphs.end()) {
-              found->second = Vec<optional<int16_t>>(dx, nullopt);
-            }
+            MARK_ti->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, nullopt);
           }
         }
       }
@@ -2119,9 +2015,7 @@ public:
           auto glyph = getGlyphByName(name);
           int16_t dx = h * hfu / 2;
           int16_t dy = v * vfu;
-          if (auto found = MARK_ti->second->glyphs.find(glyph); found != MARK_ti->second->glyphs.end()) {
-            found->second = Vec<optional<int16_t>>(dx, dy);
-          }
+          MARK_ti->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
         }
       }
     }
@@ -2132,9 +2026,7 @@ public:
           auto name = format("o{}{}", h, v);
           auto glyph = getGlyphByName(name);
           int16_t dx = h * hfu / 2;
-          if (auto found = ti->second->glyphs.find(glyph); found != ti->second->glyphs.end()) {
-            found->second = Vec<optional<int16_t>>(dx, nullopt);
-          }
+          ti->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, nullopt);
         }
       }
       for (auto const &prefix : {"s", "ti", "ti2"}) {
@@ -2146,9 +2038,7 @@ public:
             auto name = format("{}{}{}R", prefix, h, v);
             auto glyph = getGlyphByName(name);
             int16_t dx = h * hfu / 2;
-            if (auto found = ti->second->glyphs.find(glyph); found != ti->second->glyphs.end()) {
-              found->second = Vec<optional<int16_t>>(dx, nullopt);
-            }
+            ti->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, nullopt);
           }
         }
       }
@@ -2163,9 +2053,7 @@ public:
           auto glyph = getGlyphByName(name);
           int16_t dx = h * hfu / 2;
           int16_t dy = -v * vfu / 2;
-          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
-            found->second = Vec<optional<int16_t>>(dx, dy);
-          }
+          MARK_center->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
         }
       }
       for (int h = 1; h <= chu; h++) {
@@ -2175,9 +2063,7 @@ public:
           auto glyph = getGlyphByName(name);
           int16_t dx = -h * hfu / 2;
           int16_t dy = -v * vfu / 2;
-          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
-            found->second = Vec<optional<int16_t>>(dx, dy);
-          }
+          MARK_center->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
         }
       }
       for (int h = 1; h <= chu; h++) {
@@ -2187,9 +2073,7 @@ public:
           auto glyph = getGlyphByName(name);
           int16_t dx = h * hfu / 2;
           int16_t dy = -v * vfu / 2;
-          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
-            found->second = Vec<optional<int16_t>>(dx, dy);
-          }
+          MARK_center->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
         }
       }
       for (int h = 1; h <= chu; h++) {
@@ -2199,9 +2083,7 @@ public:
           auto glyph = getGlyphByName(name);
           int16_t dx = -h * hfu / 2;
           int16_t dy = -v * vfu / 2;
-          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
-            found->second = Vec<optional<int16_t>>(dx, dy);
-          }
+          MARK_center->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
         }
       }
       for (int h = 1; h <= chu; h++) {
@@ -2211,9 +2093,7 @@ public:
           auto glyph = getGlyphByName(name);
           int16_t dx = h * hfu / 2;
           int16_t dy = -v * vfu / 2;
-          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
-            found->second = Vec<optional<int16_t>>(dx, dy);
-          }
+          MARK_center->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
         }
       }
       for (int h = 1; h <= chu; h++) {
@@ -2223,9 +2103,7 @@ public:
           auto glyph = getGlyphByName(name);
           int16_t dx = h * hfu / 2;
           int16_t dy = -v * vfu / 2;
-          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
-            found->second = Vec<optional<int16_t>>(dx, dy);
-          }
+          MARK_center->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
         }
       }
       for (int h = 1; h <= chu; h++) {
@@ -2247,9 +2125,7 @@ public:
           auto glyph = getGlyphByName(name);
           int16_t dx = h * hfu / 2;
           int16_t dy = -v * vfu / 2;
-          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
-            found->second = Vec<optional<int16_t>>(dx, dy);
-          }
+          MARK_center->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
         }
       }
       for (int h = 1; h <= chu; h++) {
@@ -2259,9 +2135,7 @@ public:
           auto glyph = getGlyphByName(name);
           int16_t dx = h * hfu / 2;
           int16_t dy = -v * vfu / 2;
-          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
-            found->second = Vec<optional<int16_t>>(dx, dy);
-          }
+          MARK_center->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
         }
       }
       for (int h = 1; h <= chu; h++) {
@@ -2271,9 +2145,7 @@ public:
           auto glyph = getGlyphByName(name);
           int16_t dx = h * hfu / 2;
           int16_t dy = -v * vfu / 2;
-          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
-            found->second = Vec<optional<int16_t>>(dx, dy);
-          }
+          MARK_center->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
         }
       }
       for (int h = 1; h <= chu; h++) {
@@ -2283,9 +2155,7 @@ public:
           auto glyph = getGlyphByName(name);
           int16_t dx = h * hfu / 2;
           int16_t dy = -v * vfu / 2;
-          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
-            found->second = Vec<optional<int16_t>>(dx, dy);
-          }
+          MARK_center->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
         }
       }
       for (int h = 1; h <= chu; h++) {
@@ -2295,9 +2165,7 @@ public:
           auto glyph = getGlyphByName(name);
           int16_t dx = h * hfu / 2;
           int16_t dy = -v * vfu / 2;
-          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
-            found->second = Vec<optional<int16_t>>(dx, dy);
-          }
+          MARK_center->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
         }
       }
       for (int h = 1; h <= chu; h++) {
@@ -2307,9 +2175,7 @@ public:
           auto glyph = getGlyphByName(name);
           int16_t dx = h * hfu / 2;
           int16_t dy = v * vfu / 2;
-          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
-            found->second = Vec<optional<int16_t>>(dx, dy);
-          }
+          MARK_center->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
         }
       }
       for (int h = 1; h <= chu; h++) {
@@ -2319,9 +2185,7 @@ public:
           auto glyph = getGlyphByName(name);
           int16_t dx = h * hfu / 2;
           int16_t dy = v * vfu / 2;
-          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
-            found->second = Vec<optional<int16_t>>(dx, dy);
-          }
+          MARK_center->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
         }
       }
       for (auto const &prefix : {"dq1234", "dq123", "dq124", "dq12", "dq134", "dq13", "dq14", "dq1", "dq234", "dq23", "dq24", "dq2", "dq34", "dq3", "dq4"}) {
@@ -2345,9 +2209,7 @@ public:
             auto name = format("{}_{}{}", prefix, h, v);
             auto glyph = getGlyphByName(name);
             int16_t dy = v * vfu / 2;
-            if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
-              found->second = Vec<optional<int16_t>>(nullopt, dy);
-            }
+            MARK_center->second->glyphs[glyph] = Vec<optional<int16_t>>(nullopt, dy);
           }
         }
       }
@@ -2375,9 +2237,7 @@ public:
           auto glyph = getGlyphByName(name);
           int16_t dx = h * hfu / 2;
           int16_t dy = -v * vfu / 2;
-          if (auto found = center->second->glyphs.find(glyph); found != center->second->glyphs.end()) {
-            found->second = Vec<optional<int16_t>>(dx, dy);
-          }
+          center->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
         }
       }
       for (auto const &prefix : {"s", "i"}) {
@@ -2389,9 +2249,7 @@ public:
             auto glyph = getGlyphByName(name);
             int16_t dx = h * hfu / 2;
             int16_t dy = -v * vfu / 2;
-            if (auto found = center->second->glyphs.find(glyph); found != center->second->glyphs.end()) {
-              found->second = Vec<optional<int16_t>>(dx, dy);
-            }
+            center->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
           }
         }
       }
@@ -2402,9 +2260,7 @@ public:
           auto glyph = getGlyphByName(name);
           int16_t dx = h * hfu / 2;
           int16_t dy = v * vfu / 2;
-          if (auto found = center->second->glyphs.find(glyph); found != center->second->glyphs.end()) {
-            found->second = Vec<optional<int16_t>>(dx, dy);
-          }
+          center->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
         }
       }
       for (auto const &prefix : {"ts", "bs", "te", "be", "om", "mi", "ts2", "bs2", "te2", "be2", "om2", "mi2"}) {
@@ -2426,9 +2282,7 @@ public:
             auto glyph = getGlyphByName(name);
             int16_t dx = h * hfu / 2;
             int16_t dy = -v * vfu / 2;
-            if (auto found = center->second->glyphs.find(glyph); found != center->second->glyphs.end()) {
-              found->second = Vec<optional<int16_t>>(dx, dy);
-            }
+            center->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
           }
         }
       }
