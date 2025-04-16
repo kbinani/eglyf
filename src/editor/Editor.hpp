@@ -1176,6 +1176,8 @@ public:
       }
     }
 
+    auto glyphsSet1 = getGroupByName("glyphs_set1");
+
     for (auto const &it : baseGlyphs) {
       auto const &name = it.first;
       auto const &glyphs = it.second;
@@ -1257,7 +1259,9 @@ public:
         if (!variationGlyph) {
           return EGLYF_ERROR;
         }
+        variationGlyph->classDef = GlyphDefinitionTable::Class::Mark;
         sv.variants[key] = variationGlyph;
+        glyphsSet1->members.push_back(variationGlyph);
       }
 
       sizeVariants[name] = sv;
@@ -2353,17 +2357,13 @@ public:
         {
           auto glyph = getGlyphByName(n);
           int16_t dy = sv.vGrids * vfu / 2;
-          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
-            found->second = Vec<optional<int16_t>>(nullopt, dy);
-          }
+          MARK_center->second->glyphs[glyph] = Vec<optional<int16_t>>(nullopt, dy);
         }
         for (auto const &[key, glyph] : sv.variants) {
           // DEF_ANCHOR "MARK_center" ON 2888 GLYPH A1_11 COMPONENT 1 AT  POS DY 144 END_POS END_ANCHOR
           int v = key % 10;
           int16_t dy = v * vfu / 2; // TODO: this equation is not sure
-          if (auto found = MARK_center->second->glyphs.find(glyph); found != MARK_center->second->glyphs.end()) {
-            found->second = Vec<optional<int16_t>>(nullopt, dy);
-          }
+          MARK_center->second->glyphs[glyph] = Vec<optional<int16_t>>(nullopt, dy);
         }
       }
     }
@@ -3156,7 +3156,7 @@ private:
       return EGLYF_ERROR_WHAT("Ligand cannot be both base and mark glyphs simultaneously");
     }
 
-#define DBG_MARK_ATTACH 1
+#define DBG_MARK_ATTACH 0
 #if DBG_MARK_ATTACH
     vector<shared_ptr<Glyph>> line;
     vector<string> chars =
@@ -3165,11 +3165,14 @@ private:
          1 r0v4 <- c0h3 by top (mk003_rows-cols0_A)
          2 c0h3 <- o34 by left (mk007_cols-shapes0_M)
          3 o34 <- m0 by center (mk065_m0b0_A)
+         4 m0 <- A1_34 by center (mk066_glyphs_m1_A)
          7 c0h2 <- o24 by left (mk007_cols-shapes0_M)
          8 o24 <- m0 by center (mk065_m0b0_A)
+         9 m0 <- B1_24 by center (mk066_glyphs_m1_A)
          13 r0v2 <- c0h5 by top (mk003_rows-cols0_A)
          14 c0h5 <- o52 by left (mk007_cols-shapes0_M)
          15 o52 <- m0 by center (mk065_m0b0_A)
+         16 m0 <- Z2_32 by center (mk066_glyphs_m1_A)
          */
         {"QB5", "r0v4", "c0h3", "o34", "m0", "A1_34", "c0eA", "c0h2", "o24", "m0", "B1_24", "c0eA", "r0eB", "r0v2", "c0h5", "o52", "m0", "Z2_32", "c0eA", "r0eB"};
     /* A1
