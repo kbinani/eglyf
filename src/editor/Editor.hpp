@@ -2076,8 +2076,7 @@ public:
         }
       }
     }
-    auto MARK_ti = anchors.find("MARK_ti");
-    if (MARK_ti != anchors.end()) {
+    if (auto MARK_ti = anchors.find("MARK_ti"); MARK_ti != anchors.end()) {
       for (auto const &prefix : {"ti", "ti2", "it", "it2"}) {
         for (int h = 1; h <= chu; h++) {
           for (int v = 1; v <= vhu; v++) {
@@ -2121,7 +2120,34 @@ public:
         }
       }
     }
-    // TODO: ti
+    if (auto ti = anchors.find("ti"); ti != anchors.end()) {
+      for (int h = 1; h <= hhu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "ti" ON None GLYPH o85 COMPONENT 1 AT  POS DX 1260 END_POS END_ANCHOR
+          auto name = format("o{}{}", h, v);
+          auto glyph = getGlyphByName(name);
+          int16_t dx = h * hfu / 2;
+          if (auto found = ti->second->glyphs.find(glyph); found != ti->second->glyphs.end()) {
+            found->second = Vec<optional<int16_t>>(dx, nullopt);
+          }
+        }
+      }
+      for (auto const &prefix : {"s", "ti", "ti2"}) {
+        for (int h = 1; h <= chu; h++) {
+          for (int v = 1; v <= vhu; v++) {
+            // DEF_ANCHOR "ti" ON None GLYPH s11 COMPONENT 1 AT  POS DX 157 END_POS END_ANCHOR
+            // DEF_ANCHOR "ti" ON None GLYPH ti11 COMPONENT 1 AT  POS DX 157 END_POS END_ANCHOR
+            // DEF_ANCHOR "ti" ON None GLYPH ti211 COMPONENT 1 AT  POS DX 157 END_POS END_ANCHOR
+            auto name = format("{}{}{}R", prefix, h, v);
+            auto glyph = getGlyphByName(name);
+            int16_t dx = h * hfu / 2;
+            if (auto found = ti->second->glyphs.find(glyph); found != ti->second->glyphs.end()) {
+              found->second = Vec<optional<int16_t>>(dx, nullopt);
+            }
+          }
+        }
+      }
+    }
     // TODO: MARK_bi
     // TODO: bi
     if (auto MARK_center = anchors.find("MARK_center"); MARK_center != anchors.end()) {
