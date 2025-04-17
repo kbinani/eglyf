@@ -72,7 +72,7 @@ private:
           return Status::Ok();
         }
       }
-      if (auto gid1 = font->addEmptyGlyph(name, 0, 0, 0, 0); gid1) {
+      if (auto gid1 = font->addEmptyGlyph(name, 0, 0); gid1) {
         glyphId = *gid1;
       } else {
         return EGLYF_STATUS_PUSH(gid1.status());
