@@ -1124,9 +1124,10 @@ public:
           }
         }
       }
+      // https://gyazo.com/574d65263fcd74d9d9163bd9e9179a6e
       auto w = rect.width();
       auto h = rect.height();
-      float const scale = min({1.0f, maxHeight / (float)h, this->width(chu) / (float)w});
+      float const scale = min({1.0f, maxHeight / (float)h, (chu * hfu) / (float)w});
       int16_t xMid = (rect.xMin + rect.xMax) / 2;
       int16_t dx;
       int16_t dy;
