@@ -356,6 +356,8 @@ public:
     std::optional<std::string> instructions;
   };
 
+  using Glyph = std::variant<EmptyGlyph, ReadonlyGlyph, CompositeGlyph>;
+
   static Status Read(InputStream &in, IndexToLocationTable const &loca, std::shared_ptr<GlyphDataTable> &out) {
     using namespace std;
     auto ret = make_shared<GlyphDataTable>();
@@ -570,6 +572,19 @@ public:
     return Status::Ok();
   }
 
+  static std::optional<Rect<int16_t>> Bounds(Glyph const &glyph) {
+    using namespace std;
+    if (holds_alternative<GlyphDataTable::ReadonlyGlyph>(glyph)) {
+      auto const &r = get<GlyphDataTable::ReadonlyGlyph>(glyph);
+      return Rect<int16_t>(r.header.xMin, r.header.yMin, r.header.xMax, r.header.yMax);
+    } else if (holds_alternative<GlyphDataTable::CompositeGlyph>(glyph)) {
+      auto const &c = get<GlyphDataTable::CompositeGlyph>(glyph);
+      return Rect<int16_t>(c.header.xMin, c.header.yMin, c.header.xMax, c.header.yMax);
+    } else {
+      return nullopt;
+    }
+  }
+
 private:
   bool visit(CompositeGlyph::GlyphRecord const &record, uint16_t depth, std::set<uint16_t> path, MaximumProfileTable &out, uint16_t &compositePoints, uint16_t &compositeContours) const {
     using namespace std;
@@ -603,7 +618,7 @@ private:
   }
 
 public:
-  std::vector<std::variant<EmptyGlyph, ReadonlyGlyph, CompositeGlyph>> glyphs;
+  std::vector<Glyph> glyphs;
 };
 
 } // namespace eglyf

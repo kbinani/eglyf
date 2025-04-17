@@ -1057,12 +1057,9 @@ public:
         return;
       }
       auto g = glyf->glyphs[*gid];
-      if (holds_alternative<GlyphDataTable::ReadonlyGlyph>(g)) {
-        auto const &r = get<GlyphDataTable::ReadonlyGlyph>(g);
-        bounds[*gid] = make_pair(cp, Rect<int16_t>(r.header.xMin, r.header.yMin, r.header.xMax, r.header.yMax));
-      } else if (holds_alternative<GlyphDataTable::CompositeGlyph>(g)) {
-        auto const &c = get<GlyphDataTable::CompositeGlyph>(g);
-        bounds[*gid] = make_pair(cp, Rect<int16_t>(c.header.xMin, c.header.yMin, c.header.xMax, c.header.yMax));
+      auto b = GlyphDataTable::Bounds(g);
+      if (b) {
+        bounds[*gid] = make_pair(cp, *b);
       }
     };
     Unicode::EnumerateHieroglyphUnicode([&](uint32_t cp) {
@@ -1073,9 +1070,7 @@ public:
       return EGLYF_ERROR;
     }
 
-    int const presentationHeight = font->hhea->ascender - font->hhea->descender;
     int const fontHeight = font->head->unitsPerEm;
-    float const presentationScale = fontHeight / (float)presentationHeight;
     int const topMargin = (int)round(fontHeight * 0.0322);
     int const bottomMargin = (int)round(fontHeight * 0.0615);
     int const maxHeight = fontHeight - topMargin - bottomMargin;
@@ -1102,7 +1097,12 @@ public:
     vg0 = 2 * vfu / 3;
     sb = hfu / 3;
 
-    map<string, pair<uint16_t, shared_ptr<Glyph>>> baseGlyphs;
+    struct BaseGlyph {
+      uint16_t gid;
+      shared_ptr<Glyph> glyph;
+      Rect<int16_t> bounds;
+    };
+    map<string, BaseGlyph> baseGlyphs;
 
     for (auto const &it : bounds) {
       auto const &gid = it.first;
@@ -1153,13 +1153,23 @@ public:
       if (auto st = font->cmap->map(cp, *newGid); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
-      if (found) {
-        auto newGlyph = getGlyphByName(name);
-        if (!newGlyph) {
-          return EGLYF_ERROR;
-        }
-        baseGlyphs[name] = make_pair(gid, newGlyph);
+      if (!found) {
+        continue;
       }
+      auto newGlyph = getGlyphByName(name);
+      if (!newGlyph) {
+        return EGLYF_ERROR;
+      }
+      auto newGlyphData = glyf->glyphs[*newGid];
+      auto b = GlyphDataTable::Bounds(newGlyphData);
+      if (!b) {
+        return EGLYF_ERROR;
+      }
+      BaseGlyph bg;
+      bg.gid = *newGid;
+      bg.glyph = newGlyph;
+      bg.bounds = *b;
+      baseGlyphs[name] = bg;
     }
 
     for (int h = 1; h <= hhu; h++) {
@@ -1180,15 +1190,8 @@ public:
 
     for (auto const &it : baseGlyphs) {
       auto const &name = it.first;
-      auto const &glyphs = it.second;
-      auto const &originalGID = glyphs.first;
-      auto const &newGlyph = glyphs.second;
-
-      auto found = bounds.find(originalGID);
-      if (found == bounds.end()) {
-        continue;
-      }
-      auto const &[cp, rect] = found->second;
+      BaseGlyph const &baseGlyph = it.second;
+      Rect<int16_t> const &rect = baseGlyph.bounds;
 
       float const baseScale = min({1.0f, maxHeight / (float)rect.height(), this->width(chu) / (float)rect.width()});
 
@@ -1221,7 +1224,7 @@ public:
       }
 
       SizeVariants sv;
-      sv.base = newGlyph;
+      sv.base = baseGlyph.glyph;
       sv.hGrids = width;
       sv.vGrids = height;
 
@@ -1250,7 +1253,7 @@ public:
           dy = bottom - rect.yMin;
           lsb = rect.xMin - xMid;
         }
-        auto record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(originalGID, dx, dy, F2DOT14::FromFloat(scale));
+        auto record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(baseGlyph.gid, dx, dy, F2DOT14::FromFloat(scale));
         auto newGid = font->addCompositeGlyph(n, record, 0, lsb);
         if (!newGid) {
           return EGLYF_STATUS_PUSH(newGid.status());
