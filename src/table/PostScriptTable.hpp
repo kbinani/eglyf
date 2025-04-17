@@ -55,11 +55,11 @@ public:
       return Status::Ok();
     }
 
-    Optional<std::string> getName(uint16_t glyphId) const {
-      if (glyphId >= glyphNameIndex.size()) {
+    Optional<std::string> getName(uint16_t glyphID) const {
+      if (glyphID >= glyphNameIndex.size()) {
         return EGLYF_NULLOPT;
       }
-      uint16_t index = glyphNameIndex[glyphId];
+      uint16_t index = glyphNameIndex[glyphID];
       if (index < 258) {
         auto const &table = PostScriptTable::OSXPostScriptNames();
         if (index >= table.size()) {
@@ -75,7 +75,7 @@ public:
       }
     }
 
-    Optional<uint16_t> getGlyphId(std::string const &name) const {
+    Optional<uint16_t> getGlyphID(std::string const &name) const {
       using namespace std;
       auto const &table = PostScriptTable::OSXPostScriptNameMap();
       if (auto found = table.find(name); found != table.end()) {
@@ -165,12 +165,12 @@ public:
       }
     }
 
-    Optional<std::string> getName(uint16_t glyphId) const {
+    Optional<std::string> getName(uint16_t glyphID) const {
       using namespace std;
-      if (glyphId >= names.size()) {
+      if (glyphID >= names.size()) {
         return EGLYF_NULLOPT;
       }
-      auto entry = names[glyphId];
+      auto entry = names[glyphID];
       if (holds_alternative<string>(entry)) {
         return get<string>(entry);
       } else {
@@ -184,21 +184,21 @@ public:
       }
     }
 
-    Status setName(uint16_t glyphId, std::string const &name) {
+    Status setName(uint16_t glyphID, std::string const &name) {
       using namespace std;
-      if (glyphId >= names.size()) {
+      if (glyphID >= names.size()) {
         return EGLYF_ERROR;
       }
       auto const &table = PostScriptTable::OSXPostScriptNameMap();
       if (auto found = table.find(name); found == table.end()) {
-        names[glyphId] = name;
+        names[glyphID] = name;
       } else {
-        names[glyphId] = found->second;
+        names[glyphID] = found->second;
       }
       return Status::Ok();
     }
 
-    Optional<uint16_t> getGlyphId(std::string const &name) const {
+    Optional<uint16_t> getGlyphID(std::string const &name) const {
       using namespace std;
       auto const &table = PostScriptTable::OSXPostScriptNameMap();
       if (auto found = table.find(name); found != table.end()) {
@@ -399,7 +399,7 @@ public:
     return Status::Ok();
   }
 
-  // Returns glyphId
+  // Returns glyphID
   Optional<uint16_t> addName(std::string const &name) {
     using namespace std;
     if (holds_alternative<string>(data)) {
@@ -436,18 +436,18 @@ public:
     return EGLYF_STATUS_PUSH(defaultClone<PostScriptTable>(out));
   }
 
-  Optional<std::string> getName(uint16_t glyphId) const {
+  Optional<std::string> getName(uint16_t glyphID) const {
     using namespace std;
     if (holds_alternative<Version2Data>(data)) {
       auto const &d = get<Version2Data>(data);
-      if (auto name = d.getName(glyphId); name) {
+      if (auto name = d.getName(glyphID); name) {
         return *name;
       } else {
         return EGLYF_NULLOPT_PUSH(name.status());
       }
     } else if (holds_alternative<ReadonlyVersion2Data>(data)) {
       auto const &d = get<ReadonlyVersion2Data>(data);
-      if (auto name = d.getName(glyphId); name) {
+      if (auto name = d.getName(glyphID); name) {
         return *name;
       } else {
         return EGLYF_NULLOPT_PUSH(name.status());
@@ -457,7 +457,7 @@ public:
     }
   }
 
-  Status setName(uint16_t glyphId, std::string const &name) {
+  Status setName(uint16_t glyphID, std::string const &name) {
     using namespace std;
     Version2Data d;
     if (holds_alternative<ReadonlyVersion2Data>(data)) {
@@ -471,25 +471,25 @@ public:
     } else {
       d = get<Version2Data>(data);
     }
-    if (auto st = d.setName(glyphId, name); !st.ok()) {
+    if (auto st = d.setName(glyphID, name); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
     data = d;
     return Status::Ok();
   }
 
-  Optional<uint16_t> getGlyphId(std::string const &name) const {
+  Optional<uint16_t> getGlyphID(std::string const &name) const {
     using namespace std;
     if (holds_alternative<Version2Data>(data)) {
       auto const &d = get<Version2Data>(data);
-      if (auto gid = d.getGlyphId(name); gid) {
+      if (auto gid = d.getGlyphID(name); gid) {
         return *gid;
       } else {
         return EGLYF_NULLOPT_PUSH(gid.status());
       }
     } else if (holds_alternative<ReadonlyVersion2Data>(data)) {
       auto const &d = get<ReadonlyVersion2Data>(data);
-      if (auto gid = d.getGlyphId(name); gid) {
+      if (auto gid = d.getGlyphID(name); gid) {
         return *gid;
       } else {
         return EGLYF_NULLOPT_PUSH(gid.status());

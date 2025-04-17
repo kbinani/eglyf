@@ -22,7 +22,7 @@ public:
     if (!in.u16(&entryCount)) {
       return EGLYF_ERROR;
     }
-    if (!in.u16a(ret->glyphIdArray, entryCount)) {
+    if (!in.u16a(ret->glyphIDArray, entryCount)) {
       return EGLYF_ERROR;
     }
     out.reset(ret.release());
@@ -45,10 +45,10 @@ public:
     if (!out.u16(firstCode)) {
       return EGLYF_ERROR;
     }
-    if (!out.sizeU16(glyphIdArray.size())) {
+    if (!out.sizeU16(glyphIDArray.size())) {
       return EGLYF_ERROR;
     }
-    if (!out.u16a(glyphIdArray)) {
+    if (!out.u16a(glyphIDArray)) {
       return EGLYF_ERROR;
     }
     if (auto st = lengthPos->mark(); !st.ok()) {
@@ -57,38 +57,38 @@ public:
     return EGLYF_STATUS_PUSH(writer->commit());
   }
 
-  Status map(uint32_t codepoint, uint16_t glyphId) {
+  Status map(uint32_t codepoint, uint16_t glyphID) {
     using namespace std;
     if (codepoint > 0xffff) {
       return EGLYF_ERROR;
     }
     if (codepoint < firstCode) {
       int num = firstCode - codepoint;
-      glyphIdArray.resize(glyphIdArray.size() + num);
-      for (int i = glyphIdArray.size(); i > num; i--) {
-        glyphIdArray[i] = glyphIdArray[i - num];
+      glyphIDArray.resize(glyphIDArray.size() + num);
+      for (int i = glyphIDArray.size(); i > num; i--) {
+        glyphIDArray[i] = glyphIDArray[i - num];
       }
-      glyphIdArray[0] = glyphId;
+      glyphIDArray[0] = glyphID;
       for (int i = 1; i < num; i++) {
-        glyphIdArray[i] = 0;
+        glyphIDArray[i] = 0;
       }
       firstCode = codepoint;
       return Status::Ok();
     }
     size_t index = codepoint - firstCode;
-    if (index < glyphIdArray.size()) {
-      glyphIdArray[index] = glyphId;
+    if (index < glyphIDArray.size()) {
+      glyphIDArray[index] = glyphID;
       return Status::Ok();
     } else {
-      glyphIdArray.resize(index + 1, 0);
-      glyphIdArray[index] = glyphId;
+      glyphIDArray.resize(index + 1, 0);
+      glyphIDArray[index] = glyphID;
       return Status::Ok();
     }
   }
 
   bool writeMayFail() const {
     using namespace std;
-    return sizeof(uint16_t) * 2 + sizeof(Offset16) + sizeof(uint16_t) * glyphIdArray.size() > (size_t)numeric_limits<uint16_t>::max();
+    return sizeof(uint16_t) * 2 + sizeof(Offset16) + sizeof(uint16_t) * glyphIDArray.size() > (size_t)numeric_limits<uint16_t>::max();
   }
 
   Status convertToFormat4(std::shared_ptr<SegmentMappingToDeltaValues> &out) const {
@@ -96,7 +96,7 @@ public:
     auto ret = make_unique<SegmentMappingToDeltaValues>();
     ret->language = language;
     uint32_t code = firstCode;
-    for (auto gid : glyphIdArray) {
+    for (auto gid : glyphIDArray) {
       if (auto st = ret->map(code, gid); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
@@ -109,7 +109,7 @@ public:
 public:
   uint16_t language;
   uint16_t firstCode;
-  std::vector<uint16_t> glyphIdArray;
+  std::vector<uint16_t> glyphIDArray;
 };
 
 } // namespace eglyf::cmap

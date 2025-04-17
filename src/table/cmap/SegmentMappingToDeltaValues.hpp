@@ -76,13 +76,13 @@ public:
     if (!in.u16a(idRangeOffset, segCount)) {
       return EGLYF_ERROR;
     }
-    vector<uint16_t> glyphIdArray;
+    vector<uint16_t> glyphIDArray;
     while (true) {
-      uint16_t glyphId;
-      if (!in.u16(&glyphId)) {
+      uint16_t glyphID;
+      if (!in.u16(&glyphID)) {
         break;
       }
-      glyphIdArray.push_back(glyphId);
+      glyphIDArray.push_back(glyphID);
     }
     for (size_t i = 0; i < segCount; i++) {
       uint16_t _startCode = startCode[i];
@@ -97,13 +97,13 @@ public:
         // max: iRO / 2 + i - segCount + (s.endCode - s.startCode)
         if (iRO / 2 + i < segCount) {
           return EGLYF_ERROR;
-        } else if (iRO / 2 + i + (_endCode - _startCode) - segCount >= glyphIdArray.size()) {
+        } else if (iRO / 2 + i + (_endCode - _startCode) - segCount >= glyphIDArray.size()) {
           return EGLYF_ERROR;
         }
         size_t offset = iRO / 2 + i - segCount;
         for (int c = _startCode; c <= _endCode; c++) {
           size_t index = offset + (size_t)(c - _startCode);
-          ret->mapping[c] = glyphIdArray[index];
+          ret->mapping[c] = glyphIDArray[index];
         }
       } else {
         for (int c = _startCode; c <= _endCode; c++) {
@@ -132,7 +132,7 @@ public:
       uint16_t endCode;
       uint16_t startCode;
       int16_t idDelta;
-      vector<uint16_t> glyphIdArray;
+      vector<uint16_t> glyphIDArray;
     };
     vector<Seg> segs;
 
@@ -147,10 +147,10 @@ public:
         if (current->endCode + 1 == codepoint) {
           if (current->idDelta == 0) {
             current->endCode = codepoint;
-            current->glyphIdArray.push_back(gid);
+            current->glyphIDArray.push_back(gid);
           } else if (current->idDelta == delta) {
             current->endCode = codepoint;
-            assert(current->glyphIdArray.empty());
+            assert(current->glyphIDArray.empty());
           } else {
             segs.push_back(*current);
             Seg s;
@@ -158,7 +158,7 @@ public:
             s.endCode = codepoint;
             if (delta == 0) {
               s.idDelta = 0;
-              s.glyphIdArray = {gid};
+              s.glyphIDArray = {gid};
             } else {
               s.idDelta = delta;
             }
@@ -171,7 +171,7 @@ public:
           s.endCode = codepoint;
           if (delta == 0) {
             s.idDelta = 0;
-            s.glyphIdArray = {gid};
+            s.glyphIDArray = {gid};
           } else {
             s.idDelta = delta;
           }
@@ -183,7 +183,7 @@ public:
         s.endCode = codepoint;
         if (delta == 0) {
           s.idDelta = 0;
-          s.glyphIdArray = {gid};
+          s.glyphIDArray = {gid};
         } else {
           s.idDelta = delta;
         }
@@ -232,7 +232,7 @@ public:
     size_t offset = 0;
     for (size_t i = 0; i < segs.size(); i++) {
       auto const &s = segs[i];
-      if (s.glyphIdArray.empty()) {
+      if (s.glyphIDArray.empty()) {
         if (!out.u16(0)) {
           return EGLYF_ERROR;
         }
@@ -245,11 +245,11 @@ public:
         if (!out.u16(iRO)) {
           return EGLYF_ERROR;
         }
-        offset += s.glyphIdArray.size();
+        offset += s.glyphIDArray.size();
       }
     }
     for (auto const &s : segs) {
-      if (!out.u16a(s.glyphIdArray)) {
+      if (!out.u16a(s.glyphIDArray)) {
         return EGLYF_ERROR;
       }
     }
@@ -282,8 +282,8 @@ public:
     }
   }
 
-  Status map(uint32_t codepoint, uint16_t glyphId) {
-    mapping[codepoint] = glyphId;
+  Status map(uint32_t codepoint, uint16_t glyphID) {
+    mapping[codepoint] = glyphID;
     return Status::Ok();
   }
 

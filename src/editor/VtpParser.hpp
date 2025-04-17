@@ -61,9 +61,9 @@ private:
     using namespace std;
     auto g = editor->getGlyphByName(name);
     auto font = editor->font;
-    uint16_t glyphId = 0;
-    if (auto gid = font->post->getGlyphId(name); gid) {
-      glyphId = *gid;
+    uint16_t glyphID = 0;
+    if (auto gid = font->post->getGlyphID(name); gid) {
+      glyphID = *gid;
     } else {
       auto underbar = name.find('_');
       if (underbar != string::npos) {
@@ -73,13 +73,13 @@ private:
         }
       }
       if (auto gid1 = font->addEmptyGlyph(name, 0, 0); gid1) {
-        glyphId = *gid1;
+        glyphID = *gid1;
       } else {
         return EGLYF_STATUS_PUSH(gid1.status());
       }
     }
     if (unicode) {
-      if (auto st = font->cmap->map(*unicode, glyphId); !st.ok()) {
+      if (auto st = font->cmap->map(*unicode, glyphID); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     }
@@ -91,10 +91,10 @@ private:
     if (!font->gdef->glyphClassDef) {
       font->gdef->glyphClassDef = make_shared<ClassDef2>();
     }
-    if (auto st = font->gdef->glyphClassDef->add(glyphId, static_cast<uint16_t>(classDef)); !st.ok()) {
+    if (auto st = font->gdef->glyphClassDef->add(glyphID, static_cast<uint16_t>(classDef)); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
-    g->id = glyphId;
+    g->id = glyphID;
     g->classDef = classDef;
     return Status::Ok();
   }

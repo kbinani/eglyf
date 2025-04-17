@@ -499,7 +499,7 @@ public:
   }
 
   Optional<uint16_t> getGlyphID(uint32_t codepoint) const {
-    if (auto gid = cmap->getGlyphId(codepoint); gid) {
+    if (auto gid = cmap->getGlyphID(codepoint); gid) {
       return *gid;
     } else {
       return EGLYF_NULLOPT_PUSH(gid.status());
@@ -511,11 +511,11 @@ public:
     if (!gpos) {
       return nullopt;
     }
-    auto receptorGID = post->getGlyphId(receptorGlyphName);
+    auto receptorGID = post->getGlyphID(receptorGlyphName);
     if (!receptorGID) {
       return nullopt;
     }
-    auto ligandGID = post->getGlyphId(ligandGlyphName);
+    auto ligandGID = post->getGlyphID(ligandGlyphName);
     if (!ligandGID) {
       return nullopt;
     }

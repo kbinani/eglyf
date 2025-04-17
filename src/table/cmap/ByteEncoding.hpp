@@ -18,7 +18,7 @@ public:
     if (!in.u16(&ret->language)) {
       return EGLYF_ERROR;
     }
-    if (!in.read(ret->glyphIdArray.data(), ret->glyphIdArray.size())) {
+    if (!in.read(ret->glyphIDArray.data(), ret->glyphIDArray.size())) {
       return EGLYF_ERROR;
     }
     out.reset(ret.release());
@@ -35,7 +35,7 @@ public:
     if (!out.u16(language)) {
       return EGLYF_ERROR;
     }
-    if (!out.write(glyphIdArray.data(), glyphIdArray.size())) {
+    if (!out.write(glyphIDArray.data(), glyphIDArray.size())) {
       return EGLYF_ERROR;
     }
     return Status::Ok();
@@ -43,7 +43,7 @@ public:
 
 public:
   uint16_t language;
-  std::array<uint8_t, 256> glyphIdArray;
+  std::array<uint8_t, 256> glyphIDArray;
 };
 
 } // namespace eglyf::cmap

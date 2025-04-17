@@ -30,7 +30,7 @@ public:
     }
   }
 
-  std::optional<gpos::Attachment> findAttachment(uint16_t lookupType, uint16_t receptorGlyphId, uint16_t ligandGlyphId) const {
+  std::optional<gpos::Attachment> findAttachment(uint16_t lookupType, uint16_t receptorGlyphID, uint16_t ligandGlyphID) const {
     using namespace std;
     for (auto const &lookup : lookups) {
       shared_ptr<Subtable> table;
@@ -52,11 +52,11 @@ public:
           table = subtable;
         }
         if (auto mark = dynamic_pointer_cast<gpos::MarkToBaseAttachment>(table); mark && type == 4) {
-          if (auto found = mark->findAttachment(receptorGlyphId, ligandGlyphId); found) {
+          if (auto found = mark->findAttachment(receptorGlyphID, ligandGlyphID); found) {
             return *found;
           }
         } else if (auto mkmk = dynamic_pointer_cast<gpos::MarkToMarkAttachmentPositioning>(table); mkmk && type == 6) {
-          if (auto found = mkmk->findAttachment(receptorGlyphId, ligandGlyphId); found) {
+          if (auto found = mkmk->findAttachment(receptorGlyphID, ligandGlyphID); found) {
             return *found;
           }
         }

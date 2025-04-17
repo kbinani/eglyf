@@ -234,17 +234,17 @@ public:
     return ret;
   }
 
-  std::optional<Attachment> findAttachment(uint16_t receptorGlyphId, uint16_t ligandGlyphId) const {
+  std::optional<Attachment> findAttachment(uint16_t receptorGlyphID, uint16_t ligandGlyphID) const {
     using namespace std;
 
     // mark2: receptor
     // mark: ligand
 
-    auto receptorIndex = mark2Coverage->index(receptorGlyphId);
+    auto receptorIndex = mark2Coverage->index(receptorGlyphID);
     if (receptorIndex == Coverage::Npos) {
       return nullopt;
     }
-    auto ligandIndex = mark1Coverage->index(ligandGlyphId);
+    auto ligandIndex = mark1Coverage->index(ligandGlyphID);
     if (ligandIndex == Coverage::Npos) {
       return nullopt;
     }

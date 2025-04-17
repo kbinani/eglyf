@@ -11,11 +11,11 @@ public:
     if (!in.u16(&glyphCount)) {
       return EGLYF_ERROR_WHAT("Failed to read glyphCount");
     }
-    vector<uint16_t> glyphIdList;
-    if (!in.u16a(glyphIdList, glyphCount)) {
-      return EGLYF_ERROR_WHAT("Failed to read glyphIdList");
+    vector<uint16_t> glyphIDList;
+    if (!in.u16a(glyphIDList, glyphCount)) {
+      return EGLYF_ERROR_WHAT("Failed to read glyphIDList");
     }
-    for (uint16_t gid : glyphIdList) {
+    for (uint16_t gid : glyphIDList) {
       r->glyphArray.insert(gid);
     }
     out.reset(r.release());

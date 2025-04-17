@@ -166,7 +166,7 @@ public:
     return EncodeResult(out.data());
   }
 
-  Optional<uint16_t> getGlyphId(uint32_t codepoint) const {
+  Optional<uint16_t> getGlyphID(uint32_t codepoint) const {
     using namespace std;
     auto p0e4 = find_if(encodingRecords.rbegin(), encodingRecords.rend(), [](EncodingRecord const &r) {
       return r.platformID == 0 && (r.encodingID == 4 || r.encodingID == 6);
@@ -193,7 +193,7 @@ public:
     return 0;
   }
 
-  Status map(uint32_t codepoint, uint16_t glyphId) {
+  Status map(uint32_t codepoint, uint16_t glyphID) {
     using namespace std;
     set<shared_ptr<cmap::CmapSubtable>> done;
     for (size_t i = 0; i < encodingRecords.size(); i++) {
@@ -203,11 +203,11 @@ public:
       }
       done.insert(r.subtable);
       if (auto format4 = dynamic_pointer_cast<cmap::SegmentMappingToDeltaValues>(r.subtable); format4 && codepoint <= 0xffff) {
-        if (auto st = format4->map((uint16_t)codepoint, glyphId); !st.ok()) {
+        if (auto st = format4->map((uint16_t)codepoint, glyphID); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
       } else if (auto format6 = dynamic_pointer_cast<cmap::TrimmedTableMapping>(r.subtable); format6 && codepoint <= 0xffff) {
-        if (auto st = format6->map((uint16_t)codepoint, glyphId); !st.ok()) {
+        if (auto st = format6->map((uint16_t)codepoint, glyphID); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
         if (format6->writeMayFail()) {
@@ -224,7 +224,7 @@ public:
           }
         }
       } else if (auto format12 = dynamic_pointer_cast<cmap::SegmentedCoverage>(r.subtable); format12) {
-        if (auto st = format12->map(codepoint, glyphId); !st.ok()) {
+        if (auto st = format12->map(codepoint, glyphID); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
       }

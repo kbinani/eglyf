@@ -7,7 +7,7 @@ public:
   virtual ~ClassDef() {}
   virtual Status write(OutputStream &out) const = 0;
   virtual size_t size() const = 0;
-  virtual Status add(uint16_t glyphId, uint16_t classValue) = 0;
+  virtual Status add(uint16_t glyphID, uint16_t classValue) = 0;
   virtual void enumerateClassValues(std::function<void(uint16_t gid, uint16_t classValue)> cb) const = 0;
 };
 
@@ -52,9 +52,9 @@ public:
     return 2 * sizeof(uint16_t) + sizeof(Offset16) + classValues.size() * sizeof(uint16_t);
   }
 
-  Status add(uint16_t glyphId, uint16_t classValue) override {
-    if (glyphId < startGlyphID) {
-      int num = startGlyphID - glyphId;
+  Status add(uint16_t glyphID, uint16_t classValue) override {
+    if (glyphID < startGlyphID) {
+      int num = startGlyphID - glyphID;
       classValues.resize(classValues.size() + num);
       for (int i = (int)classValues.size() - 1; i >= num; i--) {
         classValues[i] = classValues[i - num];
@@ -65,7 +65,7 @@ public:
       classValues[0] = classValue;
       return Status::Ok();
     } else {
-      size_t index = glyphId - startGlyphID;
+      size_t index = glyphID - startGlyphID;
       if (index >= classValues.size()) {
         classValues.resize(index + 1);
       }
@@ -170,11 +170,11 @@ public:
     return ret;
   }
 
-  Status add(uint16_t glyphId, uint16_t classValue) override {
+  Status add(uint16_t glyphID, uint16_t classValue) override {
     using namespace std;
     ClassRange single;
-    single.startGlyphID = glyphId;
-    single.endGlyphID = glyphId;
+    single.startGlyphID = glyphID;
+    single.endGlyphID = glyphID;
     single.classValue = classValue;
 
     if (classRanges.empty()) {
@@ -182,13 +182,13 @@ public:
       return Status::Ok();
     }
     auto found = ranges::find_if(classRanges, [=](auto const &r) {
-      return glyphId <= r.endGlyphID;
+      return glyphID <= r.endGlyphID;
     });
     if (found == classRanges.end()) {
       if (!classRanges.empty()) {
         ClassRange &r = classRanges.back();
-        if (r.endGlyphID + 1 == glyphId && r.classValue == classValue) {
-          r.endGlyphID = glyphId;
+        if (r.endGlyphID + 1 == glyphID && r.classValue == classValue) {
+          r.endGlyphID = glyphID;
           return Status::Ok();
         }
       }
@@ -197,34 +197,34 @@ public:
     }
     size_t const index = distance(classRanges.begin(), found);
     auto &center = classRanges[index];
-    if (glyphId + 1 == center.startGlyphID && center.classValue == classValue) {
-      center.startGlyphID = glyphId;
+    if (glyphID + 1 == center.startGlyphID && center.classValue == classValue) {
+      center.startGlyphID = glyphID;
       return Status::Ok();
-    } else if (center.endGlyphID + 1 == glyphId && center.classValue == classValue) {
-      center.endGlyphID = glyphId;
+    } else if (center.endGlyphID + 1 == glyphID && center.classValue == classValue) {
+      center.endGlyphID = glyphID;
       return Status::Ok();
-    } else if (glyphId < center.startGlyphID) {
+    } else if (glyphID < center.startGlyphID) {
       classRanges.insert(classRanges.begin() + index, single);
       return Status::Ok();
-    } else if (glyphId == center.startGlyphID) {
-      center.startGlyphID = glyphId + 1;
+    } else if (glyphID == center.startGlyphID) {
+      center.startGlyphID = glyphID + 1;
       classRanges.insert(classRanges.begin() + index, single);
       return Status::Ok();
-    } else if (glyphId == center.endGlyphID) {
-      center.endGlyphID = glyphId - 1;
+    } else if (glyphID == center.endGlyphID) {
+      center.endGlyphID = glyphID - 1;
       classRanges.insert(classRanges.begin() + index + 1, single);
       return Status::Ok();
     } else {
       ClassRange copy = center;
       ClassRange left;
       left.startGlyphID = copy.startGlyphID;
-      left.endGlyphID = glyphId - 1;
+      left.endGlyphID = glyphID - 1;
       left.classValue = copy.classValue;
-      center.startGlyphID = glyphId;
-      center.endGlyphID = glyphId;
+      center.startGlyphID = glyphID;
+      center.endGlyphID = glyphID;
       center.classValue = classValue;
       ClassRange right;
-      right.startGlyphID = glyphId + 1;
+      right.startGlyphID = glyphID + 1;
       right.endGlyphID = copy.endGlyphID;
       right.classValue = copy.classValue;
       classRanges.insert(classRanges.begin() + index, left);

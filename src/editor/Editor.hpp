@@ -125,7 +125,7 @@ public:
     if (auto found = glyphs.find(name); found == glyphs.end()) {
       auto g = make_shared<Glyph>();
       g->name = name;
-      auto gid = font->post->getGlyphId(name);
+      auto gid = font->post->getGlyphID(name);
       if (gid) {
         g->id = *gid;
       }
@@ -136,7 +136,7 @@ public:
     }
   }
 
-  std::shared_ptr<Glyph> getGlyphById(uint16_t gid) {
+  std::shared_ptr<Glyph> getGlyphByID(uint16_t gid) {
     using namespace std;
     if (auto found = glyphsLut.find(gid); found != glyphsLut.end()) {
       return found->second;
@@ -378,7 +378,7 @@ public:
     map<uint16_t, uint16_t> glyphMap;
 
     // Vector to preserve the order of glyph IDs included in the Coverage
-    vector<uint16_t> coverageGlyphIds;
+    vector<uint16_t> coverageGlyphIDs;
 
     // Process each substitution pair
     for (auto const &[input, output] : substitutions) {
@@ -401,15 +401,15 @@ public:
       }
 
       // Check if all input/output glyphs have its id
-      vector<uint16_t> inputGlyphIds;
-      vector<uint16_t> outputGlyphIds;
+      vector<uint16_t> inputGlyphIDs;
+      vector<uint16_t> outputGlyphIDs;
       bool ok = true;
       for (auto const &g : inputGlyphs) {
         if (!g->id) {
           ok = false;
           break;
         }
-        inputGlyphIds.push_back(*g->id);
+        inputGlyphIDs.push_back(*g->id);
       }
       if (!ok) {
         continue;
@@ -419,48 +419,48 @@ public:
           ok = false;
           break;
         }
-        outputGlyphIds.push_back(*g->id);
+        outputGlyphIDs.push_back(*g->id);
       }
       if (!ok) {
         continue;
       }
 
       // Create glyph ID mapping
-      if (inputGlyphIds.size() == 1 && outputGlyphIds.size() == 1) {
+      if (inputGlyphIDs.size() == 1 && outputGlyphIDs.size() == 1) {
         // Single glyph to single glyph substitution
-        uint16_t inputGlyphId = inputGlyphIds[0];
-        uint16_t outputGlyphId = outputGlyphIds[0];
+        uint16_t inputGlyphID = inputGlyphIDs[0];
+        uint16_t outputGlyphID = outputGlyphIDs[0];
 
         // Add to Coverage if not already processed
-        if (glyphMap.find(inputGlyphId) == glyphMap.end()) {
-          coverageGlyphIds.push_back(inputGlyphId);
+        if (glyphMap.find(inputGlyphID) == glyphMap.end()) {
+          coverageGlyphIDs.push_back(inputGlyphID);
         }
 
-        glyphMap[inputGlyphId] = outputGlyphId;
-      } else if (inputGlyphIds.size() > 1 && outputGlyphIds.size() == 1) {
+        glyphMap[inputGlyphID] = outputGlyphID;
+      } else if (inputGlyphIDs.size() > 1 && outputGlyphIDs.size() == 1) {
         // Group to single glyph substitution
-        uint16_t outputGlyphId = outputGlyphIds[0];
+        uint16_t outputGlyphID = outputGlyphIDs[0];
 
-        for (auto inputGlyphId : inputGlyphIds) {
+        for (auto inputGlyphID : inputGlyphIDs) {
           // Add to Coverage if not already processed
-          if (glyphMap.find(inputGlyphId) == glyphMap.end()) {
-            coverageGlyphIds.push_back(inputGlyphId);
+          if (glyphMap.find(inputGlyphID) == glyphMap.end()) {
+            coverageGlyphIDs.push_back(inputGlyphID);
           }
 
-          glyphMap[inputGlyphId] = outputGlyphId;
+          glyphMap[inputGlyphID] = outputGlyphID;
         }
-      } else if (inputGlyphIds.size() > 1 && outputGlyphIds.size() > 1) {
+      } else if (inputGlyphIDs.size() > 1 && outputGlyphIDs.size() > 1) {
         // Group to group substitution (when glyph counts match)
-        for (size_t i = 0; i < inputGlyphIds.size(); ++i) {
-          uint16_t inputGlyphId = inputGlyphIds[i];
-          uint16_t outputGlyphId = outputGlyphIds[i];
+        for (size_t i = 0; i < inputGlyphIDs.size(); ++i) {
+          uint16_t inputGlyphID = inputGlyphIDs[i];
+          uint16_t outputGlyphID = outputGlyphIDs[i];
 
           // Add to Coverage if not already processed
-          if (glyphMap.find(inputGlyphId) == glyphMap.end()) {
-            coverageGlyphIds.push_back(inputGlyphId);
+          if (glyphMap.find(inputGlyphID) == glyphMap.end()) {
+            coverageGlyphIDs.push_back(inputGlyphID);
           }
 
-          glyphMap[inputGlyphId] = outputGlyphId;
+          glyphMap[inputGlyphID] = outputGlyphID;
         }
       }
     }
@@ -472,16 +472,16 @@ public:
 
     // Create Coverage
     set<uint16_t> coverage;
-    for (auto glyphId : coverageGlyphIds) {
-      coverage.insert(glyphId);
+    for (auto glyphID : coverageGlyphIDs) {
+      coverage.insert(glyphID);
     }
 
     // Check if all substitutions have the same deltaGlyphID
     bool allSameDelta = true;
-    int16_t firstDelta = static_cast<int16_t>(glyphMap[coverageGlyphIds[0]]) - static_cast<int16_t>(coverageGlyphIds[0]);
+    int16_t firstDelta = static_cast<int16_t>(glyphMap[coverageGlyphIDs[0]]) - static_cast<int16_t>(coverageGlyphIDs[0]);
 
-    for (auto glyphId : coverageGlyphIds) {
-      int16_t delta = static_cast<int16_t>(glyphMap[glyphId]) - static_cast<int16_t>(glyphId);
+    for (auto glyphID : coverageGlyphIDs) {
+      int16_t delta = static_cast<int16_t>(glyphMap[glyphID]) - static_cast<int16_t>(glyphID);
       if (delta != firstDelta) {
         allSameDelta = false;
         break;
@@ -501,8 +501,8 @@ public:
       format2->coverage = CoverageBuilder::Build(coverage);
 
       // Create substituteGlyphIDs (in the same order as Coverage)
-      for (auto glyphId : coverage) {
-        format2->substituteGlyphIDs.push_back(glyphMap[glyphId]);
+      for (auto glyphID : coverage) {
+        format2->substituteGlyphIDs.push_back(glyphMap[glyphID]);
       }
 
       subtable = format2;
@@ -584,21 +584,21 @@ public:
         if (!inputGlyph->id) {
           continue;
         }
-        uint16_t inputGlyphId = *inputGlyph->id;
-        vector<uint16_t> outputGlyphIds;
+        uint16_t inputGlyphID = *inputGlyph->id;
+        vector<uint16_t> outputGlyphIDs;
         for (auto const &output : outputs) {
           if (holds_alternative<shared_ptr<Group>>(output)) {
             return EGLYF_ERROR_WHAT("Output contains a group which is not supported for single glyph input");
           }
           auto outputGlyph = get<shared_ptr<Glyph>>(output);
           if (outputGlyph->id) {
-            outputGlyphIds.push_back(*outputGlyph->id);
+            outputGlyphIDs.push_back(*outputGlyph->id);
           } else {
             break;
           }
         }
-        if (outputGlyphIds.size() == outputs.size()) {
-          mapping[inputGlyphId] = outputGlyphIds;
+        if (outputGlyphIDs.size() == outputs.size()) {
+          mapping[inputGlyphID] = outputGlyphIDs;
         }
       } else {
         return EGLYF_ERROR_WHAT("Invalid variant type in input");
@@ -610,23 +610,23 @@ public:
       return Status::Ok();
     }
 
-    set<uint16_t> coverageGlyphIds;
-    for (auto const &[inputGlyphId, outputGlyphIds] : mapping) {
-      coverageGlyphIds.insert(inputGlyphId);
+    set<uint16_t> coverageGlyphIDs;
+    for (auto const &[inputGlyphID, outputGlyphIDs] : mapping) {
+      coverageGlyphIDs.insert(inputGlyphID);
     }
 
     // Create Sequence objects for each input glyph ID
     vector<gsub::Multiple::Sequence> sequences;
 
-    for (auto glyphId : coverageGlyphIds) {
+    for (auto glyphID : coverageGlyphIDs) {
       gsub::Multiple::Sequence sequence;
-      sequence.substituteGlyphIDs = mapping[glyphId];
+      sequence.substituteGlyphIDs = mapping[glyphID];
       sequences.push_back(sequence);
     }
 
     // Create gsub::Multiple object and set coverage and sequences
     auto multiple = make_shared<gsub::Multiple>();
-    multiple->coverage = CoverageBuilder::Build(coverageGlyphIds);
+    multiple->coverage = CoverageBuilder::Build(coverageGlyphIDs);
     multiple->sequences = sequences;
 
     // Set result to subtable argument
@@ -763,14 +763,14 @@ public:
       if (components.empty()) {
         continue; // Skip empty input sequences
       }
-      uint16_t firstGlyphId = components[0];
-      groupedMapping[firstGlyphId].push_back(make_pair(components, ligatureGlyph));
+      uint16_t firstGlyphID = components[0];
+      groupedMapping[firstGlyphID].push_back(make_pair(components, ligatureGlyph));
     }
 
     // Create Coverage table with first glyph IDs
     set<uint16_t> coverage;
-    for (auto const &[firstGlyphId, _] : groupedMapping) {
-      coverage.insert(firstGlyphId);
+    for (auto const &[firstGlyphID, _] : groupedMapping) {
+      coverage.insert(firstGlyphID);
     }
 
     // Create Ligature object and set coverage
@@ -778,7 +778,7 @@ public:
     ligature->coverage = CoverageBuilder::Build(coverage);
 
     // Create LigatureSet for each first glyph ID
-    for (auto const &[firstGlyphId, mappings] : groupedMapping) {
+    for (auto const &[firstGlyphID, mappings] : groupedMapping) {
       gsub::Ligature::LigatureSet ligatureSet;
 
       // Create LigatureTable for each mapping
@@ -871,12 +871,12 @@ public:
         auto singleLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
         singleLookup->data = lookupData;
 
-        set<uint16_t> inputGlyphIds;
+        set<uint16_t> inputGlyphIDs;
         for (auto const &[input, _] : single) {
-          collectGIDSet(input, inputGlyphIds);
+          collectGIDSet(input, inputGlyphIDs);
         }
         map<size_t, vector<shared_ptr<Coverage>>> inputCoverages;
-        inputCoverages[1].push_back(CoverageBuilder::Build(inputGlyphIds));
+        inputCoverages[1].push_back(CoverageBuilder::Build(inputGlyphIDs));
 
         lookups.push_back(make_pair(singleLookup, inputCoverages));
       }
@@ -907,12 +907,12 @@ public:
         auto multipleLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
         multipleLookup->data = lookupData;
 
-        set<uint16_t> inputGlyphIds;
+        set<uint16_t> inputGlyphIDs;
         for (auto const &[input, _] : multiple) {
-          collectGIDSet(input, inputGlyphIds);
+          collectGIDSet(input, inputGlyphIDs);
         }
         map<size_t, vector<shared_ptr<Coverage>>> inputCoverages;
-        inputCoverages[1].push_back(CoverageBuilder::Build(inputGlyphIds));
+        inputCoverages[1].push_back(CoverageBuilder::Build(inputGlyphIDs));
 
         lookups.push_back(make_pair(multipleLookup, inputCoverages));
       }
@@ -1052,7 +1052,7 @@ public:
     auto &outline = get<FontFile::TrueTypeOutlines>(font->outlines);
     auto &glyf = outline.glyf;
     auto const process = [&, this](uint32_t cp) {
-      auto gid = font->cmap->getGlyphId(cp);
+      auto gid = font->cmap->getGlyphID(cp);
       if (!gid) {
         return;
       }
@@ -1174,7 +1174,7 @@ public:
 
     for (int h = 1; h <= hhu; h++) {
       string name = format("QB{}", h);
-      if (auto gid = font->post->getGlyphId(name); gid) {
+      if (auto gid = font->post->getGlyphID(name); gid) {
         if (auto st = font->post->setName(*gid, "." + name); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
@@ -1258,7 +1258,7 @@ public:
         if (!newGid) {
           return EGLYF_STATUS_PUSH(newGid.status());
         }
-        auto variationGlyph = getGlyphById(*newGid);
+        auto variationGlyph = getGlyphByID(*newGid);
         if (!variationGlyph) {
           return EGLYF_ERROR;
         }
@@ -2512,22 +2512,22 @@ private:
       vector<std::shared_ptr<Coverage>> backtrackCoverage;
       for (size_t i = 0; i < left; i++) {
         size_t index = left - i - 1;
-        set<uint16_t> glyphIds;
+        set<uint16_t> glyphIDs;
         auto const &item = context->left[index];
-        collectGIDSet(item, glyphIds);
-        if (!glyphIds.empty()) {
-          backtrackCoverage.push_back(CoverageBuilder::Build(glyphIds));
+        collectGIDSet(item, glyphIDs);
+        if (!glyphIDs.empty()) {
+          backtrackCoverage.push_back(CoverageBuilder::Build(glyphIDs));
         }
       }
 
       vector<shared_ptr<Coverage>> lookaheadCoverage;
       for (size_t i = 0; i < right; i++) {
         size_t index = right - i - 1;
-        set<uint16_t> glyphIds;
+        set<uint16_t> glyphIDs;
         auto const &item = context->right[index];
-        collectGIDSet(item, glyphIds);
-        if (!glyphIds.empty()) {
-          lookaheadCoverage.push_back(CoverageBuilder::Build(glyphIds));
+        collectGIDSet(item, glyphIDs);
+        if (!glyphIDs.empty()) {
+          lookaheadCoverage.push_back(CoverageBuilder::Build(glyphIDs));
         }
       }
       for (auto const &[lookup, inputCoverages] : lookups) {
@@ -2574,21 +2574,21 @@ private:
         vector<shared_ptr<Coverage>> backtrackCoverage;
         for (size_t i = 0; i < left; i++) {
           size_t index = left - i - 1;
-          set<uint16_t> glyphIds;
+          set<uint16_t> glyphIDs;
           auto const &item = context->left[index];
-          collectGIDSet(item, glyphIds);
-          if (!glyphIds.empty()) {
-            backtrackCoverage.push_back(CoverageBuilder::Build(glyphIds));
+          collectGIDSet(item, glyphIDs);
+          if (!glyphIDs.empty()) {
+            backtrackCoverage.push_back(CoverageBuilder::Build(glyphIDs));
           }
         }
 
         vector<shared_ptr<Coverage>> lookaheadCoverage;
         for (size_t i = 0; i < right; i++) {
-          set<uint16_t> glyphIds;
+          set<uint16_t> glyphIDs;
           auto const &item = context->right[i];
-          collectGIDSet(item, glyphIds);
-          if (!glyphIds.empty()) {
-            lookaheadCoverage.push_back(CoverageBuilder::Build(glyphIds));
+          collectGIDSet(item, glyphIDs);
+          if (!glyphIDs.empty()) {
+            lookaheadCoverage.push_back(CoverageBuilder::Build(glyphIDs));
           }
         }
 
@@ -2686,7 +2686,7 @@ private:
     // Check if all ValueRecords are the same
     bool allSameValueRecord = true;
     auto firstValueRecord = glyphValueRecords.begin()->second;
-    for (auto const &[glyphId, valueRecord] : glyphValueRecords) {
+    for (auto const &[glyphID, valueRecord] : glyphValueRecords) {
       if (valueRecord.xPlacement != firstValueRecord.xPlacement ||
           valueRecord.yPlacement != firstValueRecord.yPlacement) {
         allSameValueRecord = false;
@@ -2695,12 +2695,12 @@ private:
     }
 
     // Create Coverage
-    set<uint16_t> glyphIds;
-    for (auto const &[glyphId, valueRecord] : glyphValueRecords) {
-      glyphIds.insert(glyphId);
+    set<uint16_t> glyphIDs;
+    for (auto const &[glyphID, valueRecord] : glyphValueRecords) {
+      glyphIDs.insert(glyphID);
     }
 
-    auto coverage = CoverageBuilder::Build(glyphIds);
+    auto coverage = CoverageBuilder::Build(glyphIDs);
 
     // Create SingleAdjustment
     if (allSameValueRecord) {
@@ -2716,7 +2716,7 @@ private:
 
       // Determine valueFormat
       uint16_t valueFormat = 0;
-      for (auto const &[glyphId, valueRecord] : glyphValueRecords) {
+      for (auto const &[glyphID, valueRecord] : glyphValueRecords) {
         if (valueRecord.xPlacement) {
           valueFormat |= gpos::ValueRecord::X_PLACEMENT;
         }
@@ -2727,8 +2727,8 @@ private:
       subtable->valueFormat = valueFormat;
 
       // Create valueRecords
-      for (auto glyphId : glyphIds) {
-        subtable->valueRecords.push_back(glyphValueRecords[glyphId]);
+      for (auto glyphID : glyphIDs) {
+        subtable->valueRecords.push_back(glyphValueRecords[glyphID]);
       }
 
       return subtable;
@@ -2761,11 +2761,11 @@ private:
     }
 
     // Collect glyph IDs
-    set<uint16_t> glyphIds;
-    collectGIDSetFromGroup(what.group, glyphIds);
+    set<uint16_t> glyphIDs;
+    collectGIDSetFromGroup(what.group, glyphIDs);
 
     // Return 0 if no glyph IDs
-    if (glyphIds.empty()) {
+    if (glyphIDs.empty()) {
       return 0;
     }
 
@@ -2776,22 +2776,22 @@ private:
         if (auto coverage1 = dynamic_pointer_cast<Coverage1>(gdef->markGlyphSets->coverages[i]); coverage1) {
           (*markFilteringSets)[coverage1->glyphArray] = make_pair(coverage1, i);
         } else if (auto coverage2 = dynamic_pointer_cast<Coverage2>(gdef->markGlyphSets->coverages[i]); coverage2) {
-          set<uint16_t> coverage2GlyphIds;
+          set<uint16_t> coverage2GlyphIDs;
           for (auto const &rangeRecord : coverage2->rangeRecords) {
-            for (uint16_t glyphId = rangeRecord.startGlyphID; glyphId <= rangeRecord.endGlyphID; glyphId++) {
-              coverage2GlyphIds.insert(glyphId);
+            for (uint16_t glyphID = rangeRecord.startGlyphID; glyphID <= rangeRecord.endGlyphID; glyphID++) {
+              coverage2GlyphIDs.insert(glyphID);
             }
           }
-          (*markFilteringSets)[coverage2GlyphIds] = make_pair(coverage2, i);
+          (*markFilteringSets)[coverage2GlyphIDs] = make_pair(coverage2, i);
         }
       }
     }
 
-    if (auto found = markFilteringSets->find(glyphIds); found == markFilteringSets->end()) {
-      auto coverage = CoverageBuilder::Build(glyphIds);
+    if (auto found = markFilteringSets->find(glyphIDs); found == markFilteringSets->end()) {
+      auto coverage = CoverageBuilder::Build(glyphIDs);
       auto index = gdef->markGlyphSets->coverages.size();
       gdef->markGlyphSets->coverages.push_back(coverage);
-      (*markFilteringSets)[glyphIds] = make_pair(coverage, index);
+      (*markFilteringSets)[glyphIDs] = make_pair(coverage, index);
       return index;
     } else {
       return found->second.second;
@@ -2852,34 +2852,34 @@ private:
 
   // Function to collect glyphs from a variant (glyph or group)
   void collectGIDSet(GG const &item,
-                     std::set<uint16_t> &glyphIds) const {
+                     std::set<uint16_t> &glyphIDs) const {
     using namespace std;
 
     if (holds_alternative<shared_ptr<Glyph>>(item)) {
       auto glyph = get<shared_ptr<Glyph>>(item);
       if (glyph->id) {
-        glyphIds.insert(*glyph->id);
+        glyphIDs.insert(*glyph->id);
       }
     } else if (holds_alternative<shared_ptr<Group>>(item)) {
       auto group = get<shared_ptr<Group>>(item);
-      collectGIDSetFromGroup(group, glyphIds);
+      collectGIDSetFromGroup(group, glyphIDs);
     }
   }
 
   // Function to recursively collect glyphs from a group
   void collectGIDSetFromGroup(std::shared_ptr<Group> const &group,
-                              std::set<uint16_t> &glyphIds) const {
+                              std::set<uint16_t> &glyphIDs) const {
     using namespace std;
 
     for (auto const &member : group->members) {
       if (holds_alternative<shared_ptr<Glyph>>(member)) {
         auto glyph = get<shared_ptr<Glyph>>(member);
         if (glyph->id) {
-          glyphIds.insert(*glyph->id);
+          glyphIDs.insert(*glyph->id);
         }
       } else if (holds_alternative<shared_ptr<Group>>(member)) {
         auto subgroup = get<shared_ptr<Group>>(member);
-        collectGIDSetFromGroup(subgroup, glyphIds);
+        collectGIDSetFromGroup(subgroup, glyphIDs);
       }
     }
   }
@@ -2970,7 +2970,7 @@ private:
   // Create attachment subtable (MarkToBase or MarkToMark) from Editor::Lookup::Attach
   Status createAttachmentSubtable(std::shared_ptr<Lookup> const &lookup, std::shared_ptr<Subtable> &result, uint16_t &lookupType) {
     using namespace std;
-    using ClassId = uint16_t;
+    using ClassID = uint16_t;
 
     if (!lookup->attach || lookup->attach->ligands.empty()) {
       return Status::Ok();
@@ -3039,13 +3039,13 @@ private:
       lookupType = 4;
 
       deque<shared_ptr<Glyph>> receptorGlyphs;
-      set<uint16_t> receptorGlyphIds;
+      set<uint16_t> receptorGlyphIDs;
       for (auto const &receptor : lookup->attach->receptors) {
         collectGlyphVector(receptor, receptorGlyphs);
       }
       for (auto const &glyph : receptorGlyphs) {
         if (glyph->id) {
-          receptorGlyphIds.insert(*glyph->id);
+          receptorGlyphIDs.insert(*glyph->id);
         }
       }
       if (receptorGlyphs.empty()) {
@@ -3055,8 +3055,8 @@ private:
 
       set<uint16_t> markCoverage;
 
-      ClassId nextMarkClass = 0;
-      map<shared_ptr<Anchor>, ClassId> anchors;
+      ClassID nextMarkClass = 0;
+      map<shared_ptr<Anchor>, ClassID> anchors;
       deque<pair<shared_ptr<Glyph>, shared_ptr<Anchor>>> ligandGlyphs;
       for (auto const &item : lookup->attach->ligands) {
         if (auto found = anchors.find(item.anchor); found == anchors.end()) {
@@ -3088,7 +3088,7 @@ private:
 
       auto mark = make_unique<gpos::MarkToBaseAttachment>();
       mark->markCoverage = CoverageBuilder::Build(markCoverage);
-      mark->baseCoverage = CoverageBuilder::Build(receptorGlyphIds);
+      mark->baseCoverage = CoverageBuilder::Build(receptorGlyphIDs);
 
       for (auto const &[ligand, anchor] : ligandGlyphs) {
         auto found = anchors.find(anchor);
@@ -3108,7 +3108,7 @@ private:
         gpos::MarkToBaseAttachment::BaseRecord record;
         record.baseAnchors.resize(nextMarkClass, nullptr);
 
-        for (auto const &[anchor, classId] : anchors) {
+        for (auto const &[anchor, classID] : anchors) {
           auto found = anchor->glyphs.find(receptor);
           if (found == anchor->glyphs.end()) [[unlikely]] {
             return EGLYF_ERROR_WHAT("Receptor glyph not found in anchor glyphs map");
@@ -3116,7 +3116,7 @@ private:
           auto gposAnchor = make_shared<gpos::Anchor1>();
           gposAnchor->xCoordinate = found->second.x.value_or(0);
           gposAnchor->yCoordinate = found->second.y.value_or(0);
-          record.baseAnchors[classId] = gposAnchor;
+          record.baseAnchors[classID] = gposAnchor;
         }
         mark->baseArray.baseRecords.push_back(record);
       }
@@ -3132,13 +3132,13 @@ private:
       // mark: ligand
 
       deque<shared_ptr<Glyph>> receptorGlyphs;
-      set<uint16_t> receptorGlyphIds;
+      set<uint16_t> receptorGlyphIDs;
       for (auto const &receptor : lookup->attach->receptors) {
         collectGlyphVector(receptor, receptorGlyphs);
       }
       for (auto const &glyph : receptorGlyphs) {
         if (glyph->id) {
-          receptorGlyphIds.insert(*glyph->id);
+          receptorGlyphIDs.insert(*glyph->id);
         }
       }
       if (receptorGlyphs.empty()) {
@@ -3148,8 +3148,8 @@ private:
 
       set<uint16_t> markCoverage;
 
-      ClassId nextMarkClass = 0;
-      map<shared_ptr<Anchor>, ClassId> anchors;
+      ClassID nextMarkClass = 0;
+      map<shared_ptr<Anchor>, ClassID> anchors;
       deque<pair<shared_ptr<Glyph>, shared_ptr<Anchor>>> ligandGlyphs;
       for (auto const &item : lookup->attach->ligands) {
         if (auto found = anchors.find(item.anchor); found == anchors.end()) {
@@ -3181,7 +3181,7 @@ private:
 
       auto mark = make_unique<gpos::MarkToMarkAttachmentPositioning>();
       mark->mark1Coverage = CoverageBuilder::Build(markCoverage);
-      mark->mark2Coverage = CoverageBuilder::Build(receptorGlyphIds);
+      mark->mark2Coverage = CoverageBuilder::Build(receptorGlyphIDs);
 
       for (auto const &[ligand, anchor] : ligandGlyphs) {
         auto found = anchors.find(anchor);
@@ -3207,7 +3207,7 @@ private:
         gpos::MarkToMarkAttachmentPositioning::Mark2 record;
         record.mark2Anchors.resize(nextMarkClass, nullptr);
 
-        for (auto const &[anchor, classId] : anchors) {
+        for (auto const &[anchor, classID] : anchors) {
           auto found = anchor->glyphs.find(receptor);
           auto gposAnchor = make_shared<gpos::Anchor1>();
           if (found == anchor->glyphs.end()) [[unlikely]] {
@@ -3217,7 +3217,7 @@ private:
             gposAnchor->xCoordinate = found->second.x.value_or(0);
             gposAnchor->yCoordinate = found->second.y.value_or(0);
           }
-          record.mark2Anchors[classId] = gposAnchor;
+          record.mark2Anchors[classID] = gposAnchor;
         }
         mark->mark2Array.mark2Records.push_back(record);
       }

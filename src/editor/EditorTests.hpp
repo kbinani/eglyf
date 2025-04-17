@@ -11,7 +11,7 @@ class EditorTests : public juce::UnitTest {
   using HbBufferUniquePtr = std::unique_ptr<hb_buffer_t, juce::FunctionPointerDestructor<hb_buffer_destroy>>;
 
   struct GlyphInformation {
-    hb_codepoint_t glyphId;
+    hb_codepoint_t glyphID;
     hb_position_t x;
     hb_position_t y;
     uint32_t cluster;
@@ -73,7 +73,7 @@ class EditorTests : public juce::UnitTest {
     hb_position_t cursorY = -(unitsPerEm + descender);
     for (unsigned int i = 0; i < numGlyphs; i++) {
       GlyphInformation info;
-      info.glyphId = glyphInfo[i].codepoint;
+      info.glyphID = glyphInfo[i].codepoint;
       info.cluster = glyphInfo[i].cluster;
       auto xOffset = glyphPos[i].x_offset;
       auto yOffset = glyphPos[i].y_offset;
@@ -90,7 +90,7 @@ class EditorTests : public juce::UnitTest {
   static bool GlyphNames(std::vector<GlyphInformation> const &infos, FontFile const &font, std::vector<std::string> &names) {
     names.clear();
     for (auto const &info : infos) {
-      if (auto name = font.post->getName(info.glyphId); name) {
+      if (auto name = font.post->getName(info.glyphID); name) {
         names.push_back(*name);
       } else {
         return false;

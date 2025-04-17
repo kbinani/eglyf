@@ -156,8 +156,8 @@ public:
     return EGLYF_NULLOPT;
   }
 
-  Status map(uint32_t codepoint, uint16_t glyphId) {
-    mapping[codepoint] = glyphId;
+  Status map(uint32_t codepoint, uint16_t glyphID) {
+    mapping[codepoint] = glyphID;
     return Status::Ok();
   }
 
