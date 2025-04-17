@@ -100,6 +100,7 @@ list(APPEND src_files
   src/table/coverage/CoverageBuilder.hpp
   src/GlyphNames.hpp
   src/Unicode.hpp
+  src/table/gpos/Attachment.hpp
 )
 
 juce_add_binary_data(eglyf-binary-data

@@ -42,6 +42,15 @@ public:
     return (2 + glyphArray.size()) * sizeof(uint16_t);
   }
 
+  size_t index(uint16_t gid) const override {
+    auto found = glyphArray.find(gid);
+    if (found == glyphArray.end()) {
+      return Npos;
+    } else {
+      return distance(glyphArray.begin(), found);
+    }
+  }
+
 public:
   std::set<uint16_t> glyphArray;
 };

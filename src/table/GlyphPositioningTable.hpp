@@ -29,6 +29,41 @@ public:
       return EGLYF_ERROR;
     }
   }
+
+  std::optional<gpos::Attachment> findAttachment(uint16_t lookupType, uint16_t receptorGlyphId, uint16_t ligandGlyphId) const {
+    using namespace std;
+    for (auto const &lookup : lookups) {
+      shared_ptr<Subtable> table;
+      if (lookup->data->lookupType != 9 && lookupType != lookup->data->lookupType) {
+        continue;
+      }
+      for (auto const &subtable : lookup->data->subtables) {
+        shared_ptr<Subtable> table;
+        uint16_t type;
+        if (lookup->data->lookupType == 9) {
+          auto e = dynamic_pointer_cast<gpos::PositioningExtension>(subtable);
+          if (e->extensionLookupType != lookupType) {
+            continue;
+          }
+          table = e->extension;
+          type = e->extensionLookupType;
+        } else {
+          type = lookup->data->lookupType;
+          table = subtable;
+        }
+        if (auto mark = dynamic_pointer_cast<gpos::MarkToBaseAttachment>(table); mark && type == 4) {
+          if (auto found = mark->findAttachment(receptorGlyphId, ligandGlyphId); found) {
+            return *found;
+          }
+        } else if (auto mkmk = dynamic_pointer_cast<gpos::MarkToMarkAttachmentPositioning>(table); mkmk && type == 6) {
+          if (auto found = mkmk->findAttachment(receptorGlyphId, ligandGlyphId); found) {
+            return *found;
+          }
+        }
+      }
+    }
+    return nullopt;
+  }
 };
 
 } // namespace eglyf

@@ -67,6 +67,7 @@
 #include "table/gsub/Alternate.hpp"
 #include "table/gsub/SubstitutionExtension.hpp"
 #include "table/gpos/Anchor.hpp"
+#include "table/gpos/Attachment.hpp"
 #include "table/gpos/MarkArray.hpp"
 #include "table/gpos/ValueRecord.hpp"
 #include "table/gpos/SingleAdjustment.hpp"

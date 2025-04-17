@@ -231,6 +231,30 @@ public:
     return ret;
   }
 
+  std::optional<Attachment> findAttachment(uint16_t receptorGlyphId, uint16_t ligandGlyphId) const {
+    using namespace std;
+    auto baseIndex = baseCoverage->index(receptorGlyphId);
+    if (baseIndex == Coverage::Npos) {
+      return nullopt;
+    }
+    auto markIndex = markCoverage->index(ligandGlyphId);
+    if (markIndex == Coverage::Npos) {
+      return nullopt;
+    }
+    auto const &markRecord = markArray.markRecords[markIndex];
+    auto const markClass = markRecord.markClass;
+    auto const &markAnchor = markRecord.markAnchor;
+
+    auto const &baseRecord = baseArray.baseRecords[baseIndex];
+    auto const &baseAnchor = baseRecord.baseAnchors[markClass];
+
+    Attachment ret;
+    ret.receptor = baseAnchor;
+    ret.ligand = markAnchor;
+
+    return ret;
+  }
+
 public:
   std::shared_ptr<Coverage> markCoverage;
   std::shared_ptr<Coverage> baseCoverage;

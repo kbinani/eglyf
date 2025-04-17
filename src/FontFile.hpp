@@ -516,6 +516,22 @@ public:
     }
   }
 
+  std::optional<gpos::Attachment> findAttachment(uint16_t lookupType, std::string const &receptorGlyphName, std::string const &ligandGlyphName) const {
+    using namespace std;
+    if (!gpos) {
+      return nullopt;
+    }
+    auto receptorGID = post->getGlyphId(receptorGlyphName);
+    if (!receptorGID) {
+      return nullopt;
+    }
+    auto ligandGID = post->getGlyphId(ligandGlyphName);
+    if (!ligandGID) {
+      return nullopt;
+    }
+    return gpos->findAttachment(lookupType, *receptorGID, *ligandGID);
+  }
+
 private:
   Optional<uint16_t> addTrueTypeGlyph(std::string const &name, std::function<Optional<uint16_t>(GlyphDataTable &glyf, HorizontalMetricsTable &hmtx, VerticalMetricsTable &vmtx)> addOp) {
     using namespace std;

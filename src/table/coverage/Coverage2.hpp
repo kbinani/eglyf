@@ -64,6 +64,18 @@ public:
     return ret;
   }
 
+  size_t index(uint16_t gid) const override {
+    using namespace std;
+    auto found = ranges::find_if(rangeRecords, [=](auto const &record) {
+      return record.startGlyphID <= gid && gid <= record.endGlyphID;
+    });
+    if (found == rangeRecords.end()) {
+      return Npos;
+    } else {
+      return found->startCoverageIndex + (gid - found->startGlyphID);
+    }
+  }
+
 public:
   std::vector<RangeRecord> rangeRecords;
 };
