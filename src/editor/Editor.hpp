@@ -1143,7 +1143,7 @@ public:
       }
       GlyphDataTable::CompositeGlyph::GlyphRecord record;
       if (scale < 1) {
-        record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(gid, dx, dy, F2DOT14::FromFloat(scale));
+        record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(gid, dx, dy, scale);
       } else {
         record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(gid, dx, dy);
       }
@@ -1254,7 +1254,7 @@ public:
           dy = bottom - rect.yMin;
           lsb = rect.xMin - xMid;
         }
-        auto record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(baseGlyph.gid, dx, dy, F2DOT14::FromFloat(scale));
+        auto record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(baseGlyph.gid, dx, dy, scale);
         auto newGid = font->addCompositeGlyph(n, record, 0, lsb);
         if (!newGid) {
           return EGLYF_STATUS_PUSH(newGid.status());

@@ -116,13 +116,20 @@ public:
       std::optional<std::variant<F2DOT14, Vec<F2DOT14>>> scale;
       std::optional<Vec<F2DOT14>> scale2;
 
-      static GlyphRecord New(uint16_t glyphIndex, int16_t dx, int16_t dy, std::optional<F2DOT14> scale = std::nullopt) {
+      static GlyphRecord New(uint16_t glyphIndex, int16_t dx, int16_t dy, std::optional<std::variant<float, Vec<float>>> scale = std::nullopt) {
         GlyphRecord r;
         r.glyphIndex = glyphIndex;
         r.flags = ARGS_ARE_XY_VALUES | ARG_1_AND_2_ARE_WORDS;
         if (scale) {
-          r.flags |= WE_HAVE_A_SCALE;
-          r.scale = scale;
+          if (holds_alternative<float>(*scale)) {
+            float fs = get<float>(*scale);
+            r.flags |= WE_HAVE_A_SCALE;
+            r.scale = F2DOT14::FromFloat(fs);
+          } else if (holds_alternative<Vec<float>>(*scale)) {
+            auto fvs = get<Vec<float>>(*scale);
+            r.flags |= WE_HAVE_AN_X_AND_Y_SCALE;
+            r.scale = Vec<F2DOT14>(F2DOT14::FromFloat(fvs.x), F2DOT14::FromFloat(fvs.y));
+          }
         }
         r.offset = Vec<int16_t>(dx, dy);
         return r;
