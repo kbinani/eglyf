@@ -1557,18 +1557,6 @@ public:
     for (auto const &it : sizeVariants) {
       auto const &name = it.first;
       auto const &sv = it.second;
-      {
-        // SUB GLYPH "et45" GLYPH "A1"
-        // WITH GLYPH "A1_45"
-
-        auto s = make_shared<Lookup::Substitution>();
-        auto et = format("et{0}{1}", sv.hGrids, sv.vGrids);
-        s->input.push_back(getGlyphByName(et));
-        s->input.push_back(sv.base);
-        auto sized = name + format("{0}{1}", sv.hGrids, sv.vGrids);
-        s->output.push_back(getGlyphByName(sized));
-        a->substitutions.push_back(s);
-      }
       for (auto const [key, glyph] : sv.variants) {
         // SUB GLYPH "et44" GLYPH "A1"
         // WITH GLYPH "A1_44"
