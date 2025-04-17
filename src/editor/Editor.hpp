@@ -7,7 +7,7 @@ public:
   struct Glyph {
     std::string name;
     std::optional<uint16_t> id;
-    GlyphDefinitionTable::Class classDef;
+    GlyphDefinitionTable::Class classDef = GlyphDefinitionTable::Class::Mark;
   };
 
   struct Group {
