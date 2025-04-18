@@ -506,20 +506,20 @@ public:
     }
   }
 
-  std::optional<gpos::Attachment> findAttachment(uint16_t lookupType, std::string const &receptorGlyphName, std::string const &ligandGlyphName) const {
+  std::optional<gpos::Attachment> findAttachment(uint16_t lookupType, std::vector<std::string> const &glyphs, size_t index) const {
     using namespace std;
     if (!gpos) {
       return nullopt;
     }
-    auto receptorGID = post->getGlyphID(receptorGlyphName);
-    if (!receptorGID) {
-      return nullopt;
+    vector<uint16_t> gids;
+    for (auto const &name : glyphs) {
+      if (auto gid = post->getGlyphID(name); gid) {
+        gids.push_back(*gid);
+      } else {
+        return nullopt;
+      }
     }
-    auto ligandGID = post->getGlyphID(ligandGlyphName);
-    if (!ligandGID) {
-      return nullopt;
-    }
-    return gpos->findAttachment(lookupType, *receptorGID, *ligandGID);
+    return gpos->findAttachment(lookupType, gids, index);
   }
 
 private:

@@ -30,36 +30,54 @@ public:
     }
   }
 
-  std::optional<gpos::Attachment> findAttachment(uint16_t lookupType, uint16_t receptorGlyphID, uint16_t ligandGlyphID) const {
+  std::optional<gpos::Attachment> findAttachment(uint16_t lookupType, std::vector<uint16_t> const &glyphs, size_t index) const {
     using namespace std;
+
+    if (glyphs.size() < 2 || index + 1 >= glyphs.size()) {
+      return nullopt;
+    }
+
+    map<size_t, shared_ptr<Lookup>> lookups;
     for (auto const &feature : features) {
       for (auto const &lookup : feature->data->lookups) {
-        if (lookup->data->lookupType != 9 && lookupType != lookup->data->lookupType) {
-          continue;
+        if (auto found = ranges::find(this->lookups, lookup); found != this->lookups.end()) {
+          size_t index = distance(this->lookups.begin(), found);
+          lookups[index] = lookup;
         }
-        for (auto const &subtable : lookup->data->subtables) {
-          shared_ptr<Subtable> table;
-          uint16_t type;
-          if (lookup->data->lookupType == 9) {
-            auto e = dynamic_pointer_cast<gpos::PositioningExtension>(subtable);
-            if (e->extensionLookupType != lookupType) {
-              continue;
-            }
-            table = e->extension;
-            type = e->extensionLookupType;
-          } else {
-            type = lookup->data->lookupType;
-            table = subtable;
+      }
+    }
+
+    for (auto const &[_, lookup] : lookups) {
+      if (lookup->data->lookupType != 9 && lookupType != lookup->data->lookupType) {
+        continue;
+      }
+      for (auto const &subtable : lookup->data->subtables) {
+        shared_ptr<Subtable> table;
+        uint16_t type;
+        if (lookup->data->lookupType == 9) {
+          auto e = dynamic_pointer_cast<gpos::PositioningExtension>(subtable);
+          if (e->extensionLookupType != lookupType) {
+            continue;
           }
-          if (auto mark = dynamic_pointer_cast<gpos::MarkToBaseAttachment>(table); mark && type == 4) {
-            if (auto found = mark->findAttachment(receptorGlyphID, ligandGlyphID); found) {
-              return *found;
-            }
-          } else if (auto mkmk = dynamic_pointer_cast<gpos::MarkToMarkAttachment>(table); mkmk && type == 6) {
-            if (auto found = mkmk->findAttachment(receptorGlyphID, ligandGlyphID); found) {
-              return *found;
-            }
+          table = e->extension;
+          type = e->extensionLookupType;
+        } else {
+          type = lookup->data->lookupType;
+          table = subtable;
+        }
+        if (auto mark = dynamic_pointer_cast<gpos::MarkToBaseAttachment>(table); mark && type == 4) {
+          uint16_t receptorGlyphID = glyphs[index];
+          uint16_t ligandGlyphID = glyphs[index + 1];
+          if (auto found = mark->findAttachment(receptorGlyphID, ligandGlyphID); found) {
+            return *found;
           }
+        } else if (auto mkmk = dynamic_pointer_cast<gpos::MarkToMarkAttachment>(table); mkmk && type == 6) {
+          uint16_t receptorGlyphID = glyphs[index];
+          uint16_t ligandGlyphID = glyphs[index + 1];
+          if (auto found = mkmk->findAttachment(receptorGlyphID, ligandGlyphID); found) {
+            return *found;
+          }
+        } else if (auto chain = dynamic_pointer_cast<ChainedContexts>(table); chain && type == 8) {
         }
       }
     }
