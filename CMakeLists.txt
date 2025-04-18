@@ -77,11 +77,11 @@ list(APPEND src_files
   src/table/gpos/MarkToBaseAttachment.hpp
   src/table/gpos/Anchor.hpp
   src/table/gpos/MarkArray.hpp
-  src/table/gpos/MarkToLigatureAttachmentPositioning.hpp
-  src/table/gpos/MarkToMarkAttachmentPositioning.hpp
+  src/table/gpos/MarkToLigatureAttachment.hpp
+  src/table/gpos/MarkToMarkAttachment.hpp
   src/table/gpos/ValueRecord.hpp
-  src/table/gpos/PairAdjustmentPositioning.hpp
-  src/table/gpos/CursiveAttachmentPositioning.hpp
+  src/table/gpos/PairAdjustment.hpp
+  src/table/gpos/CursiveAttachment.hpp
   src/io/DataFragmentWriter.hpp
   src/table/GlyphDefinitionTable.hpp
   src/table/MarkGlyphSets.hpp

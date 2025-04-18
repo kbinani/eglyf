@@ -2,7 +2,7 @@
 
 namespace eglyf::gpos {
 
-class CursiveAttachmentPositioning : public Subtable {
+class CursiveAttachment : public Subtable {
 public:
   struct EntryExit {
     std::shared_ptr<Anchor> entryAnchor;
@@ -37,7 +37,7 @@ public:
       }
       offsets.emplace_back(entry, exit);
     }
-    auto ret = make_unique<CursiveAttachmentPositioning>();
+    auto ret = make_unique<CursiveAttachment>();
     for (auto [entry, exit] : offsets) {
       EntryExit record;
       if (entry > 0) {

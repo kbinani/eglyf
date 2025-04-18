@@ -2,7 +2,7 @@
 
 namespace eglyf::gpos {
 
-class PairAdjustmentPositioning1 : public Subtable {
+class PairAdjustment1 : public Subtable {
 public:
   struct PairValue {
     uint16_t secondGlyph;
@@ -100,7 +100,7 @@ public:
     if (!in.o16(&coverageOffset)) {
       return EGLYF_ERROR;
     }
-    auto ret = make_unique<PairAdjustmentPositioning1>();
+    auto ret = make_unique<PairAdjustment1>();
     if (!in.u16(&ret->valueFormat1)) {
       return EGLYF_ERROR;
     }
@@ -196,7 +196,7 @@ public:
   std::vector<PairSet> pairSets;
 };
 
-class PairAdjustmentPositioning2 : public Subtable {
+class PairAdjustment2 : public Subtable {
 public:
   struct Class2 {
     ValueRecord valueRecord1;
@@ -278,7 +278,7 @@ public:
     if (!in.o16(&coverageOffset)) {
       return EGLYF_ERROR;
     }
-    auto ret = make_unique<PairAdjustmentPositioning2>();
+    auto ret = make_unique<PairAdjustment2>();
     if (!in.u16(&ret->valueFormat1)) {
       return EGLYF_ERROR;
     }
@@ -416,8 +416,8 @@ public:
   std::vector<Class1> class1Records;
 };
 
-class PairAdjustmentPositioning {
-  PairAdjustmentPositioning() = delete;
+class PairAdjustment {
+  PairAdjustment() = delete;
 
 public:
   static Status Read(InputStream &stream, std::shared_ptr<Subtable> &out) {
@@ -427,9 +427,9 @@ public:
       return EGLYF_ERROR;
     }
     if (format == 1) {
-      return EGLYF_STATUS_PUSH(PairAdjustmentPositioning1::Read(in, out));
+      return EGLYF_STATUS_PUSH(PairAdjustment1::Read(in, out));
     } else if (format == 2) {
-      return EGLYF_STATUS_PUSH(PairAdjustmentPositioning2::Read(in, out));
+      return EGLYF_STATUS_PUSH(PairAdjustment2::Read(in, out));
     }
     return EGLYF_ERROR;
   }

@@ -32,12 +32,12 @@ public:
       }
       break;
     case 2:
-      if (auto st = PairAdjustmentPositioning::Read(in, ret->extension); !st.ok()) {
+      if (auto st = PairAdjustment::Read(in, ret->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
       break;
     case 3:
-      if (auto st = CursiveAttachmentPositioning::Read(in, ret->extension); !st.ok()) {
+      if (auto st = CursiveAttachment::Read(in, ret->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
       break;
@@ -47,12 +47,12 @@ public:
       }
       break;
     case 5:
-      if (auto st = MarkToLigatureAttachmentPositioning::Read(in, ret->extension); !st.ok()) {
+      if (auto st = MarkToLigatureAttachment::Read(in, ret->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
       break;
     case 6:
-      if (auto st = MarkToMarkAttachmentPositioning::Read(in, ret->extension); !st.ok()) {
+      if (auto st = MarkToMarkAttachment::Read(in, ret->extension); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
       break;

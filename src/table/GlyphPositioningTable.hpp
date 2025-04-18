@@ -10,15 +10,15 @@ public:
     case 1:
       return EGLYF_STATUS_PUSH(gpos::SingleAdjustment::Read(in, out));
     case 2:
-      return EGLYF_STATUS_PUSH(gpos::PairAdjustmentPositioning::Read(in, out));
+      return EGLYF_STATUS_PUSH(gpos::PairAdjustment::Read(in, out));
     case 3:
-      return EGLYF_STATUS_PUSH(gpos::CursiveAttachmentPositioning::Read(in, out));
+      return EGLYF_STATUS_PUSH(gpos::CursiveAttachment::Read(in, out));
     case 4:
       return EGLYF_STATUS_PUSH(gpos::MarkToBaseAttachment::Read(in, out));
     case 5:
-      return EGLYF_STATUS_PUSH(gpos::MarkToLigatureAttachmentPositioning::Read(in, out));
+      return EGLYF_STATUS_PUSH(gpos::MarkToLigatureAttachment::Read(in, out));
     case 6:
-      return EGLYF_STATUS_PUSH(gpos::MarkToMarkAttachmentPositioning::Read(in, out));
+      return EGLYF_STATUS_PUSH(gpos::MarkToMarkAttachment::Read(in, out));
     case 7:
       return EGLYF_STATUS_PUSH(Contextual::Read(in, out));
     case 8:
@@ -55,7 +55,7 @@ public:
           if (auto found = mark->findAttachment(receptorGlyphID, ligandGlyphID); found) {
             return *found;
           }
-        } else if (auto mkmk = dynamic_pointer_cast<gpos::MarkToMarkAttachmentPositioning>(table); mkmk && type == 6) {
+        } else if (auto mkmk = dynamic_pointer_cast<gpos::MarkToMarkAttachment>(table); mkmk && type == 6) {
           if (auto found = mkmk->findAttachment(receptorGlyphID, ligandGlyphID); found) {
             return *found;
           }

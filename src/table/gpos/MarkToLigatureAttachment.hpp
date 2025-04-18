@@ -2,7 +2,7 @@
 
 namespace eglyf::gpos {
 
-class MarkToLigatureAttachmentPositioning : public Subtable {
+class MarkToLigatureAttachment : public Subtable {
 public:
   struct ComponentRecord {
     std::vector<std::shared_ptr<Anchor>> ligatureAnchors;
@@ -185,7 +185,7 @@ public:
     if (!in.o16(&ligatureCoverageOffset)) {
       return EGLYF_ERROR;
     }
-    auto ret = make_unique<MarkToLigatureAttachmentPositioning>();
+    auto ret = make_unique<MarkToLigatureAttachment>();
     if (!in.u16(&ret->markClassCount)) {
       return EGLYF_ERROR;
     }

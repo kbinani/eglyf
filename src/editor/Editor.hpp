@@ -3180,7 +3180,7 @@ private:
       }
 #endif
 
-      auto mark = make_unique<gpos::MarkToMarkAttachmentPositioning>();
+      auto mark = make_unique<gpos::MarkToMarkAttachment>();
       mark->mark1Coverage = CoverageBuilder::Build(markCoverage);
       mark->mark2Coverage = CoverageBuilder::Build(receptorGlyphIDs);
 
@@ -3205,7 +3205,7 @@ private:
       }
 
       for (auto const &receptor : receptorGlyphs) {
-        gpos::MarkToMarkAttachmentPositioning::Mark2 record;
+        gpos::MarkToMarkAttachment::Mark2 record;
         record.mark2Anchors.resize(nextMarkClass, nullptr);
 
         for (auto const &[anchor, classID] : anchors) {

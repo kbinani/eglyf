@@ -2,7 +2,7 @@
 
 namespace eglyf::gpos {
 
-class MarkToMarkAttachmentPositioning : public Subtable {
+class MarkToMarkAttachment : public Subtable {
 public:
   struct Mark2 {
     std::vector<std::shared_ptr<Anchor>> mark2Anchors;
@@ -131,7 +131,7 @@ public:
       return EGLYF_ERROR;
     }
 
-    auto ret = make_unique<MarkToMarkAttachmentPositioning>();
+    auto ret = make_unique<MarkToMarkAttachment>();
 
     if (!in.seek(mark1CoverageOffset)) {
       return EGLYF_ERROR;
