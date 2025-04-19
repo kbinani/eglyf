@@ -76,6 +76,14 @@ public:
     }
   }
 
+  size_t count() const override {
+    if (rangeRecords.empty()) {
+      return 0;
+    }
+    auto const &back = rangeRecords.back();
+    return back.startCoverageIndex + (back.endGlyphID - back.startGlyphID + 1);
+  }
+
 public:
   std::vector<RangeRecord> rangeRecords;
 };

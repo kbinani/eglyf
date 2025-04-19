@@ -51,6 +51,10 @@ public:
     }
   }
 
+  size_t count() const override {
+    return glyphArray.size();
+  }
+
 public:
   std::set<uint16_t> glyphArray;
 };
