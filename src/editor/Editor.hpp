@@ -2488,19 +2488,17 @@ public:
     ranges::copy(direct, back_inserter(collection.lookups));
     ranges::copy(indirect, back_inserter(collection.lookups));
 
-    for (auto const &feature : collection.features) {
-      for (auto &lookup : feature->data->lookups) {
-        for (auto const &subtable : lookup->data->subtables) {
-          auto sub = subtable;
-          if (auto extension = dynamic_pointer_cast<gpos::PositioningExtension>(subtable); extension) {
-            sub = extension->extension;
-          } else if (auto extension = dynamic_pointer_cast<gsub::SubstitutionExtension>(subtable); extension) {
-            sub = extension->extension;
-          }
-          if (auto chained = dynamic_pointer_cast<ChainedContexts>(sub); chained) {
-            if (auto st = chained->updateLookupToLookupListIndex(collection.lookups); !st.ok()) {
-              return EGLYF_STATUS_PUSH(st);
-            }
+    for (auto const &lookup : collection.lookups) {
+      for (auto const &subtable : lookup->data->subtables) {
+        auto sub = subtable;
+        if (auto extension = dynamic_pointer_cast<gpos::PositioningExtension>(subtable); extension) {
+          sub = extension->extension;
+        } else if (auto extension = dynamic_pointer_cast<gsub::SubstitutionExtension>(subtable); extension) {
+          sub = extension->extension;
+        }
+        if (auto chained = dynamic_pointer_cast<ChainedContexts>(sub); chained) {
+          if (auto st = chained->updateLookupToLookupListIndex(collection.lookups); !st.ok()) {
+            return EGLYF_STATUS_PUSH(st);
           }
         }
       }
