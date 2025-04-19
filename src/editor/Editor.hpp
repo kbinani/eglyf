@@ -2402,20 +2402,6 @@ public:
               gpos->features.push_back(gposFeature);
             }
 
-            for (auto &lookup : gposFeature->data->lookups) {
-              for (auto const &subtable : lookup->data->subtables) {
-                auto sub = subtable;
-                if (auto extension = dynamic_pointer_cast<gpos::PositioningExtension>(subtable); extension) {
-                  sub = extension->extension;
-                }
-                if (auto chained = dynamic_pointer_cast<ChainedContexts>(sub); chained) {
-                  if (auto st = chained->updateLookupToLookupListIndex(gpos->lookups); !st.ok()) {
-                    return EGLYF_STATUS_PUSH(st);
-                  }
-                }
-              }
-            }
-
             gposLangSys->features.push_back(gposFeature);
           }
 
@@ -2434,19 +2420,6 @@ public:
               gsub->features.push_back(gsubFeature);
             }
 
-            for (auto &lookup : gsubFeature->data->lookups) {
-              for (auto const &subtable : lookup->data->subtables) {
-                auto sub = subtable;
-                if (auto extension = dynamic_pointer_cast<gsub::SubstitutionExtension>(subtable); extension) {
-                  sub = extension->extension;
-                }
-                if (auto chained = dynamic_pointer_cast<ChainedContexts>(sub); chained) {
-                  if (auto st = chained->updateLookupToLookupListIndex(gsub->lookups); !st.ok()) {
-                    return EGLYF_STATUS_PUSH(st);
-                  }
-                }
-              }
-            }
             gsubLangSys->features.push_back(gsubFeature);
           }
         }
@@ -2479,10 +2452,59 @@ public:
       }
     }
 
-    // Add tables to FontFile
+    if (auto st = ReorderLookups(*gpos); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    if (auto st = ReorderLookups(*gsub); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+
     font->gpos = gpos;
     font->gsub = gsub;
 
+    return Status::Ok();
+  }
+
+  static Status ReorderLookups(SubtableCollection<Subtable> &collection) {
+    using namespace std;
+    using LookupPtr = shared_ptr<SubtableCollection<Subtable>::Lookup>;
+
+    set<LookupPtr> directLookups;
+    for (auto const &feature : collection.features) {
+      for (auto const &lookup : feature->data->lookups) {
+        directLookups.insert(lookup);
+      }
+    }
+    vector<LookupPtr> direct;
+    vector<LookupPtr> indirect;
+    for (auto const &lookup : collection.lookups) {
+      if (directLookups.find(lookup) == directLookups.end()) {
+        indirect.push_back(lookup);
+      } else {
+        direct.push_back(lookup);
+      }
+    }
+    collection.lookups.clear();
+    ranges::copy(direct, back_inserter(collection.lookups));
+    ranges::copy(indirect, back_inserter(collection.lookups));
+
+    for (auto const &feature : collection.features) {
+      for (auto &lookup : feature->data->lookups) {
+        for (auto const &subtable : lookup->data->subtables) {
+          auto sub = subtable;
+          if (auto extension = dynamic_pointer_cast<gpos::PositioningExtension>(subtable); extension) {
+            sub = extension->extension;
+          } else if (auto extension = dynamic_pointer_cast<gsub::SubstitutionExtension>(subtable); extension) {
+            sub = extension->extension;
+          }
+          if (auto chained = dynamic_pointer_cast<ChainedContexts>(sub); chained) {
+            if (auto st = chained->updateLookupToLookupListIndex(collection.lookups); !st.ok()) {
+              return EGLYF_STATUS_PUSH(st);
+            }
+          }
+        }
+      }
+    }
     return Status::Ok();
   }
 
