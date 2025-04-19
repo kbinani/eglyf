@@ -2910,8 +2910,7 @@ private:
     requires requires(C &container, std::shared_ptr<Glyph> const &g) {
       container.push_back(g);
     }
-  void collectGlyphVector(GG const &item,
-                          C &glyphs) const {
+  void collectGlyphVector(GG const &item, C &glyphs) const {
     using namespace std;
 
     if (holds_alternative<shared_ptr<Glyph>>(item)) {
@@ -2928,8 +2927,7 @@ private:
     requires requires(C &container, std::shared_ptr<Glyph> const &g) {
       container.push_back(g);
     }
-  void collectGlyphVectorFromGroup(std::shared_ptr<Group> const &group,
-                                   C &glyphs) const {
+  void collectGlyphVectorFromGroup(std::shared_ptr<Group> const &group, C &glyphs) const {
     using namespace std;
 
     for (auto const &member : group->members) {
@@ -3022,96 +3020,63 @@ private:
       return EGLYF_ERROR_WHAT("Ligand cannot be both base and mark glyphs simultaneously");
     }
 
-#define DBG_MARK_ATTACH 0
-#if DBG_MARK_ATTACH
-    vector<shared_ptr<Glyph>> line;
-    vector<string> chars =
-        /* A1 hj B1 vj Z2
-         0 QB5 <- r0v4 by a1 (ma001_a1_A)
-         1 r0v4 <- c0h3 by top (mk003_rows-cols0_A)
-         2 c0h3 <- o34 by left (mk007_cols-shapes0_M)
-         3 o34 <- m0 by center (mk065_m0b0_A)
-         4 m0 <- A1_34 by center (mk066_glyphs_m1_A)
-         7 c0h2 <- o24 by left (mk007_cols-shapes0_M)
-         8 o24 <- m0 by center (mk065_m0b0_A)
-         9 m0 <- B1_24 by center (mk066_glyphs_m1_A)
-         13 r0v2 <- c0h5 by top (mk003_rows-cols0_A)
-         14 c0h5 <- o52 by left (mk007_cols-shapes0_M)
-         15 o52 <- m0 by center (mk065_m0b0_A)
-         16 m0 <- Z2_32 by center (mk066_glyphs_m1_A)
-         */
-        {"QB5", "r0v4", "c0h3", "o34", "m0", "A1_34", "c0eA", "c0h2", "o24", "m0", "B1_24", "c0eA", "r0eB", "r0v2", "c0h5", "o52", "m0", "Z2_32", "c0eA", "r0eB"};
-    /* A1
-     0 QB4 <- r0v6 by a1 (ma001_a1_A)
-     1 r0v6 <- c0h4 by top (mk003_rows-cols0_A)
-     2 c0h4 <- o46 by left (mk007_cols-shapes0_M)
-     3 o46 <- m0 by center (mk065_m0b0_A)
-     4 m0 <- A1 by center (mk066_glyphs_m1_A)
-     */
-    //{"QB4", "r0v6", "c0h4", "o46", "m0", "A1", "c0eA", "r0eB"};
-    for (string const &name : chars) {
-      auto g = getGlyphByName(name);
-      line.push_back(g);
-    }
-#endif
-
     if (receptorBase > 0 && ligandMark > 0) {
       // mark
       lookupType = 4;
 
-      deque<shared_ptr<Glyph>> receptorGlyphs;
-      set<uint16_t> receptorGlyphIDs;
+      map<uint16_t, shared_ptr<Glyph>> receptorGlyphs;
       for (auto const &receptor : lookup->attach->receptors) {
-        collectGlyphVector(receptor, receptorGlyphs);
-      }
-      for (auto const &glyph : receptorGlyphs) {
-        if (glyph->id) {
-          receptorGlyphIDs.insert(*glyph->id);
+        vector<shared_ptr<Glyph>> glyphs;
+        collectGlyphVector(receptor, glyphs);
+        for (auto const &glyph : glyphs) {
+          if (glyph->id) {
+            receptorGlyphs[*glyph->id] = glyph;
+          }
         }
       }
       if (receptorGlyphs.empty()) {
         return Status::Ok();
       }
-      ranges::sort(receptorGlyphs, [](auto const &a, auto const &b) { return a->id < b->id; });
-
-      set<uint16_t> markCoverage;
+      set<uint16_t> receptorGlyphIDs;
+      for (auto const &[gid, glyph] : receptorGlyphs) {
+        receptorGlyphIDs.insert(gid);
+      }
 
       ClassID nextMarkClass = 0;
       map<shared_ptr<Anchor>, ClassID> anchors;
-      deque<pair<shared_ptr<Glyph>, shared_ptr<Anchor>>> ligandGlyphs;
+      map<uint16_t, pair<shared_ptr<Glyph>, shared_ptr<Anchor>>> ligandGlyphs;
       for (auto const &item : lookup->attach->ligands) {
-        if (auto found = anchors.find(item.anchor); found == anchors.end()) {
-          anchors[item.anchor] = nextMarkClass;
-          nextMarkClass++;
-        }
         vector<shared_ptr<Glyph>> glyphs;
         collectGlyphVector(item.ligand, glyphs);
+        bool empty = true;
         for (auto const &glyph : glyphs) {
           if (glyph->id) {
-            ligandGlyphs.push_back(make_pair(glyph, item.anchor));
-            markCoverage.insert(*glyph->id);
+            auto existing = ligandGlyphs.find(*glyph->id);
+            if (existing != ligandGlyphs.end() && existing->second.second != item.anchor) {
+              return EGLYF_ERROR;
+            }
+            ligandGlyphs[*glyph->id] = make_pair(glyph, item.anchor);
+            empty = false;
+          }
+        }
+        if (!empty) {
+          if (auto found = anchors.find(item.anchor); found == anchors.end()) {
+            anchors[item.anchor] = nextMarkClass;
+            nextMarkClass++;
           }
         }
       }
-      ranges::sort(ligandGlyphs, [](auto const &a, auto const &b) { return a.first->id < b.first->id; });
-
-#if DBG_MARK_ATTACH
-      for (int i = 0; i < line.size() - 1; i++) {
-        auto receptor = line[i];
-        auto ligand = line[i + 1];
-        auto r = ranges::find(receptorGlyphs, receptor);
-        auto l = ranges::find_if(ligandGlyphs, [&](auto const &it) { return it.first == ligand; });
-        if (r != receptorGlyphs.end() && l != ligandGlyphs.end()) {
-          cout << i << " " << receptor->name << " <- " << ligand->name << " by " << l->second->name << " (" << lookup->name << ")" << endl;
-        }
+      set<uint16_t> markCoverage;
+      for (auto const &[gid, _] : ligandGlyphs) {
+        markCoverage.insert(gid);
       }
-#endif
 
       auto mark = make_unique<gpos::MarkToBaseAttachment>();
       mark->markCoverage = CoverageBuilder::Build(markCoverage);
       mark->baseCoverage = CoverageBuilder::Build(receptorGlyphIDs);
 
-      for (auto const &[ligand, anchor] : ligandGlyphs) {
+      for (auto const &[ligandGID, it] : ligandGlyphs) {
+        auto const &[ligand, anchor] = it;
         auto found = anchors.find(anchor);
         if (found == anchors.end()) [[unlikely]] {
           return EGLYF_ERROR_WHAT("Anchor not found in anchors map");
@@ -3125,7 +3090,7 @@ private:
         mark->markArray.markRecords.push_back(record);
       }
 
-      for (auto const &receptor : receptorGlyphs) {
+      for (auto const &[receptorGID, receptor] : receptorGlyphs) {
         gpos::MarkToBaseAttachment::BaseRecord record;
         record.baseAnchors.resize(nextMarkClass, nullptr);
 
@@ -3152,59 +3117,59 @@ private:
       // mark2: receptor
       // mark: ligand
 
-      deque<shared_ptr<Glyph>> receptorGlyphs;
-      set<uint16_t> receptorGlyphIDs;
+      map<uint16_t, shared_ptr<Glyph>> receptorGlyphs;
       for (auto const &receptor : lookup->attach->receptors) {
-        collectGlyphVector(receptor, receptorGlyphs);
-      }
-      for (auto const &glyph : receptorGlyphs) {
-        if (glyph->id) {
-          receptorGlyphIDs.insert(*glyph->id);
+        vector<shared_ptr<Glyph>> glyphs;
+        collectGlyphVector(receptor, glyphs);
+        for (auto const &glyph : glyphs) {
+          if (glyph->id) {
+            receptorGlyphs[*glyph->id] = glyph;
+          }
         }
       }
       if (receptorGlyphs.empty()) {
         return Status::Ok();
       }
-      ranges::sort(receptorGlyphs, [](auto const &a, auto const &b) { return *a->id < *b->id; });
-
-      set<uint16_t> markCoverage;
+      set<uint16_t> receptorGlyphIDs;
+      for (auto const &[gid, _] : receptorGlyphs) {
+        receptorGlyphIDs.insert(gid);
+      }
 
       ClassID nextMarkClass = 0;
       map<shared_ptr<Anchor>, ClassID> anchors;
-      deque<pair<shared_ptr<Glyph>, shared_ptr<Anchor>>> ligandGlyphs;
+      map<uint16_t, pair<shared_ptr<Glyph>, shared_ptr<Anchor>>> ligandGlyphs;
       for (auto const &item : lookup->attach->ligands) {
-        if (auto found = anchors.find(item.anchor); found == anchors.end()) {
-          anchors[item.anchor] = nextMarkClass;
-          nextMarkClass++;
-        }
         vector<shared_ptr<Glyph>> glyphs;
         collectGlyphVector(item.ligand, glyphs);
+        bool empty = true;
         for (auto const &glyph : glyphs) {
           if (glyph->id) {
-            ligandGlyphs.push_back(make_pair(glyph, item.anchor));
-            markCoverage.insert(*glyph->id);
+            auto existing = ligandGlyphs.find(*glyph->id);
+            if (existing != ligandGlyphs.end() && existing->second.second != item.anchor) {
+              return EGLYF_ERROR;
+            }
+            ligandGlyphs[*glyph->id] = make_pair(glyph, item.anchor);
+            empty = false;
+          }
+        }
+        if (!empty) {
+          if (auto found = anchors.find(item.anchor); found == anchors.end()) {
+            anchors[item.anchor] = nextMarkClass;
+            nextMarkClass++;
           }
         }
       }
-      ranges::sort(ligandGlyphs, [](auto const &a, auto const &b) { return a.first->id < b.first->id; });
-
-#if DBG_MARK_ATTACH
-      for (int i = 0; i < line.size() - 1; i++) {
-        auto receptor = line[i];
-        auto ligand = line[i + 1];
-        auto r = ranges::find(receptorGlyphs, receptor);
-        auto l = ranges::find_if(ligandGlyphs, [&](auto const &it) { return it.first == ligand; });
-        if (r != receptorGlyphs.end() && l != ligandGlyphs.end()) {
-          cout << i << " " << receptor->name << " <- " << ligand->name << " by " << l->second->name << " (" << lookup->name << ")" << endl;
-        }
+      set<uint16_t> markCoverage;
+      for (auto const &[gid, _] : ligandGlyphs) {
+        markCoverage.insert(gid);
       }
-#endif
 
       auto mark = make_unique<gpos::MarkToMarkAttachment>();
       mark->mark1Coverage = CoverageBuilder::Build(markCoverage);
       mark->mark2Coverage = CoverageBuilder::Build(receptorGlyphIDs);
 
-      for (auto const &[ligand, anchor] : ligandGlyphs) {
+      for (auto const &[ligandGID, it] : ligandGlyphs) {
+        auto const &[ligand, anchor] = it;
         auto found = anchors.find(anchor);
         if (found == anchors.end()) [[unlikely]] {
           return EGLYF_ERROR_WHAT("Anchor not found in anchors map");
@@ -3224,7 +3189,7 @@ private:
         mark->mark1Array.markRecords.push_back(record);
       }
 
-      for (auto const &receptor : receptorGlyphs) {
+      for (auto const &[receptorGID, receptor] : receptorGlyphs) {
         gpos::MarkToMarkAttachment::Mark2 record;
         record.mark2Anchors.resize(nextMarkClass, nullptr);
 
