@@ -57,40 +57,148 @@ public:
   struct EmptyGlyph {
   };
 
+  struct Point {
+    int16_t x;
+    int16_t y;
+    bool control;
+  };
+
+  struct Contour {
+    std::vector<Point> points;
+  };
+
   struct SimpleGlyph {
+    enum : uint8_t {
+      ON_CURVE = 0x01,
+      X_SHORT = 0x02,
+      Y_SHORT = 0x04,
+      REPEAT = 0x08,
+      X_SAME = 0x10,
+      Y_SAME = 0x20,
+    };
+
     static Optional<SimpleGlyph> Read(Header header, InputStream &in) {
       using namespace std;
-      SimpleGlyph r;
-      r.header = header;
-      r.data = in.readUntilEos();
-      r.numPoints = 0;
-      if (header.numberOfContours > 0) {
-        ByteInputStream in(r.data);
-        for (uint16_t i = 0; i < header.numberOfContours; i++) {
-          uint16_t index;
-          if (!in.u16(&index)) {
-            return EGLYF_NULLOPT_WHAT("Failed to read contour index");
-          }
-          r.numPoints = (std::max)(r.numPoints, (uint16_t)(index + 1));
+      vector<uint16_t> endPtsOfContours;
+      if (!in.u16a(endPtsOfContours, header.numberOfContours)) {
+        return EGLYF_NULLOPT;
+      }
+      uint16_t instructionLength;
+      if (!in.u16(&instructionLength)) {
+        return EGLYF_NULLOPT;
+      }
+      SimpleGlyph g;
+      g.header = header;
+      g.numPoints = 0;
+      if (instructionLength > 0) {
+        g.instructions.resize(instructionLength);
+        if (!in.read(g.instructions.data(), instructionLength)) {
+          return EGLYF_NULLOPT;
         }
       }
-      return r;
+      if (header.numberOfContours == 0) {
+        return g;
+      }
+      g.contours.resize(header.numberOfContours);
+      vector<uint8_t> flags;
+      while (flags.size() < endPtsOfContours[header.numberOfContours - 1] + 1) {
+        uint8_t flag;
+        if (!in.u8(&flag)) {
+          return EGLYF_NULLOPT;
+        }
+        if ((flag & REPEAT) == REPEAT) {
+          uint8_t count;
+          if (!in.u8(&count)) {
+            return EGLYF_NULLOPT;
+          }
+          for (int j = 0; j < count + 1; j++) {
+            flags.push_back(flag);
+          }
+        } else {
+          flags.push_back(flag);
+        }
+      }
+      int16_t x = 0;
+      for (uint16_t i = 0; i < header.numberOfContours; i++) {
+        uint16_t from;
+        if (i == 0) {
+          from = 0;
+        } else {
+          from = endPtsOfContours[i - 1] + 1;
+        }
+        g.contours[i].points.resize(endPtsOfContours[i] - from + 1);
+        for (uint16_t j = from; j <= endPtsOfContours[i]; j++) {
+          uint8_t flag = flags[j];
+          int16_t dx = 0;
+          if ((flag & X_SHORT) == X_SHORT) {
+            uint8_t v;
+            if (!in.u8(&v)) {
+              return EGLYF_NULLOPT;
+            }
+            if ((flag & X_SAME) == X_SAME) {
+              dx = (int16_t)v;
+            } else {
+              dx = -(int16_t)v;
+            }
+          } else {
+            if ((flag & X_SAME) == X_SAME) {
+              dx = 0;
+            } else {
+              if (!in.i16(&dx)) {
+                return EGLYF_NULLOPT;
+              }
+            }
+          }
+          x += dx;
+          g.contours[i].points[j - from].x = x;
+        }
+      }
+      int16_t y = 0;
+      for (uint16_t i = 0; i < header.numberOfContours; i++) {
+        uint16_t from;
+        if (i == 0) {
+          from = 0;
+        } else {
+          from = endPtsOfContours[i - 1] + 1;
+        }
+        for (uint16_t j = from; j <= endPtsOfContours[i]; j++) {
+          uint8_t flag = flags[j];
+          int16_t dy = 0;
+          if ((flag & Y_SHORT) == Y_SHORT) {
+            uint8_t v;
+            if (!in.u8(&v)) {
+              return EGLYF_NULLOPT;
+            }
+            if ((flag & Y_SAME) == Y_SAME) {
+              dy = (int16_t)v;
+            } else {
+              dy = -(int16_t)v;
+            }
+          } else {
+            if ((flag & Y_SAME) == Y_SAME) {
+              dy = 0;
+            } else {
+              if (!in.i16(&dy)) {
+                return EGLYF_NULLOPT;
+              }
+            }
+          }
+          y += dy;
+          g.contours[i].points[j - from].y = y;
+          g.contours[i].points[j - from].control = (flag & ON_CURVE) != ON_CURVE;
+        }
+      }
+      return g;
     }
 
     Status encode(OutputStream &out) const {
-      if (auto st = header.encode(out); !st.ok()) {
-        return EGLYF_STATUS_PUSH(st);
-      }
-      if (out.write((void *)data.c_str(), data.size())) {
-        return Status::Ok();
-      } else {
-        return EGLYF_ERROR_WHAT("Failed to write data");
-      }
+      return EGLYF_ERROR;
     }
 
     Header header;
-    uint16_t numPoints;
-    std::string data;
+    uint16_t numPoints = 0;
+    std::vector<Contour> contours;
+    std::string instructions;
   };
 
   struct CompositeGlyph {
