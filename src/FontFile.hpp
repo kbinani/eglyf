@@ -249,6 +249,7 @@ public:
                                        GlyphDataTable::CompositeGlyph::GlyphRecord child,
                                        uint16_t advanceWidth,
                                        int16_t lsb) {
+    using namespace std;
     return addTrueTypeGlyph(name, classValue, [&](GlyphDataTable &glyf, HorizontalMetricsTable &hmtx) -> Optional<uint16_t> {
       auto gid = glyf.addCompositeGlyph(child);
       if (!gid) {
@@ -259,6 +260,9 @@ public:
       hm.advanceWidth = advanceWidth;
       hm.lsb = lsb;
       hmtx.metrics.push_back(hm);
+
+      uint16_t depth = glyf.getMaxDepth(glyf.glyphs[*gid]);
+      maxp->maxComponentDepth = max(maxp->maxComponentDepth, depth);
 
       return *gid;
     });

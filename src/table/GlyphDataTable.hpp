@@ -592,6 +592,21 @@ public:
     }
   }
 
+  uint16_t getMaxDepth(Glyph const &glyph) const {
+    using namespace std;
+    if (holds_alternative<CompositeGlyph>(glyph)) {
+      auto const &cg = get<CompositeGlyph>(glyph);
+      uint16_t depth = 0;
+      for (auto const &record : cg.records) {
+        auto glyph = glyphs[record.glyphIndex];
+        depth = max(depth, (uint16_t)(getMaxDepth(glyph) + 1));
+      }
+      return depth;
+    } else {
+      return 0;
+    }
+  }
+
 private:
   bool visit(CompositeGlyph::GlyphRecord const &record, uint16_t depth, std::set<uint16_t> path, MaximumProfileTable &out, uint16_t &compositePoints, uint16_t &compositeContours) const {
     using namespace std;
