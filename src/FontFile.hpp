@@ -251,7 +251,7 @@ public:
                                        int16_t lsb) {
     using namespace std;
     return addTrueTypeGlyph(name, classValue, [&](GlyphDataTable &glyf, HorizontalMetricsTable &hmtx) -> Optional<uint16_t> {
-      auto gid = glyf.addCompositeGlyph(child);
+      auto gid = glyf.addCompositeGlyph(child, *maxp);
       if (!gid) {
         return EGLYF_NULLOPT_WHAT("Failed to add composite glyph");
       }
@@ -260,9 +260,6 @@ public:
       hm.advanceWidth = advanceWidth;
       hm.lsb = lsb;
       hmtx.metrics.push_back(hm);
-
-      uint16_t depth = glyf.getMaxDepth(glyf.glyphs[*gid]);
-      maxp->maxComponentDepth = max(maxp->maxComponentDepth, depth);
 
       return *gid;
     });
@@ -554,9 +551,6 @@ private:
     } else {
       return EGLYF_NULLOPT_PUSH(postGid.status());
     }
-    if (auto st = tto.glyf->updateMaxp(*maxp); !st.ok()) {
-      return EGLYF_NULLOPT_PUSH(st);
-    }
     if (!gdef) {
       gdef = make_shared<GlyphDefinitionTable>();
       gdef->majorVersion = 1;
@@ -568,6 +562,7 @@ private:
     if (auto st = gdef->glyphClassDef->add(*gid, static_cast<uint16_t>(classValue)); !st.ok()) {
       return EGLYF_NULLOPT_PUSH(st);
     }
+    maxp->numGlyphs = tto.glyf->glyphs.size();
     return *gid;
   }
 

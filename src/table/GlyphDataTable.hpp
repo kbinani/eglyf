@@ -456,7 +456,7 @@ public:
     return gid;
   }
 
-  Optional<uint16_t> addCompositeGlyph(GlyphDataTable::CompositeGlyph::GlyphRecord child) {
+  Optional<uint16_t> addCompositeGlyph(GlyphDataTable::CompositeGlyph::GlyphRecord child, MaximumProfileTable &maxp) {
     using namespace std;
     if (child.glyphIndex >= glyphs.size()) {
       return EGLYF_NULLOPT_WHAT("Child glyph index out of range");
@@ -530,6 +530,21 @@ public:
     add.header.numberOfContours = -1;
     add.records.push_back(child);
     glyphs.push_back(add);
+
+    uint16_t depth = 1;
+    set<uint16_t> path;
+    path.insert(gid);
+    uint16_t compositePoints = 0;
+    uint16_t compositeContours = 0;
+    for (auto const &record : add.records) {
+      if (!visit(record, depth, path, maxp, compositePoints, compositeContours)) {
+        return EGLYF_NULLOPT_WHAT("Failed to visit composite glyph record");
+      }
+    }
+    maxp.maxComponentElements = (std::max)(maxp.maxComponentElements, (uint16_t)add.records.size());
+    maxp.maxCompositePoints = (std::max)(maxp.maxCompositePoints, compositePoints);
+    maxp.maxCompositeContours = (std::max)(maxp.maxCompositeContours, compositeContours);
+
     return gid;
   }
 
@@ -550,35 +565,6 @@ public:
     }
   }
 
-  Status updateMaxp(MaximumProfileTable &out) const {
-    using namespace std;
-    out.numGlyphs = glyphs.size();
-    for (uint16_t gid = 0; gid < glyphs.size(); gid++) {
-      auto const &g = glyphs[gid];
-      if (holds_alternative<ReadonlyGlyph>(g)) {
-        auto const &rg = get<ReadonlyGlyph>(g);
-        out.maxContours = (std::max)(out.maxContours, (uint16_t)rg.header.numberOfContours);
-        out.maxPoints = (std::max)(out.maxPoints, rg.numPoints);
-      } else if (holds_alternative<CompositeGlyph>(g)) {
-        auto const &cg = get<CompositeGlyph>(g);
-        uint16_t depth = 1;
-        set<uint16_t> path;
-        path.insert(gid);
-        uint16_t compositePoints = 0;
-        uint16_t compositeContours = 0;
-        for (auto const &record : cg.records) {
-          if (!visit(record, depth, path, out, compositePoints, compositeContours)) {
-            return EGLYF_ERROR_WHAT("Failed to visit composite glyph record");
-          }
-        }
-        out.maxComponentElements = (std::max)(out.maxComponentElements, (uint16_t)cg.records.size());
-        out.maxCompositePoints = (std::max)(out.maxCompositePoints, compositePoints);
-        out.maxCompositeContours = (std::max)(out.maxCompositeContours, compositeContours);
-      }
-    }
-    return Status::Ok();
-  }
-
   static std::optional<Rect<int16_t>> Bounds(Glyph const &glyph) {
     using namespace std;
     if (holds_alternative<GlyphDataTable::ReadonlyGlyph>(glyph)) {
@@ -589,21 +575,6 @@ public:
       return Rect<int16_t>(c.header.xMin, c.header.yMin, c.header.xMax, c.header.yMax);
     } else {
       return nullopt;
-    }
-  }
-
-  uint16_t getMaxDepth(Glyph const &glyph) const {
-    using namespace std;
-    if (holds_alternative<CompositeGlyph>(glyph)) {
-      auto const &cg = get<CompositeGlyph>(glyph);
-      uint16_t depth = 0;
-      for (auto const &record : cg.records) {
-        auto glyph = glyphs[record.glyphIndex];
-        depth = max(depth, (uint16_t)(getMaxDepth(glyph) + 1));
-      }
-      return depth;
-    } else {
-      return 0;
     }
   }
 
