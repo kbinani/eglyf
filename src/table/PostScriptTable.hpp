@@ -75,37 +75,6 @@ public:
       }
     }
 
-    Optional<uint16_t> getGlyphID(std::string const &name) const {
-      using namespace std;
-      auto const &table = PostScriptTable::OSXPostScriptNameMap();
-      if (auto found = table.find(name); found != table.end()) {
-        auto index = found->second;
-        auto f = ranges::find_if(glyphNameIndex, [=](uint16_t idx) {
-          return index == idx;
-        });
-        if (f == glyphNameIndex.end()) {
-          return EGLYF_NULLOPT;
-        } else {
-          return distance(glyphNameIndex.begin(), f);
-        }
-      } else {
-        auto f = ranges::find_if(glyphNameIndex, [=, this](uint16_t idx) {
-          if (idx < 258) {
-            return false;
-          }
-          if (idx - 258 >= nameStrings.size()) {
-            return false;
-          }
-          return nameStrings[idx - 258] == name;
-        });
-        if (f == glyphNameIndex.end()) {
-          return EGLYF_NULLOPT;
-        } else {
-          return distance(glyphNameIndex.begin(), f);
-        }
-      }
-    }
-
   public:
     std::vector<uint16_t> glyphNameIndex;
     std::vector<std::string> nameStrings;
@@ -196,39 +165,6 @@ public:
         names[glyphID] = found->second;
       }
       return Status::Ok();
-    }
-
-    Optional<uint16_t> getGlyphID(std::string const &name) const {
-      using namespace std;
-      auto const &table = PostScriptTable::OSXPostScriptNameMap();
-      if (auto found = table.find(name); found != table.end()) {
-        auto index = found->second;
-        auto f = ranges::find_if(names, [=](auto const &entry) {
-          if (holds_alternative<uint16_t>(entry)) {
-            return get<uint16_t>(entry) == index;
-          } else {
-            return false;
-          }
-        });
-        if (f == names.end()) {
-          return EGLYF_NULLOPT;
-        } else {
-          return distance(names.begin(), f);
-        }
-      } else {
-        auto f = ranges::find_if(names, [=](auto const &entry) {
-          if (holds_alternative<string>(entry)) {
-            return get<string>(entry) == name;
-          } else {
-            return false;
-          }
-        });
-        if (f == names.end()) {
-          return EGLYF_NULLOPT;
-        } else {
-          return distance(names.begin(), f);
-        }
-      }
     }
 
     std::vector<std::variant<uint16_t, std::string>> names;
@@ -408,27 +344,29 @@ public:
     if (ranges::any_of(name, InvalidNameCharacter)) {
       return EGLYF_NULLOPT;
     }
-    Version2Data d;
+    Version2Data *d = nullptr;
     if (holds_alternative<ReadonlyVersion2Data>(data)) {
       auto migrated = Version2Data::Migrate(get<ReadonlyVersion2Data>(data));
       if (!migrated) {
         return EGLYF_NULLOPT_PUSH(migrated.status());
       }
-      d = *migrated;
+      data = *migrated;
+      d = &get<Version2Data>(data);
     } else {
-      d = get<Version2Data>(data);
+      d = &get<Version2Data>(data);
     }
     auto const &ps = OSXPostScriptNameMap();
-    size_t gid = d.names.size();
+    size_t gid = d->names.size();
     if (gid > numeric_limits<uint16_t>::max()) {
       return EGLYF_NULLOPT;
     }
     if (auto found = ps.find(name); found == ps.end()) {
-      d.names.push_back(name);
+      d->names.push_back(name);
     } else {
-      d.names.push_back(found->second);
+      d->names.push_back(found->second);
     }
-    data = d;
+    auto &lut = ensureLookupTable();
+    lut[name] = gid;
     return static_cast<uint16_t>(gid);
   }
 
@@ -436,24 +374,24 @@ public:
     return EGLYF_STATUS_PUSH(defaultClone<PostScriptTable>(out));
   }
 
-  Optional<std::string> getName(uint16_t glyphID) const {
+  std::optional<std::string> getName(uint16_t glyphID) const {
     using namespace std;
     if (holds_alternative<Version2Data>(data)) {
       auto const &d = get<Version2Data>(data);
       if (auto name = d.getName(glyphID); name) {
         return *name;
       } else {
-        return EGLYF_NULLOPT_PUSH(name.status());
+        return nullopt;
       }
     } else if (holds_alternative<ReadonlyVersion2Data>(data)) {
       auto const &d = get<ReadonlyVersion2Data>(data);
       if (auto name = d.getName(glyphID); name) {
         return *name;
       } else {
-        return EGLYF_NULLOPT_PUSH(name.status());
+        return nullopt;
       }
     } else {
-      return EGLYF_NULLOPT;
+      return nullopt;
     }
   }
 
@@ -475,28 +413,68 @@ public:
       return EGLYF_STATUS_PUSH(st);
     }
     data = d;
+    auto &lut = ensureLookupTable();
+    lut[name] = glyphID;
     return Status::Ok();
   }
 
-  Optional<uint16_t> getGlyphID(std::string const &name) const {
+  std::optional<uint16_t> getGlyphID(std::string const &name) {
     using namespace std;
+    auto const &lut = ensureLookupTable();
+    if (auto found = lut.find(name); found != lut.end()) {
+      return found->second;
+    } else {
+      return nullopt;
+    }
+  }
+
+private:
+  std::unordered_map<std::string, uint16_t> &ensureLookupTable() {
+    using namespace std;
+    if (nameLookupTable) {
+      return *nameLookupTable;
+    }
+    auto t = make_shared<unordered_map<string, uint16_t>>();
+    auto const &table = PostScriptTable::OSXPostScriptNames();
     if (holds_alternative<Version2Data>(data)) {
       auto const &d = get<Version2Data>(data);
-      if (auto gid = d.getGlyphID(name); gid) {
-        return *gid;
-      } else {
-        return EGLYF_NULLOPT_PUSH(gid.status());
+      for (size_t i = 0; i < d.names.size(); i++) {
+        auto entry = d.names[i];
+        if (holds_alternative<string>(entry)) {
+          string name = get<string>(entry);
+          (*t)[name] = i;
+        } else {
+          uint16_t index = get<uint16_t>(entry);
+          if (index < table.size()) {
+            string name = table[index];
+            (*t)[name] = i;
+          } else {
+            break;
+          }
+        }
       }
     } else if (holds_alternative<ReadonlyVersion2Data>(data)) {
       auto const &d = get<ReadonlyVersion2Data>(data);
-      if (auto gid = d.getGlyphID(name); gid) {
-        return *gid;
-      } else {
-        return EGLYF_NULLOPT_PUSH(gid.status());
+      for (size_t i = 0; i < d.glyphNameIndex.size(); i++) {
+        uint16_t index = d.glyphNameIndex[i];
+        if (index < 258) {
+          if (index >= table.size()) {
+            break;
+          }
+          string name = table[index];
+          (*t)[name] = i;
+        } else {
+          auto i = index - 258;
+          if (i >= d.nameStrings.size()) {
+            break;
+          }
+          string name = d.nameStrings[i];
+          (*t)[name] = i;
+        }
       }
-    } else {
-      return EGLYF_NULLOPT;
     }
+    nameLookupTable = t;
+    return *t;
   }
 
 public:
@@ -511,6 +489,9 @@ public:
   uint32_t maxMemType1;
 
   std::variant<Version2Data, ReadonlyVersion2Data, std::string> data;
+
+private:
+  std::shared_ptr<std::unordered_map<std::string, uint16_t>> nameLookupTable;
 };
 
 } // namespace eglyf
