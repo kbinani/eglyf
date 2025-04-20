@@ -531,7 +531,7 @@ public:
     add.records.push_back(child);
     glyphs.push_back(add);
 
-    uint16_t depth = 1;
+    uint16_t depth = 2;
     set<uint16_t> path;
     path.insert(gid);
     uint16_t compositePoints = 0;
