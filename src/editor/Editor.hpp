@@ -141,15 +141,15 @@ public:
     if (auto found = glyphsLut.find(gid); found != glyphsLut.end()) {
       return found->second;
     }
-    if (auto found = ranges::find_if(glyphs, [=](pair<string, shared_ptr<Glyph>> const &it) { return it.second->id == gid; }); found != glyphs.end()) {
-      glyphsLut[gid] = found->second;
-      return found->second;
-    }
     if (auto name = font->post->getName(gid); name) {
       auto g = getGlyphByName(*name);
       g->id = gid;
       glyphsLut[gid] = g;
       return g;
+    }
+    if (auto found = ranges::find_if(glyphs, [=](pair<string, shared_ptr<Glyph>> const &it) { return it.second->id == gid; }); found != glyphs.end()) {
+      glyphsLut[gid] = found->second;
+      return found->second;
     }
     return nullptr;
   }
