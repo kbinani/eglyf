@@ -2,7 +2,7 @@
 
 namespace eglyf {
 
-class GlyphSubstitutionTable : public SubtableCollection<Subtable> {
+class GlyphSubstitutionTable : public SubtableCollection {
 public:
   Status readSubtable(InputStream &in, uint16_t lookupType, std::shared_ptr<Subtable> &out) override {
     using namespace std;

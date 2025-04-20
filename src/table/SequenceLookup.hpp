@@ -4,7 +4,7 @@ namespace eglyf {
 
 struct SequenceLookup {
   uint16_t sequenceIndex;
-  std::variant<uint16_t, std::shared_ptr<SubtableCollection<Subtable>::Lookup>> lookup;
+  std::variant<uint16_t, std::shared_ptr<SubtableCollection::Lookup>> lookup;
 
   static Optional<SequenceLookup> Read(InputStream &in) {
     using namespace std;

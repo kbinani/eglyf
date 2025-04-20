@@ -229,8 +229,8 @@ public:
   }
 
   Status convertLookup(std::shared_ptr<Lookup> const &lookup,
-                       std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> &result,
-                       std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> &indirect) {
+                       std::vector<std::shared_ptr<SubtableCollection::Lookup>> &result,
+                       std::vector<std::shared_ptr<SubtableCollection::Lookup>> &indirect) {
     using namespace std;
 
     if (!lookup->substitutions.empty()) {
@@ -245,14 +245,14 @@ public:
   }
 
   Status convertGposLookup(std::shared_ptr<Lookup> const &lookup,
-                           std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> &result,
-                           std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> &indirect) {
+                           std::vector<std::shared_ptr<SubtableCollection::Lookup>> &result,
+                           std::vector<std::shared_ptr<SubtableCollection::Lookup>> &indirect) {
     using namespace std;
 
     // clang-format off
     vector<
       pair<
-        shared_ptr<SubtableCollection<Subtable>::Lookup>,
+        shared_ptr<SubtableCollection::Lookup>,
         map<
           size_t,
           vector<shared_ptr<Coverage>>
@@ -268,7 +268,7 @@ public:
         extensionSubtable->extensionLookupType = 1; // SingleAdjustment
         extensionSubtable->extension = originalSubtable;
 
-        auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
+        auto lookupData = make_shared<SubtableCollection::LookupData>();
         lookupData->name = lookup->name;
         lookupData->lookupType = 9; // Extension Positioning
         auto lookupFlag = convertLookupFlag(lookup->base, lookup->marks, font->gdef);
@@ -279,7 +279,7 @@ public:
         lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
         lookupData->subtables.push_back(extensionSubtable);
 
-        auto gposLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
+        auto gposLookup = make_shared<SubtableCollection::Lookup>();
         gposLookup->data = lookupData;
 
         map<size_t, vector<shared_ptr<Coverage>>> inputCoverage;
@@ -305,7 +305,7 @@ public:
         extensionSubtable->extensionLookupType = lookupType;
         extensionSubtable->extension = subtable;
 
-        auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
+        auto lookupData = make_shared<SubtableCollection::LookupData>();
         lookupData->name = lookup->name;
         lookupData->lookupType = 9; // Extension Positioning
         auto lookupFlag = convertLookupFlag(lookup->base, lookup->marks, font->gdef);
@@ -316,7 +316,7 @@ public:
         lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
         lookupData->subtables.push_back(extensionSubtable);
 
-        auto gposLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
+        auto gposLookup = make_shared<SubtableCollection::Lookup>();
         gposLookup->data = lookupData;
 
         map<size_t, vector<shared_ptr<Coverage>>> inputCoverages;
@@ -334,7 +334,7 @@ public:
       return Status::Ok();
     }
 
-    auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
+    auto lookupData = make_shared<SubtableCollection::LookupData>();
     lookupData->name = lookup->name;
     lookupData->lookupType = 9; // Position extension
     auto lookupFlag = convertLookupFlag(lookup->base, lookup->marks, font->gdef);
@@ -359,7 +359,7 @@ public:
                                                         lookup->inContexts,
                                                         lookup->exceptContexts,
                                                         lookupData->subtables);
-    auto gposLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
+    auto gposLookup = make_shared<SubtableCollection::Lookup>();
     gposLookup->data = lookupData;
 
     result.push_back(gposLookup);
@@ -802,8 +802,8 @@ public:
   }
 
   Status convertGsubLookup(std::shared_ptr<Lookup> const &lookup,
-                           std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> &result,
-                           std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> &indirect) {
+                           std::vector<std::shared_ptr<SubtableCollection::Lookup>> &result,
+                           std::vector<std::shared_ptr<SubtableCollection::Lookup>> &indirect) {
     using namespace std;
 
     if (lookup->substitutions.empty()) {
@@ -837,7 +837,7 @@ public:
     // clang-format off
     vector<
       pair<
-        shared_ptr<SubtableCollection<Subtable>::Lookup>,
+        shared_ptr<SubtableCollection::Lookup>,
         map<
           size_t,
           vector<shared_ptr<Coverage>>
@@ -857,7 +857,7 @@ public:
         extensionSubtable->extensionLookupType = 1; // Single
         extensionSubtable->extension = subtable;
 
-        auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
+        auto lookupData = make_shared<SubtableCollection::LookupData>();
         lookupData->name = lookup->name;
         lookupData->lookupType = 7; // Extension Substitution
         auto lookupFlag = convertLookupFlag(lookup->base, lookup->marks, font->gdef);
@@ -868,7 +868,7 @@ public:
         lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
         lookupData->subtables.push_back(extensionSubtable);
 
-        auto singleLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
+        auto singleLookup = make_shared<SubtableCollection::Lookup>();
         singleLookup->data = lookupData;
 
         set<uint16_t> inputGlyphIDs;
@@ -893,7 +893,7 @@ public:
         extensionSubtable->extensionLookupType = 2; // Multiple
         extensionSubtable->extension = subtable;
 
-        auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
+        auto lookupData = make_shared<SubtableCollection::LookupData>();
         lookupData->name = lookup->name;
         lookupData->lookupType = 7; // Extension Substitution
         auto lookupFlag = convertLookupFlag(lookup->base, lookup->marks, font->gdef);
@@ -904,7 +904,7 @@ public:
         lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
         lookupData->subtables.push_back(extensionSubtable);
 
-        auto multipleLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
+        auto multipleLookup = make_shared<SubtableCollection::Lookup>();
         multipleLookup->data = lookupData;
 
         set<uint16_t> inputGlyphIDs;
@@ -929,7 +929,7 @@ public:
         extensionSubtable->extensionLookupType = 4; // Ligature
         extensionSubtable->extension = subtable;
 
-        auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
+        auto lookupData = make_shared<SubtableCollection::LookupData>();
         lookupData->name = lookup->name;
         lookupData->lookupType = 7; // Extension Substitution
         auto lookupFlag = convertLookupFlag(lookup->base, lookup->marks, font->gdef);
@@ -940,7 +940,7 @@ public:
         lookupData->markFilteringSet = determineMarkFilteringSet(lookup->marks, font->gdef);
         lookupData->subtables.push_back(extensionSubtable);
 
-        auto ligatureLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
+        auto ligatureLookup = make_shared<SubtableCollection::Lookup>();
         ligatureLookup->data = lookupData;
 
         map<size_t, vector<shared_ptr<Coverage>>> inputCoverages;
@@ -968,7 +968,7 @@ public:
       return Status::Ok();
     }
 
-    auto lookupData = make_shared<SubtableCollection<Subtable>::LookupData>();
+    auto lookupData = make_shared<SubtableCollection::LookupData>();
     lookupData->name = lookup->name;
     lookupData->lookupType = 7; // Extension Substitution
     auto lookupFlag = convertLookupFlag(lookup->base, lookup->marks, font->gdef);
@@ -993,7 +993,7 @@ public:
                                                          lookup->inContexts,
                                                          lookup->exceptContexts,
                                                          lookupData->subtables);
-    auto gsubLookup = make_shared<SubtableCollection<Subtable>::Lookup>();
+    auto gsubLookup = make_shared<SubtableCollection::Lookup>();
     gsubLookup->data = lookupData;
 
     result.push_back(gsubLookup);
@@ -1076,7 +1076,7 @@ public:
     if (!font->gdef->glyphClassDef) {
       font->gdef->glyphClassDef = make_shared<ClassDef>();
     }
-    
+
     int const fontHeight = font->head->unitsPerEm;
     int const topMargin = (int)round(fontHeight * 0.0322);
     int const bottomMargin = (int)round(fontHeight * 0.0615);
@@ -2311,8 +2311,8 @@ public:
 
     // Convert each Lookup and store in maps for GPOS and GSUB
     struct ConvertedLookups {
-      vector<shared_ptr<SubtableCollection<Subtable>::Lookup>> direct;
-      vector<shared_ptr<SubtableCollection<Subtable>::Lookup>> indirect;
+      vector<shared_ptr<SubtableCollection::Lookup>> direct;
+      vector<shared_ptr<SubtableCollection::Lookup>> indirect;
     };
     map<shared_ptr<Lookup>, ConvertedLookups> convertedGposLookups;
     map<shared_ptr<Lookup>, ConvertedLookups> convertedGsubLookups;
@@ -2326,8 +2326,8 @@ public:
         continue; // Skip if neither GSUB nor GPOS
       }
 
-      vector<shared_ptr<SubtableCollection<Subtable>::Lookup>> converted;
-      vector<shared_ptr<SubtableCollection<Subtable>::Lookup>> indirect;
+      vector<shared_ptr<SubtableCollection::Lookup>> converted;
+      vector<shared_ptr<SubtableCollection::Lookup>> indirect;
       if (auto st = convertLookup(lookup, converted, indirect); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
@@ -2353,30 +2353,30 @@ public:
     }
 
     // Map for GPOS table features (to avoid duplicates)
-    map<Tag, shared_ptr<SubtableCollection<Subtable>::Feature>> gposFeatureMap;
+    map<Tag, shared_ptr<SubtableCollection::Feature>> gposFeatureMap;
 
     // Map for GSUB table features (to avoid duplicates)
-    map<Tag, shared_ptr<SubtableCollection<Subtable>::Feature>> gsubFeatureMap;
+    map<Tag, shared_ptr<SubtableCollection::Feature>> gsubFeatureMap;
 
     // Build tables from scripts
     for (auto const &[scriptName, script] : scripts) {
       // Create script for GPOS
-      SubtableCollection<Subtable>::Script gposScript;
+      SubtableCollection::Script gposScript;
       gposScript.tag = script->tag;
 
       // Create script for GSUB
-      SubtableCollection<Subtable>::Script gsubScript;
+      SubtableCollection::Script gsubScript;
       gsubScript.tag = script->tag;
 
       // Process each LangSys
       for (auto const &langSys : script->langSysList) {
-        auto gposLangSys = make_shared<SubtableCollection<Subtable>::LangSys>();
-        auto gsubLangSys = make_shared<SubtableCollection<Subtable>::LangSys>();
+        auto gposLangSys = make_shared<SubtableCollection::LangSys>();
+        auto gsubLangSys = make_shared<SubtableCollection::LangSys>();
 
         // Process each Feature
         for (auto const &feature : langSys->features) {
-          vector<shared_ptr<SubtableCollection<Subtable>::Lookup>> gposLookups;
-          vector<shared_ptr<SubtableCollection<Subtable>::Lookup>> gsubLookups;
+          vector<shared_ptr<SubtableCollection::Lookup>> gposLookups;
+          vector<shared_ptr<SubtableCollection::Lookup>> gsubLookups;
 
           // Process each Lookup
           for (auto const &lookup : feature->lookups) {
@@ -2395,14 +2395,14 @@ public:
 
           // Add features to LangSys if they have lookups
           if (!gposLookups.empty()) {
-            shared_ptr<SubtableCollection<Subtable>::Feature> gposFeature;
+            shared_ptr<SubtableCollection::Feature> gposFeature;
 
             if (auto it = gposFeatureMap.find(feature->tag); it != gposFeatureMap.end()) {
               gposFeature = it->second;
             } else {
-              gposFeature = make_shared<SubtableCollection<Subtable>::Feature>();
+              gposFeature = make_shared<SubtableCollection::Feature>();
               gposFeature->tag = feature->tag;
-              auto featureData = make_shared<SubtableCollection<Subtable>::FeatureData>();
+              auto featureData = make_shared<SubtableCollection::FeatureData>();
               ranges::copy(gposLookups, back_inserter(featureData->lookups));
               gposFeature->data = featureData;
               gposFeatureMap[feature->tag] = gposFeature;
@@ -2413,14 +2413,14 @@ public:
           }
 
           if (!gsubLookups.empty()) {
-            shared_ptr<SubtableCollection<Subtable>::Feature> gsubFeature;
+            shared_ptr<SubtableCollection::Feature> gsubFeature;
 
             if (auto it = gsubFeatureMap.find(feature->tag); it != gsubFeatureMap.end()) {
               gsubFeature = it->second;
             } else {
-              gsubFeature = make_shared<SubtableCollection<Subtable>::Feature>();
+              gsubFeature = make_shared<SubtableCollection::Feature>();
               gsubFeature->tag = feature->tag;
-              auto featureData = make_shared<SubtableCollection<Subtable>::FeatureData>();
+              auto featureData = make_shared<SubtableCollection::FeatureData>();
               ranges::copy(gsubLookups, back_inserter(featureData->lookups));
               gsubFeature->data = featureData;
               gsubFeatureMap[feature->tag] = gsubFeature;
@@ -2472,9 +2472,9 @@ public:
     return Status::Ok();
   }
 
-  static Status ReorderLookups(SubtableCollection<Subtable> &collection) {
+  static Status ReorderLookups(SubtableCollection &collection) {
     using namespace std;
-    using LookupPtr = shared_ptr<SubtableCollection<Subtable>::Lookup>;
+    using LookupPtr = shared_ptr<SubtableCollection::Lookup>;
 
     set<LookupPtr> directLookups;
     for (auto const &feature : collection.features) {
@@ -2518,7 +2518,7 @@ private:
   template <class Extension, uint16_t ChainedContextLookupType /* 6 for GSUB, 8 for GPOS */>
   void addContextConditions(std::vector<
                               std::pair<
-                                std::shared_ptr<SubtableCollection<Subtable>::Lookup>,
+                                std::shared_ptr<SubtableCollection::Lookup>,
                                 std::map<
                                   size_t,
                                   std::vector<std::shared_ptr<Coverage>>

@@ -2,12 +2,6 @@
 
 namespace eglyf {
 
-template <class T>
-concept subtable = requires(T &t, OutputStream &out, std::map<std::shared_ptr<T>, std::pair<std::shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> &extensions) {
-  { t.write(out, extensions) } -> std::convertible_to<Status>;
-};
-
-template <subtable T>
 class SubtableCollection : public Table {
 public:
   struct LookupData {
@@ -15,7 +9,7 @@ public:
     uint16_t lookupType;
     uint16_t lookupFlag;
     uint16_t markFilteringSet;
-    std::vector<std::shared_ptr<T>> subtables;
+    std::vector<std::shared_ptr<Subtable>> subtables;
   };
 
   struct Lookup {
@@ -60,7 +54,7 @@ public:
 public:
   virtual ~SubtableCollection() {}
 
-  virtual Status readSubtable(InputStream &in, uint16_t lookupType, std::shared_ptr<T> &out) = 0;
+  virtual Status readSubtable(InputStream &in, uint16_t lookupType, std::shared_ptr<Subtable> &out) = 0;
 
   Status read(InputStream &in) {
     using namespace std;
@@ -131,7 +125,7 @@ public:
       }
     }
 
-    map<int64_t, shared_ptr<T>> subtables;
+    map<int64_t, shared_ptr<Subtable>> subtables;
     map<shared_ptr<LookupList::Lookup>, shared_ptr<LookupData>> convertedLookupDataList;
     for (size_t i = 0; i < lookupList.lookupTable.size(); i++) {
       shared_ptr<LookupList::Lookup> it = lookupList.lookupTable[i];
@@ -155,7 +149,7 @@ public:
           if (!in.seek(pos)) {
             return EGLYF_ERROR_WHAT("Failed to seek to subtable position");
           }
-          shared_ptr<T> table;
+          shared_ptr<Subtable> table;
           if (auto st = readSubtable(in, it->lookupType, table); st.ok()) {
             data->subtables.push_back(table);
           } else {
@@ -335,7 +329,7 @@ public:
     }
 
     LookupList lookupList;
-    vector<vector<shared_ptr<T>>> subtables;
+    vector<vector<shared_ptr<Subtable>>> subtables;
     map<shared_ptr<LookupData>, shared_ptr<LookupList::Lookup>> convertedLookups;
     for (auto const &lookup : lookups) {
       subtables.push_back(lookup->data->subtables);
@@ -476,7 +470,7 @@ public:
     if (auto st = lookupListOffsetHandle->mark(); !st.ok()) {
       return EGLYF_NULLOPT_PUSH(st);
     }
-    if (auto st = lookupList.write<T>(out, subtables); !st.ok()) {
+    if (auto st = lookupList.write<Subtable>(out, subtables); !st.ok()) {
       return EGLYF_NULLOPT_PUSH(st);
     }
 

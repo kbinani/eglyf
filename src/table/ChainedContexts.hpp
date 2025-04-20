@@ -4,7 +4,7 @@ namespace eglyf {
 
 class ChainedContexts : public Subtable {
 public:
-  virtual Status updateLookupToLookupListIndex(std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> const &lookups) = 0;
+  virtual Status updateLookupToLookupListIndex(std::vector<std::shared_ptr<SubtableCollection::Lookup>> const &lookups) = 0;
 };
 
 class ChainedContexts1 : public ChainedContexts {
@@ -232,13 +232,13 @@ public:
     return EGLYF_STATUS_PUSH(writer->commit());
   }
 
-  Status updateLookupToLookupListIndex(std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> const &lookups) override {
+  Status updateLookupToLookupListIndex(std::vector<std::shared_ptr<SubtableCollection::Lookup>> const &lookups) override {
     using namespace std;
     for (auto &ruleSet : ruleSets) {
       for (auto &rule : ruleSet->rules) {
         for (auto &record : rule.seqLookupRecords) {
-          if (holds_alternative<shared_ptr<SubtableCollection<Subtable>::Lookup>>(record.lookup)) {
-            auto const &lookup = get<shared_ptr<SubtableCollection<Subtable>::Lookup>>(record.lookup);
+          if (holds_alternative<shared_ptr<SubtableCollection::Lookup>>(record.lookup)) {
+            auto const &lookup = get<shared_ptr<SubtableCollection::Lookup>>(record.lookup);
             auto found = ranges::find_if(lookups, [=](auto const &it) { return it == lookup; });
             if (found == lookups.end()) {
               return EGLYF_ERROR;
@@ -578,13 +578,13 @@ public:
     return EGLYF_STATUS_PUSH(beginning->commit());
   }
 
-  Status updateLookupToLookupListIndex(std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> const &lookups) override {
+  Status updateLookupToLookupListIndex(std::vector<std::shared_ptr<SubtableCollection::Lookup>> const &lookups) override {
     using namespace std;
     for (auto &ruleSet : ruleSets) {
       for (auto &rule : ruleSet->rules) {
         for (auto &record : rule.seqLookupRecords) {
-          if (holds_alternative<shared_ptr<SubtableCollection<Subtable>::Lookup>>(record.lookup)) {
-            auto const &lookup = get<shared_ptr<SubtableCollection<Subtable>::Lookup>>(record.lookup);
+          if (holds_alternative<shared_ptr<SubtableCollection::Lookup>>(record.lookup)) {
+            auto const &lookup = get<shared_ptr<SubtableCollection::Lookup>>(record.lookup);
             auto found = ranges::find_if(lookups, [=](auto const &it) { return it == lookup; });
             if (found == lookups.end()) {
               return EGLYF_ERROR;
@@ -780,11 +780,11 @@ public:
     return EGLYF_STATUS_PUSH(beginning->commit());
   }
 
-  Status updateLookupToLookupListIndex(std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> const &lookups) override {
+  Status updateLookupToLookupListIndex(std::vector<std::shared_ptr<SubtableCollection::Lookup>> const &lookups) override {
     using namespace std;
     for (auto &record : seqLookups) {
-      if (holds_alternative<shared_ptr<SubtableCollection<Subtable>::Lookup>>(record.lookup)) {
-        auto const &lookup = get<shared_ptr<SubtableCollection<Subtable>::Lookup>>(record.lookup);
+      if (holds_alternative<shared_ptr<SubtableCollection::Lookup>>(record.lookup)) {
+        auto const &lookup = get<shared_ptr<SubtableCollection::Lookup>>(record.lookup);
         auto found = ranges::find_if(lookups, [=](auto const &it) { return it == lookup; });
         if (found == lookups.end()) {
           return EGLYF_ERROR;
