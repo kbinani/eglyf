@@ -57,10 +57,10 @@ public:
   struct EmptyGlyph {
   };
 
-  struct ReadonlyGlyph {
-    static Optional<ReadonlyGlyph> Read(Header header, InputStream &in) {
+  struct SimpleGlyph {
+    static Optional<SimpleGlyph> Read(Header header, InputStream &in) {
       using namespace std;
-      ReadonlyGlyph r;
+      SimpleGlyph r;
       r.header = header;
       r.data = in.readUntilEos();
       r.numPoints = 0;
@@ -363,7 +363,7 @@ public:
     std::optional<std::string> instructions;
   };
 
-  using Glyph = std::variant<EmptyGlyph, ReadonlyGlyph, CompositeGlyph>;
+  using Glyph = std::variant<EmptyGlyph, SimpleGlyph, CompositeGlyph>;
 
   static Status Read(InputStream &in, IndexToLocationTable const &loca, std::shared_ptr<GlyphDataTable> &out) {
     using namespace std;
@@ -395,7 +395,7 @@ public:
           return EGLYF_STATUS_PUSH(cg.status());
         }
       } else {
-        if (auto rg = ReadonlyGlyph::Read(*header, slice); rg) {
+        if (auto rg = SimpleGlyph::Read(*header, slice); rg) {
           ret->glyphs.push_back(*rg);
         } else {
           return EGLYF_STATUS_PUSH(rg.status());
@@ -421,8 +421,8 @@ public:
       offsets.push_back(out.size());
       if (holds_alternative<EmptyGlyph>(g)) {
         // nop
-      } else if (holds_alternative<ReadonlyGlyph>(g)) {
-        auto rg = get<ReadonlyGlyph>(g);
+      } else if (holds_alternative<SimpleGlyph>(g)) {
+        auto rg = get<SimpleGlyph>(g);
         if (auto st = rg.encode(out); !st.ok()) {
           return EGLYF_NULLOPT_PUSH(st);
         }
@@ -502,8 +502,8 @@ public:
       dx = offset.x;
       dy = offset.y;
     }
-    if (holds_alternative<ReadonlyGlyph>(g)) {
-      auto rg = get<ReadonlyGlyph>(g);
+    if (holds_alternative<SimpleGlyph>(g)) {
+      auto rg = get<SimpleGlyph>(g);
       add.header = rg.header;
       Vec<float> topLeft = Vec<float>(rg.header.xMin, rg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
       Vec<float> topRight = Vec<float>(rg.header.xMax, rg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
@@ -567,8 +567,8 @@ public:
 
   static std::optional<Rect<int16_t>> Bounds(Glyph const &glyph) {
     using namespace std;
-    if (holds_alternative<GlyphDataTable::ReadonlyGlyph>(glyph)) {
-      auto const &r = get<GlyphDataTable::ReadonlyGlyph>(glyph);
+    if (holds_alternative<GlyphDataTable::SimpleGlyph>(glyph)) {
+      auto const &r = get<GlyphDataTable::SimpleGlyph>(glyph);
       return Rect<int16_t>(r.header.xMin, r.header.yMin, r.header.xMax, r.header.yMax);
     } else if (holds_alternative<GlyphDataTable::CompositeGlyph>(glyph)) {
       auto const &c = get<GlyphDataTable::CompositeGlyph>(glyph);
@@ -600,8 +600,8 @@ private:
         }
       }
       return true;
-    } else if (holds_alternative<ReadonlyGlyph>(child)) {
-      auto const &rchild = get<ReadonlyGlyph>(child);
+    } else if (holds_alternative<SimpleGlyph>(child)) {
+      auto const &rchild = get<SimpleGlyph>(child);
       compositePoints += rchild.numPoints;
       compositeContours += rchild.header.numberOfContours;
       return true;
