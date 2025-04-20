@@ -1092,10 +1092,9 @@ public:
     }
 
     hfu = (int16_t)std::ceilf(maxWidth * 3.0f / (2 + hhu * 3));
-    hg0 = 2 * hfu / 3;
     vfu = (int16_t)std::ceilf(maxHeight * 3.0f / (2 + vhu * 3));
-    vg0 = 2 * vfu / 3;
     sb = hfu / 3;
+    tb = vfu / 3;
 
     struct BaseGlyph {
       uint16_t gid;
@@ -1127,7 +1126,7 @@ public:
       // https://gyazo.com/574d65263fcd74d9d9163bd9e9179a6e
       auto w = rect.width();
       auto h = rect.height();
-      float const scale = min({1.0f, maxHeight / (float)h, (chu * hfu) / (float)w});
+      float const scale = min({1.0f, vhu * vfu / (float)h, chu * hfu / (float)w});
       int16_t xMid = (rect.xMin + rect.xMax) / 2;
       int16_t dx;
       int16_t dy;
@@ -1147,7 +1146,8 @@ public:
       } else {
         record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(gid, dx, dy);
       }
-      auto newGid = font->addCompositeGlyph(name, GlyphDefinitionTable::Class::Mark, record, 0, lsb);
+      auto classValue = GlyphDefinitionTable::Class::Mark;
+      auto newGid = font->addCompositeGlyph(name, classValue, record, 0, lsb);
       if (!newGid) {
         return EGLYF_STATUS_PUSH(newGid.status());
       }
@@ -1161,6 +1161,7 @@ public:
       if (!newGlyph) {
         return EGLYF_ERROR;
       }
+      newGlyph->classDef = classValue;
       auto newGlyphData = glyf->glyphs[*newGid];
       auto b = GlyphDataTable::Bounds(newGlyphData);
       if (!b) {
@@ -1193,31 +1194,31 @@ public:
       auto const &name = it.first;
       BaseGlyph const &baseGlyph = it.second;
       Rect<int16_t> const &rect = baseGlyph.bounds;
+      int const width = rect.width();
+      int const height = rect.height();
 
-      float const baseScale = min({1.0f, maxHeight / (float)rect.height(), this->width(chu) / (float)rect.width()});
+      float const baseScale = min({1.0f, vhu * vfu / (float)height, chu * hfu / (float)width});
+      int hGrids = clamp((int)ceilf((width * baseScale - sb * 2) / hfu), 1, hhu);
+      int vGrids = clamp((int)ceilf((height * baseScale - tb * 2) / vfu), 1, vhu);
 
-      int width = (int)ceilf((rect.width() * baseScale - (float)hg0) / hfu);
-      int height = (int)ceilf((rect.height() * baseScale - (float)vg0) / vfu);
-      width = min(max(width, 1), hhu);
-      height = min(max(height, 1), vhu);
       int16_t xMid = (rect.xMin + rect.xMax) / 2;
 
-      auto chain = variationChain.find(width * 10 + height);
+      auto chain = variationChain.find(hGrids * 10 + vGrids);
       if (chain == variationChain.end()) {
-        if (auto first = ranges::find_if(sizeList, [=](auto const &it) { return it.second >= width * height; }); first != sizeList.end()) {
+        if (auto first = ranges::find_if(sizeList, [=](auto const &it) { return it.second >= hGrids * vGrids; }); first != sizeList.end()) {
           auto index = distance(sizeList.begin(), first);
           for (size_t i = index; i < sizeList.size(); i++) {
             auto const &it = sizeList[i];
             int key = it.first;
             int h = key / 10;
             int v = key % 10;
-            if (h < width || v < height) {
+            if (h < hGrids || v < vGrids) {
               continue;
             }
             chain = variationChain.find(key);
             if (chain != variationChain.end()) {
-              width = h;
-              height = v;
+              hGrids = h;
+              vGrids = v;
               break;
             }
           }
@@ -1226,8 +1227,8 @@ public:
 
       SizeVariants sv;
       sv.base = baseGlyph.glyph;
-      sv.hGrids = width;
-      sv.vGrids = height;
+      sv.hGrids = hGrids;
+      sv.vGrids = vGrids;
 
       if (chain == variationChain.end()) {
         sizeVariants[name] = sv;
@@ -1239,8 +1240,8 @@ public:
         int xLevel = key / 10;
 
         string n = format("{0}_{1}{2}", name, xLevel, yLevel);
-        float xScale = hfu * xLevel / (float)rect.width();
-        float yScale = vfu * yLevel / (float)rect.height();
+        float xScale = hfu * xLevel / (float)width;
+        float yScale = vfu * yLevel / (float)height;
         float scale = min({1.0f, xScale, yScale});
         int16_t dx;
         int16_t dy;
@@ -1254,8 +1255,9 @@ public:
           dy = bottom - rect.yMin;
           lsb = rect.xMin - xMid;
         }
+        auto classValue = GlyphDefinitionTable::Class::Mark;
         auto record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(baseGlyph.gid, dx, dy, scale);
-        auto newGid = font->addCompositeGlyph(n, GlyphDefinitionTable::Class::Mark, record, 0, lsb);
+        auto newGid = font->addCompositeGlyph(n, classValue, record, 0, lsb);
         if (!newGid) {
           return EGLYF_STATUS_PUSH(newGid.status());
         }
@@ -1263,7 +1265,7 @@ public:
         if (!variationGlyph) {
           return EGLYF_ERROR;
         }
-        variationGlyph->classDef = GlyphDefinitionTable::Class::Mark;
+        variationGlyph->classDef = classValue;
         sv.variants[key] = variationGlyph;
         glyphsSet1->members.push_back(variationGlyph);
       }
@@ -1272,14 +1274,6 @@ public:
     }
 
     return Status::Ok();
-  }
-
-  int width(int level) const {
-    return (int)hg0 + (int)hfu * level;
-  }
-
-  int height(int level) const {
-    return (int)vg0 + (int)vfu * level;
   }
 
   Status preprocess() {
@@ -3228,15 +3222,12 @@ public:
 
   // unit per horizontal grid
   int16_t hfu;
-  // grid width = hg0 + n * hg; where 1 <= n <= kHGrids
-  int16_t hg0;
   // unit per vertical grid
   int16_t vfu;
-  // grid height = vg0 + n * vg; where 1 <= n <= kVGrids
-  int16_t vg0;
   std::unordered_map<std::string, SizeVariants> sizeVariants;
   // font side bearings: hfu / 3
   int16_t sb;
+  int16_t tb;
 };
 
 } // namespace eglyf
