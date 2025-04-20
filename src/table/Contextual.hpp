@@ -347,7 +347,7 @@ public:
     if (!in.seek(classDefOffset)) {
       return EGLYF_ERROR;
     }
-    if (auto st = ClassDefReader::Read(in, ret->classDef); !st.ok()) {
+    if (auto st = ClassDef::Read(in, ret->classDef); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
 

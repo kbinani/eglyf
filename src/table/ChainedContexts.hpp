@@ -491,7 +491,7 @@ public:
       if (!in.seek(backtrackClassDefOffset)) {
         return EGLYF_ERROR;
       }
-      if (auto st = ClassDefReader::Read(in, r->backtrackClassDef); !st.ok()) {
+      if (auto st = ClassDef::Read(in, r->backtrackClassDef); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     }
@@ -499,7 +499,7 @@ public:
     if (!in.seek(inputClassDefOffset)) {
       return EGLYF_ERROR;
     }
-    if (auto st = ClassDefReader::Read(in, r->inputClassDef); !st.ok()) {
+    if (auto st = ClassDef::Read(in, r->inputClassDef); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
 
@@ -507,7 +507,7 @@ public:
       if (!in.seek(lookaheadClassDefOffset)) {
         return EGLYF_ERROR;
       }
-      if (auto st = ClassDefReader::Read(in, r->lookaheadClassDef); !st.ok()) {
+      if (auto st = ClassDef::Read(in, r->lookaheadClassDef); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     }

@@ -4,289 +4,145 @@ namespace eglyf {
 
 class ClassDef {
 public:
-  virtual ~ClassDef() {}
-  virtual Status write(OutputStream &out) const = 0;
-  virtual size_t size() const = 0;
-  virtual Status add(uint16_t glyphID, uint16_t classValue) = 0;
-  virtual void enumerateClassValues(std::function<void(uint16_t gid, uint16_t classValue)> cb) const = 0;
-};
-
-class ClassDef1 : public ClassDef {
-public:
-  static Status Read(InputStream &in, std::shared_ptr<ClassDef> &out) {
-    using namespace std;
-    auto r = make_unique<ClassDef1>();
-    if (!in.u16(&r->startGlyphID)) {
-      return EGLYF_ERROR_WHAT("Failed to read startGlyphID");
-    }
-    uint16_t glyphCount;
-    if (!in.u16(&glyphCount)) {
-      return EGLYF_ERROR_WHAT("Failed to read glyphCount");
-    }
-    if (!in.u16a(r->classValues, glyphCount)) {
-      return EGLYF_ERROR_WHAT("Failed to read classValues");
-    }
-    out.reset(r.release());
-    return Status::Ok();
-  }
-
-  Status write(OutputStream &out) const override {
-    using namespace std;
-    if (!out.u16(1)) {
-      return EGLYF_ERROR_WHAT("Failed to write format");
-    }
-    if (!out.u16(startGlyphID)) {
-      return EGLYF_ERROR_WHAT("Failed to write startGlyphID");
-    }
-    if (!out.sizeU16(classValues.size())) {
-      return EGLYF_ERROR_WHAT("Failed to write classValues size");
-    }
-    if (out.u16a(classValues)) {
-      return Status::Ok();
-    } else {
-      return EGLYF_ERROR_WHAT("Failed to write classValues");
-    }
-  }
-
-  size_t size() const override {
-    return 2 * sizeof(uint16_t) + sizeof(Offset16) + classValues.size() * sizeof(uint16_t);
-  }
-
-  Status add(uint16_t glyphID, uint16_t classValue) override {
-    if (glyphID < startGlyphID) {
-      int num = startGlyphID - glyphID;
-      classValues.resize(classValues.size() + num);
-      for (int i = (int)classValues.size() - 1; i >= num; i--) {
-        classValues[i] = classValues[i - num];
-      }
-      for (int i = 0; i < num; i++) {
-        classValues[i] = 0;
-      }
-      classValues[0] = classValue;
-      return Status::Ok();
-    } else {
-      size_t index = glyphID - startGlyphID;
-      if (index >= classValues.size()) {
-        classValues.resize(index + 1);
-      }
-      classValues[index] = classValue;
-      return Status::Ok();
-    }
-  }
-
-  void enumerateClassValues(std::function<void(uint16_t gid, uint16_t classValue)> cb) const override {
-    for (size_t i = 0; i < classValues.size(); i++) {
-      auto gid = i + startGlyphID;
-      cb(gid, classValues[i]);
-    }
-  }
-
-  bool writeMayFail() const {
-    using namespace std;
-    return classValues.size() > (size_t)numeric_limits<uint16_t>::max();
-  }
-
-public:
-  uint16_t startGlyphID;
-  std::vector<uint16_t> classValues;
-};
-
-class ClassDef2 : public ClassDef {
-public:
-  struct ClassRange {
-    uint16_t startGlyphID;
-    uint16_t endGlyphID;
-    uint16_t classValue;
-
-    static Optional<ClassRange> Read(InputStream &in) {
-      using namespace std;
-      ClassRange r;
-      if (!in.u16(&r.startGlyphID)) {
-        return EGLYF_NULLOPT_WHAT("Failed to read startGlyphID");
-      }
-      if (!in.u16(&r.endGlyphID)) {
-        return EGLYF_NULLOPT_WHAT("Failed to read endGlyphID");
-      }
-      if (!in.u16(&r.classValue)) {
-        return EGLYF_NULLOPT_WHAT("Failed to read classValue");
-      }
-      return r;
-    }
-
-    Status write(OutputStream &out) const {
-      if (!out.u16(startGlyphID)) {
-        return EGLYF_ERROR_WHAT("Failed to write startGlyphID");
-      }
-      if (!out.u16(endGlyphID)) {
-        return EGLYF_ERROR_WHAT("Failed to write endGlyphID");
-      }
-      if (out.u16(classValue)) {
-        return Status::Ok();
-      } else {
-        return EGLYF_ERROR_WHAT("Failed to write classValue");
-      }
-    }
-  };
-
-public:
-  static Status Read(InputStream &in, std::shared_ptr<ClassDef> &out) {
-    using namespace std;
-    uint16_t classRangeCount;
-    if (!in.u16(&classRangeCount)) {
-      return EGLYF_ERROR_WHAT("Failed to read classRangeCount");
-    }
-    auto r = make_unique<ClassDef2>();
-    r->classRanges.reserve(classRangeCount);
-    for (uint16_t i = 0; i < classRangeCount; i++) {
-      if (auto cr = ClassRange::Read(in); cr) {
-        r->classRanges.push_back(*cr);
-      } else {
-        return EGLYF_STATUS_PUSH(cr.status());
-      }
-    }
-    out.reset(r.release());
-    return Status::Ok();
-  }
-
-  Status write(OutputStream &out) const override {
+  Status write(OutputStream &out) const {
     using namespace std;
     if (!out.u16(2)) {
-      return EGLYF_ERROR_WHAT("Failed to write format");
+      return EGLYF_ERROR;
     }
-    if (!out.sizeU16(classRanges.size())) {
-      return EGLYF_ERROR_WHAT("Failed to write classRanges size");
+    auto sizePos = out.position();
+    if (!out.sizeU16(0)) {
+      return EGLYF_ERROR;
     }
-    for (auto const &range : classRanges) {
-      if (auto st = range.write(out); !st.ok()) {
+    struct Record {
+      Record(uint16_t startGlyphID, uint16_t classValue) : startGlyphID(startGlyphID), endGlyphID(startGlyphID), classValue(classValue) {}
+
+      Status write(OutputStream &out) const {
+        if (!out.u16(startGlyphID)) {
+          return EGLYF_ERROR;
+        }
+        if (!out.u16(endGlyphID)) {
+          return EGLYF_ERROR;
+        }
+        if (!out.u16(classValue)) {
+          return EGLYF_ERROR;
+        }
+        return Status::Ok();
+      }
+
+      uint16_t startGlyphID;
+      uint16_t endGlyphID;
+      uint16_t classValue;
+    };
+    optional<Record> last;
+    size_t count = 0;
+    for (auto [gid, classValue] : classValues) {
+      if (last) {
+        if (last->classValue == classValue && last->endGlyphID + 1 == gid) {
+          last->endGlyphID = gid;
+        } else {
+          if (auto st = last->write(out); !st.ok()) {
+            return EGLYF_STATUS_PUSH(st);
+          }
+          count++;
+          Record r(gid, classValue);
+          last = r;
+        }
+      } else {
+        Record r(gid, classValue);
+        last = r;
+      }
+    }
+    if (last) {
+      if (auto st = last->write(out); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
+      count++;
+    }
+    auto pos = out.position();
+    if (!out.seek(sizePos)) {
+      return EGLYF_ERROR;
+    }
+    if (!out.sizeU16(count)) {
+      return EGLYF_ERROR;
+    }
+    if (!out.seek(pos)) {
+      return EGLYF_ERROR;
     }
     return Status::Ok();
   }
 
-  size_t size() const override {
-    size_t ret = sizeof(uint16_t) + sizeof(Offset16);
-    ret += 3 * sizeof(uint16_t) * classRanges.size();
-    return ret;
+  size_t size() const {
+    return sizeof(uint16_t) * (1 + classValues.size());
   }
 
-  Status add(uint16_t glyphID, uint16_t classValue) override {
-    using namespace std;
-    ClassRange single;
-    single.startGlyphID = glyphID;
-    single.endGlyphID = glyphID;
-    single.classValue = classValue;
+  Status add(uint16_t glyphID, uint16_t classValue) {
+    classValues[glyphID] = classValue;
+    return Status::Ok();
+  }
 
-    if (classRanges.empty()) {
-      classRanges.push_back(single);
-      return Status::Ok();
-    }
-    auto found = ranges::find_if(classRanges, [=](auto const &r) {
-      return glyphID <= r.endGlyphID;
-    });
-    if (found == classRanges.end()) {
-      if (!classRanges.empty()) {
-        ClassRange &r = classRanges.back();
-        if (r.endGlyphID + 1 == glyphID && r.classValue == classValue) {
-          r.endGlyphID = glyphID;
-          return Status::Ok();
-        }
-      }
-      classRanges.push_back(single);
-      return Status::Ok();
-    }
-    size_t const index = distance(classRanges.begin(), found);
-    auto &center = classRanges[index];
-    if (glyphID + 1 == center.startGlyphID && center.classValue == classValue) {
-      center.startGlyphID = glyphID;
-      return Status::Ok();
-    } else if (center.endGlyphID + 1 == glyphID && center.classValue == classValue) {
-      center.endGlyphID = glyphID;
-      return Status::Ok();
-    } else if (glyphID < center.startGlyphID) {
-      classRanges.insert(classRanges.begin() + index, single);
-      return Status::Ok();
-    } else if (glyphID == center.startGlyphID) {
-      center.startGlyphID = glyphID + 1;
-      classRanges.insert(classRanges.begin() + index, single);
-      return Status::Ok();
-    } else if (glyphID == center.endGlyphID) {
-      center.endGlyphID = glyphID - 1;
-      classRanges.insert(classRanges.begin() + index + 1, single);
-      return Status::Ok();
-    } else {
-      ClassRange copy = center;
-      ClassRange left;
-      left.startGlyphID = copy.startGlyphID;
-      left.endGlyphID = glyphID - 1;
-      left.classValue = copy.classValue;
-      center.startGlyphID = glyphID;
-      center.endGlyphID = glyphID;
-      center.classValue = classValue;
-      ClassRange right;
-      right.startGlyphID = glyphID + 1;
-      right.endGlyphID = copy.endGlyphID;
-      right.classValue = copy.classValue;
-      classRanges.insert(classRanges.begin() + index, left);
-      classRanges.insert(classRanges.begin() + index + 2, right);
-      return Status::Ok();
+  void enumerateClassValues(std::function<void(uint16_t gid, uint16_t classValue)> cb) const {
+    for (auto [gid, classValue] : classValues) {
+      cb(gid, classValue);
     }
   }
 
-  void enumerateClassValues(std::function<void(uint16_t gid, uint16_t classValue)> cb) const override {
-    for (auto const &range : classRanges) {
-      for (uint16_t gid = range.startGlyphID; gid <= range.endGlyphID; gid++) {
-        cb(gid, range.classValue);
-      }
-    }
-  }
-
-  static std::shared_ptr<ClassDef2> FromClassDef1(ClassDef1 const &def1) {
-    using namespace std;
-    auto def2 = make_shared<ClassDef2>();
-    ClassRange *last = nullptr;
-    def1.enumerateClassValues([&](uint16_t gid, uint16_t classValue) {
-      if (classValue == 0) {
-        return;
-      }
-      if (last && last->classValue == classValue && last->endGlyphID + 1 == gid) {
-        last->endGlyphID = gid;
-      } else {
-        ClassRange r;
-        r.startGlyphID = gid;
-        r.endGlyphID = gid;
-        r.classValue = classValue;
-        def2->classRanges.push_back(r);
-        last = &def2->classRanges.back();
-      }
-    });
-    return def2;
-  }
-
-public:
-  std::vector<ClassRange> classRanges;
-};
-
-class ClassDefReader {
-  ClassDefReader() = delete;
-
-public:
   static Status Read(InputStream &in, std::shared_ptr<ClassDef> &out) {
     using namespace std;
     uint16_t format;
     if (!in.u16(&format)) {
       return EGLYF_ERROR_WHAT("Failed to read format");
     }
+    auto ret = make_unique<ClassDef>();
     if (format == 1) {
-      auto st = ClassDef1::Read(in, out);
-      return EGLYF_STATUS_PUSH(st);
+      uint16_t startGlyphID;
+      if (!in.u16(&startGlyphID)) {
+        return EGLYF_ERROR_WHAT("Failed to read startGlyphID");
+      }
+      uint16_t glyphCount;
+      if (!in.u16(&glyphCount)) {
+        return EGLYF_ERROR_WHAT("Failed to read glyphCount");
+      }
+      vector<uint16_t> classValues;
+      if (!in.u16a(classValues, glyphCount)) {
+        return EGLYF_ERROR_WHAT("Failed to read classValues");
+      }
+      for (uint16_t i = i = 0; i < glyphCount; i++) {
+        uint16_t gid = startGlyphID + i;
+        ret->classValues[gid] = classValues[i];
+      }
+      out.reset(ret.release());
+      return Status::Ok();
     } else if (format == 2) {
-      auto st = ClassDef2::Read(in, out);
-      return EGLYF_STATUS_PUSH(st);
+      uint16_t classRangeCount;
+      if (!in.u16(&classRangeCount)) {
+        return EGLYF_ERROR_WHAT("Failed to read classRangeCount");
+      }
+      for (uint16_t i = 0; i < classRangeCount; i++) {
+        uint16_t startGlyphID;
+        if (!in.u16(&startGlyphID)) {
+          return EGLYF_ERROR_WHAT("Failed to read startGlyphID");
+        }
+        uint16_t endGlyphID;
+        if (!in.u16(&endGlyphID)) {
+          return EGLYF_ERROR_WHAT("Failed to read endGlyphID");
+        }
+        uint16_t classValue;
+        if (!in.u16(&classValue)) {
+          return EGLYF_ERROR_WHAT("Failed to read classValue");
+        }
+        for (uint16_t gid = startGlyphID; gid <= endGlyphID; gid++) {
+          ret->classValues[gid] = classValue;
+        }
+      }
+      out.reset(ret.release());
+      return Status::Ok();
     } else {
       return EGLYF_ERROR_WHAT("Unsupported format: " + std::to_string(format));
     }
   }
+
+public:
+  std::map<uint16_t, uint16_t> classValues;
 };
 
 } // namespace eglyf

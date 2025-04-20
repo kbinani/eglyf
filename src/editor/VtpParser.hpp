@@ -89,7 +89,7 @@ private:
       font->gdef->minorVersion = 2;
     }
     if (!font->gdef->glyphClassDef) {
-      font->gdef->glyphClassDef = make_shared<ClassDef2>();
+      font->gdef->glyphClassDef = make_shared<ClassDef>();
     }
     if (auto st = font->gdef->glyphClassDef->add(glyphID, static_cast<uint16_t>(classDef)); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);

@@ -2844,7 +2844,7 @@ private:
           (*markAttachClasses)[gid] = classValue;
         });
       } else {
-        gdef->markAttachClassDef = make_shared<ClassDef2>();
+        gdef->markAttachClassDef = make_shared<ClassDef>();
       }
     }
     set<uint16_t> gids;

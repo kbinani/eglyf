@@ -319,14 +319,14 @@ public:
     if (!in.seek(classDef1Offset)) {
       return EGLYF_ERROR;
     }
-    if (auto st = ClassDefReader::Read(in, ret->classDef1); !st.ok()) {
+    if (auto st = ClassDef::Read(in, ret->classDef1); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
 
     if (!in.seek(classDef2Offset)) {
       return EGLYF_ERROR;
     }
-    if (auto st = ClassDefReader::Read(in, ret->classDef2); !st.ok()) {
+    if (auto st = ClassDef::Read(in, ret->classDef2); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
 

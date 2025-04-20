@@ -370,7 +370,7 @@ public:
       if (!in.seek(glyphClassDefOffset)) {
         return EGLYF_ERROR;
       }
-      if (auto st = ClassDefReader::Read(in, ret->glyphClassDef); !st.ok()) {
+      if (auto st = ClassDef::Read(in, ret->glyphClassDef); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     }
@@ -401,7 +401,7 @@ public:
       if (!in.seek(markAttachClassDefOffset)) {
         return EGLYF_ERROR;
       }
-      if (auto st = ClassDefReader::Read(in, ret->markAttachClassDef); !st.ok()) {
+      if (auto st = ClassDef::Read(in, ret->markAttachClassDef); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
     }
