@@ -1246,8 +1246,8 @@ public:
         int xLevel = key / 10;
 
         string n = format("{0}_{1}{2}", name, xLevel, yLevel);
-        float xScale = this->width(xLevel) / (float)this->width(width) * baseScale;
-        float yScale = this->height(yLevel) / (float)this->height(height) * baseScale;
+        float xScale = hfu * xLevel / (float)rect.width();
+        float yScale = vfu * yLevel / (float)rect.height();
         float scale = min({1.0f, xScale, yScale});
         int16_t dx;
         int16_t dy;
