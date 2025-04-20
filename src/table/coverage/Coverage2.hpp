@@ -58,12 +58,6 @@ public:
     return Status::Ok();
   }
 
-  size_t size() const override {
-    size_t ret = 2 * sizeof(uint16_t);
-    ret += (3 * sizeof(uint16_t)) * rangeRecords.size();
-    return ret;
-  }
-
   size_t index(uint16_t gid) const override {
     using namespace std;
     auto found = ranges::find_if(rangeRecords, [=](auto const &record) {

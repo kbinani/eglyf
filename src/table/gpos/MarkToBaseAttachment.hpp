@@ -95,19 +95,6 @@ public:
       }
       return EGLYF_STATUS_PUSH(writer->commit());
     }
-
-    size_t size() const {
-      size_t ret = sizeof(uint16_t);
-      for (auto const &record : baseRecords) {
-        ret += record.baseAnchors.size() * sizeof(Offset16);
-        for (auto const &anchor : record.baseAnchors) {
-          if (anchor) {
-            ret += anchor->size();
-          }
-        }
-      }
-      return ret;
-    }
   };
 
 public:
@@ -220,15 +207,6 @@ public:
     }
 
     return EGLYF_STATUS_PUSH(out->commit());
-  }
-
-  size_t size() const override {
-    size_t ret = 2 * sizeof(uint16_t) + 4 * sizeof(Offset16);
-    ret += markCoverage->size();
-    ret += baseCoverage->size();
-    ret += markArray.size();
-    ret += baseArray.size();
-    return ret;
   }
 
   std::optional<Attachment> findAttachment(uint16_t receptorGlyphID, uint16_t ligandGlyphID) const {

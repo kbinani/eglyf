@@ -85,12 +85,6 @@ public:
       }
       return Status::Ok();
     }
-
-    size_t size(uint16_t valueFormat1, uint16_t valueFormat2) const {
-      size_t ret = sizeof(uint16_t);
-      ret += (sizeof(uint16_t) + ValueRecord::Size(valueFormat1) + ValueRecord::Size(valueFormat2)) * pairValueRecords.size();
-      return ret;
-    }
   };
 
 public:
@@ -181,15 +175,6 @@ public:
     return EGLYF_STATUS_PUSH(writer->commit());
   }
 
-  size_t size() const override {
-    size_t ret = 4 * sizeof(uint16_t) + (1 + pairSets.size()) * sizeof(Offset16);
-    for (auto const &pairSet : pairSets) {
-      ret += pairSet.size(valueFormat1, valueFormat2);
-    }
-    ret += coverage->size();
-    return ret;
-  }
-
 public:
   uint16_t valueFormat1;
   uint16_t valueFormat2;
@@ -264,10 +249,6 @@ public:
         }
       }
       return Status::Ok();
-    }
-
-    size_t size(uint16_t valueFormat1, uint16_t valueFormat2) const {
-      return (ValueRecord::Size(valueFormat1) + ValueRecord::Size(valueFormat2)) * class2Records.size();
     }
   };
 
@@ -395,17 +376,6 @@ public:
     }
 
     return EGLYF_STATUS_PUSH(writer->commit());
-  }
-
-  size_t size() const override {
-    size_t ret = 5 * sizeof(uint16_t) + 3 * sizeof(Offset16);
-    ret += coverage->size();
-    ret += classDef1->size();
-    ret += classDef2->size();
-    for (auto const &class1 : class1Records) {
-      ret += class1.size(valueFormat1, valueFormat2);
-    }
-    return ret;
   }
 
 public:

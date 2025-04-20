@@ -6,16 +6,6 @@ class MarkToLigatureAttachment : public Subtable {
 public:
   struct ComponentRecord {
     std::vector<std::shared_ptr<Anchor>> ligatureAnchors;
-
-    size_t size() const {
-      size_t ret = ligatureAnchors.size() * sizeof(Offset16);
-      for (auto const &anchor : ligatureAnchors) {
-        if (anchor) {
-          ret += anchor->size();
-        }
-      }
-      return ret;
-    }
   };
 
   struct LigatureAttach {
@@ -93,14 +83,6 @@ public:
       }
       return EGLYF_STATUS_PUSH(writer->commit());
     }
-
-    size_t size() const {
-      size_t ret = sizeof(uint16_t);
-      for (auto const &record : componentRecords) {
-        ret += record.size();
-      }
-      return ret;
-    }
   };
 
   struct LigatureArray {
@@ -155,14 +137,6 @@ public:
         }
       }
       return EGLYF_STATUS_PUSH(writer->commit());
-    }
-
-    size_t size() const {
-      size_t ret = sizeof(uint16_t) + ligatureAttaches.size() * sizeof(Offset16);
-      for (auto const &attach : ligatureAttaches) {
-        ret += attach.size();
-      }
-      return ret;
     }
   };
 
@@ -284,15 +258,6 @@ public:
     }
 
     return EGLYF_STATUS_PUSH(writer->commit());
-  }
-
-  size_t size() const override {
-    size_t ret = 2 * sizeof(uint16_t) + 4 * sizeof(Offset16);
-    ret += markCoverage->size();
-    ret += ligatureCoverage->size();
-    ret += markArray.size();
-    ret += ligatureArray.size();
-    return ret;
   }
 
 public:

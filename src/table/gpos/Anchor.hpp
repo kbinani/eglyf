@@ -6,7 +6,6 @@ class Anchor {
 public:
   virtual ~Anchor() {}
   virtual Status write(OutputStream &out) const = 0;
-  virtual size_t size() const = 0;
 };
 
 class Anchor1 : public Anchor {
@@ -35,10 +34,6 @@ public:
       return EGLYF_ERROR;
     }
     return Status::Ok();
-  }
-
-  size_t size() const override {
-    return sizeof(uint16_t) + 2 * sizeof(int16_t);
   }
 
 public:
@@ -78,10 +73,6 @@ public:
       return EGLYF_ERROR;
     }
     return Status::Ok();
-  }
-
-  size_t size() const override {
-    return 2 * sizeof(uint16_t) + 2 * sizeof(int16_t);
   }
 
 public:

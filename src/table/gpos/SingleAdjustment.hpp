@@ -60,12 +60,6 @@ public:
     return EGLYF_STATUS_PUSH(writer->commit());
   }
 
-  size_t size() const override {
-    size_t ret = 2 * sizeof(uint16_t) + sizeof(Offset16) + valueRecord.size();
-    ret += coverage->size();
-    return ret;
-  }
-
 public:
   ValueRecord valueRecord;
 };
@@ -138,15 +132,6 @@ public:
       return EGLYF_STATUS_PUSH(st);
     }
     return EGLYF_STATUS_PUSH(writer->commit());
-  }
-
-  size_t size() const override {
-    size_t ret = 3 * sizeof(uint16_t) + sizeof(Offset16);
-    for (auto const &record : valueRecords) {
-      ret += record.size();
-    }
-    ret += coverage->size();
-    return ret;
   }
 
 public:

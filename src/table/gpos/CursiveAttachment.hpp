@@ -113,21 +113,6 @@ public:
     return EGLYF_STATUS_PUSH(writer->commit());
   }
 
-  size_t size() const override {
-    size_t ret = 2 * sizeof(uint16_t) + sizeof(Offset16);
-    ret += coverage->size();
-    ret += (2 * sizeof(Offset16)) * entryExitRecords.size();
-    for (auto const &record : entryExitRecords) {
-      if (record.entryAnchor) {
-        ret += record.entryAnchor->size();
-      }
-      if (record.exitAnchor) {
-        ret += record.exitAnchor->size();
-      }
-    }
-    return ret;
-  }
-
 public:
   std::vector<EntryExit> entryExitRecords;
 };

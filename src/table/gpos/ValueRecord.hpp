@@ -135,64 +135,6 @@ public:
     }
     return ret;
   }
-
-  size_t size() const {
-    size_t ret = 0;
-    if (xPlacement) {
-      ret += sizeof(int16_t);
-    }
-    if (yPlacement) {
-      ret += sizeof(int16_t);
-    }
-    if (xAdvance) {
-      ret += sizeof(int16_t);
-    }
-    if (yAdvance) {
-      ret += sizeof(int16_t);
-    }
-    if (xPlaDeviceOffset) {
-      ret += sizeof(Offset16);
-    }
-    if (yPlaDeviceOffset) {
-      ret += sizeof(Offset16);
-    }
-    if (xAdvDeviceOffset) {
-      ret += sizeof(Offset16);
-    }
-    if (yAdvDeviceOffset) {
-      ret += sizeof(Offset16);
-    }
-    return ret;
-  }
-
-  static size_t Size(uint16_t format) {
-    size_t ret = 0;
-    if (format & X_PLACEMENT) {
-      ret += sizeof(int16_t);
-    }
-    if (format & Y_PLACEMENT) {
-      ret += sizeof(int16_t);
-    }
-    if (format & X_ADVANCE) {
-      ret += sizeof(int16_t);
-    }
-    if (format & Y_ADVANCE) {
-      ret += sizeof(int16_t);
-    }
-    if (format & X_PLACEMENT_DEVICE) {
-      ret += sizeof(Offset16);
-    }
-    if (format & Y_PLACEMENT_DEVICE) {
-      ret += sizeof(Offset16);
-    }
-    if (format & X_ADVANCE_DEVICE) {
-      ret += sizeof(Offset16);
-    }
-    if (format & Y_ADVANCE_DEVICE) {
-      ret += sizeof(Offset16);
-    }
-    return ret;
-  }
 };
 
 } // namespace eglyf::gpos

@@ -91,14 +91,6 @@ public:
       }
       return Status::Ok();
     }
-
-    size_t size() const {
-      size_t ret = sizeof(uint16_t) + backtrackSequence.size() * sizeof(uint16_t);
-      ret += sizeof(uint16_t) + inputSequence.size() * sizeof(uint16_t);
-      ret += sizeof(uint16_t) + lookaheadSequence.size() * sizeof(uint16_t);
-      ret += sizeof(uint16_t) + seqLookupRecords.size() * (sizeof(uint16_t) * 2);
-      return ret;
-    }
   };
 
   struct ChainedSequenceRuleSet {
@@ -150,14 +142,6 @@ public:
         }
       }
       return EGLYF_STATUS_PUSH(writer->commit());
-    }
-
-    size_t size() const {
-      size_t ret = sizeof(uint16_t) + rules.size() * sizeof(Offset16);
-      for (auto const &rule : rules) {
-        ret += rule.size();
-      }
-      return ret;
     }
 
     std::vector<ChainedSequenceRule> rules;
@@ -246,22 +230,6 @@ public:
     }
 
     return EGLYF_STATUS_PUSH(writer->commit());
-  }
-
-  size_t size() const override {
-    using namespace std;
-    size_t ret = sizeof(uint16_t) + sizeof(Offset16) + sizeof(uint16_t) + ruleSets.size() * sizeof(Offset16);
-    ret += coverage->size();
-    set<shared_ptr<ChainedSequenceRuleSet>> distinct;
-    for (auto const &ruleSet : ruleSets) {
-      if (ruleSet) {
-        distinct.insert(ruleSet);
-      }
-    }
-    for (auto const &ruleSet : distinct) {
-      ret += ruleSet->size();
-    }
-    return ret;
   }
 
   Status updateLookupToLookupListIndex(std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> const &lookups) override {
@@ -371,14 +339,6 @@ public:
       return Status::Ok();
     }
 
-    size_t size() const {
-      size_t ret = sizeof(uint16_t) + backtrackSequence.size() * sizeof(uint16_t);
-      ret += sizeof(uint16_t) + inputSequence.size() * sizeof(uint16_t);
-      ret += sizeof(uint16_t) + lookaheadSequence.size() * sizeof(uint16_t);
-      ret += sizeof(uint16_t) + (2 * sizeof(uint16_t)) * seqLookupRecords.size();
-      return ret;
-    }
-
   public:
     std::vector<uint16_t> backtrackSequence;
     std::vector<uint16_t> inputSequence;
@@ -437,14 +397,6 @@ public:
         }
       }
       return EGLYF_STATUS_PUSH(beginning->commit());
-    }
-
-    size_t size() const {
-      size_t ret = sizeof(uint16_t) + rules.size() * sizeof(Offset16);
-      for (auto const &rule : rules) {
-        ret += rule.size();
-      }
-      return ret;
     }
 
     std::vector<ChainedClassSequenceRule> rules;
@@ -624,24 +576,6 @@ public:
     }
 
     return EGLYF_STATUS_PUSH(beginning->commit());
-  }
-
-  size_t size() const override {
-    size_t ret = sizeof(uint16_t) + 4 * sizeof(Offset16) + sizeof(uint16_t) + ruleSets.size() * sizeof(Offset16);
-    ret += coverage->size();
-    if (backtrackClassDef) {
-      ret += backtrackClassDef->size();
-    }
-    ret += inputClassDef->size();
-    if (lookaheadClassDef) {
-      ret += lookaheadClassDef->size();
-    }
-    for (auto const &ruleSet : ruleSets) {
-      if (ruleSet) {
-        ret += ruleSet->size();
-      }
-    }
-    return ret;
   }
 
   Status updateLookupToLookupListIndex(std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> const &lookups) override {
@@ -844,24 +778,6 @@ public:
     }
 
     return EGLYF_STATUS_PUSH(beginning->commit());
-  }
-
-  size_t size() const override {
-    size_t ret = sizeof(uint16_t);
-    ret += sizeof(uint16_t) + backtrackCoverage.size() * sizeof(Offset16);
-    for (auto const &cov : backtrackCoverage) {
-      ret += cov->size();
-    }
-    ret += sizeof(uint16_t) + inputCoverage.size() * sizeof(Offset16);
-    for (auto const &cov : inputCoverage) {
-      ret += cov->size();
-    }
-    ret += sizeof(uint16_t) + lookaheadCoverage.size() * sizeof(Offset16);
-    for (auto const &cov : lookaheadCoverage) {
-      ret += cov->size();
-    }
-    ret += sizeof(uint16_t) + (2 * sizeof(uint16_t)) * seqLookups.size();
-    return ret;
   }
 
   Status updateLookupToLookupListIndex(std::vector<std::shared_ptr<SubtableCollection<Subtable>::Lookup>> const &lookups) override {

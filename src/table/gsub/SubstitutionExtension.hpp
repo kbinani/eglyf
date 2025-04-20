@@ -87,10 +87,6 @@ public:
     return Status::Ok();
   }
 
-  size_t size() const override {
-    return sizeof(uint16_t) * 2 + sizeof(Offset32);
-  }
-
 public:
   uint16_t extensionLookupType;
   std::shared_ptr<Subtable> extension;

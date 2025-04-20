@@ -73,14 +73,6 @@ public:
     return EGLYF_STATUS_PUSH(writer->commit());
   }
 
-  size_t size() const {
-    size_t ret = sizeof(uint16_t) + markRecords.size() * (sizeof(uint16_t) + sizeof(Offset16));
-    for (auto const &record : markRecords) {
-      ret += record.markAnchor->size();
-    }
-    return ret;
-  }
-
 public:
   std::vector<MarkRecord> markRecords;
 };

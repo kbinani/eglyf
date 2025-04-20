@@ -146,25 +146,7 @@ public:
     }
 
     map<shared_ptr<Subtable>, pair<shared_ptr<OffsetWriter>, OffsetWriter::Handle32>> extensions;
-    while (!handles.empty()) {
-      ranges::sort(handles, [](auto const &a, auto const &b) -> bool {
-        static auto Distance = [](pair<shared_ptr<Subtable>, vector<OffsetWriter::Handle16>> const &it) -> int64_t {
-          int64_t minOffset = numeric_limits<uint32_t>::max();
-          for (auto const &offset : it.second) {
-            auto current = offset->current();
-            if (current) {
-              minOffset = (std::min)(minOffset, *current);
-            }
-          }
-          size_t size = it.first->size();
-          return minOffset + size;
-        };
-        int64_t distanceA = Distance(a);
-        int64_t distanceB = Distance(b);
-        return distanceA < distanceB;
-      });
-      auto [table, handleList] = handles.front();
-
+    for (auto const &[table, handleList] : handles) {
       for (auto handle : handleList) {
         if (auto st = handle->mark(); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
@@ -174,8 +156,6 @@ public:
       if (auto st = table->write(out, extensions); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
-
-      handles.pop_front();
     }
 
     for (auto [table, p] : extensions) {

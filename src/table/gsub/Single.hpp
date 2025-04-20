@@ -46,10 +46,6 @@ public:
     return EGLYF_STATUS_PUSH(beginning->commit());
   }
 
-  size_t size() const override {
-    return sizeof(uint16_t) + sizeof(Offset16) + sizeof(int16_t) + coverage->size();
-  }
-
 public:
   int16_t deltaGlyphID;
 };
@@ -103,10 +99,6 @@ public:
       return EGLYF_STATUS_PUSH(st);
     }
     return EGLYF_STATUS_PUSH(beginning->commit());
-  }
-
-  size_t size() const override {
-    return sizeof(uint16_t) * 2 + sizeof(Offset16) + substituteGlyphIDs.size() * sizeof(uint16_t) + coverage->size();
   }
 
 public:

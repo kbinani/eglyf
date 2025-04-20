@@ -40,10 +40,6 @@ public:
         return EGLYF_ERROR;
       }
     }
-
-    size_t size() const {
-      return (2 + componentGlyphIDs.size()) * sizeof(uint16_t);
-    }
   };
 
   struct LigatureSet {
@@ -99,14 +95,6 @@ public:
         }
       }
       return EGLYF_STATUS_PUSH(beginning->commit());
-    }
-
-    size_t size() const {
-      size_t ret = sizeof(uint16_t) + ligatures.size() * sizeof(Offset16);
-      for (auto const &it : ligatures) {
-        ret += it.size();
-      }
-      return ret;
     }
   };
 
@@ -186,15 +174,6 @@ public:
       return EGLYF_STATUS_PUSH(st);
     }
     return EGLYF_STATUS_PUSH(writer->commit());
-  }
-
-  size_t size() const override {
-    size_t ret = sizeof(uint16_t) * 2 + sizeof(Offset16) + ligatureSets.size() * sizeof(Offset16);
-    ret += coverage->size();
-    for (auto const &it : ligatureSets) {
-      ret += it.size();
-    }
-    return ret;
   }
 
 public:

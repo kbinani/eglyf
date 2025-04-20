@@ -38,10 +38,6 @@ public:
     return Status::Ok();
   }
 
-  size_t size() const override {
-    return (2 + glyphArray.size()) * sizeof(uint16_t);
-  }
-
   size_t index(uint16_t gid) const override {
     auto found = glyphArray.find(gid);
     if (found == glyphArray.end()) {

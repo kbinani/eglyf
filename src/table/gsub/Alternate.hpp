@@ -114,16 +114,6 @@ public:
     return EGLYF_STATUS_PUSH(writer->commit());
   }
 
-  size_t size() const override {
-    size_t ret = 3 * sizeof(uint16_t);
-    ret += alternateSets.size() * sizeof(Offset16);
-    ret += coverage->size();
-    for (auto const &alternateSet : alternateSets) {
-      ret += alternateSet.size();
-    }
-    return ret;
-  }
-
 public:
   std::vector<AlternateSet> alternateSets;
 };

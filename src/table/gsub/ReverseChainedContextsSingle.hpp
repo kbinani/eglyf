@@ -134,21 +134,6 @@ public:
     return EGLYF_STATUS_PUSH(writer->commit());
   }
 
-  size_t size() const override {
-    size_t ret = sizeof(uint16_t) + sizeof(Offset16);
-    ret += coverage->size();
-    ret += sizeof(uint16_t) + backtrackCoverages.size() * sizeof(Offset16);
-    for (auto const &cov : backtrackCoverages) {
-      ret += cov->size();
-    }
-    ret += sizeof(uint16_t) + lookaheadCoverages.size() * sizeof(Offset16);
-    for (auto const &cov : lookaheadCoverages) {
-      ret += cov->size();
-    }
-    ret += sizeof(uint16_t) + substituteGlyphIDs.size() * sizeof(uint16_t);
-    return ret;
-  }
-
 public:
   std::vector<std::shared_ptr<Coverage>> backtrackCoverages;
   std::vector<std::shared_ptr<Coverage>> lookaheadCoverages;
