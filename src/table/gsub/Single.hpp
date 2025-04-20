@@ -17,7 +17,7 @@ public:
     if (!in.seek(coverageOffset)) {
       return EGLYF_ERROR;
     }
-    if (auto st = CoverageReader::Read(in, r->coverage); !st.ok()) {
+    if (auto st = Coverage::Read(in, r->coverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
     out.reset(r.release());
@@ -69,7 +69,7 @@ public:
     if (!in.seek(coverageOffset)) {
       return EGLYF_ERROR;
     }
-    if (auto st = CoverageReader::Read(in, r->coverage); !st.ok()) {
+    if (auto st = Coverage::Read(in, r->coverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
     out.reset(r.release());

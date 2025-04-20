@@ -166,7 +166,7 @@ public:
       return EGLYF_ERROR;
     }
     auto r = make_unique<ChainedContexts1>();
-    if (auto st = CoverageReader::Read(in, r->coverage); !st.ok()) {
+    if (auto st = Coverage::Read(in, r->coverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
     map<Offset16, shared_ptr<ChainedSequenceRuleSet>> ruleSets;
@@ -435,7 +435,7 @@ public:
     if (!in.seek(coverageOffset)) {
       return EGLYF_ERROR;
     }
-    if (auto st = CoverageReader::Read(in, r->coverage); !st.ok()) {
+    if (auto st = Coverage::Read(in, r->coverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
 
@@ -659,7 +659,7 @@ public:
         return EGLYF_ERROR;
       }
       shared_ptr<Coverage> cov;
-      if (auto st = CoverageReader::Read(in, cov); st.ok()) {
+      if (auto st = Coverage::Read(in, cov); st.ok()) {
         r->backtrackCoverage.push_back(cov);
       } else {
         return EGLYF_STATUS_PUSH(st);
@@ -670,7 +670,7 @@ public:
         return EGLYF_ERROR;
       }
       shared_ptr<Coverage> cov;
-      if (auto st = CoverageReader::Read(in, cov); st.ok()) {
+      if (auto st = Coverage::Read(in, cov); st.ok()) {
         r->inputCoverage.push_back(cov);
       } else {
         return EGLYF_STATUS_PUSH(st);
@@ -681,7 +681,7 @@ public:
         return EGLYF_ERROR;
       }
       shared_ptr<Coverage> cov;
-      if (auto st = CoverageReader::Read(in, cov); st.ok()) {
+      if (auto st = Coverage::Read(in, cov); st.ok()) {
         r->lookaheadCoverage.push_back(cov);
       } else {
         return EGLYF_STATUS_PUSH(st);

@@ -45,7 +45,7 @@ public:
     if (!in.seek(coverageOffset)) {
       return EGLYF_ERROR;
     }
-    if (auto st = CoverageReader::Read(in, ret->coverage); !st.ok()) {
+    if (auto st = Coverage::Read(in, ret->coverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
     for (auto backtrackOffset : backtrackCoverageOffsets) {
@@ -53,7 +53,7 @@ public:
         return EGLYF_ERROR;
       }
       shared_ptr<Coverage> cov;
-      if (auto st = CoverageReader::Read(in, cov); !st.ok()) {
+      if (auto st = Coverage::Read(in, cov); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
       ret->backtrackCoverages.push_back(cov);
@@ -63,7 +63,7 @@ public:
         return EGLYF_ERROR;
       }
       shared_ptr<Coverage> cov;
-      if (auto st = CoverageReader::Read(in, cov); !st.ok()) {
+      if (auto st = Coverage::Read(in, cov); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
       ret->lookaheadCoverages.push_back(cov);

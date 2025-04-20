@@ -51,10 +51,7 @@ list(APPEND src_files
   src/table/ScriptList.hpp
   src/table/FeatureList.hpp
   src/table/LookupList.hpp
-  src/table/coverage/Coverage1.hpp
-  src/table/coverage/Coverage2.hpp
-  src/table/coverage/Coverage.hpp
-  src/table/coverage/CoverageReader.hpp
+  src/table/Coverage.hpp
   src/table/ClassDef.hpp
   src/table/Subtable.hpp
   src/table/gsub/Single.hpp
@@ -97,7 +94,6 @@ list(APPEND src_files
   src/editor/Editor.hpp
   src/editor/VtpParser.hpp
   src/editor/EditorTests.hpp
-  src/table/coverage/CoverageBuilder.hpp
   src/GlyphNames.hpp
   src/Unicode.hpp
   src/table/gpos/Attachment.hpp

@@ -61,7 +61,7 @@ public:
         return EGLYF_NULLOPT;
       }
       AttachList ret;
-      if (auto st = CoverageReader::Read(in, ret.coverage); !st.ok()) {
+      if (auto st = Coverage::Read(in, ret.coverage); !st.ok()) {
         return EGLYF_NULLOPT_PUSH(st);
       }
       for (auto offset : attachPointOffsets) {
@@ -272,7 +272,7 @@ public:
       if (!in.seek(coverageOffset)) {
         return EGLYF_NULLOPT;
       }
-      if (auto st = CoverageReader::Read(in, ret.coverage); !st.ok()) {
+      if (auto st = Coverage::Read(in, ret.coverage); !st.ok()) {
         return EGLYF_NULLOPT_PUSH(st);
       }
       for (auto offset : ligGlyphOffsets) {

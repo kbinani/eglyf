@@ -28,7 +28,7 @@ public:
         return EGLYF_NULLOPT_WHAT("Failed to seek to coverage offset");
       }
       shared_ptr<Coverage> cov;
-      if (auto st = CoverageReader::Read(in, cov); !st.ok()) {
+      if (auto st = Coverage::Read(in, cov); !st.ok()) {
         return EGLYF_NULLOPT_PUSH(st);
       }
       ret.coverages.push_back(cov);

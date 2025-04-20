@@ -175,14 +175,14 @@ public:
     if (!in.seek(markCoverageOffset)) {
       return EGLYF_ERROR;
     }
-    if (auto st = CoverageReader::Read(in, ret->markCoverage); !st.ok()) {
+    if (auto st = Coverage::Read(in, ret->markCoverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
 
     if (!in.seek(ligatureCoverageOffset)) {
       return EGLYF_ERROR;
     }
-    if (auto st = CoverageReader::Read(in, ret->ligatureCoverage); !st.ok()) {
+    if (auto st = Coverage::Read(in, ret->ligatureCoverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
 

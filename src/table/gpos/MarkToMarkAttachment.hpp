@@ -124,14 +124,14 @@ public:
     if (!in.seek(mark1CoverageOffset)) {
       return EGLYF_ERROR;
     }
-    if (auto st = CoverageReader::Read(in, ret->mark1Coverage); !st.ok()) {
+    if (auto st = Coverage::Read(in, ret->mark1Coverage); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
 
     if (!in.seek(mark2CoverageOffset)) {
       return EGLYF_ERROR;
     }
-    if (auto st = CoverageReader::Read(in, ret->mark2Coverage); !st.ok()) {
+    if (auto st = Coverage::Read(in, ret->mark2Coverage); !st.ok()) {
       return EGLYF_ERROR;
     }
 
