@@ -1070,6 +1070,13 @@ public:
       return EGLYF_ERROR;
     }
 
+    if (!font->gdef) {
+      font->gdef = make_shared<GlyphDefinitionTable>();
+    }
+    if (!font->gdef->glyphClassDef) {
+      font->gdef->glyphClassDef = make_shared<ClassDef>();
+    }
+    
     int const fontHeight = font->head->unitsPerEm;
     int const topMargin = (int)round(fontHeight * 0.0322);
     int const bottomMargin = (int)round(fontHeight * 0.0615);
@@ -1154,6 +1161,9 @@ public:
       if (auto st = font->cmap->map(cp, *newGid); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
+      if (auto st = font->gdef->glyphClassDef->add(*newGid, static_cast<uint16_t>(GlyphDefinitionTable::Class::Mark)); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
       if (!found) {
         continue;
       }
@@ -1184,6 +1194,9 @@ public:
       auto newGid = font->addEmptyGlyph(name, width, 0);
       if (!newGid) {
         return EGLYF_STATUS_PUSH(newGid.status());
+      }
+      if (auto st = font->gdef->glyphClassDef->add(*newGid, static_cast<uint16_t>(GlyphDefinitionTable::Class::Base)); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
       }
     }
 
@@ -1258,6 +1271,9 @@ public:
         auto newGid = font->addCompositeGlyph(n, record, 0, lsb);
         if (!newGid) {
           return EGLYF_STATUS_PUSH(newGid.status());
+        }
+        if (auto st = font->gdef->glyphClassDef->add(*newGid, static_cast<uint16_t>(GlyphDefinitionTable::Class::Mark)); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
         }
         auto variationGlyph = getGlyphByID(*newGid);
         if (!variationGlyph) {
