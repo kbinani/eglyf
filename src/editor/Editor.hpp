@@ -1154,14 +1154,11 @@ public:
       } else {
         record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(gid, dx, dy);
       }
-      auto newGid = font->addCompositeGlyph(name, record, 0, lsb);
+      auto newGid = font->addCompositeGlyph(name, GlyphDefinitionTable::Class::Mark, record, 0, lsb);
       if (!newGid) {
         return EGLYF_STATUS_PUSH(newGid.status());
       }
       if (auto st = font->cmap->map(cp, *newGid); !st.ok()) {
-        return EGLYF_STATUS_PUSH(st);
-      }
-      if (auto st = font->gdef->glyphClassDef->add(*newGid, static_cast<uint16_t>(GlyphDefinitionTable::Class::Mark)); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
       if (!found) {
@@ -1191,12 +1188,9 @@ public:
         }
       }
       int16_t width = sb + h * hfu + sb;
-      auto newGid = font->addEmptyGlyph(name, width, 0);
+      auto newGid = font->addEmptyGlyph(name, GlyphDefinitionTable::Class::Base, width, 0);
       if (!newGid) {
         return EGLYF_STATUS_PUSH(newGid.status());
-      }
-      if (auto st = font->gdef->glyphClassDef->add(*newGid, static_cast<uint16_t>(GlyphDefinitionTable::Class::Base)); !st.ok()) {
-        return EGLYF_STATUS_PUSH(st);
       }
     }
 
@@ -1268,12 +1262,9 @@ public:
           lsb = rect.xMin - xMid;
         }
         auto record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(baseGlyph.gid, dx, dy, scale);
-        auto newGid = font->addCompositeGlyph(n, record, 0, lsb);
+        auto newGid = font->addCompositeGlyph(n, GlyphDefinitionTable::Class::Mark, record, 0, lsb);
         if (!newGid) {
           return EGLYF_STATUS_PUSH(newGid.status());
-        }
-        if (auto st = font->gdef->glyphClassDef->add(*newGid, static_cast<uint16_t>(GlyphDefinitionTable::Class::Mark)); !st.ok()) {
-          return EGLYF_STATUS_PUSH(st);
         }
         auto variationGlyph = getGlyphByID(*newGid);
         if (!variationGlyph) {

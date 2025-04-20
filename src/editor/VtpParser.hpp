@@ -64,6 +64,17 @@ private:
     uint16_t glyphID = 0;
     if (auto gid = font->post->getGlyphID(name); gid) {
       glyphID = *gid;
+      if (!font->gdef) {
+        font->gdef = make_shared<GlyphDefinitionTable>();
+        font->gdef->majorVersion = 1;
+        font->gdef->minorVersion = 2;
+      }
+      if (!font->gdef->glyphClassDef) {
+        font->gdef->glyphClassDef = make_shared<ClassDef>();
+      }
+      if (auto st = font->gdef->glyphClassDef->add(*gid, static_cast<uint16_t>(classDef)); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
     } else {
       auto underbar = name.find('_');
       if (underbar != string::npos) {
@@ -72,7 +83,7 @@ private:
           return Status::Ok();
         }
       }
-      if (auto gid1 = font->addEmptyGlyph(name, 0, 0); gid1) {
+      if (auto gid1 = font->addEmptyGlyph(name, classDef, 0, 0); gid1) {
         glyphID = *gid1;
       } else {
         return EGLYF_STATUS_PUSH(gid1.status());
@@ -82,17 +93,6 @@ private:
       if (auto st = font->cmap->map(*unicode, glyphID); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
-    }
-    if (!font->gdef) {
-      font->gdef = make_shared<GlyphDefinitionTable>();
-      font->gdef->majorVersion = 1;
-      font->gdef->minorVersion = 2;
-    }
-    if (!font->gdef->glyphClassDef) {
-      font->gdef->glyphClassDef = make_shared<ClassDef>();
-    }
-    if (auto st = font->gdef->glyphClassDef->add(glyphID, static_cast<uint16_t>(classDef)); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
     }
     g->id = glyphID;
     g->classDef = classDef;

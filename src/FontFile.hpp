@@ -230,8 +230,11 @@ public:
     return Status::Ok();
   }
 
-  Optional<uint16_t> addEmptyGlyph(std::string const &name, uint16_t advanceWidth, int16_t lsb) {
-    return addTrueTypeGlyph(name, [&](GlyphDataTable &glyf, HorizontalMetricsTable &hmtx) -> Optional<uint16_t> {
+  Optional<uint16_t> addEmptyGlyph(std::string const &name,
+                                   GlyphDefinitionTable::Class classValue,
+                                   uint16_t advanceWidth,
+                                   int16_t lsb) {
+    return addTrueTypeGlyph(name, classValue, [&](GlyphDataTable &glyf, HorizontalMetricsTable &hmtx) -> Optional<uint16_t> {
       HorizontalMetricsTable::LongHorMetric hm;
       hm.advanceWidth = advanceWidth;
       hm.lsb = lsb;
@@ -241,8 +244,12 @@ public:
     });
   }
 
-  Optional<uint16_t> addCompositeGlyph(std::string const &name, GlyphDataTable::CompositeGlyph::GlyphRecord child, uint16_t advanceWidth, int16_t lsb) {
-    return addTrueTypeGlyph(name, [&](GlyphDataTable &glyf, HorizontalMetricsTable &hmtx) -> Optional<uint16_t> {
+  Optional<uint16_t> addCompositeGlyph(std::string const &name,
+                                       GlyphDefinitionTable::Class classValue,
+                                       GlyphDataTable::CompositeGlyph::GlyphRecord child,
+                                       uint16_t advanceWidth,
+                                       int16_t lsb) {
+    return addTrueTypeGlyph(name, classValue, [&](GlyphDataTable &glyf, HorizontalMetricsTable &hmtx) -> Optional<uint16_t> {
       auto gid = glyf.addCompositeGlyph(child);
       if (!gid) {
         return EGLYF_NULLOPT_WHAT("Failed to add composite glyph");
@@ -523,7 +530,9 @@ public:
   }
 
 private:
-  Optional<uint16_t> addTrueTypeGlyph(std::string const &name, std::function<Optional<uint16_t>(GlyphDataTable &glyf, HorizontalMetricsTable &hmtx)> addOp) {
+  Optional<uint16_t> addTrueTypeGlyph(std::string const &name,
+                                      GlyphDefinitionTable::Class classValue,
+                                      std::function<Optional<uint16_t>(GlyphDataTable &glyf, HorizontalMetricsTable &hmtx)> addOp) {
     using namespace std;
     if (!holds_alternative<TrueTypeOutlines>(outlines)) {
       return EGLYF_NULLOPT_WHAT("TrueType outlines not available");
@@ -542,6 +551,17 @@ private:
       return EGLYF_NULLOPT_PUSH(postGid.status());
     }
     if (auto st = tto.glyf->updateMaxp(*maxp); !st.ok()) {
+      return EGLYF_NULLOPT_PUSH(st);
+    }
+    if (!gdef) {
+      gdef = make_shared<GlyphDefinitionTable>();
+      gdef->majorVersion = 1;
+      gdef->minorVersion = 2;
+    }
+    if (!gdef->glyphClassDef) {
+      gdef->glyphClassDef = make_shared<ClassDef>();
+    }
+    if (auto st = gdef->glyphClassDef->add(*gid, static_cast<uint16_t>(classValue)); !st.ok()) {
       return EGLYF_NULLOPT_PUSH(st);
     }
     return *gid;
