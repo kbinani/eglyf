@@ -11,14 +11,11 @@ public:
     Where(char const *file, int line) {
       namespace fs = std::filesystem;
       static fs::path const sProjectRoot(fs::path(__FILE__).parent_path().parent_path());
-      std::error_code ec;
-      fs::path path(file ? file : "(unknown)");
-      fs::path p = fs::relative(path, sProjectRoot, ec);
-      if (ec) {
-        fFile = path.filename().string();
+      if (file) {
+        fFile = fs::path(file).lexically_relative(sProjectRoot).string();
         fLine = line;
       } else {
-        fFile = p.string();
+        fFile = "(unknown)";
         fLine = line;
       }
     }
