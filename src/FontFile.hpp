@@ -535,22 +535,6 @@ public:
     }
   }
 
-  std::optional<gpos::Attachment> findAttachment(uint16_t lookupType, std::vector<std::string> const &glyphs, size_t index) const {
-    using namespace std;
-    if (!gpos) {
-      return nullopt;
-    }
-    vector<uint16_t> gids;
-    for (auto const &name : glyphs) {
-      if (auto gid = post->getGlyphID(name); gid) {
-        gids.push_back(*gid);
-      } else {
-        return nullopt;
-      }
-    }
-    return gpos->findAttachment(lookupType, gids, index);
-  }
-
 private:
   Optional<uint16_t> addTrueTypeGlyph(std::string const &name,
                                       gdef::GlyphDefinitionTable::Class classValue,

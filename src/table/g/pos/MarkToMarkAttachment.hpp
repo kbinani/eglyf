@@ -213,34 +213,6 @@ public:
     return EGLYF_STATUS_PUSH(writer->commit());
   }
 
-  std::optional<Attachment> findAttachment(uint16_t receptorGlyphID, uint16_t ligandGlyphID) const {
-    using namespace std;
-
-    // mark2: receptor
-    // mark: ligand
-
-    auto receptorIndex = mark2Coverage->index(receptorGlyphID);
-    if (receptorIndex == Coverage::Npos) {
-      return nullopt;
-    }
-    auto ligandIndex = mark1Coverage->index(ligandGlyphID);
-    if (ligandIndex == Coverage::Npos) {
-      return nullopt;
-    }
-    auto const &ligandRecord = mark1Array.markRecords[ligandIndex];
-    auto const ligandClass = ligandRecord.markClass;
-    auto const &ligandAnchor = ligandRecord.markAnchor;
-
-    auto const &receptorRecord = mark2Array.mark2Records[receptorIndex];
-    auto const &receptorAnchor = receptorRecord.mark2Anchors[ligandClass];
-
-    Attachment ret;
-    ret.receptor = receptorAnchor;
-    ret.ligand = ligandAnchor;
-
-    return ret;
-  }
-
 public:
   std::shared_ptr<Coverage> mark1Coverage;
   std::shared_ptr<Coverage> mark2Coverage;

@@ -230,23 +230,7 @@ public:
     expect(names.size() == refNames.size());
 
     for (int i = 0; i < refNames.size() - 1; i++) {
-      cout << "---" << endl;
-      for (auto lookupType : {4, 6}) {
-        auto actual = font->findAttachment(lookupType, names[i], names[i + 1]);
-        auto expected = refFont->findAttachment(lookupType, refNames[i], refNames[i + 1]);
-        expect((bool)actual == (bool)expected);
-        if (actual && expected) {
-          cout << "[" << i << "]" << endl;
-          auto aR = dynamic_pointer_cast<gpos::Anchor1>(actual->receptor);
-          auto aL = dynamic_pointer_cast<gpos::Anchor1>(actual->ligand);
-          auto eR = dynamic_pointer_cast<gpos::Anchor1>(expected->receptor);
-          auto eL = dynamic_pointer_cast<gpos::Anchor1>(expected->ligand);
-          float es = 1228;
-          float as = 600;
-          cout << "expected(" << lookupType << ") " << names[i] << " [" << (eR->xCoordinate / es) << ", " << (eR->yCoordinate / es) << "] <- " << names[i + 1] << " [" << (eL->xCoordinate / es) << ", " << (eL->yCoordinate / es) << "]" << endl;
-          cout << "  actual(" << lookupType << ") " << refNames[i] << " [" << (aR->xCoordinate / as) << ", " << (aR->yCoordinate / as) << "] <- " << refNames[i + 1] << " [" << (aL->xCoordinate / as) << ", " << (aL->yCoordinate / as) << "]" << endl;
-        }
-      }
+      expect(names[i] == refNames[i]);
     }
   }
 
