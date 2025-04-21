@@ -253,7 +253,7 @@ public:
     return addTrueTypeGlyph(name, classValue, [&](GlyphDataTable &glyf, HorizontalMetricsTable &hmtx) -> Optional<uint16_t> {
       auto gid = glyf.addCompositeGlyph(child, *maxp);
       if (!gid) {
-        return EGLYF_NULLOPT_WHAT("Failed to add composite glyph");
+        return EGLYF_NULLOPT_PUSH(gid.status());
       }
 
       HorizontalMetricsTable::LongHorMetric hm;
@@ -542,7 +542,7 @@ private:
 
     auto gid = addOp(*tto.glyf, *hmtx);
     if (!gid) {
-      return EGLYF_NULLOPT_WHAT("Failed to add glyph");
+      return EGLYF_NULLOPT_PUSH(gid.status());
     }
     if (auto postGid = post->addName(name); postGid) {
       if (*gid != *postGid) {

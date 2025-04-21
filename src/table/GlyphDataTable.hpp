@@ -315,6 +315,42 @@ public:
     std::string instructions;
   };
 
+  struct ReadonlyGlyph {
+    static Optional<ReadonlyGlyph> Read(Header header, InputStream &in) {
+      using namespace std;
+      ReadonlyGlyph r;
+      r.header = header;
+      r.data = in.readUntilEos();
+      r.numPoints = 0;
+      if (header.numberOfContours > 0) {
+        ByteInputStream in(r.data);
+        for (uint16_t i = 0; i < header.numberOfContours; i++) {
+          uint16_t index;
+          if (!in.u16(&index)) {
+            return EGLYF_NULLOPT_WHAT("Failed to read contour index");
+          }
+          r.numPoints = (std::max)(r.numPoints, (uint16_t)(index + 1));
+        }
+      }
+      return r;
+    }
+
+    Status encode(OutputStream &out) const {
+      if (auto st = header.encode(out); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+      if (out.write((void *)data.c_str(), data.size())) {
+        return Status::Ok();
+      } else {
+        return EGLYF_ERROR_WHAT("Failed to write data");
+      }
+    }
+
+    Header header;
+    uint16_t numPoints;
+    std::string data;
+  };
+
   struct CompositeGlyph {
     enum Flags {
       ARG_1_AND_2_ARE_WORDS = 0x0001,
@@ -585,7 +621,7 @@ public:
     std::optional<std::string> instructions;
   };
 
-  using Glyph = std::variant<EmptyGlyph, SimpleGlyph, CompositeGlyph>;
+  using Glyph = std::variant<EmptyGlyph, ReadonlyGlyph, SimpleGlyph, CompositeGlyph>;
 
   static Status Read(InputStream &in, IndexToLocationTable const &loca, std::shared_ptr<GlyphDataTable> &out) {
     using namespace std;
@@ -617,7 +653,7 @@ public:
           return EGLYF_STATUS_PUSH(cg.status());
         }
       } else {
-        if (auto rg = SimpleGlyph::Read(*header, slice); rg) {
+        if (auto rg = ReadonlyGlyph::Read(*header, slice); rg) {
           ret->glyphs.push_back(*rg);
         } else {
           return EGLYF_STATUS_PUSH(rg.status());
@@ -643,9 +679,14 @@ public:
       offsets.push_back(out.size());
       if (holds_alternative<EmptyGlyph>(g)) {
         // nop
-      } else if (holds_alternative<SimpleGlyph>(g)) {
-        auto rg = get<SimpleGlyph>(g);
+      } else if (holds_alternative<ReadonlyGlyph>(g)) {
+        auto rg = get<ReadonlyGlyph>(g);
         if (auto st = rg.encode(out); !st.ok()) {
+          return EGLYF_NULLOPT_PUSH(st);
+        }
+      } else if (holds_alternative<SimpleGlyph>(g)) {
+        auto sg = get<SimpleGlyph>(g);
+        if (auto st = sg.encode(out); !st.ok()) {
           return EGLYF_NULLOPT_PUSH(st);
         }
       } else if (holds_alternative<CompositeGlyph>(g)) {
@@ -724,13 +765,24 @@ public:
       dx = offset.x;
       dy = offset.y;
     }
-    if (holds_alternative<SimpleGlyph>(g)) {
-      auto rg = get<SimpleGlyph>(g);
+    if (holds_alternative<ReadonlyGlyph>(g)) {
+      auto rg = get<ReadonlyGlyph>(g);
       add.header = rg.header;
       Vec<float> topLeft = Vec<float>(rg.header.xMin, rg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
       Vec<float> topRight = Vec<float>(rg.header.xMax, rg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
       Vec<float> bottomLeft = Vec<float>(rg.header.xMin, rg.header.yMax).transform(xscale, scale10, scale01, yscale, dx, dy);
       Vec<float> bottomRight = Vec<float>(rg.header.xMax, rg.header.yMax).transform(xscale, scale10, scale01, yscale, dx, dy);
+      add.header.xMin = (int16_t)floor(min({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
+      add.header.xMax = (int16_t)ceil(max({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
+      add.header.yMin = (int16_t)floor(min({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y}));
+      add.header.yMax = (int16_t)ceil(max({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y}));
+    } else if (holds_alternative<SimpleGlyph>(g)) {
+      auto sg = get<SimpleGlyph>(g);
+      add.header = sg.header;
+      Vec<float> topLeft = Vec<float>(sg.header.xMin, sg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
+      Vec<float> topRight = Vec<float>(sg.header.xMax, sg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
+      Vec<float> bottomLeft = Vec<float>(sg.header.xMin, sg.header.yMax).transform(xscale, scale10, scale01, yscale, dx, dy);
+      Vec<float> bottomRight = Vec<float>(sg.header.xMax, sg.header.yMax).transform(xscale, scale10, scale01, yscale, dx, dy);
       add.header.xMin = (int16_t)floor(min({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
       add.header.xMax = (int16_t)ceil(max({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
       add.header.yMin = (int16_t)floor(min({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y}));
@@ -789,9 +841,12 @@ public:
 
   static std::optional<Rect<int16_t>> Bounds(Glyph const &glyph) {
     using namespace std;
-    if (holds_alternative<GlyphDataTable::SimpleGlyph>(glyph)) {
-      auto const &r = get<GlyphDataTable::SimpleGlyph>(glyph);
+    if (holds_alternative<GlyphDataTable::ReadonlyGlyph>(glyph)) {
+      auto const &r = get<GlyphDataTable::ReadonlyGlyph>(glyph);
       return Rect<int16_t>(r.header.xMin, r.header.yMin, r.header.xMax, r.header.yMax);
+    } else if (holds_alternative<GlyphDataTable::SimpleGlyph>(glyph)) {
+      auto const &s = get<GlyphDataTable::SimpleGlyph>(glyph);
+      return Rect<int16_t>(s.header.xMin, s.header.yMin, s.header.xMax, s.header.yMax);
     } else if (holds_alternative<GlyphDataTable::CompositeGlyph>(glyph)) {
       auto const &c = get<GlyphDataTable::CompositeGlyph>(glyph);
       return Rect<int16_t>(c.header.xMin, c.header.yMin, c.header.xMax, c.header.yMax);
@@ -822,10 +877,15 @@ private:
         }
       }
       return true;
-    } else if (holds_alternative<SimpleGlyph>(child)) {
-      auto const &rchild = get<SimpleGlyph>(child);
+    } else if (holds_alternative<ReadonlyGlyph>(child)) {
+      auto const &rchild = get<ReadonlyGlyph>(child);
       compositePoints += rchild.numPoints;
       compositeContours += rchild.header.numberOfContours;
+      return true;
+    } else if (holds_alternative<SimpleGlyph>(child)) {
+      auto const &schild = get<SimpleGlyph>(child);
+      compositePoints += schild.numPoints;
+      compositeContours += schild.header.numberOfContours;
       return true;
     } else {
       return false;
