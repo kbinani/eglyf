@@ -15,6 +15,12 @@ public:
     if (s.failedToOpen()) {
       return false;
     }
+    if (size == 0) {
+      return true;
+    }
+    if (!buffer) {
+      return false;
+    }
     return s.write(buffer, size);
   }
 

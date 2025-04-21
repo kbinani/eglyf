@@ -5,6 +5,12 @@ namespace eglyf {
 class ByteOutputStream : public OutputStream {
 public:
   bool write(void const *buf, size_t size) override {
+    if (size == 0) {
+      return true;
+    }
+    if (!buf) {
+      return false;
+    }
     if (loc + size > buffer.size()) {
       buffer.resize(loc + size);
     }
