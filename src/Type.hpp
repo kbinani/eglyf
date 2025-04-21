@@ -97,6 +97,13 @@ struct Rect {
   Rect() : xMin(0), yMin(0), xMax(0), yMax(0) {}
   Rect(T xMin, T yMin, T xMax, T yMax) : xMin(xMin), yMin(yMin), xMax(xMax), yMax(yMax) {}
 
+  void updateBound(Vec<T> const &v) {
+    xMin = std::min(xMin, v.x);
+    xMax = std::max(xMax, v.x);
+    yMin = std::min(yMin, v.y);
+    yMax = std::max(yMax, v.y);
+  }
+
   T width() const { return xMax - xMin; }
   T height() const { return yMax - yMin; }
 };

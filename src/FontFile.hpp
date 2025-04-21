@@ -265,6 +265,27 @@ public:
     });
   }
 
+  Optional<uint16_t> addSimpleGlyph(std::string const &name,
+                                    gdef::GlyphDefinitionTable::Class classValue,
+                                    std::vector<glyf::GlyphDataTable::Contour> const &contours,
+                                    uint16_t advanceWidth,
+                                    int16_t lsb) {
+    using namespace std;
+    return addTrueTypeGlyph(name, classValue, [&](glyf::GlyphDataTable &glyf, hmtx::HorizontalMetricsTable &hmtx) -> Optional<uint16_t> {
+      auto gid = glyf.addSimpleGlyph(contours, *maxp);
+      if (!gid) {
+        return EGLYF_NULLOPT_PUSH(gid.status());
+      }
+
+      hmtx::HorizontalMetricsTable::LongHorMetric hm;
+      hm.advanceWidth = advanceWidth;
+      hm.lsb = lsb;
+      hmtx.metrics.push_back(hm);
+
+      return *gid;
+    });
+  }
+
   static Status Read(InputStream &in, std::shared_ptr<FontFile> &out) {
     using namespace std;
     auto ff = make_shared<FontFile>();

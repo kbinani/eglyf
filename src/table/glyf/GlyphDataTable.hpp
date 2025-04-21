@@ -719,7 +719,7 @@ public:
     return gid;
   }
 
-  Optional<uint16_t> addCompositeGlyph(GlyphDataTable::CompositeGlyph::GlyphRecord child, maxp::MaximumProfileTable &maxp) {
+  Optional<uint16_t> addCompositeGlyph(CompositeGlyph::GlyphRecord child, maxp::MaximumProfileTable &maxp) {
     using namespace std;
     if (child.glyphIndex >= glyphs.size()) {
       return EGLYF_NULLOPT_WHAT("Child glyph index out of range");
@@ -822,16 +822,70 @@ public:
     return gid;
   }
 
+  Optional<uint16_t> addSimpleGlyph(std::vector<Contour> const &contours, maxp::MaximumProfileTable &maxp) {
+    using namespace std;
+
+    if (contours.size() > numeric_limits<int16_t>::max()) [[unlikely]] {
+      return EGLYF_NULLOPT;
+    }
+    if (glyphs.size() + 1 > numeric_limits<uint16_t>::max()) [[unlikely]] {
+      return EGLYF_NULLOPT;
+    }
+
+    size_t numPoints = 0;
+    SimpleGlyph g;
+    optional<Rect<int16_t>> bounds;
+    for (auto const &c : contours) {
+      if (c.points.empty()) {
+        continue;
+      }
+      numPoints += c.points.size();
+      g.contours.push_back(c);
+      for (auto const &p : c.points) {
+        if (bounds) {
+          bounds->updateBound(Vec<int16_t>(p.x, p.y));
+        } else {
+          bounds = Rect<int16_t>(p.x, p.y, p.x, p.y);
+        }
+      }
+    }
+    if (!bounds) {
+      auto gid = addEmptyGlyph();
+      if (!gid) {
+        return EGLYF_NULLOPT_PUSH(gid.status());
+      }
+      return *gid;
+    }
+    if (numPoints > numeric_limits<uint16_t>::max()) [[unlikely]] {
+      return EGLYF_NULLOPT;
+    }
+
+    g.numPoints = numPoints;
+    g.header.numberOfContours = g.contours.size();
+    g.header.xMin = bounds->xMin;
+    g.header.yMin = bounds->yMin;
+    g.header.xMax = bounds->xMax;
+    g.header.yMax = bounds->yMax;
+
+    uint16_t gid = glyphs.size();
+    glyphs.push_back(g);
+
+    maxp.maxPoints = max(maxp.maxPoints, g.numPoints);
+    maxp.maxContours = max(maxp.maxContours, (uint16_t)g.header.numberOfContours);
+
+    return gid;
+  }
+
   static std::optional<Rect<int16_t>> Bounds(Glyph const &glyph) {
     using namespace std;
-    if (holds_alternative<GlyphDataTable::ReadonlyGlyph>(glyph)) {
-      auto const &r = get<GlyphDataTable::ReadonlyGlyph>(glyph);
+    if (holds_alternative<ReadonlyGlyph>(glyph)) {
+      auto const &r = get<ReadonlyGlyph>(glyph);
       return Rect<int16_t>(r.header.xMin, r.header.yMin, r.header.xMax, r.header.yMax);
-    } else if (holds_alternative<GlyphDataTable::SimpleGlyph>(glyph)) {
-      auto const &s = get<GlyphDataTable::SimpleGlyph>(glyph);
+    } else if (holds_alternative<SimpleGlyph>(glyph)) {
+      auto const &s = get<SimpleGlyph>(glyph);
       return Rect<int16_t>(s.header.xMin, s.header.yMin, s.header.xMax, s.header.yMax);
-    } else if (holds_alternative<GlyphDataTable::CompositeGlyph>(glyph)) {
-      auto const &c = get<GlyphDataTable::CompositeGlyph>(glyph);
+    } else if (holds_alternative<CompositeGlyph>(glyph)) {
+      auto const &c = get<CompositeGlyph>(glyph);
       return Rect<int16_t>(c.header.xMin, c.header.yMin, c.header.xMax, c.header.yMax);
     } else {
       return nullopt;
