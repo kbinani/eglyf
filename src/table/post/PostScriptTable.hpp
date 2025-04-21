@@ -1,6 +1,6 @@
 #pragma once
 
-namespace eglyf {
+namespace eglyf::post {
 
 // 'post'
 class PostScriptTable : public Table {
@@ -494,4 +494,4 @@ private:
   std::shared_ptr<std::unordered_map<std::string, uint16_t>> nameLookupTable;
 };
 
-} // namespace eglyf
+} // namespace eglyf::post

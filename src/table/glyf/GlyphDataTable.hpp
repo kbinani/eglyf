@@ -1,6 +1,6 @@
 #pragma once
 
-namespace eglyf {
+namespace eglyf::glyf {
 
 // 'glyf'
 class GlyphDataTable : public Table {
@@ -623,7 +623,7 @@ public:
 
   using Glyph = std::variant<EmptyGlyph, ReadonlyGlyph, SimpleGlyph, CompositeGlyph>;
 
-  static Status Read(InputStream &in, IndexToLocationTable const &loca, std::shared_ptr<GlyphDataTable> &out) {
+  static Status Read(InputStream &in, loca::IndexToLocationTable const &loca, std::shared_ptr<GlyphDataTable> &out) {
     using namespace std;
     auto ret = make_shared<GlyphDataTable>();
     for (size_t i = 1; i < loca.offsets.size(); i++) {
@@ -719,7 +719,7 @@ public:
     return gid;
   }
 
-  Optional<uint16_t> addCompositeGlyph(GlyphDataTable::CompositeGlyph::GlyphRecord child, MaximumProfileTable &maxp) {
+  Optional<uint16_t> addCompositeGlyph(GlyphDataTable::CompositeGlyph::GlyphRecord child, maxp::MaximumProfileTable &maxp) {
     using namespace std;
     if (child.glyphIndex >= glyphs.size()) {
       return EGLYF_NULLOPT_WHAT("Child glyph index out of range");
@@ -824,7 +824,7 @@ public:
 
   Status clone(std::shared_ptr<GlyphDataTable> &out) const {
     using namespace std;
-    IndexToLocationTable loca(1);
+    loca::IndexToLocationTable loca(1);
     auto encoded = encode(loca.offsets, 1);
     if (!encoded) {
       return EGLYF_STATUS_PUSH(encoded.status());
@@ -856,7 +856,7 @@ public:
   }
 
 private:
-  bool visit(CompositeGlyph::GlyphRecord const &record, uint16_t depth, std::set<uint16_t> path, MaximumProfileTable &out, uint16_t &compositePoints, uint16_t &compositeContours) const {
+  bool visit(CompositeGlyph::GlyphRecord const &record, uint16_t depth, std::set<uint16_t> path, maxp::MaximumProfileTable &out, uint16_t &compositePoints, uint16_t &compositeContours) const {
     using namespace std;
     if (record.glyphIndex >= glyphs.size()) {
       return false;
@@ -896,4 +896,4 @@ public:
   std::vector<Glyph> glyphs;
 };
 
-} // namespace eglyf
+} // namespace eglyf::glyf

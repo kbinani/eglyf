@@ -1,6 +1,6 @@
 #pragma once
 
-namespace eglyf {
+namespace eglyf::vhea {
 
 // 'vhea'
 class VerticalHeaderTable : public Table {
@@ -312,4 +312,4 @@ public:
   std::variant<Data10, Data11> data;
 };
 
-} // namespace eglyf
+} // namespace eglyf::vhea

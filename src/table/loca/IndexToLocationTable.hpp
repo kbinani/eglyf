@@ -1,6 +1,6 @@
 #pragma once
 
-namespace eglyf {
+namespace eglyf::loca {
 
 // 'loca'
 class IndexToLocationTable : public Table {
@@ -86,4 +86,4 @@ public:
   std::vector<Offset32> offsets;
 };
 
-} // namespace eglyf
+} // namespace eglyf::loca

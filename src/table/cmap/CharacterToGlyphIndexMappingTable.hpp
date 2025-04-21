@@ -1,6 +1,6 @@
 #pragma once
 
-namespace eglyf {
+namespace eglyf::cmap {
 
 // 'cmap'
 class CharacterToGlyphIndexMappingTable : public Table {
@@ -236,4 +236,4 @@ public:
   std::vector<EncodingRecord> encodingRecords;
 };
 
-} // namespace eglyf
+} // namespace eglyf::cmap

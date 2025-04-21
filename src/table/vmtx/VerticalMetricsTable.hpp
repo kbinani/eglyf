@@ -1,6 +1,6 @@
 #pragma once
 
-namespace eglyf {
+namespace eglyf::vmtx {
 
 class VerticalMetricsTable : public Table {
 public:
@@ -84,4 +84,4 @@ public:
   std::vector<Metric> metrics;
 };
 
-} // namespace eglyf
+} // namespace eglyf::vmtx

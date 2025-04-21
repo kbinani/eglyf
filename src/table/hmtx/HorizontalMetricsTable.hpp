@@ -1,6 +1,6 @@
 #pragma once
 
-namespace eglyf {
+namespace eglyf::hmtx {
 
 // 'hmtx'
 class HorizontalMetricsTable : public Table {
@@ -97,4 +97,4 @@ public:
   std::vector<LongHorMetric> metrics;
 };
 
-} // namespace eglyf
+} // namespace eglyf::hmtx

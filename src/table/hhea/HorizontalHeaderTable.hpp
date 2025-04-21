@@ -1,6 +1,6 @@
 #pragma once
 
-namespace eglyf {
+namespace eglyf::hhea {
 
 // 'hhea'
 class HorizontalHeaderTable : public Table {
@@ -155,4 +155,4 @@ public:
   uint16_t numberOfHMetrics;
 };
 
-} // namespace eglyf
+} // namespace eglyf::hhea

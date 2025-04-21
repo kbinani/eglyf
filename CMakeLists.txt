@@ -38,53 +38,53 @@ list(APPEND src_files
   src/io/OffsetInputStream.hpp
   src/table/Table.hpp
   src/table/ReadonlyTable.hpp
-  src/table/FontHeaderTable.hpp
-  src/table/MaximumProfileTable.hpp
-  src/table/IndexToLocationTable.hpp
-  src/table/GlyphDataTable.hpp
-  src/table/PostScriptTable.hpp
-  src/table/OS2AndWindowsMetricsTable.hpp
-  src/table/HorizontalHeaderTable.hpp
-  src/table/HorizontalMetricsTable.hpp
-  src/table/SubtableCollection.hpp
-  src/table/GlyphSubstitutionTable.hpp
-  src/table/ScriptList.hpp
-  src/table/FeatureList.hpp
-  src/table/LookupList.hpp
+  src/table/head/FontHeaderTable.hpp
+  src/table/maxp/MaximumProfileTable.hpp
+  src/table/loca/IndexToLocationTable.hpp
+  src/table/glyf/GlyphDataTable.hpp
+  src/table/post/PostScriptTable.hpp
+  src/table/os2/OS2AndWindowsMetricsTable.hpp
+  src/table/hhea/HorizontalHeaderTable.hpp
+  src/table/hmtx/HorizontalMetricsTable.hpp
+  src/table/g/SubtableCollection.hpp
+  src/table/g/sub/GlyphSubstitutionTable.hpp
+  src/table/g/ScriptList.hpp
+  src/table/g/FeatureList.hpp
+  src/table/g/LookupList.hpp
   src/table/Coverage.hpp
   src/table/ClassDef.hpp
-  src/table/Subtable.hpp
-  src/table/gsub/Single.hpp
-  src/table/gsub/SubstitutionExtension.hpp
-  src/table/gsub/Ligature.hpp
-  src/table/gsub/Multiple.hpp
-  src/table/SequenceLookup.hpp
-  src/table/ChainedContexts.hpp
-  src/table/gsub/ReverseChainedContextsSingle.hpp
+  src/table/g/Subtable.hpp
+  src/table/g/sub/Single.hpp
+  src/table/g/sub/SubstitutionExtension.hpp
+  src/table/g/sub/Ligature.hpp
+  src/table/g/sub/Multiple.hpp
+  src/table/g/SequenceLookup.hpp
+  src/table/g/ChainedContexts.hpp
+  src/table/g/sub/ReverseChainedContextsSingle.hpp
   src/io/OffsetWriter.hpp
-  src/table/gsub/Alternate.hpp
+  src/table/g/sub/Alternate.hpp
   include/eglyf.hpp
   src/Status.hpp
   src/Optional.hpp
-  src/table/Contextual.hpp
+  src/table/g/Contextual.hpp
   src/table/FeatureVariations.hpp
-  src/table/gpos/SingleAdjustment.hpp
-  src/table/GlyphPositioningTable.hpp
-  src/table/gpos/PositioningExtension.hpp
-  src/table/gpos/MarkToBaseAttachment.hpp
-  src/table/gpos/Anchor.hpp
-  src/table/gpos/MarkArray.hpp
-  src/table/gpos/MarkToLigatureAttachment.hpp
-  src/table/gpos/MarkToMarkAttachment.hpp
-  src/table/gpos/ValueRecord.hpp
-  src/table/gpos/PairAdjustment.hpp
-  src/table/gpos/CursiveAttachment.hpp
+  src/table/g/pos/SingleAdjustment.hpp
+  src/table/g/pos/GlyphPositioningTable.hpp
+  src/table/g/pos/PositioningExtension.hpp
+  src/table/g/pos/MarkToBaseAttachment.hpp
+  src/table/g/pos/Anchor.hpp
+  src/table/g/pos/MarkArray.hpp
+  src/table/g/pos/MarkToLigatureAttachment.hpp
+  src/table/g/pos/MarkToMarkAttachment.hpp
+  src/table/g/pos/ValueRecord.hpp
+  src/table/g/pos/PairAdjustment.hpp
+  src/table/g/pos/CursiveAttachment.hpp
   src/io/DataFragmentWriter.hpp
-  src/table/GlyphDefinitionTable.hpp
-  src/table/MarkGlyphSets.hpp
-  src/table/VerticalHeaderTable.hpp
-  src/table/VerticalMetricsTable.hpp
-  src/table/CharacterToGlyphIndexMappingTable.hpp
+  src/table/gdef/GlyphDefinitionTable.hpp
+  src/table/gdef/MarkGlyphSets.hpp
+  src/table/vhea/VerticalHeaderTable.hpp
+  src/table/vmtx/VerticalMetricsTable.hpp
+  src/table/cmap/CharacterToGlyphIndexMappingTable.hpp
   src/table/cmap/CmapSubtable.hpp
   src/table/cmap/ByteEncoding.hpp
   src/table/cmap/SegmentMappingToDeltaValues.hpp
@@ -96,7 +96,7 @@ list(APPEND src_files
   src/editor/EditorTests.hpp
   src/GlyphNames.hpp
   src/Unicode.hpp
-  src/table/gpos/Attachment.hpp
+  src/table/g/pos/Attachment.hpp
 )
 
 juce_add_binary_data(eglyf-binary-data

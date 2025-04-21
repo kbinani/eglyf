@@ -1,6 +1,6 @@
 #pragma once
 
-namespace eglyf {
+namespace eglyf::gpos {
 
 class GlyphPositioningTable : public SubtableCollection {
 public:
@@ -85,4 +85,4 @@ public:
   }
 };
 
-} // namespace eglyf
+} // namespace eglyf::gpos

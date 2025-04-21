@@ -1,6 +1,6 @@
 #pragma once
 
-namespace eglyf {
+namespace eglyf::maxp {
 
 // 'maxp'
 class MaximumProfileTable : public Table {
@@ -148,4 +148,4 @@ public:
   uint16_t maxComponentDepth = 0;
 };
 
-} // namespace eglyf
+} // namespace eglyf::maxp

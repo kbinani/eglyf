@@ -1,6 +1,6 @@
 #pragma once
 
-namespace eglyf {
+namespace eglyf::gsub {
 
 class GlyphSubstitutionTable : public SubtableCollection {
 public:
@@ -29,4 +29,4 @@ public:
   }
 };
 
-} // namespace eglyf
+} // namespace eglyf::gsub

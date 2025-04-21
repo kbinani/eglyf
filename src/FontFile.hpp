@@ -5,7 +5,7 @@ namespace eglyf {
 class FontFile {
 public:
   struct TrueTypeOutlines {
-    std::shared_ptr<GlyphDataTable> glyf;
+    std::shared_ptr<glyf::GlyphDataTable> glyf;
   };
   struct CFFOutlines {
   };
@@ -99,10 +99,10 @@ public:
       Offset32 maxOffset = offsets.back();
       uint32_t indexToLocationFormat = head->indexToLocFormat;
       if (indexToLocationFormat == 0) {
-        indexToLocationFormat = IndexToLocationTable::RecommendFormat(offsets);
+        indexToLocationFormat = loca::IndexToLocationTable::RecommendFormat(offsets);
       }
       head->indexToLocFormat = indexToLocationFormat;
-      IndexToLocationTable loca(indexToLocationFormat);
+      loca::IndexToLocationTable loca(indexToLocationFormat);
       loca.offsets.swap(offsets);
       auto locaTag = FCC("loca");
       auto encodedLoca = loca.encode();
@@ -143,7 +143,7 @@ public:
     }
 
     if (auto vmtxEntry = all.find(FCC("vmtx")); vmtxEntry != all.end()) {
-      auto vmtx = dynamic_pointer_cast<VerticalMetricsTable>(vmtxEntry->second);
+      auto vmtx = dynamic_pointer_cast<vmtx::VerticalMetricsTable>(vmtxEntry->second);
       if (!vmtx) {
         return EGLYF_ERROR_WHAT("Failed to cast vmtx to VerticalMetricsTable");
       }
@@ -167,7 +167,7 @@ public:
       if (vheaEntry == all.end()) {
         return EGLYF_ERROR_WHAT("vhea entry not found");
       }
-      auto vhea = dynamic_pointer_cast<VerticalHeaderTable>(vheaEntry->second);
+      auto vhea = dynamic_pointer_cast<vhea::VerticalHeaderTable>(vheaEntry->second);
       if (!vhea) {
         return EGLYF_ERROR_WHAT("Failed to cast vhea to VerticalHeaderTable");
       }
@@ -231,11 +231,11 @@ public:
   }
 
   Optional<uint16_t> addEmptyGlyph(std::string const &name,
-                                   GlyphDefinitionTable::Class classValue,
+                                   gdef::GlyphDefinitionTable::Class classValue,
                                    uint16_t advanceWidth,
                                    int16_t lsb) {
-    return addTrueTypeGlyph(name, classValue, [&](GlyphDataTable &glyf, HorizontalMetricsTable &hmtx) -> Optional<uint16_t> {
-      HorizontalMetricsTable::LongHorMetric hm;
+    return addTrueTypeGlyph(name, classValue, [&](glyf::GlyphDataTable &glyf, hmtx::HorizontalMetricsTable &hmtx) -> Optional<uint16_t> {
+      hmtx::HorizontalMetricsTable::LongHorMetric hm;
       hm.advanceWidth = advanceWidth;
       hm.lsb = lsb;
       hmtx.metrics.push_back(hm);
@@ -245,18 +245,18 @@ public:
   }
 
   Optional<uint16_t> addCompositeGlyph(std::string const &name,
-                                       GlyphDefinitionTable::Class classValue,
-                                       GlyphDataTable::CompositeGlyph::GlyphRecord child,
+                                       gdef::GlyphDefinitionTable::Class classValue,
+                                       glyf::GlyphDataTable::CompositeGlyph::GlyphRecord child,
                                        uint16_t advanceWidth,
                                        int16_t lsb) {
     using namespace std;
-    return addTrueTypeGlyph(name, classValue, [&](GlyphDataTable &glyf, HorizontalMetricsTable &hmtx) -> Optional<uint16_t> {
+    return addTrueTypeGlyph(name, classValue, [&](glyf::GlyphDataTable &glyf, hmtx::HorizontalMetricsTable &hmtx) -> Optional<uint16_t> {
       auto gid = glyf.addCompositeGlyph(child, *maxp);
       if (!gid) {
         return EGLYF_NULLOPT_PUSH(gid.status());
       }
 
-      HorizontalMetricsTable::LongHorMetric hm;
+      hmtx::HorizontalMetricsTable::LongHorMetric hm;
       hm.advanceWidth = advanceWidth;
       hm.lsb = lsb;
       hmtx.metrics.push_back(hm);
@@ -287,7 +287,7 @@ public:
       return EGLYF_ERROR_WHAT("head table not found");
     } else if (auto buffer = tr->second.read(in); buffer) {
       ByteInputStream slice(*buffer);
-      if (auto st = FontHeaderTable::Read(slice, ff->head); !st.ok()) {
+      if (auto st = head::FontHeaderTable::Read(slice, ff->head); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
       records.erase(tr);
@@ -299,7 +299,7 @@ public:
       return EGLYF_ERROR_WHAT("maxp table not found");
     } else if (auto buffer = tr->second.read(in); buffer) {
       ByteInputStream slice(*buffer);
-      if (auto st = MaximumProfileTable::Read(slice, ff->maxp); !st.ok()) {
+      if (auto st = maxp::MaximumProfileTable::Read(slice, ff->maxp); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
       records.erase(tr);
@@ -311,7 +311,7 @@ public:
       return EGLYF_ERROR_WHAT("hhea table not found");
     } else if (auto buffer = tr->second.read(in); buffer) {
       ByteInputStream slice(*buffer);
-      if (auto st = HorizontalHeaderTable::Read(slice, ff->hhea); !st.ok()) {
+      if (auto st = hhea::HorizontalHeaderTable::Read(slice, ff->hhea); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
       records.erase(tr);
@@ -323,7 +323,7 @@ public:
       return EGLYF_ERROR_WHAT("hmtx table not found");
     } else if (auto buffer = tr->second.read(in); buffer) {
       ByteInputStream slice(*buffer);
-      if (auto st = HorizontalMetricsTable::Read(slice, ff->maxp->numGlyphs, ff->hhea->numberOfHMetrics, ff->hmtx); !st.ok()) {
+      if (auto st = hmtx::HorizontalMetricsTable::Read(slice, ff->maxp->numGlyphs, ff->hhea->numberOfHMetrics, ff->hmtx); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
       records.erase(tr);
@@ -344,7 +344,7 @@ public:
       return EGLYF_ERROR_WHAT("OS/2 table not found");
     } else if (auto buffer = tr->second.read(in); buffer) {
       ByteInputStream slice(*buffer);
-      if (auto st = OS2AndWindowsMetricsTable::Read(slice, ff->os2); !st.ok()) {
+      if (auto st = os2::OS2AndWindowsMetricsTable::Read(slice, ff->os2); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
       records.erase(tr);
@@ -356,7 +356,7 @@ public:
       return EGLYF_ERROR_WHAT("post table not found");
     } else if (auto buffer = tr->second.read(in); buffer) {
       ByteInputStream slice(*buffer);
-      if (auto st = PostScriptTable::Read(slice, ff->post); !st.ok()) {
+      if (auto st = post::PostScriptTable::Read(slice, ff->post); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
       records.erase(tr);
@@ -369,25 +369,25 @@ public:
       if (tr1 == records.end()) {
         return EGLYF_ERROR_WHAT("loca table not found");
       }
-      shared_ptr<IndexToLocationTable> loca;
+      shared_ptr<loca::IndexToLocationTable> loca;
       {
         auto buffer = tr1->second.read(in);
         if (!buffer) {
           return EGLYF_ERROR_WHAT("Failed to read loca table");
         }
         ByteInputStream slice(*buffer);
-        if (auto st = IndexToLocationTable::Read(slice, ff->head->indexToLocFormat, ff->maxp->numGlyphs, loca); !st.ok()) {
+        if (auto st = loca::IndexToLocationTable::Read(slice, ff->head->indexToLocFormat, ff->maxp->numGlyphs, loca); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
       }
-      shared_ptr<GlyphDataTable> glyf;
+      shared_ptr<glyf::GlyphDataTable> glyf;
       {
         auto buffer = tr0->second.read(in);
         if (!buffer) {
           return EGLYF_ERROR_WHAT("Failed to read glyf table");
         }
         ByteInputStream slice(*buffer);
-        if (auto st = GlyphDataTable::Read(slice, *loca, glyf); !st.ok()) {
+        if (auto st = glyf::GlyphDataTable::Read(slice, *loca, glyf); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
       }
@@ -405,7 +405,7 @@ public:
     if (auto tr = records.find(FCC("GSUB")); tr != records.end()) {
       if (auto buffer = tr->second.read(in); buffer) {
         ByteInputStream slice(*buffer);
-        ff->gsub = make_shared<GlyphSubstitutionTable>();
+        ff->gsub = make_shared<gsub::GlyphSubstitutionTable>();
         if (auto st = ff->gsub->read(slice); !st.ok()) {
           if (st.error()->fWhat == Status::Error::UnexpectedFeatureParamsOffset()) {
             ff->gsub = nullptr;
@@ -423,7 +423,7 @@ public:
     if (auto tr = records.find(FCC("GPOS")); tr != records.end()) {
       if (auto buffer = tr->second.read(in); buffer) {
         ByteInputStream slice(*buffer);
-        ff->gpos = make_shared<GlyphPositioningTable>();
+        ff->gpos = make_shared<gpos::GlyphPositioningTable>();
         if (auto st = ff->gpos->read(slice); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
@@ -436,7 +436,7 @@ public:
     if (auto tr = records.find(FCC("GDEF")); tr != records.end()) {
       if (auto buffer = tr->second.read(in); buffer) {
         ByteInputStream slice(*buffer);
-        if (auto st = GlyphDefinitionTable::Read(slice, ff->gdef); !st.ok()) {
+        if (auto st = gdef::GlyphDefinitionTable::Read(slice, ff->gdef); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
         records.erase(tr);
@@ -451,26 +451,26 @@ public:
         return EGLYF_ERROR_WHAT("vhea table not found");
       }
 
-      shared_ptr<VerticalHeaderTable> vhea;
+      shared_ptr<vhea::VerticalHeaderTable> vhea;
       {
         auto vheaBuffer = vheaRecord->second.read(in);
         if (!vheaBuffer) {
           return EGLYF_ERROR_WHAT("Failed to read vhea table");
         }
         ByteInputStream vheaSlice(*vheaBuffer);
-        if (auto st = VerticalHeaderTable::Read(vheaSlice, vhea); !st.ok()) {
+        if (auto st = vhea::VerticalHeaderTable::Read(vheaSlice, vhea); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
       }
 
-      shared_ptr<VerticalMetricsTable> vmtx;
+      shared_ptr<vmtx::VerticalMetricsTable> vmtx;
       {
         auto vmtxBuffer = vmtxRecord->second.read(in);
         if (!vmtxBuffer) {
           return EGLYF_ERROR_WHAT("Failed to read vmtx table");
         }
         ByteInputStream vmtxSlice(*vmtxBuffer);
-        if (auto st = VerticalMetricsTable::Read(vmtxSlice, ff->maxp->numGlyphs, vhea->numOfLongVerMetrics(), vmtx); !st.ok()) {
+        if (auto st = vmtx::VerticalMetricsTable::Read(vmtxSlice, ff->maxp->numGlyphs, vhea->numOfLongVerMetrics(), vmtx); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
       }
@@ -485,7 +485,7 @@ public:
       return EGLYF_ERROR_WHAT("cmap table not found");
     } else if (auto buffer = tr->second.read(in); buffer) {
       ByteInputStream slice(*buffer);
-      if (auto st = CharacterToGlyphIndexMappingTable::Read(slice, ff->cmap); !st.ok()) {
+      if (auto st = cmap::CharacterToGlyphIndexMappingTable::Read(slice, ff->cmap); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
       records.erase(tr);
@@ -532,8 +532,8 @@ public:
 
 private:
   Optional<uint16_t> addTrueTypeGlyph(std::string const &name,
-                                      GlyphDefinitionTable::Class classValue,
-                                      std::function<Optional<uint16_t>(GlyphDataTable &glyf, HorizontalMetricsTable &hmtx)> addOp) {
+                                      gdef::GlyphDefinitionTable::Class classValue,
+                                      std::function<Optional<uint16_t>(glyf::GlyphDataTable &glyf, hmtx::HorizontalMetricsTable &hmtx)> addOp) {
     using namespace std;
     if (!holds_alternative<TrueTypeOutlines>(outlines)) {
       return EGLYF_NULLOPT_WHAT("TrueType outlines not available");
@@ -552,7 +552,7 @@ private:
       return EGLYF_NULLOPT_PUSH(postGid.status());
     }
     if (!gdef) {
-      gdef = make_shared<GlyphDefinitionTable>();
+      gdef = make_shared<gdef::GlyphDefinitionTable>();
       gdef->majorVersion = 1;
       gdef->minorVersion = 2;
     }
@@ -574,23 +574,23 @@ public:
   uint16_t rangeShift;
 
   // Required tables
-  std::shared_ptr<CharacterToGlyphIndexMappingTable> cmap;
-  std::shared_ptr<FontHeaderTable> head;
-  std::shared_ptr<HorizontalHeaderTable> hhea;
-  std::shared_ptr<HorizontalMetricsTable> hmtx;
-  std::shared_ptr<MaximumProfileTable> maxp;
+  std::shared_ptr<cmap::CharacterToGlyphIndexMappingTable> cmap;
+  std::shared_ptr<head::FontHeaderTable> head;
+  std::shared_ptr<hhea::HorizontalHeaderTable> hhea;
+  std::shared_ptr<hmtx::HorizontalMetricsTable> hmtx;
+  std::shared_ptr<maxp::MaximumProfileTable> maxp;
   std::shared_ptr<ReadonlyTable> name;
-  std::shared_ptr<OS2AndWindowsMetricsTable> os2;
-  std::shared_ptr<PostScriptTable> post;
+  std::shared_ptr<os2::OS2AndWindowsMetricsTable> os2;
+  std::shared_ptr<post::PostScriptTable> post;
 
   std::variant<TrueTypeOutlines, CFFOutlines> outlines;
 
   // Optional tables
-  std::shared_ptr<GlyphPositioningTable> gpos;
-  std::shared_ptr<GlyphSubstitutionTable> gsub;
-  std::shared_ptr<GlyphDefinitionTable> gdef;
-  std::shared_ptr<VerticalHeaderTable> vhea;
-  std::shared_ptr<VerticalMetricsTable> vmtx;
+  std::shared_ptr<gpos::GlyphPositioningTable> gpos;
+  std::shared_ptr<gsub::GlyphSubstitutionTable> gsub;
+  std::shared_ptr<gdef::GlyphDefinitionTable> gdef;
+  std::shared_ptr<vhea::VerticalHeaderTable> vhea;
+  std::shared_ptr<vmtx::VerticalMetricsTable> vmtx;
 
   std::map<std::array<uint8_t, 4>, std::shared_ptr<Table>> tables;
 };

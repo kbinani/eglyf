@@ -1,6 +1,6 @@
 #pragma once
 
-namespace eglyf {
+namespace eglyf::gdef {
 
 class MarkGlyphSets {
 public:
@@ -67,4 +67,4 @@ public:
   std::vector<std::shared_ptr<Coverage>> coverages;
 };
 
-} // namespace eglyf
+} // namespace eglyf::gdef

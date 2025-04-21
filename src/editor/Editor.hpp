@@ -7,7 +7,7 @@ public:
   struct Glyph {
     std::string name;
     std::optional<uint16_t> id;
-    GlyphDefinitionTable::Class classDef = GlyphDefinitionTable::Class::Mark;
+    gdef::GlyphDefinitionTable::Class classDef = gdef::GlyphDefinitionTable::Class::Mark;
   };
 
   struct Group {
@@ -1050,7 +1050,7 @@ public:
         return;
       }
       auto g = glyf->glyphs[*gid];
-      auto b = GlyphDataTable::Bounds(g);
+      auto b = glyf::GlyphDataTable::Bounds(g);
       if (b) {
         bounds[*gid] = make_pair(cp, *b);
       }
@@ -1064,7 +1064,7 @@ public:
     }
 
     if (!font->gdef) {
-      font->gdef = make_shared<GlyphDefinitionTable>();
+      font->gdef = make_shared<gdef::GlyphDefinitionTable>();
     }
     if (!font->gdef->glyphClassDef) {
       font->gdef->glyphClassDef = make_shared<ClassDef>();
@@ -1140,13 +1140,13 @@ public:
         dy = bottom - rect.yMin;
         lsb = rect.xMin - xMid;
       }
-      GlyphDataTable::CompositeGlyph::GlyphRecord record;
+      glyf::GlyphDataTable::CompositeGlyph::GlyphRecord record;
       if (scale < 1) {
-        record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(gid, dx, dy, scale);
+        record = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord::New(gid, dx, dy, scale);
       } else {
-        record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(gid, dx, dy);
+        record = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord::New(gid, dx, dy);
       }
-      auto classValue = GlyphDefinitionTable::Class::Mark;
+      auto classValue = gdef::GlyphDefinitionTable::Class::Mark;
       auto newGid = font->addCompositeGlyph(name, classValue, record, 0, lsb);
       if (!newGid) {
         return EGLYF_STATUS_PUSH(newGid.status());
@@ -1163,7 +1163,7 @@ public:
       }
       newGlyph->classDef = classValue;
       auto newGlyphData = glyf->glyphs[*newGid];
-      auto b = GlyphDataTable::Bounds(newGlyphData);
+      auto b = glyf::GlyphDataTable::Bounds(newGlyphData);
       if (!b) {
         return EGLYF_ERROR;
       }
@@ -1182,7 +1182,7 @@ public:
         }
       }
       int16_t width = sb + h * hfu + sb;
-      auto newGid = font->addEmptyGlyph(name, GlyphDefinitionTable::Class::Base, width, 0);
+      auto newGid = font->addEmptyGlyph(name, gdef::GlyphDefinitionTable::Class::Base, width, 0);
       if (!newGid) {
         return EGLYF_STATUS_PUSH(newGid.status());
       }
@@ -1255,8 +1255,8 @@ public:
           dy = bottom - rect.yMin;
           lsb = rect.xMin - xMid;
         }
-        auto classValue = GlyphDefinitionTable::Class::Mark;
-        auto record = GlyphDataTable::CompositeGlyph::GlyphRecord::New(baseGlyph.gid, dx, dy, scale);
+        auto classValue = gdef::GlyphDefinitionTable::Class::Mark;
+        auto record = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord::New(baseGlyph.gid, dx, dy, scale);
         auto newGid = font->addCompositeGlyph(n, classValue, record, 0, lsb);
         if (!newGid) {
           return EGLYF_STATUS_PUSH(newGid.status());
@@ -2286,8 +2286,8 @@ public:
     }
 
     // Create GlyphPositioningTable and GlyphSubstitutionTable
-    auto gpos = make_shared<GlyphPositioningTable>();
-    auto gsub = make_shared<GlyphSubstitutionTable>();
+    auto gpos = make_shared<gpos::GlyphPositioningTable>();
+    auto gsub = make_shared<gsub::GlyphSubstitutionTable>();
 
     // Set basic properties
     gpos->majorVersion = 1;
@@ -2634,7 +2634,7 @@ private:
   // Convert Editor::Lookup base and marks to OpenType lookupFlag
   Optional<uint16_t> convertLookupFlag(std::variant<Lookup::SkipBase, Lookup::ProcessBase> const &base,
                                        std::variant<Lookup::SkipMarks, Lookup::ProcessMarks> const &marks,
-                                       std::shared_ptr<GlyphDefinitionTable> const &gdef) {
+                                       std::shared_ptr<gdef::GlyphDefinitionTable> const &gdef) {
     using namespace std;
     uint16_t flag = 0;
 
@@ -2752,7 +2752,7 @@ private:
 
   // Determine markFilteringSet index from Editor::Lookup marks
   uint16_t determineMarkFilteringSet(std::variant<Lookup::SkipMarks, Lookup::ProcessMarks> const &marks,
-                                     std::shared_ptr<GlyphDefinitionTable> const &gdef) {
+                                     std::shared_ptr<gdef::GlyphDefinitionTable> const &gdef) {
     using namespace std;
     if (!gdef || !holds_alternative<Lookup::ProcessMarks>(marks)) {
       return 0;
@@ -2768,7 +2768,7 @@ private:
 
     // Create markGlyphSets if it doesn't exist
     if (!gdef->markGlyphSets) {
-      gdef->markGlyphSets = MarkGlyphSets();
+      gdef->markGlyphSets = gdef::MarkGlyphSets();
       // Update minorVersion to 2 if it's 1 or less
       if (gdef->minorVersion <= 1) {
         gdef->minorVersion = 2;
@@ -2803,7 +2803,7 @@ private:
     }
   }
 
-  Optional<uint16_t> determineMarkAttachmentClass(std::shared_ptr<Group> const &group, std::shared_ptr<GlyphDefinitionTable> const &gdef) {
+  Optional<uint16_t> determineMarkAttachmentClass(std::shared_ptr<Group> const &group, std::shared_ptr<gdef::GlyphDefinitionTable> const &gdef) {
     using namespace std;
     if (!markAttachClasses) {
       markAttachClasses = make_shared<unordered_map<uint16_t, uint16_t>>();
@@ -2931,7 +2931,7 @@ private:
 
   // Determine if a glyph is a mark glyph
   bool isMarkGlyph(std::shared_ptr<Glyph> const &glyph) const {
-    return glyph->classDef == GlyphDefinitionTable::Class::Mark;
+    return glyph->classDef == gdef::GlyphDefinitionTable::Class::Mark;
   }
 
   // Determine if all glyphs in a variant are mark glyphs

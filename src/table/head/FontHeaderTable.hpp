@@ -1,6 +1,6 @@
 #pragma once
 
-namespace eglyf {
+namespace eglyf::head {
 
 // 'head'
 class FontHeaderTable : public Table {
@@ -151,4 +151,4 @@ public:
   int16_t glyphDataFormat;
 };
 
-} // namespace eglyf
+} // namespace eglyf::head

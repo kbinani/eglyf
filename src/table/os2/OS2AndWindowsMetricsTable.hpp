@@ -1,6 +1,6 @@
 #pragma once
 
-namespace eglyf {
+namespace eglyf::os2 {
 
 // 'OS/2'
 class OS2AndWindowsMetricsTable : public Table {
@@ -345,4 +345,4 @@ public:
   std::optional<uint16_t> usUpperOpticalPointSize;
 };
 
-} // namespace eglyf
+} // namespace eglyf::os2

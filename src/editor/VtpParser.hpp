@@ -57,7 +57,7 @@ private:
     }
   }
 
-  Status defineGlyph(std::string const &name, std::optional<uint32_t> unicode, GlyphDefinitionTable::Class classDef) {
+  Status defineGlyph(std::string const &name, std::optional<uint32_t> unicode, gdef::GlyphDefinitionTable::Class classDef) {
     using namespace std;
     auto g = editor->getGlyphByName(name);
     auto font = editor->font;
@@ -65,7 +65,7 @@ private:
     if (auto gid = font->post->getGlyphID(name); gid) {
       glyphID = *gid;
       if (!font->gdef) {
-        font->gdef = make_shared<GlyphDefinitionTable>();
+        font->gdef = make_shared<gdef::GlyphDefinitionTable>();
         font->gdef->majorVersion = 1;
         font->gdef->minorVersion = 2;
       }
@@ -812,7 +812,7 @@ private:
     tokens.erase(tokens.begin(), tokens.begin() + 3); // Remove name, "ID", and ID value
 
     optional<uint32_t> unicode;
-    GlyphDefinitionTable::Class classDef;
+    gdef::GlyphDefinitionTable::Class classDef;
 
     // Check if UNICODE is present
     if (tokens[0] == "UNICODE") {
@@ -835,9 +835,9 @@ private:
 
     auto type = tokens[1];
     if (type == "MARK") {
-      classDef = GlyphDefinitionTable::Class::Mark;
+      classDef = gdef::GlyphDefinitionTable::Class::Mark;
     } else if (type == "BASE") {
-      classDef = GlyphDefinitionTable::Class::Base;
+      classDef = gdef::GlyphDefinitionTable::Class::Base;
     } else {
       return EGLYF_ERROR_WHAT("Invalid type in DEF_GLYPH: " + string(type));
     }

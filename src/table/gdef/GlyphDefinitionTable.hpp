@@ -1,6 +1,6 @@
 #pragma once
 
-namespace eglyf {
+namespace eglyf::gdef {
 
 // 'GDEF'
 class GlyphDefinitionTable : public Table {
@@ -555,4 +555,4 @@ public:
   std::optional<MarkGlyphSets> markGlyphSets;
 };
 
-} // namespace eglyf
+} // namespace eglyf::gdef
