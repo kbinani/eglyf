@@ -192,7 +192,121 @@ public:
     }
 
     Status encode(OutputStream &out) const {
-      return EGLYF_ERROR;
+      using namespace std;
+      vector<uint16_t> endPtsOfContours;
+      uint16_t num = 0;
+      vector<uint8_t> flags;
+      int16_t x = 0;
+      int16_t y = 0;
+      ByteOutputStream xs;
+      ByteOutputStream ys;
+      for (auto const &c : contours) {
+        if (c.points.empty()) {
+          return EGLYF_ERROR;
+        }
+        if ((size_t)num + c.points.size() > numeric_limits<uint16_t>::max()) [[unlikely]] {
+          return EGLYF_ERROR;
+        }
+        num += c.points.size();
+        endPtsOfContours.push_back(num - 1);
+        for (auto const &p : c.points) {
+          uint8_t flag = p.control ? 0 : ON_CURVE;
+
+          int16_t dx = p.x - x;
+          if (dx == 0) {
+            flag |= X_SAME;
+          } else if (-255 <= dx && dx <= 255) {
+            uint8_t v;
+            if (dx < 0) {
+              flag |= X_SHORT;
+              v = (uint8_t)(-dx);
+            } else {
+              flag |= X_SHORT | X_SAME;
+              v = (uint8_t)dx;
+            }
+            if (!xs.u8(v)) {
+              return EGLYF_ERROR;
+            }
+          } else {
+            if (!xs.i16(dx)) {
+              return EGLYF_ERROR;
+            }
+          }
+          x = p.x;
+
+          int16_t dy = p.y - y;
+          if (dy == 0) {
+            flag |= Y_SAME;
+          } else if (-255 <= dy && dy <= 255) {
+            uint8_t v;
+            if (dy < 0) {
+              flag |= Y_SHORT;
+              v = (uint8_t)(-dy);
+            } else {
+              flag |= Y_SHORT | Y_SAME;
+              v = (uint8_t)dy;
+            }
+            if (!ys.u8(v)) {
+              return EGLYF_ERROR;
+            }
+          } else {
+            if (!ys.i16(dy)) {
+              return EGLYF_ERROR;
+            }
+          }
+          y = p.y;
+
+          flags.push_back(flag);
+        }
+      }
+      vector<uint8_t> flagBytes;
+      for (int i = 0; i < flags.size();) {
+        auto flag = flags[i];
+        int count = 0;
+        for (int j = i + 1; j < flags.size(); j++) {
+          if (flags[j] == flag) {
+            count++;
+          } else {
+            break;
+          }
+        }
+        if (0 < count) {
+          auto c = min(count, 255);
+          flagBytes.push_back(flag | REPEAT);
+          flagBytes.push_back((uint8_t)c);
+          i += c + 1;
+        } else {
+          flagBytes.push_back(flag);
+          i++;
+        }
+      }
+      if (auto st = header.encode(out); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+      if (!out.u16a(endPtsOfContours)) {
+        return EGLYF_ERROR;
+      }
+      if (!out.sizeU16(instructions.size())) {
+        return EGLYF_ERROR;
+      }
+      if (!instructions.empty()) {
+        if (!out.write(instructions.data(), instructions.size())) {
+          return EGLYF_ERROR;
+        }
+      }
+      assert(!flagBytes.empty());
+      if (!out.write(flagBytes.data(), flagBytes.size())) {
+        return EGLYF_ERROR;
+      }
+      auto xsd = xs.data();
+      if (!out.write(xsd.data(), xsd.size())) {
+        return EGLYF_ERROR;
+      }
+      auto ysd = ys.data();
+      if (!out.write(ysd.data(), ysd.size())) {
+        return EGLYF_ERROR;
+      }
+      return Status::Ok();
     }
 
     Header header;
