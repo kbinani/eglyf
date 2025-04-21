@@ -47,7 +47,7 @@
 #include "table/g/ScriptList.hpp"
 #include "table/g/FeatureList.hpp"
 #include "table/g/LookupList.hpp"
-#include "table/FeatureVariations.hpp"
+#include "table/g/FeatureVariations.hpp"
 #include "table/Coverage.hpp"
 #include "table/ClassDef.hpp"
 #include "table/g/Subtable.hpp"

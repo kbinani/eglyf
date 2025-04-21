@@ -67,7 +67,7 @@ list(APPEND src_files
   src/Status.hpp
   src/Optional.hpp
   src/table/g/Contextual.hpp
-  src/table/FeatureVariations.hpp
+  src/table/g/FeatureVariations.hpp
   src/table/g/pos/SingleAdjustment.hpp
   src/table/g/pos/GlyphPositioningTable.hpp
   src/table/g/pos/PositioningExtension.hpp
