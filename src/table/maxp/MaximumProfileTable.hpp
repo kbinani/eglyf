@@ -126,10 +126,6 @@ public:
     return EncodeResult(out.data());
   }
 
-  Status clone(std::shared_ptr<MaximumProfileTable> &out) const {
-    return EGLYF_STATUS_PUSH(defaultClone<MaximumProfileTable>(out));
-  }
-
 public:
   Version16Dot16 version;
   uint16_t numGlyphs = 0;

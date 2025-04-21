@@ -134,10 +134,6 @@ public:
     return EncodeResult(out.data());
   }
 
-  Status clone(std::shared_ptr<HorizontalHeaderTable> &out) const {
-    return EGLYF_STATUS_PUSH(defaultClone<HorizontalHeaderTable>(out));
-  }
-
 public:
   uint16_t majorVersion;
   uint16_t minorVersion;

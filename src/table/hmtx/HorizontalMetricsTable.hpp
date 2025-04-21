@@ -82,17 +82,6 @@ public:
     return EncodeResult(out.data());
   }
 
-  Status clone(std::shared_ptr<HorizontalMetricsTable> &out) const {
-    uint16_t numberOfHMetrics = 0;
-    auto encoded = encode(numberOfHMetrics);
-    if (!encoded) {
-      return EGLYF_STATUS_PUSH(encoded.status());
-    }
-    uint16_t numGlyphs = metrics.size();
-    ByteInputStream in(encoded->data);
-    return EGLYF_STATUS_PUSH(Read(in, numGlyphs, numberOfHMetrics, out));
-  }
-
 public:
   std::vector<LongHorMetric> metrics;
 };

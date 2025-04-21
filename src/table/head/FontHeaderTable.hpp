@@ -126,10 +126,6 @@ public:
     return EncodeResult(out.data());
   }
 
-  Status clone(std::shared_ptr<FontHeaderTable> &out) const {
-    return EGLYF_STATUS_PUSH(defaultClone<FontHeaderTable>(out));
-  }
-
 public:
   uint16_t majorVersion;
   uint16_t minorVersion;

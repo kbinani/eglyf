@@ -33,19 +33,6 @@ public:
     }
     return sum;
   }
-
-protected:
-  template <class T>
-  Status defaultClone(std::shared_ptr<T> &out) const {
-    using namespace std;
-    auto encoded = encode();
-    if (!encoded) {
-      return EGLYF_STATUS_PUSH(encoded.status());
-    }
-    ByteInputStream in(encoded->data);
-    auto st = T::Read(in, out);
-    return EGLYF_STATUS_PUSH(st);
-  }
 };
 
 } // namespace eglyf

@@ -822,23 +822,6 @@ public:
     return gid;
   }
 
-  Status clone(std::shared_ptr<GlyphDataTable> &out) const {
-    using namespace std;
-    loca::IndexToLocationTable loca(1);
-    auto encoded = encode(loca.offsets, 1);
-    if (!encoded) {
-      return EGLYF_STATUS_PUSH(encoded.status());
-    }
-    ByteInputStream in(encoded->data);
-    shared_ptr<GlyphDataTable> ret;
-    if (auto st = Read(in, loca, ret); st.ok()) {
-      ret.swap(out);
-      return Status::Ok();
-    } else {
-      return EGLYF_STATUS_PUSH(st);
-    }
-  }
-
   static std::optional<Rect<int16_t>> Bounds(Glyph const &glyph) {
     using namespace std;
     if (holds_alternative<GlyphDataTable::ReadonlyGlyph>(glyph)) {

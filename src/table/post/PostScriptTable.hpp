@@ -335,7 +335,6 @@ public:
     return Status::Ok();
   }
 
-  // Returns glyphID
   Optional<uint16_t> addName(std::string const &name) {
     using namespace std;
     if (holds_alternative<string>(data)) {
@@ -368,10 +367,6 @@ public:
     auto &lut = ensureLookupTable();
     lut[name] = gid;
     return static_cast<uint16_t>(gid);
-  }
-
-  Status clone(std::shared_ptr<PostScriptTable> &out) const {
-    return EGLYF_STATUS_PUSH(defaultClone<PostScriptTable>(out));
   }
 
   std::optional<std::string> getName(uint16_t glyphID) const {
