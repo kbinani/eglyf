@@ -87,5 +87,6 @@
 #include "table/cmap/CharacterToGlyphIndexMappingTable.hpp"
 #include "FontFile.hpp"
 #include "GlyphNames.hpp"
+#include "editor/PlaceholderGlyph.hpp"
 #include "editor/Editor.hpp"
 #include "editor/VtpParser.hpp"

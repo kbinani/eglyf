@@ -97,6 +97,7 @@ list(APPEND src_files
   src/GlyphNames.hpp
   src/Unicode.hpp
   src/table/g/pos/Attachment.hpp
+  src/editor/PlaceholderGlyph.hpp
 )
 
 juce_add_binary_data(eglyf-binary-data

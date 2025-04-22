@@ -1188,6 +1188,10 @@ public:
       }
     }
 
+    if (auto st = PlaceholderGlyph::Create(*font, bottom, hfu, sb, chu, vfu, tb, vhu); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+
     auto glyphsSet1 = getGroupByName("glyphs_set1");
 
     for (auto const &it : baseGlyphs) {
