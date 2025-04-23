@@ -1006,7 +1006,7 @@ public:
     variationChain[62] = {61, 52, 51, 42, 32, 31, 21, 11};
     variationChain[61] = {51, 41, 31, 21, 11};
     variationChain[56] = {45, 44, 35, 33, 22, 11};
-    variationChain[55] = {55, 44, 33, 22, 11};
+    variationChain[55] = {54, 45, 44, 43, 34, 33, 22, 11};
     variationChain[54] = {53, 43, 33, 22, 21, 11};
     variationChain[53] = {52, 42, 32, 31, 21, 11};
     variationChain[52] = {51, 42, 31, 21, 11};
@@ -1019,7 +1019,7 @@ public:
     variationChain[35] = {25, 24, 23, 13, 12, 11};
     variationChain[34] = {24, 23, 13, 12, 11};
     variationChain[33] = {22, 11};
-    variationChain[32] = {32, 31, 21, 11};
+    variationChain[32] = {31, 21, 11};
     variationChain[26] = {25, 24, 23, 16, 14, 13, 12, 11};
     variationChain[25] = {24, 15, 14, 11};
     variationChain[24] = {23, 14, 13, 12, 11};
