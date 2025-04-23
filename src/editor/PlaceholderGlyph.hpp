@@ -23,15 +23,27 @@ class PlaceholderGlyph {
     return r;
   }
 
+  struct CommonParam {
+    int t;       // line width
+    int segment; // base length of (1 dash + 1 gap)
+  };
+
+  static CommonParam CommonParameter(int16_t chu, int16_t hfu, int16_t vhu, int16_t vfu) {
+    using namespace std;
+    CommonParam p;
+    int scale = min(chu * hfu, vhu * vfu);
+    p.t = max(1, scale / 96);
+    p.segment = min(scale / chu, scale / vhu);
+    return p;
+  }
+
 public:
   static Rect<int16_t> Bounds(int h, int v, int16_t base, int16_t hfu, int chu, int16_t vfu, int vhu) {
     using namespace std;
-    int const scale = min(chu * hfu, vhu * vfu);
-    int const t = max(1, scale / 64);
-    int const segment = min(scale / chu, scale / vhu);
-    Param x = Parameter(h, segment, hfu);
-    Param y = Parameter(v, segment, vfu);
-    return Rect<int16_t>(-x.s - t, base - t, x.s + t, base + 2 * y.s + t);
+    CommonParam c = CommonParameter(chu, hfu, vhu, vfu);
+    Param x = Parameter(h, c.segment, hfu);
+    Param y = Parameter(v, c.segment, vfu);
+    return Rect<int16_t>(-x.s - c.t, base - c.t, x.s + c.t, base + 2 * y.s + c.t);
   }
 
   static Status Create(FontFile &font, int16_t base, int16_t hfu, int16_t sb, int chu, int16_t vfu, int vhu) {
@@ -44,9 +56,9 @@ public:
       return EGLYF_ERROR;
     }
     auto &glyf = get<FontFile::TrueTypeOutlines>(outlines).glyf;
-    int const scale = min(chu * hfu, vhu * vfu);
-    int const t = max(1, scale / 64);
-    int const segment = min(scale / chu, scale / vhu);
+    CommonParam p = CommonParameter(chu, hfu, vhu, vfu);
+    int const segment = p.segment;
+    int const t = p.t;
 
     for (int xLevel = 1; xLevel <= chu; xLevel++) {
       Param x = Parameter(xLevel, segment, hfu);
