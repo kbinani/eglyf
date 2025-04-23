@@ -18,17 +18,18 @@ public:
     auto &glyf = get<FontFile::TrueTypeOutlines>(outlines).glyf;
     int const scale = min(chu * hfu, vhu * vfu);
     int const t = max(1, scale / 64);
+    int const segment = min(scale / chu, scale / vhu);
     for (int x = 1; x <= chu; x++) {
-      int xn = max(2, x);
-      int xd = (x * hfu) / (5 * xn / 2 + 1);
-      int xe = xd * 3 / 2;
-      int width = xe * xn + xd * (xn - 1);
+      int const xn = max(2, (int)round(x * hfu / (float)segment));
+      int const xd = (x * hfu) / (5 * xn / 2 + 1);
+      int const xe = xd * 3 / 2;
+      int const width = xe * xn + xd * (xn - 1);
       int const w = width / 2;
       for (int y = 1; y <= vhu; y++) {
-        int yn = max(2, y);
-        int yd = (y * vfu) / (5 * yn / 2 + 1);
-        int ye = yd * 3 / 2;
-        int height = ye * yn + yd * (yn - 1);
+        int const yn = max(2, (int)round(y * vfu / (float)segment));
+        int const yd = (y * vfu) / (5 * yn / 2 + 1);
+        int const ye = yd * 3 / 2;
+        int const height = ye * yn + yd * (yn - 1);
         int const h = height / 2;
         auto name = format("GB1_{}{}", x, y);
         vector<Contour> half;
@@ -95,7 +96,7 @@ public:
           }
           contours.push_back(cp);
         }
-        auto gid = font.addSimpleGlyph(name, gdef::GlyphDefinitionTable::Class::Mark, contours, 0, -w);
+        auto gid = font.addSimpleGlyph(name, gdef::GlyphDefinitionTable::Class::Mark, contours, 0, -w - t);
         if (!gid) {
           return EGLYF_STATUS_PUSH(gid.status());
         }
