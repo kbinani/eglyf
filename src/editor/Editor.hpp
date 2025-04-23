@@ -1088,7 +1088,7 @@ public:
     hfu = (int16_t)ceil(sumWidth / (float)sumCount / chu);
     vfu = (int16_t)ceil(sumHeight / (float)sumCount / vhu);
     sb = hfu / 3;
-    int const bottom = 0;
+    base = 0;
 
     struct BaseGlyph {
       uint16_t gid;
@@ -1127,11 +1127,11 @@ public:
       int16_t lsb;
       if (scale < 1) {
         dx = (int16_t)round(-xMid * scale);
-        dy = (int16_t)round((bottom - rect.yMin) * scale);
+        dy = (int16_t)round((base - rect.yMin) * scale);
         lsb = (int16_t)round((rect.xMin - xMid) * scale);
       } else {
         dx = -xMid;
-        dy = bottom - rect.yMin;
+        dy = base - rect.yMin;
         lsb = rect.xMin - xMid;
       }
       glyf::GlyphDataTable::CompositeGlyph::GlyphRecord record;
@@ -1182,7 +1182,7 @@ public:
       }
     }
 
-    if (auto st = PlaceholderGlyph::Create(*font, bottom, hfu, sb, chu, vfu, vhu); !st.ok()) {
+    if (auto st = PlaceholderGlyph::Create(*font, base, hfu, sb, chu, vfu, vhu); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
 
@@ -1246,11 +1246,11 @@ public:
         int16_t lsb;
         if (scale < 1) {
           dx = (int16_t)round(-xMid * scale);
-          dy = (int16_t)round((bottom - rect.yMin) * scale);
+          dy = (int16_t)round((base - rect.yMin) * scale);
           lsb = (int16_t)round((rect.xMin - xMid) * scale);
         } else {
           dx = -xMid;
-          dy = bottom - rect.yMin;
+          dy = base - rect.yMin;
           lsb = rect.xMin - xMid;
         }
         auto classValue = gdef::GlyphDefinitionTable::Class::Mark;
@@ -2209,6 +2209,15 @@ public:
           // DEF_ANCHOR "MARK_center" ON 2888 GLYPH A1_11 COMPONENT 1 AT  POS DY 144 END_POS END_ANCHOR
           int v = key % 10;
           int16_t dy = v * vfu / 2; // TODO: this equation is not sure
+          MARK_center->second->glyphs[glyph] = Vec<optional<int16_t>>(nullopt, dy);
+        }
+      }
+      for (int h = 1; h <= hhu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          auto name = format("GB1_{}{}", h, v);
+          auto glyph = getGlyphByName(name);
+          auto rect = PlaceholderGlyph::Bounds(h, v, base, hfu, chu, vfu, vhu);
+          int16_t dy = (rect.yMax + rect.yMin) / 2;
           MARK_center->second->glyphs[glyph] = Vec<optional<int16_t>>(nullopt, dy);
         }
       }
@@ -3225,6 +3234,7 @@ public:
   std::unordered_map<std::string, SizeVariants> sizeVariants;
   // font side bearings: hfu / 3
   int16_t sb;
+  int16_t base;
 };
 
 } // namespace eglyf
