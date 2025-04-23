@@ -1055,9 +1055,7 @@ public:
         bounds[*gid] = make_pair(cp, *b);
       }
     };
-    Unicode::EnumerateHieroglyphUnicode([&](uint32_t cp) {
-      process(cp);
-    });
+    Unicode::EnumerateHieroglyphUnicode(process);
 
     if (bounds.empty()) {
       return EGLYF_ERROR;
@@ -1070,31 +1068,27 @@ public:
       font->gdef->glyphClassDef = make_shared<ClassDef>();
     }
 
-    int const fontHeight = font->head->unitsPerEm;
-    int const topMargin = (int)round(fontHeight * 0.0322);
-    int const bottomMargin = (int)round(fontHeight * 0.0615);
-    int const maxHeight = fontHeight - topMargin - bottomMargin;
-    int const bottom = 0;
-    int maxWidth = 0;
-
-    for (auto const &[gid, item] : bounds) {
-      auto const &[cp, rect] = item;
-      auto const w = rect.width();
-      auto const h = rect.height();
-      float const scale = h / (float)maxHeight;
-      int scaledWidth;
-      if (scale > 1) {
-        scaledWidth = (int)round(w / scale);
-      } else {
-        scaledWidth = w;
+    uint64_t sumWidth = 0;
+    uint64_t sumHeight = 0;
+    uint64_t sumCount = 0;
+    for (auto const &name : {"A7", "A10", "A14", "A14a", "A37", "A38", "A39", "A52", "A64", "A70", "C11", "D30", "D33", "D34", "D34a", "D50c", "D52a", "D57", "D59", "D67h", "E1", "E3", "E4", "E6", "E7", "E8", "E8a", "E14", "E15", "E16", "E16a", "E17", "E17a", "E18", "E19", "E20", "E26", "E28", "E28a", "E30", "E31", "E37", "F6", "F14", "F15", "F40", "F50", "G1", "G2", "G3", "G4", "G5", "G6", "G6a", "G7a", "G10", "G11a", "G13", "G14", "G15", "G17", "G19", "G20", "G20a", "G21", "G23", "G25", "G26a", "G29", "G31", "G32", "G33", "G38", "G39", "G40", "G41", "G44", "G45", "G45a", "G47", "G51", "G53", "G54", "I1", "I4", "I10", "I10a", "I11", "I11a", "K7", "L2", "L2a", "M1a", "M1b", "M3a", "M9", "M12b", "M14", "M20", "M22a", "M27", "M42", "M43", "N2", "N13", "N14", "N35a", "NU5", "NU11", "NU17", "O1a", "O2", "O8", "O9", "O10", "O10a", "O10b", "O12", "O13", "O14", "O15", "O18", "O19", "O19a", "O22", "O23", "O27", "P5", "P7", "P9", "P10", "R1", "R2", "R3", "R10", "R26", "S2", "S4", "S6", "S7", "S13", "S14", "S14a", "S14b", "S15", "S28", "S30", "S31", "T5", "T6", "T32a", "T33a", "U1", "U4", "U5", "U35", "U38", "V1d", "V1e", "V1f", "V1g", "V2a", "V4", "V20h", "V21", "V28a", "V81", "W4", "W14a", "W17a", "W18", "W18a", "J22", "O13a"}) {
+      auto cp = GlyphNames::GetCodepoint(name);
+      if (!cp) {
+        continue;
       }
-      maxWidth = max(maxWidth, scaledWidth);
+      auto found = ranges::find_if(bounds, [&](auto const &it) { return it.second.first == *cp; });
+      if (found == bounds.end()) {
+        continue;
+      }
+      Rect<int16_t> rect = found->second.second;
+      sumWidth += rect.width();
+      sumHeight += rect.height();
+      sumCount++;
     }
-
-    hfu = (int16_t)std::ceilf(maxWidth * 3.0f / (2 + hhu * 3));
-    vfu = (int16_t)std::ceilf(maxHeight * 3.0f / (2 + vhu * 3));
+    hfu = (int16_t)ceil(sumWidth / (float)sumCount / chu);
+    vfu = (int16_t)ceil(sumHeight / (float)sumCount / vhu);
     sb = hfu / 3;
-    tb = vfu / 3;
+    int const bottom = 0;
 
     struct BaseGlyph {
       uint16_t gid;
@@ -1110,7 +1104,7 @@ public:
       auto const &rect = item.second;
 
       string name;
-      auto found = GlyphNames::Get(cp);
+      auto found = GlyphNames::GetName(cp);
       if (found) {
         name = *found;
       } else {
@@ -1188,7 +1182,7 @@ public:
       }
     }
 
-    if (auto st = PlaceholderGlyph::Create(*font, bottom, hfu, sb, chu, vfu, tb, vhu); !st.ok()) {
+    if (auto st = PlaceholderGlyph::Create(*font, bottom, hfu, sb, chu, vfu, vhu); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
 
@@ -1202,8 +1196,8 @@ public:
       int const height = rect.height();
 
       float const baseScale = min({1.0f, vhu * vfu / (float)height, chu * hfu / (float)width});
-      int hGrids = clamp((int)ceilf((width * baseScale - sb * 2) / hfu), 1, hhu);
-      int vGrids = clamp((int)ceilf((height * baseScale - tb * 2) / vfu), 1, vhu);
+      int hGrids = clamp((int)ceilf(width * baseScale / hfu), 1, hhu);
+      int vGrids = clamp((int)ceilf(height * baseScale / vfu), 1, vhu);
 
       int16_t xMid = (rect.xMin + rect.xMax) / 2;
 
@@ -3231,7 +3225,6 @@ public:
   std::unordered_map<std::string, SizeVariants> sizeVariants;
   // font side bearings: hfu / 3
   int16_t sb;
-  int16_t tb;
 };
 
 } // namespace eglyf

@@ -6,7 +6,7 @@ class PlaceholderGlyph {
   PlaceholderGlyph() = delete;
 
 public:
-  static Status Create(FontFile &font, int16_t base, int16_t hfu, int16_t sb, int chu, int16_t vfu, int16_t tb, int vhu) {
+  static Status Create(FontFile &font, int16_t base, int16_t hfu, int16_t sb, int chu, int16_t vfu, int vhu) {
     using namespace std;
     using Contour = glyf::GlyphDataTable::Contour;
     using Point = glyf::GlyphDataTable::Point;

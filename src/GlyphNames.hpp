@@ -1090,7 +1090,7 @@ private:
   }
 
 public:
-  static std::optional<std::string> Get(uint32_t codepoint) {
+  static std::optional<std::string> GetName(uint32_t codepoint) {
     using namespace std;
     auto const &table = GetTable();
     if (auto found = table.find(codepoint); found == table.end()) {
@@ -1100,10 +1100,14 @@ public:
     }
   }
 
-  static bool IsNamedGlyph(std::string const &name) {
+  static std::optional<uint32_t> GetCodepoint(std::string const &name) {
     using namespace std;
     auto const &table = GetReverseTable();
-    return table.find(name) != table.end();
+    if (auto found = table.find(name); found != table.end()) {
+      return found->second;
+    } else {
+      return nullopt;
+    }
   }
 };
 

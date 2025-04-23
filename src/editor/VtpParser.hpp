@@ -79,7 +79,7 @@ private:
       auto underbar = name.find('_');
       if (underbar != string::npos) {
         auto prefix = name.substr(0, underbar);
-        if (GlyphNames::IsNamedGlyph(prefix)) {
+        if (GlyphNames::GetCodepoint(prefix)) {
           return Status::Ok();
         }
       }
