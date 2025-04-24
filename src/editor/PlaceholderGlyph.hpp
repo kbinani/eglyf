@@ -127,6 +127,25 @@ public:
           }
           contours.push_back(cp);
         }
+        auto reticle = p.segment * 3 / (5 * 2);
+        int xInnerGap = 2 * x.s - 2 * p.t;
+        int yInnerGap = 2 * y.s - 2 * p.t;
+        if (reticle * 2 < xInnerGap - 2 * p.t && reticle * 2 < yInnerGap - 2 * p.t) {
+          Contour c;
+          c.points.emplace_back(x0 - reticle, y0 + p.t);
+          c.points.emplace_back(x0 - p.t, y0 + p.t);
+          c.points.emplace_back(x0 - p.t, y0 + reticle);
+          c.points.emplace_back(x0 + p.t, y0 + reticle);
+          c.points.emplace_back(x0 + p.t, y0 + p.t);
+          c.points.emplace_back(x0 + reticle, y0 + p.t);
+          c.points.emplace_back(x0 + reticle, y0 - p.t);
+          c.points.emplace_back(x0 + p.t, y0 - p.t);
+          c.points.emplace_back(x0 + p.t, y0 - reticle);
+          c.points.emplace_back(x0 - p.t, y0 - reticle);
+          c.points.emplace_back(x0 - p.t, y0 - p.t);
+          c.points.emplace_back(x0 - reticle, y0 - p.t);
+          contours.push_back(c);
+        }
         auto gid = font.addSimpleGlyph(name, gdef::GlyphDefinitionTable::Class::Mark, contours, 0, -(x.s + p.t));
         if (!gid) {
           return EGLYF_STATUS_PUSH(gid.status());
