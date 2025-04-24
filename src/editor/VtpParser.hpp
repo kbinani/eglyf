@@ -968,11 +968,9 @@ private:
     if (tagString.size() != 4) {
       return EGLYF_ERROR_WHAT("Invalid string length for tag");
     }
-    Tag tag;
-    ranges::copy(tagString, tag.begin());
 
-    // Define the script
-    auto script = defineScript(string(name), tag);
+    // Overwrite tag from "egyp" to "DFLT"
+    auto script = defineScript(string(name), FCC("DFLT"));
 
     // Parse subsequent lines until END_SCRIPT
     for (size_t i = index + 1; i < lines.size();) {

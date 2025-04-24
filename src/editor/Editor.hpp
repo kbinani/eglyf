@@ -97,6 +97,7 @@ public:
     std::string name;
     Tag tag;
     std::vector<std::shared_ptr<Feature>> features;
+    std::shared_ptr<Feature> requiredFeature;
 
     LangSys(std::string const &name, Tag const &tag) : name(name), tag(tag) {}
   };
@@ -1605,7 +1606,75 @@ public:
     return Status::Ok();
   }
 
+  Status insertMdCLookup() {
+    using namespace std;
+    map<string, vector<string>> codes;
+    codes["km"] = {"I6"};
+    codes["t"] = {"X1"};
+
+    map<char, vector<shared_ptr<Glyph>>> single;
+    map<string, vector<shared_ptr<Glyph>>> ligature;
+    for (auto const &[code, glyphs] : codes) {
+      vector<shared_ptr<Glyph>> glyphList;
+      for (auto const &name : glyphs) {
+        glyphList.push_back(getGlyphByName(name));
+      }
+      if (code.size() == 1) {
+        single[code[0]] = glyphList;
+      } else {
+        ligature[code] = glyphList;
+      }
+    }
+
+    auto singleLookup = getLookupByName("mdc002");
+    singleLookup->base = Lookup::ProcessBase{};
+    singleLookup->marks = Lookup::ProcessMarks(Lookup::ProcessMarks::All{});
+    for (auto const &[code, glyphs] : single) {
+      auto s = make_shared<Lookup::Substitution>();
+      auto g = getGlyphByName(string(1, code));
+      s->input.push_back(g);
+      ranges::copy(glyphs, back_inserter(s->output));
+      singleLookup->substitutions.push_back(s);
+    }
+
+    auto ligatureLookup = getLookupByName("mdc001");
+    ligatureLookup->base = Lookup::ProcessBase{};
+    ligatureLookup->marks = Lookup::ProcessMarks(Lookup::ProcessMarks::All{});
+    for (auto const &[code, glyphs] : ligature) {
+      auto s = make_shared<Lookup::Substitution>();
+      for (auto c : code) {
+        auto g = getGlyphByName(string(1, c));
+        s->input.push_back(g);
+      }
+      ranges::copy(glyphs, back_inserter(s->output));
+      ligatureLookup->substitutions.push_back(s);
+    }
+
+    lookups.erase(ranges::remove_if(lookups, [&](auto const &it) { return it.second == singleLookup || it.second == ligatureLookup; }).begin(), lookups.end());
+    lookups.insert(lookups.begin(), make_pair(singleLookup->name, singleLookup));
+    lookups.insert(lookups.begin(), make_pair(ligatureLookup->name, ligatureLookup));
+
+    auto feature = make_shared<Feature>("Ligature", FCC("liga"));
+    feature->lookups.push_back(ligatureLookup);
+    feature->lookups.push_back(singleLookup);
+
+    set<shared_ptr<LangSys>> done;
+    for (auto &script : scripts) {
+      for (auto &langSys : script.second->langSysList) {
+        if (done.count(langSys) == 0) {
+          langSys->features.insert(langSys->features.begin(), feature);
+          done.insert(langSys);
+        }
+      }
+    }
+
+    return Status::Ok();
+  }
+
   Status postprocess() {
+    if (auto st = insertMdCLookup(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
     if (auto st = replaceLookups(); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
@@ -2404,6 +2473,9 @@ public:
             }
 
             gposLangSys->features.push_back(gposFeature);
+            if (langSys->requiredFeature && feature == langSys->requiredFeature) {
+              gposLangSys->requiredFeature = gposFeature;
+            }
           }
 
           if (!gsubLookups.empty()) {
@@ -2422,6 +2494,9 @@ public:
             }
 
             gsubLangSys->features.push_back(gsubFeature);
+            if (langSys->requiredFeature && feature == langSys->requiredFeature) {
+              gsubLangSys->requiredFeature = gsubFeature;
+            }
           }
         }
 
