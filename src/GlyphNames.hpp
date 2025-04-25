@@ -1071,12 +1071,6 @@ private:
     return n.release();
   }
 
-  static std::unordered_map<uint32_t, std::string> const &GetTable() {
-    using namespace std;
-    static unique_ptr<unordered_map<uint32_t, string> const> const sTable(CreateGlyphNameTable());
-    return *sTable;
-  }
-
   static std::unordered_map<std::string, uint32_t> const &GetReverseTable() {
     using namespace std;
     static unique_ptr<unordered_map<string, uint32_t> const> const sTable([]() {
@@ -1090,6 +1084,12 @@ private:
   }
 
 public:
+  static std::unordered_map<uint32_t, std::string> const &GetTable() {
+    using namespace std;
+    static unique_ptr<unordered_map<uint32_t, string> const> const sTable(CreateGlyphNameTable());
+    return *sTable;
+  }
+
   static std::optional<std::string> GetName(uint32_t codepoint) {
     using namespace std;
     auto const &table = GetTable();
