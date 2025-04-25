@@ -2352,181 +2352,98 @@ public:
     return Status::Ok();
   }
 
-  Status compile(std::optional<size_t> maxNumLookup = std::nullopt) {
+  Status compile() {
     using namespace std;
 
-    if (maxNumLookup) {
-      while (lookups.size() > *maxNumLookup) {
-        lookups.pop_back();
-      }
-    }
-
-    // Create GlyphPositioningTable and GlyphSubstitutionTable
     auto gpos = make_shared<gpos::GlyphPositioningTable>();
     auto gsub = make_shared<gsub::GlyphSubstitutionTable>();
 
-    // Set basic properties
     gpos->majorVersion = 1;
     gpos->minorVersion = 0;
 
     gsub->majorVersion = 1;
     gsub->minorVersion = 0;
 
-    // Convert each Lookup and store in maps for GPOS and GSUB
     struct ConvertedLookups {
       vector<shared_ptr<SubtableCollection::Lookup>> direct;
       vector<shared_ptr<SubtableCollection::Lookup>> indirect;
     };
-    map<shared_ptr<Lookup>, ConvertedLookups> convertedGposLookups;
-    map<shared_ptr<Lookup>, ConvertedLookups> convertedGsubLookups;
+    ConvertedLookups convertedGposLookups;
+    ConvertedLookups convertedGsubLookups;
+    ConvertedLookups convertedGsubVertLookups;
 
     for (auto const &[name, lookup] : lookups) {
-      // Determine if this is a GSUB or GPOS lookup
-      bool isGsubLookup = !lookup->substitutions.empty();
-      bool isGposLookup = lookup->adjustSingle || lookup->attach;
-
-      if (!isGsubLookup && !isGposLookup) {
-        continue; // Skip if neither GSUB nor GPOS
+      bool const isGsub = !lookup->substitutions.empty();
+      bool const isGpos = lookup->adjustSingle || lookup->attach;
+      if (!isGsub && !isGpos) {
+        continue;
       }
-
       vector<shared_ptr<SubtableCollection::Lookup>> converted;
       vector<shared_ptr<SubtableCollection::Lookup>> indirect;
       if (auto st = convertLookup(lookup, converted, indirect); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
-
       if (converted.empty()) {
-        continue; // Skip if conversion failed
+        continue;
       }
-
-      // Store in appropriate map
-      if (isGsubLookup) {
-        ranges::copy(converted, back_inserter(convertedGsubLookups[lookup].direct));
-        ranges::copy(indirect, back_inserter(convertedGsubLookups[lookup].indirect));
-
-        ranges::copy(converted, back_inserter(gsub->lookups));
-        ranges::copy(indirect, back_inserter(gsub->lookups));
-      } else {
-        ranges::copy(converted, back_inserter(convertedGposLookups[lookup].direct));
-        ranges::copy(indirect, back_inserter(convertedGposLookups[lookup].indirect));
-
-        ranges::copy(converted, back_inserter(gpos->lookups));
-        ranges::copy(indirect, back_inserter(gpos->lookups));
+      if (isGsub) {
+        if (name.starts_with("rt") || name.starts_with("vr") || name.starts_with("s1")) {
+          ranges::copy(converted, back_inserter(convertedGsubVertLookups.direct));
+          ranges::copy(indirect, back_inserter(convertedGsubVertLookups.indirect));
+        } else {
+          ranges::copy(converted, back_inserter(convertedGsubLookups.direct));
+          ranges::copy(indirect, back_inserter(convertedGsubLookups.indirect));
+        }
+      } else if (isGpos) {
+        ranges::copy(converted, back_inserter(convertedGposLookups.direct));
+        ranges::copy(indirect, back_inserter(convertedGposLookups.indirect));
       }
     }
 
-    // Map for GPOS table features (to avoid duplicates)
-    map<Tag, shared_ptr<SubtableCollection::Feature>> gposFeatureMap;
+    SubtableCollection::Script gposScript;
+    gposScript.tag = FCC("DFLT");
+    auto gposLangSys = make_shared<SubtableCollection::LangSys>();
+    auto gposFeature = make_shared<SubtableCollection::Feature>();
+    gposFeature->tag = FCC("mark");
+    auto gposFeatureData = make_shared<SubtableCollection::FeatureData>();
+    gposFeature->data = gposFeatureData;
+    ranges::copy(convertedGposLookups.direct, back_inserter(gposFeatureData->lookups));
+    ranges::copy(convertedGposLookups.direct, back_inserter(gpos->lookups));
+    ranges::copy(convertedGposLookups.indirect, back_inserter(gpos->lookups));
+    gpos->features.push_back(gposFeature);
+    gposLangSys->features.push_back(gposFeature);
+    gposLangSys->requiredFeature = gposFeature;
+    gposScript.defaultLangSys = gposLangSys;
+    gpos->scripts.push_back(gposScript);
 
-    // Map for GSUB table features (to avoid duplicates)
-    map<Tag, shared_ptr<SubtableCollection::Feature>> gsubFeatureMap;
+    SubtableCollection::Script gsubScript;
+    gsubScript.tag = FCC("DFLT");
+    auto gsubLangSys = make_shared<SubtableCollection::LangSys>();
 
-    // Build tables from scripts
-    for (auto const &[scriptName, script] : scripts) {
-      // Create script for GPOS
-      SubtableCollection::Script gposScript;
-      gposScript.tag = script->tag;
+    auto gsubFeature = make_shared<SubtableCollection::Feature>();
+    gsubFeature->tag = FCC("liga");
+    auto gsubFeatureData = make_shared<SubtableCollection::FeatureData>();
+    gsubFeature->data = gsubFeatureData;
+    ranges::copy(convertedGsubLookups.direct, back_inserter(gsubFeatureData->lookups));
+    ranges::copy(convertedGsubLookups.direct, back_inserter(gsub->lookups));
 
-      // Create script for GSUB
-      SubtableCollection::Script gsubScript;
-      gsubScript.tag = script->tag;
+    auto gsubVertFeature = make_shared<SubtableCollection::Feature>();
+    gsubVertFeature->tag = FCC("vrt2");
+    auto gsubVertFeatureData = make_shared<SubtableCollection::FeatureData>();
+    gsubVertFeature->data = gsubVertFeatureData;
+    ranges::copy(convertedGsubVertLookups.direct, back_inserter(gsubVertFeatureData->lookups));
+    ranges::copy(convertedGsubVertLookups.direct, back_inserter(gsub->lookups));
 
-      // Process each LangSys
-      for (auto const &langSys : script->langSysList) {
-        auto gposLangSys = make_shared<SubtableCollection::LangSys>();
-        auto gsubLangSys = make_shared<SubtableCollection::LangSys>();
+    ranges::copy(convertedGsubLookups.indirect, back_inserter(gsub->lookups));
+    ranges::copy(convertedGsubVertLookups.indirect, back_inserter(gsub->lookups));
 
-        // Process each Feature
-        for (auto const &feature : langSys->features) {
-          vector<shared_ptr<SubtableCollection::Lookup>> gposLookups;
-          vector<shared_ptr<SubtableCollection::Lookup>> gsubLookups;
-
-          // Process each Lookup
-          for (auto const &lookup : feature->lookups) {
-            // Add to GPOS if it's a GPOS lookup
-            if (auto it = convertedGposLookups.find(lookup); it != convertedGposLookups.end()) {
-              auto converted = it->second;
-              ranges::copy(converted.direct, back_inserter(gposLookups));
-            }
-
-            // Add to GSUB if it's a GSUB lookup
-            if (auto it = convertedGsubLookups.find(lookup); it != convertedGsubLookups.end()) {
-              auto converted = it->second;
-              ranges::copy(converted.direct, back_inserter(gsubLookups));
-            }
-          }
-
-          // Add features to LangSys if they have lookups
-          if (!gposLookups.empty()) {
-            shared_ptr<SubtableCollection::Feature> gposFeature;
-
-            if (auto it = gposFeatureMap.find(feature->tag); it != gposFeatureMap.end()) {
-              gposFeature = it->second;
-            } else {
-              gposFeature = make_shared<SubtableCollection::Feature>();
-              gposFeature->tag = feature->tag;
-              auto featureData = make_shared<SubtableCollection::FeatureData>();
-              ranges::copy(gposLookups, back_inserter(featureData->lookups));
-              gposFeature->data = featureData;
-              gposFeatureMap[feature->tag] = gposFeature;
-              gpos->features.push_back(gposFeature);
-            }
-
-            gposLangSys->features.push_back(gposFeature);
-            if (langSys->requiredFeature && feature == langSys->requiredFeature) {
-              gposLangSys->requiredFeature = gposFeature;
-            }
-          }
-
-          if (!gsubLookups.empty()) {
-            shared_ptr<SubtableCollection::Feature> gsubFeature;
-
-            if (auto it = gsubFeatureMap.find(feature->tag); it != gsubFeatureMap.end()) {
-              gsubFeature = it->second;
-            } else {
-              gsubFeature = make_shared<SubtableCollection::Feature>();
-              gsubFeature->tag = feature->tag;
-              auto featureData = make_shared<SubtableCollection::FeatureData>();
-              ranges::copy(gsubLookups, back_inserter(featureData->lookups));
-              gsubFeature->data = featureData;
-              gsubFeatureMap[feature->tag] = gsubFeature;
-              gsub->features.push_back(gsubFeature);
-            }
-
-            gsubLangSys->features.push_back(gsubFeature);
-            if (langSys->requiredFeature && feature == langSys->requiredFeature) {
-              gsubLangSys->requiredFeature = gsubFeature;
-            }
-          }
-        }
-
-        // Add LangSys to Script if it has features
-        if (!gposLangSys->features.empty()) {
-          if (langSys->tag == FCC("dflt")) {
-            gposScript.defaultLangSys = gposLangSys;
-          } else {
-            gposScript.langSysTable.push_back(make_pair(langSys->tag, gposLangSys));
-          }
-        }
-
-        if (!gsubLangSys->features.empty()) {
-          if (langSys->tag == FCC("dflt")) {
-            gsubScript.defaultLangSys = gsubLangSys;
-          } else {
-            gsubScript.langSysTable.push_back(make_pair(langSys->tag, gsubLangSys));
-          }
-        }
-      }
-
-      // Add Script to table if it has LangSys
-      if (gposScript.defaultLangSys || !gposScript.langSysTable.empty()) {
-        gpos->scripts.push_back(gposScript);
-      }
-
-      if (gsubScript.defaultLangSys || !gsubScript.langSysTable.empty()) {
-        gsub->scripts.push_back(gsubScript);
-      }
-    }
+    gsub->features.push_back(gsubFeature);
+    gsub->features.push_back(gsubVertFeature);
+    gsubLangSys->features.push_back(gsubFeature);
+    gsubLangSys->features.push_back(gsubVertFeature);
+    gsubLangSys->requiredFeature = gsubFeature;
+    gsubScript.defaultLangSys = gsubLangSys;
+    gsub->scripts.push_back(gsubScript);
 
     if (auto st = ReorderLookups(*gpos); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
@@ -2543,26 +2460,6 @@ public:
 
   static Status ReorderLookups(SubtableCollection &collection) {
     using namespace std;
-    using LookupPtr = shared_ptr<SubtableCollection::Lookup>;
-
-    set<LookupPtr> directLookups;
-    for (auto const &feature : collection.features) {
-      for (auto const &lookup : feature->data->lookups) {
-        directLookups.insert(lookup);
-      }
-    }
-    vector<LookupPtr> direct;
-    vector<LookupPtr> indirect;
-    for (auto const &lookup : collection.lookups) {
-      if (directLookups.find(lookup) == directLookups.end()) {
-        indirect.push_back(lookup);
-      } else {
-        direct.push_back(lookup);
-      }
-    }
-    collection.lookups.clear();
-    ranges::copy(direct, back_inserter(collection.lookups));
-    ranges::copy(indirect, back_inserter(collection.lookups));
 
     for (auto const &lookup : collection.lookups) {
       for (auto const &subtable : lookup->data->subtables) {
