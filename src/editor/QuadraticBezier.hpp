@@ -43,6 +43,31 @@ public:
         lower2.rotatedCCW90().translated(center.x, center.y)};
   }
 
+  static std::array<QuadraticBezier, 4> RightCartouche(Vec<int16_t> center, int16_t height, int16_t width) {
+    using namespace std;
+    float a = height / 2.0f;
+    float b = width;
+    float c = a * (2 - sqrt(3.0f));
+    float d = b / sqrt(3.0f);
+    QuadraticBezier upper1(NewVec(-a, 0),
+                           NewVec(-a, d),
+                           NewVec(-a / 2, sqrt(3.0f) / 2 * b));
+    QuadraticBezier upper2(NewVec(-a / 2, sqrt(3.0f) / 2 * b),
+                           NewVec(-c, b),
+                           NewVec(0, b));
+    QuadraticBezier lower1(NewVec(0, b),
+                           NewVec(c, b),
+                           NewVec(a / 2, sqrt(3.0f) / 2 * b));
+    QuadraticBezier lower2(NewVec(a / 2, sqrt(3.0f) / 2 * b),
+                           NewVec(a, d),
+                           NewVec(a, 0));
+    return {
+        upper1.rotatedCW90().translated(center.x, center.y),
+        upper2.rotatedCW90().translated(center.x, center.y),
+        lower1.rotatedCW90().translated(center.x, center.y),
+        lower2.rotatedCW90().translated(center.x, center.y)};
+  }
+
 private:
   static Vec<int16_t> NewVec(float x, float y) {
     return Vec<int16_t>((int16_t)round(x), (int16_t)round(y));
