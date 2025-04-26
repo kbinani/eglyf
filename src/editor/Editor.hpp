@@ -1337,6 +1337,10 @@ public:
       auto const &name = it.first;
       auto const &sv = it.second;
 
+      if (name == "O33a") {
+        continue;
+      }
+
       auto s = make_shared<Lookup::Substitution>();
       s->input.push_back(sv.base);
       auto et = getGlyphByName(format("et{0}{1}", sv.hGrids, sv.vGrids));
@@ -2135,6 +2139,10 @@ public:
       int16_t const dy = vfu * vhu;
       for (auto &it : a1->second->glyphs) {
         it.second = Vec<optional<int16_t>>(sb, dy);
+      }
+      for (auto const &name : {"O33aeL"}) {
+        auto glyph = getGlyphByName(name);
+        a1->second->glyphs[glyph] = Vec<optional<int16_t>>(sb, dy);
       }
     }
     if (auto r1 = anchors.find("r1"); r1 != anchors.end()) {

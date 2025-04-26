@@ -13,7 +13,8 @@ public:
     using Class = gdef::GlyphDefinitionTable::Class;
     using GlyphRecord = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord;
 
-    int16_t lineWidth = max(1, min(chu * hfu, vhu * vfu) / 32);
+    int16_t scale = min(chu * hfu, vhu * vfu);
+    int16_t lineWidth = max(1, scale / 32);
     int16_t vSpace = lineWidth;
     int16_t top = base + vfu * vhu + vSpace + lineWidth;
     int16_t bottom = base - vSpace - lineWidth;
@@ -21,6 +22,7 @@ public:
     int16_t width = height * 5 / 16;
     int16_t jointLength = max(1, lineWidth / 2);
     int16_t approachLength = lineWidth / 2;
+    int16_t sideBearing = 2 * lineWidth;
 
     auto &outlines = font.outlines;
     if (!holds_alternative<FontFile::TrueTypeOutlines>(outlines)) {
@@ -30,7 +32,6 @@ public:
 
     {
       // cbL
-      int16_t sideBearing = 2 * lineWidth;
       auto [out1, out2, out3, out4] = QuadraticBezier::LeftCartouche(Vec<int16_t>(sideBearing + width, bottom + height / 2), height, width);
       auto [in4, in3, in2, in1] = QuadraticBezier::LeftCartouche(Vec<int16_t>(sideBearing + width, bottom + height / 2), height - 2 * lineWidth, width - lineWidth);
       Contour c;
@@ -176,6 +177,138 @@ public:
     }();
     if (!st.ok()) {
       return EGLYF_STATUS_PUSH(st);
+    }
+    {
+      // hwtbL
+      int16_t w = hfu;
+      int16_t advanceWidth = sideBearing + w;
+      Contour c;
+      c.points.emplace_back(sideBearing, top);
+      c.points.emplace_back(sideBearing + w + jointLength, top);
+      c.points.emplace_back(sideBearing + w + jointLength, top - lineWidth);
+      c.points.emplace_back(sideBearing + lineWidth, top - lineWidth);
+      c.points.emplace_back(sideBearing + lineWidth, bottom + lineWidth);
+      c.points.emplace_back(sideBearing + w + jointLength, bottom + lineWidth);
+      c.points.emplace_back(sideBearing + w + jointLength, bottom);
+      c.points.emplace_back(sideBearing, bottom);
+      auto gid = font.addSimpleGlyph("hwtbL", Class::Base, {c}, advanceWidth, sideBearing);
+      if (!gid) {
+        return EGLYF_STATUS_PUSH(gid.status());
+      }
+    }
+    {
+      // O33aeL
+      int16_t h1 = (int16_t)round(scale * 0.093333f);
+      int16_t h2 = (int16_t)round(scale * 0.089118f);
+      int16_t h3 = (int16_t)round(scale * 0.483114f);
+      int16_t vBase = (int16_t)floor((height - lineWidth * 7) / 6.0f);
+      int16_t remainingV = height - lineWidth * 7 - vBase * 6;
+      array<int16_t, 6> v;
+      ranges::fill(v, vBase);
+      while (remainingV > 0) {
+        for (size_t i = 0; i < v.size() && remainingV > 0; i++) {
+          v[i] += 1;
+          remainingV--;
+        }
+      }
+      array<int16_t, 10> x;
+      array<int16_t, 14> y;
+      x[0] = -jointLength;
+      x[1] = 0;
+      x[2] = x[1] + lineWidth;
+      x[3] = x[2] + h1;
+      x[4] = x[3] + lineWidth;
+      x[5] = x[4] + h2;
+      x[6] = x[5] + lineWidth;
+      x[7] = x[6] + h2;
+      x[8] = x[7] + lineWidth;
+      x[9] = x[8] + h3;
+      y[0] = top;
+      y[1] = y[0] - lineWidth;
+      y[2] = y[1] - v[0];
+      y[3] = y[2] - lineWidth;
+      y[4] = y[3] - v[1];
+      y[5] = y[4] - lineWidth;
+      y[6] = y[5] - v[2];
+      y[7] = y[6] - lineWidth;
+      y[8] = y[7] - v[3];
+      y[9] = y[8] - lineWidth;
+      y[10] = y[9] - v[4];
+      y[11] = y[10] - lineWidth;
+      y[12] = y[11] - v[5];
+      y[13] = y[12] - lineWidth;
+      Contour c0;
+      c0.points.emplace_back(x[0], y[0]);
+      c0.points.emplace_back(x[9], y[0]);
+      c0.points.emplace_back(x[9], y[1]);
+      c0.points.emplace_back(x[8], y[1]);
+      c0.points.emplace_back(x[8], y[2]);
+      c0.points.emplace_back(x[9], y[2]);
+      c0.points.emplace_back(x[9], y[3]);
+      c0.points.emplace_back(x[8], y[3]);
+      c0.points.emplace_back(x[8], y[4]);
+      c0.points.emplace_back(x[9], y[4]);
+      c0.points.emplace_back(x[9], y[5]);
+      c0.points.emplace_back(x[8], y[5]);
+      c0.points.emplace_back(x[8], y[6]);
+      c0.points.emplace_back(x[9], y[6]);
+      c0.points.emplace_back(x[9], y[7]);
+      c0.points.emplace_back(x[8], y[7]);
+      c0.points.emplace_back(x[8], y[8]);
+      c0.points.emplace_back(x[9], y[8]);
+      c0.points.emplace_back(x[9], y[9]);
+      c0.points.emplace_back(x[8], y[9]);
+      c0.points.emplace_back(x[8], y[10]);
+      c0.points.emplace_back(x[9], y[10]);
+      c0.points.emplace_back(x[9], y[11]);
+      c0.points.emplace_back(x[8], y[11]);
+      c0.points.emplace_back(x[8], y[12]);
+      c0.points.emplace_back(x[9], y[12]);
+      c0.points.emplace_back(x[9], y[13]);
+      c0.points.emplace_back(x[0], y[13]);
+      c0.points.emplace_back(x[0], y[12]);
+      c0.points.emplace_back(x[1], y[12]);
+      c0.points.emplace_back(x[1], y[1]);
+      c0.points.emplace_back(x[0], y[1]);
+      Contour c1;
+      c1.points.emplace_back(x[3], y[12]);
+      c1.points.emplace_back(x[3], y[1]);
+      c1.points.emplace_back(x[2], y[1]);
+      c1.points.emplace_back(x[2], y[12]);
+      Contour c2;
+      c2.points.emplace_back(x[4], y[4]);
+      c2.points.emplace_back(x[5], y[4]);
+      c2.points.emplace_back(x[5], y[1]);
+      c2.points.emplace_back(x[4], y[1]);
+      Contour c3;
+      c3.points.emplace_back(x[6], y[4]);
+      c3.points.emplace_back(x[7], y[4]);
+      c3.points.emplace_back(x[7], y[1]);
+      c3.points.emplace_back(x[6], y[1]);
+      Contour c4;
+      c4.points.emplace_back(x[4], y[8]);
+      c4.points.emplace_back(x[5], y[8]);
+      c4.points.emplace_back(x[5], y[5]);
+      c4.points.emplace_back(x[4], y[5]);
+      Contour c5;
+      c5.points.emplace_back(x[6], y[8]);
+      c5.points.emplace_back(x[7], y[8]);
+      c5.points.emplace_back(x[7], y[5]);
+      c5.points.emplace_back(x[6], y[5]);
+      Contour c6;
+      c6.points.emplace_back(x[4], y[12]);
+      c6.points.emplace_back(x[5], y[12]);
+      c6.points.emplace_back(x[5], y[9]);
+      c6.points.emplace_back(x[4], y[9]);
+      Contour c7;
+      c7.points.emplace_back(x[7], y[12]);
+      c7.points.emplace_back(x[7], y[9]);
+      c7.points.emplace_back(x[6], y[9]);
+      c7.points.emplace_back(x[6], y[12]);
+      auto gid = font.addSimpleGlyph("O33aeL", Class::Base, {c0, c1, c2, c3, c4, c5, c6, c7}, x[9] + sideBearing, -jointLength);
+      if (!gid) {
+        return EGLYF_STATUS_PUSH(gid.status());
+      }
     }
     for (int s = 1; s <= hhu; s++) {
       auto name = format("QC{}", s);
