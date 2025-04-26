@@ -1186,6 +1186,9 @@ public:
     if (auto st = PlaceholderGlyph::Create(*font, base, hfu, sb, chu, vfu, vhu); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
+    if (auto st = CartoucheGlyph::Create(*font, base, hfu, sb, chu, vfu, vhu); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
 
     auto glyphsSet1 = getGroupByName("glyphs_set1");
 
@@ -2002,6 +2005,8 @@ public:
     codes["*"] = "hj";
     codes["("] = "ss";
     codes[")"] = "se";
+    codes["<"] = "cb";
+    codes[">"] = "ce";
 
     map<char, shared_ptr<Glyph>> single;
     map<size_t, map<string, shared_ptr<Glyph>>> ligature;

@@ -98,6 +98,8 @@ list(APPEND src_files
   src/Unicode.hpp
   src/table/g/pos/Attachment.hpp
   src/editor/PlaceholderGlyph.hpp
+  src/editor/QuadraticBezier.hpp
+  src/editor/CartoucheGlyph.hpp
 )
 
 juce_add_binary_data(eglyf-binary-data

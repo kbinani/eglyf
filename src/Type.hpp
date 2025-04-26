@@ -85,6 +85,18 @@ struct Vec {
     T y = scale01 * this->x + yscale * this->y + dy;
     return Vec<T>(x, y);
   }
+
+  Vec<T> rotatedCCW90() const {
+    return Vec<T>(-y, x);
+  }
+
+  Vec<T> rotatedCW90() const {
+    return Vec<T>(y, -x);
+  }
+
+  Vec<T> translated(T dx, T dy) const {
+    return Vec<T>(x + dx, y + dy);
+  }
 };
 
 template <class T>
