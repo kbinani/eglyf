@@ -2005,8 +2005,15 @@ public:
     codes["*"] = "hj";
     codes["("] = "ss";
     codes[")"] = "se";
-    codes["<"] = "cb";
-    codes[">"] = "ce";
+    codes["<"] = ".cb";
+    codes[">"] = ".ce";
+
+    if (auto gid = font->addEmptyGlyph(".cb", gdef::GlyphDefinitionTable::Class::Mark, 0, 0); !gid) {
+      return EGLYF_STATUS_PUSH(gid.status());
+    }
+    if (auto gid = font->addEmptyGlyph(".ce", gdef::GlyphDefinitionTable::Class::Mark, 0, 0); !gid) {
+      return EGLYF_STATUS_PUSH(gid.status());
+    }
 
     map<char, shared_ptr<Glyph>> single;
     map<size_t, map<string, shared_ptr<Glyph>>> ligature;
@@ -2019,6 +2026,24 @@ public:
         ligature[code.size()][code] = glyph;
         ligature[code.size() + 1][code + " "] = glyph;
       }
+    }
+
+    auto multipleLookup = getLookupByName("mdc003");
+    multipleLookup->base = Lookup::ProcessBase{};
+    multipleLookup->marks = Lookup::ProcessMarks(Lookup::ProcessMarks::All{});
+    {
+      auto s = make_shared<Lookup::Substitution>();
+      s->input.push_back(getGlyphByName(".cb"));
+      s->output.push_back(getGlyphByName("cb"));
+      s->output.push_back(getGlyphByName("esb"));
+      multipleLookup->substitutions.push_back(s);
+    }
+    {
+      auto s = make_shared<Lookup::Substitution>();
+      s->input.push_back(getGlyphByName(".ce"));
+      s->output.push_back(getGlyphByName("ese"));
+      s->output.push_back(getGlyphByName("ce"));
+      multipleLookup->substitutions.push_back(s);
     }
 
     auto singleLookup = getLookupByName("mdc002");
@@ -2062,11 +2087,13 @@ public:
       }
     }
 
-    lookups.erase(ranges::remove_if(lookups, [&](auto const &it) { return it.second == singleLookup || it.second == ligatureLookup; }).begin(), lookups.end());
+    lookups.erase(ranges::remove_if(lookups, [&](auto const &it) { return it.second == singleLookup || it.second == ligatureLookup || it.second == multipleLookup; }).begin(), lookups.end());
+    lookups.insert(lookups.begin(), make_pair(multipleLookup->name, multipleLookup));
     lookups.insert(lookups.begin(), make_pair(singleLookup->name, singleLookup));
     lookups.insert(lookups.begin(), make_pair(ligatureLookup->name, ligatureLookup));
 
     auto feature = make_shared<Feature>("Ligature", FCC("liga"));
+    feature->lookups.push_back(multipleLookup);
     feature->lookups.push_back(ligatureLookup);
     feature->lookups.push_back(singleLookup);
 
