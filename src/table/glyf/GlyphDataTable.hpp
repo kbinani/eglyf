@@ -377,7 +377,7 @@ public:
       std::optional<std::variant<F2DOT14, Vec<F2DOT14>>> scale;
       std::optional<Vec<F2DOT14>> scale2;
 
-      static GlyphRecord New(uint16_t glyphIndex, int16_t dx, int16_t dy, std::optional<std::variant<float, Vec<float>>> scale = std::nullopt) {
+      static GlyphRecord New(uint16_t glyphIndex, int16_t dx = 0, int16_t dy = 0, std::optional<std::variant<float, Vec<float>>> scale = std::nullopt) {
         GlyphRecord r;
         r.glyphIndex = glyphIndex;
         r.flags = ARGS_ARE_XY_VALUES | ARG_1_AND_2_ARE_WORDS;
