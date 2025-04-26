@@ -312,7 +312,7 @@ public:
     }
     for (int s = 1; s <= hhu; s++) {
       auto name = format("QC{}", s);
-      int16_t w = s * hfu;
+      int16_t w = sb + s * hfu + sb;
       Contour c0;
       c0.points.emplace_back(-jointLength, top);
       c0.points.emplace_back(w + jointLength, top);
