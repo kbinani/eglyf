@@ -88,6 +88,7 @@
 #include "FontFile.hpp"
 #include "GlyphNames.hpp"
 #include "editor/PlaceholderGlyph.hpp"
+#include "editor/QuadraticEquation.hpp"
 #include "editor/QuadraticBezier.hpp"
 #include "editor/CartoucheGlyph.hpp"
 #include "editor/Editor.hpp"

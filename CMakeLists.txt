@@ -100,6 +100,7 @@ list(APPEND src_files
   src/editor/PlaceholderGlyph.hpp
   src/editor/QuadraticBezier.hpp
   src/editor/CartoucheGlyph.hpp
+  src/editor/QuadraticEquation.hpp
 )
 
 juce_add_binary_data(eglyf-binary-data
