@@ -2009,8 +2009,20 @@ public:
     mapping["*"] = {"hj"};
     mapping["("] = {"ss"};
     mapping[")"] = {"se"};
-    mapping["<"] = {"cb", "ese"};
+    mapping["<"] = {"cb", "esb"};
+    mapping["<1"] = {"cb", "esb"};
+    mapping["<2"] = {"crb", "esb"};
     mapping[">"] = {"ese", "ce"};
+    mapping["2>"] = {"ese", "ce"};
+    mapping["1>"] = {"ese", "cre"};
+    mapping["<h1"] = {"hwtb", "esb"};
+    mapping["<h2"] = {"hwtbb", "esb"};
+    mapping["<h3"] = {"hwttb", "esb"};
+    mapping["h1>"] = {"ese", "hwte"};
+    mapping["h2>"] = {"ese", "hwtbe"};
+    mapping["h3>"] = {"ese", "hwtte"};
+    mapping["<s1"] = {"hwtb", "esb"};
+    mapping["s2>"] = {"ese", "O33a"};
 
     map<string, string> codes;
     map<string, vector<string>> multiple;

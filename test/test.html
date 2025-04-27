@@ -23,6 +23,10 @@
   font-size: 60px;
   font-family: 'TestFont';
 }
+.mdc {
+  font-size: 60px;
+  font-family: 'TestFont';
+}
 </style>
 </head>
 <body>
@@ -53,27 +57,29 @@
     ["test", `${hwtb}${esb}&#x130d2;&#x13430;&#x130a1;&#x13338;&#x13066;${ese}${O33a}`],
     ["test", `${hwtb}${esb}&#x130d2;&#x13430;&#x130a1;&#x13338;&#x13066;${cb}${esb}&#x131f3;&#x131cb;&#x133e0;&#x13430;&#x13216;&#x13430;&#x13218;&#x1311f;&#x132f4;&#x132f4;${ese}${ce}${ese}${O33a}`],
     ["test", `${hwtb}${esb}${A1}${cb}${esb}${A1}${ese}${ce}${ese}${O33a}`],
-    ["test", `${hwtb}${esb}${A1}${ese}${O33a}`],
-    ["test", `${hwtb}${esb}${A1}${hwtb}${esb}${A1}${ese}${O33a}${ese}${O33a}`],
-    ["test", `${cb}${esb}${A1}${cb}${esb}${A1}${ese}${ce}${ese}${ce}`],
-    ["test", `${crb}${esb}${A1}${crb}${esb}${A1}${ese}${cre}${ese}${cre}`],
+    ["test", `${hwtb}${esb}${A1}${ese}${O33a}`, "<s1 A1 s2>"],
+    ["test", `${hwtb}${esb}${A1}${hwtb}${esb}${A1}${ese}${O33a}${ese}${O33a}`, "<s1 A1 <s1 A1 s2> s2>"],
+    ["test", `${cb}${esb}${A1}${cb}${esb}${A1}${ese}${ce}${ese}${ce}`, "<1 A1 < A1 2> >"],
+    ["test", `${crb}${esb}${A1}${crb}${esb}${A1}${ese}${cre}${ese}${cre}`, "<2 A1 <2 A1 1> 1>"],
     ["", `${hwtbb}${esb}${A1}${ese}${hwte}`],
     ["", `${hwttb}${esb}${A1}${ese}${hwtte}`],
     ["", `${hwttb}${esb}${A1}${ese}${hwtbe}`],
-    ["", `${hwttb}${esb}${A1}${hwttb}${esb}${A1}${ese}${hwte}${ese}${hwte}`],
-    ["", `${hwtbb}${esb}${A1}${hwtbb}${esb}${A1}${ese}${hwtbe}${ese}${hwtbe}`],
-    ["", `${hwttb}${esb}${A1}${hwttb}${esb}${A1}${ese}${hwtte}${ese}${hwtte}`],
+    ["", `${hwttb}${esb}${A1}${hwttb}${esb}${A1}${ese}${hwte}${ese}${hwte}`, "<h3 A1 <h3 A1 h1> h1>"],
+    ["", `${hwtbb}${esb}${A1}${hwtbb}${esb}${A1}${ese}${hwtbe}${ese}${hwtbe}`, "<h2 A1 <h2 A1 h2> h2>"],
+    ["", `${hwttb}${esb}${A1}${hwttb}${esb}${A1}${ese}${hwtte}${ese}${hwtte}`, "<h3 A1 <h3 A1 h3> h3>"],
   ];
   const table = document.getElementById("table");
   const makeTd = (content, klass) => {
     const td = document.createElement("td");
     const div = document.createElement("div");
-    div.innerHTML = content.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+    if (typeof content === "string") {
+      div.innerHTML = content.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+    }
     div.classList.add(klass);
     td.appendChild(div);
     return td;
   };
-  for (const [label, hieroglyph] of data) {
+  for (const [label, hieroglyph, mdc] of data) {
     const tr = document.createElement("tr");
 
     const title = document.createElement("td");
@@ -85,6 +91,9 @@
 
     const test = makeTd(hieroglyph, "test");
     tr.appendChild(test);
+
+    const m = makeTd(mdc, "mdc");
+    tr.appendChild(m);
 
     table.appendChild(tr);
   }
