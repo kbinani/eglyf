@@ -375,9 +375,37 @@ public:
       c.points.emplace_back(sideBearing + w + jointLength, bottom + lineWidth);
       c.points.emplace_back(sideBearing + w + jointLength, bottom);
       c.points.emplace_back(sideBearing, bottom);
-      auto gid = font.addSimpleGlyph("hwtbL", Class::Base, {c}, advanceWidth, sideBearing);
-      if (!gid) {
-        return EGLYF_STATUS_PUSH(gid.status());
+      auto hwtbL = font.addSimpleGlyph("hwtbL", Class::Base, {c}, advanceWidth, sideBearing);
+      if (!hwtbL) {
+        return EGLYF_STATUS_PUSH(hwtbL.status());
+      }
+
+      auto hwtbR = font.addCompositeGlyph("hwtbR", Class::Base, GlyphRecord::New(*hwtbL, w, 0, Vec<float>(-1, 1)), w, -jointLength);
+      if (!hwtbR) {
+        return EGLYF_STATUS_PUSH(hwtbR.status());
+      }
+    }
+    {
+      // hwtobL
+      int16_t w = hfu;
+      int16_t advanceWidth = sideBearing + w;
+      Contour c;
+      c.points.emplace_back(sideBearing, otop);
+      c.points.emplace_back(sideBearing + w + jointLength, otop);
+      c.points.emplace_back(sideBearing + w + jointLength, otop - lineWidth);
+      c.points.emplace_back(sideBearing + lineWidth, otop - lineWidth);
+      c.points.emplace_back(sideBearing + lineWidth, obottom + lineWidth);
+      c.points.emplace_back(sideBearing + w + jointLength, obottom + lineWidth);
+      c.points.emplace_back(sideBearing + w + jointLength, obottom);
+      c.points.emplace_back(sideBearing, obottom);
+      auto hwtobL = font.addSimpleGlyph("hwtobL", Class::Base, {c}, advanceWidth, sideBearing);
+      if (!hwtobL) {
+        return EGLYF_STATUS_PUSH(hwtobL.status());
+      }
+
+      auto hwtobR = font.addCompositeGlyph("hwtobR", Class::Base, GlyphRecord::New(*hwtobL, w, 0, Vec<float>(-1, 1)), w, -jointLength);
+      if (!hwtobR) {
+        return EGLYF_STATUS_PUSH(hwtobR.status());
       }
     }
     if (auto st = Create_O33aeL(font, p, top, height); !st.ok()) {
