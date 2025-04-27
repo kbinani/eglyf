@@ -447,9 +447,11 @@ public:
         return EGLYF_STATUS_PUSH(hwtobL.status());
       }
 
-      auto hwtobR = font.addCompositeGlyph("hwtobR", Class::Base, GlyphRecord::New(*hwtobL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
-      if (!hwtobR) {
-        return EGLYF_STATUS_PUSH(hwtobR.status());
+      for (auto const &n : {"hwtobR", "hwtoeL"}) {
+        auto gid = font.addCompositeGlyph(n, Class::Base, GlyphRecord::New(*hwtobL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
+        if (!gid) {
+          return EGLYF_STATUS_PUSH(gid.status());
+        }
       }
     }
     {
@@ -524,6 +526,71 @@ public:
       auto hwtdeL = font.addCompositeGlyph("hwtdeL", Class::Base, GlyphRecord::New(*hwtdbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
       if (!hwtdeL) {
         return EGLYF_STATUS_PUSH(hwtdeL.status());
+      }
+    }
+    {
+      vector<Contour> contours;
+      int16_t advanceWidth;
+      int16_t advanceHeight;
+      CreateContour_hwttb(p, otop, oheight, contours, advanceWidth, advanceHeight);
+      auto hwtotbL = font.addSimpleGlyph("hwtotbL", Class::Base, contours, advanceWidth, p.sideBearing);
+      if (!hwtotbL) {
+        return EGLYF_STATUS_PUSH(hwtotbL.status());
+      }
+      for (auto const &n : {"hwtotbR", "hwtoteL"}) {
+        auto gid = font.addCompositeGlyph(n, Class::Base, GlyphRecord::New(*hwtotbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -p.jointLength);
+        if (!gid) {
+          return EGLYF_STATUS_PUSH(gid.status());
+        }
+      }
+      auto hwtobbL = font.addCompositeGlyph("hwtobbL", Class::Base, GlyphRecord::New(*hwtotbL, 0, advanceHeight, Vec<float>(1, -1)), advanceWidth, p.sideBearing);
+      if (!hwtobbL) {
+        return EGLYF_STATUS_PUSH(hwtobbL.status());
+      }
+      for (auto const &n : {"hwtobbR", "hwtobeL"}) {
+        auto gid = font.addCompositeGlyph(n, Class::Base, GlyphRecord::New(*hwtobbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -p.jointLength);
+        if (!gid) {
+          return EGLYF_STATUS_PUSH(gid.status());
+        }
+      }
+    }
+    {
+      vector<Contour> contours;
+      int16_t advanceWidth;
+      int16_t advanceHeight;
+      CreateContour_hwttb(p, top, height, contours, advanceWidth, advanceHeight);
+
+      Contour c0;
+      c0.points.emplace_back(-jointLength, otop - lineWidth);
+      c0.points.emplace_back(-jointLength, otop);
+      c0.points.emplace_back(advanceWidth + jointLength, otop);
+      c0.points.emplace_back(advanceWidth + jointLength, otop - lineWidth);
+      contours.push_back(c0);
+
+      Contour c1;
+      c1.points.emplace_back(-jointLength, obottom);
+      c1.points.emplace_back(-jointLength, obottom + lineWidth);
+      c1.points.emplace_back(advanceWidth + jointLength, obottom + lineWidth);
+      c1.points.emplace_back(advanceWidth + jointLength, obottom);
+      contours.push_back(c1);
+
+      auto hwtdtbL = font.addSimpleGlyph("hwtdtbL", Class::Base, contours, advanceWidth, -p.jointLength);
+      if (!hwtdtbL) {
+        return EGLYF_STATUS_PUSH(hwtdtbL.status());
+      }
+      auto hwtdbbL = font.addCompositeGlyph("hwtdbbL", Class::Base, GlyphRecord::New(*hwtdtbL, 0, advanceHeight, Vec<float>(1, -1)), advanceWidth, -p.jointLength);
+      if (!hwtdbbL) {
+        return EGLYF_STATUS_PUSH(hwtdbbL.status());
+      }
+      auto hwtdteL = font.addCompositeGlyph("hwtdteL", Class::Base, GlyphRecord::New(*hwtdtbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -p.jointLength);
+      if (!hwtdteL) {
+        return EGLYF_STATUS_PUSH(hwtdteL.status());
+      }
+      for (auto const &n : {"hwtdbbR", "hwtdbeL"}) {
+        auto gid = font.addCompositeGlyph(n, Class::Base, GlyphRecord::New(*hwtdbbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -p.jointLength);
+        if (!gid) {
+          return EGLYF_STATUS_PUSH(gid.status());
+        }
       }
     }
     {
