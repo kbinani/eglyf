@@ -192,10 +192,9 @@ class CartoucheGlyph {
     return Status::Ok();
   }
 
-  static Status Create_O33aeL(FontFile &font, Param const &p, int16_t top, int16_t height) {
+  static void CreateContour_O33aeL(Param const &p, int16_t top, int16_t height, std::vector<glyf::GlyphDataTable::Contour> &contours, int16_t &advanceWidth) {
     using namespace std;
     using Contour = glyf::GlyphDataTable::Contour;
-    using Class = gdef::GlyphDefinitionTable::Class;
 
     int16_t h1 = (int16_t)round(p.scale * 0.093333f);
     int16_t h2 = (int16_t)round(p.scale * 0.089118f);
@@ -305,11 +304,17 @@ class CartoucheGlyph {
     c7.points.emplace_back(x[7], y[9]);
     c7.points.emplace_back(x[6], y[9]);
     c7.points.emplace_back(x[6], y[12]);
-    auto gid = font.addSimpleGlyph("O33aeL", Class::Base, {c0, c1, c2, c3, c4, c5, c6, c7}, x[9] + p.sideBearing, -p.jointLength);
-    if (!gid) {
-      return EGLYF_STATUS_PUSH(gid.status());
-    }
-    return Status::Ok();
+
+    contours.push_back(c0);
+    contours.push_back(c1);
+    contours.push_back(c2);
+    contours.push_back(c3);
+    contours.push_back(c4);
+    contours.push_back(c5);
+    contours.push_back(c6);
+    contours.push_back(c7);
+
+    advanceWidth = x[9] + p.sideBearing;
   }
 
 public:
@@ -380,7 +385,7 @@ public:
         return EGLYF_STATUS_PUSH(hwtbL.status());
       }
 
-      auto hwtbR = font.addCompositeGlyph("hwtbR", Class::Base, GlyphRecord::New(*hwtbL, w, 0, Vec<float>(-1, 1)), w, -jointLength);
+      auto hwtbR = font.addCompositeGlyph("hwtbR", Class::Base, GlyphRecord::New(*hwtbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
       if (!hwtbR) {
         return EGLYF_STATUS_PUSH(hwtbR.status());
       }
@@ -403,13 +408,110 @@ public:
         return EGLYF_STATUS_PUSH(hwtobL.status());
       }
 
-      auto hwtobR = font.addCompositeGlyph("hwtobR", Class::Base, GlyphRecord::New(*hwtobL, w, 0, Vec<float>(-1, 1)), w, -jointLength);
+      auto hwtobR = font.addCompositeGlyph("hwtobR", Class::Base, GlyphRecord::New(*hwtobL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
       if (!hwtobR) {
         return EGLYF_STATUS_PUSH(hwtobR.status());
       }
     }
-    if (auto st = Create_O33aeL(font, p, top, height); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
+    {
+      // hwtdbL, hwtdbR, hwtdeR, hwtdeL
+      int16_t w = hfu;
+      int16_t advanceWidth = sideBearing + w;
+      Contour c;
+      c.points.emplace_back(sideBearing, top);
+      c.points.emplace_back(sideBearing + w + jointLength, top);
+      c.points.emplace_back(sideBearing + w + jointLength, top - lineWidth);
+      c.points.emplace_back(sideBearing + lineWidth, top - lineWidth);
+      c.points.emplace_back(sideBearing + lineWidth, bottom + lineWidth);
+      c.points.emplace_back(sideBearing + w + jointLength, bottom + lineWidth);
+      c.points.emplace_back(sideBearing + w + jointLength, bottom);
+      c.points.emplace_back(sideBearing, bottom);
+
+      Contour c0;
+      c0.points.emplace_back(-jointLength, otop - lineWidth);
+      c0.points.emplace_back(-jointLength, otop);
+      c0.points.emplace_back(advanceWidth + jointLength, otop);
+      c0.points.emplace_back(advanceWidth + jointLength, otop - lineWidth);
+
+      Contour c1;
+      c1.points.emplace_back(-jointLength, obottom);
+      c1.points.emplace_back(-jointLength, obottom + lineWidth);
+      c1.points.emplace_back(advanceWidth + jointLength, obottom + lineWidth);
+      c1.points.emplace_back(advanceWidth + jointLength, obottom);
+
+      auto hwtdbL = font.addSimpleGlyph("hwtdbL", Class::Base, {c, c0, c1}, advanceWidth, -jointLength);
+      if (!hwtdbL) {
+        return EGLYF_STATUS_PUSH(hwtdbL.status());
+      }
+      auto hwtdbR = font.addCompositeGlyph("hwtdbR", Class::Base, GlyphRecord::New(*hwtdbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
+      if (!hwtdbR) {
+        return EGLYF_STATUS_PUSH(hwtdbR.status());
+      }
+      auto hwtdeR = font.addCompositeGlyph("hwtdeR", Class::Base, GlyphRecord::New(*hwtdbL), advanceWidth, -jointLength);
+      if (!hwtdeR) {
+        return EGLYF_STATUS_PUSH(hwtdeR.status());
+      }
+      auto hwtdeL = font.addCompositeGlyph("hwtdeL", Class::Base, GlyphRecord::New(*hwtdbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
+      if (!hwtdeL) {
+        return EGLYF_STATUS_PUSH(hwtdeL.status());
+      }
+    }
+    {
+      // O33aeL
+      vector<Contour> contours;
+      int16_t advanceWidth;
+      CreateContour_O33aeL(p, top, height, contours, advanceWidth);
+      auto O33aeL = font.addSimpleGlyph("O33aeL", Class::Base, contours, advanceWidth, -p.jointLength);
+      if (!O33aeL) {
+        return EGLYF_STATUS_PUSH(O33aeL.status());
+      }
+      auto O33aeR = font.addCompositeGlyph("O33aeR", Class::Base, GlyphRecord::New(*O33aeL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
+      if (!O33aeR) {
+        return EGLYF_STATUS_PUSH(O33aeR.status());
+      }
+    }
+    {
+      // O33aoeL
+      vector<Contour> contours;
+      int16_t advanceWidth;
+      CreateContour_O33aeL(p, otop, oheight, contours, advanceWidth);
+      auto O33aoeL = font.addSimpleGlyph("O33aoeL", Class::Base, contours, advanceWidth, -p.jointLength);
+      if (!O33aoeL) {
+        return EGLYF_STATUS_PUSH(O33aoeL.status());
+      }
+      auto O33aoeR = font.addCompositeGlyph("O33aoeR", Class::Base, GlyphRecord::New(*O33aoeL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
+      if (!O33aoeR) {
+        return EGLYF_STATUS_PUSH(O33aoeR.status());
+      }
+    }
+    {
+      // O33adeL
+      vector<Contour> contours;
+      int16_t advanceWidth;
+      CreateContour_O33aeL(p, top, height, contours, advanceWidth);
+
+      Contour c0;
+      c0.points.emplace_back(-jointLength, otop - lineWidth);
+      c0.points.emplace_back(-jointLength, otop);
+      c0.points.emplace_back(advanceWidth + jointLength, otop);
+      c0.points.emplace_back(advanceWidth + jointLength, otop - lineWidth);
+      contours.push_back(c0);
+
+      Contour c1;
+      c1.points.emplace_back(-jointLength, obottom);
+      c1.points.emplace_back(-jointLength, obottom + lineWidth);
+      c1.points.emplace_back(advanceWidth + jointLength, obottom + lineWidth);
+      c1.points.emplace_back(advanceWidth + jointLength, obottom);
+      contours.push_back(c1);
+
+      auto O33adeL = font.addSimpleGlyph("O33adeL", Class::Base, contours, advanceWidth, -p.jointLength);
+      if (!O33adeL) {
+        return EGLYF_STATUS_PUSH(O33adeL.status());
+      }
+      auto O33adeR = font.addCompositeGlyph("O33adeR", Class::Base, GlyphRecord::New(*O33adeL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
+      if (!O33adeR) {
+        return EGLYF_STATUS_PUSH(O33adeR.status());
+      }
     }
     for (int s = 1; s <= hhu; s++) {
       auto name = format("QC{}", s);
