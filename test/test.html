@@ -28,18 +28,38 @@
 <body>
 <table border=1 id="table"></table>
 <script type="text/javascript">
+  const cb = "&#x13379;";
+  const esb = "&#x1343c;";
+  const ese = "&#x1343d;";
+  const ce = "&#x1337a;"
+  const A1 = "&#x13000;";
+  const hwtb = "&#x13258;"
+  const O33a = "&#x13282;";
+  const crb = "&#x1342f;";
+  const cre = "&#x1337b;"
+  const hwtbb = "&#x13259;";
+  const hwte = "&#x1325D;"
+  const hwttb = "&#x1325A;";
+  const hwtte = "&#x1325B;";
+  const hwtbe = "&#x1325C;";
   const data = [
-    ["A1", "&#x13000;"],
-    ["A1 vj O1", "&#x13000;&#x13430;&#x13250;"],
+    ["A1", `${A1}`],
+    ["A1 vj O1", `${A1}&#x13430;&#x13250;`],
     ["N35 vj X1", "&#x13216;&#x13430;&#x133cf;"],
-    ["A1 hj B1 vj Z2", "&#x13000;&#x13431;&#x13050;&#x13430;&#x133e5;"],
+    ["A1 hj B1 vj Z2", `${A1}&#x13431;&#x13050;&#x13430;&#x133e5;`],
     ["G39&ra <i mn:n:N36 ra:1 ms s sw>", "𓅭𓇳𓍹𓐼𓇋𓏠𓐰𓈖𓐰𓈘𓇳𓐰𓏤𓄟𓋴𓇓𓐽𓍺"],
     ["a", "𓃒𓐰𓂡𓌸𓁦"],
-    ["test", "&#x13258;&#x1343c;&#x130d2;&#x13430;&#x130a1;&#x1320d;&#x13430;&#x1341d;&#x132c6;&#x1343d;&#x13282;"],
-    ["test", "&#x13258;&#x1343c;&#x130d2;&#x13430;&#x130a1;&#x13338;&#x13066;&#x1343d;&#x13282;"],
-    ["test", "&#x13258;&#x1343c;&#x130d2;&#x13430;&#x130a1;&#x13338;&#x13066;&#x13379;&#x1343c;&#x131f3;&#x131cb;&#x133e0;&#x13430;&#x13216;&#x13430;&#x13218;&#x1311f;&#x132f4;&#x132f4;&#x1343d;&#x1337a;&#x1343d;&#x13282;"],
-    ["test", "&#x13258;&#x1343c;&#x13000;&#x13379;&#x1343c;&#x13000;&#x1343d;&#x1337a;&#x1343d;&#x13282;"],
-    ["test", "&#x13258;&#x1343c;&#x13000;&#x1343d;&#x13282;"],
+    ["test", `${hwtb}${esb}&#x130d2;&#x13430;&#x130a1;&#x1320d;&#x13430;&#x1341d;&#x132c6;${ese}${O33a}`],
+    ["test", `${hwtb}${esb}&#x130d2;&#x13430;&#x130a1;&#x13338;&#x13066;${ese}${O33a}`],
+    ["test", `${hwtb}${esb}&#x130d2;&#x13430;&#x130a1;&#x13338;&#x13066;${cb}${esb}&#x131f3;&#x131cb;&#x133e0;&#x13430;&#x13216;&#x13430;&#x13218;&#x1311f;&#x132f4;&#x132f4;${ese}${ce}${ese}${O33a}`],
+    ["test", `${hwtb}${esb}${A1}${cb}${esb}${A1}${ese}${ce}${ese}${O33a}`],
+    ["test", `${hwtb}${esb}${A1}${ese}${O33a}`],
+    ["test", `${hwtb}${esb}${A1}${hwtb}${esb}${A1}${ese}${O33a}${ese}${O33a}`],
+    ["test", `${cb}${esb}${A1}${cb}${esb}${A1}${ese}${ce}${ese}${ce}`],
+    ["test", `${crb}${esb}${A1}${crb}${esb}${A1}${ese}${cre}${ese}${cre}`],
+    ["", `${hwtbb}${esb}${A1}${ese}${hwte}`],
+    ["", `${hwttb}${esb}${A1}${ese}${hwtte}`],
+    ["", `${hwttb}${esb}${A1}${ese}${hwtbe}`],
   ];
   const table = document.getElementById("table");
   const makeTd = (content, klass) => {

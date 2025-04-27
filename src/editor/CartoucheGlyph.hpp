@@ -422,9 +422,11 @@ public:
         return EGLYF_STATUS_PUSH(hwtbL.status());
       }
 
-      auto hwtbR = font.addCompositeGlyph("hwtbR", Class::Base, GlyphRecord::New(*hwtbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
-      if (!hwtbR) {
-        return EGLYF_STATUS_PUSH(hwtbR.status());
+      for (auto const &n : {"hwtbR", "hwteL"}) {
+        auto gid = font.addCompositeGlyph(n, Class::Base, GlyphRecord::New(*hwtbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
+        if (!gid) {
+          return EGLYF_STATUS_PUSH(gid.status());
+        }
       }
     }
     {
@@ -474,9 +476,11 @@ public:
       if (!hwtbbL) {
         return EGLYF_STATUS_PUSH(hwtbbL.status());
       }
-      auto hwtbbR = font.addCompositeGlyph("hwtbbR", Class::Base, GlyphRecord::New(*hwtbbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
-      if (!hwtbbR) {
-        return EGLYF_STATUS_PUSH(hwtbbR.status());
+      for (auto const &n : {"hwtbbR", "hwtbeL"}) {
+        auto gid = font.addCompositeGlyph(n, Class::Base, GlyphRecord::New(*hwtbbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
+        if (!gid) {
+          return EGLYF_STATUS_PUSH(gid.status());
+        }
       }
     }
     {
