@@ -246,12 +246,28 @@ public:
 
   Optional<uint16_t> addCompositeGlyph(std::string const &name,
                                        gdef::GlyphDefinitionTable::Class classValue,
-                                       glyf::GlyphDataTable::CompositeGlyph::GlyphRecord child,
+                                       glyf::GlyphDataTable::CompositeGlyph::GlyphRecord const &child,
+                                       uint16_t advanceWidth,
+                                       int16_t lsb) {
+    using namespace std;
+    vector<glyf::GlyphDataTable::CompositeGlyph::GlyphRecord> children;
+    children.push_back(child);
+    auto gid = addCompositeGlyph(name, classValue, children, advanceWidth, lsb);
+    if (gid) {
+      return *gid;
+    } else {
+      return EGLYF_NULLOPT_PUSH(gid.status());
+    }
+  }
+
+  Optional<uint16_t> addCompositeGlyph(std::string const &name,
+                                       gdef::GlyphDefinitionTable::Class classValue,
+                                       std::vector<glyf::GlyphDataTable::CompositeGlyph::GlyphRecord> const &children,
                                        uint16_t advanceWidth,
                                        int16_t lsb) {
     using namespace std;
     return addTrueTypeGlyph(name, classValue, [&](glyf::GlyphDataTable &glyf, hmtx::HorizontalMetricsTable &hmtx) -> Optional<uint16_t> {
-      auto gid = glyf.addCompositeGlyph(child, *maxp);
+      auto gid = glyf.addCompositeGlyph(children, *maxp);
       if (!gid) {
         return EGLYF_NULLOPT_PUSH(gid.status());
       }

@@ -380,6 +380,45 @@ public:
         return EGLYF_STATUS_PUSH(gid.status());
       }
     }
+    for (int s = 1; s <= hhu; s++) {
+      auto name = format("QO{}", s);
+      int16_t w = sb + s * hfu + sb;
+      Contour c0;
+      c0.points.emplace_back(-jointLength, otop);
+      c0.points.emplace_back(w + jointLength, otop);
+      c0.points.emplace_back(w + jointLength, otop - lineWidth);
+      c0.points.emplace_back(-jointLength, otop - lineWidth);
+
+      Contour c1;
+      c1.points.emplace_back(-jointLength, obottom + lineWidth);
+      c1.points.emplace_back(w + jointLength, obottom + lineWidth);
+      c1.points.emplace_back(w + jointLength, obottom);
+      c1.points.emplace_back(-jointLength, obottom);
+
+      auto gid = font.addSimpleGlyph(name, gdef::GlyphDefinitionTable::Class::Base, {c0, c1}, w, -jointLength);
+      if (!gid) {
+        return EGLYF_STATUS_PUSH(gid.status());
+      }
+    }
+    for (int s = 1; s <= hhu; s++) {
+      auto name = format("QD{}", s);
+      int16_t w = sb + s * hfu + sb;
+      auto qo = font.post->getGlyphID(format("QO{}", s));
+      if (!qo) {
+        return EGLYF_ERROR;
+      }
+      auto qc = font.post->getGlyphID(format("QC{}", s));
+      if (!qc) {
+        return EGLYF_ERROR;
+      }
+      vector<GlyphRecord> children;
+      children.push_back(GlyphRecord::New(*qo));
+      children.push_back(GlyphRecord::New(*qc));
+      auto gid = font.addCompositeGlyph(name, Class::Base, children, w, -p.jointLength);
+      if (!gid) {
+        return EGLYF_STATUS_PUSH(gid.status());
+      }
+    }
     return Status::Ok();
   }
 };

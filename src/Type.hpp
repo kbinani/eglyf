@@ -116,6 +116,13 @@ struct Rect {
     yMax = std::max(yMax, v.y);
   }
 
+  void updateBound(T xMin, T yMin, T xMax, T yMax) {
+    this->xMin = std::min(this->xMin, xMin);
+    this->xMax = std::max(this->xMax, xMax);
+    this->yMin = std::min(this->yMin, yMin);
+    this->yMax = std::max(this->yMax, yMax);
+  }
+
   T width() const { return xMax - xMin; }
   T height() const { return yMax - yMin; }
 };

@@ -722,90 +722,124 @@ public:
     return gid;
   }
 
-  Optional<uint16_t> addCompositeGlyph(CompositeGlyph::GlyphRecord child, maxp::MaximumProfileTable &maxp) {
-    using namespace std;
-    if (child.glyphIndex >= glyphs.size()) {
-      return EGLYF_NULLOPT_WHAT("Child glyph index out of range");
+  Optional<uint16_t> addCompositeGlyph(CompositeGlyph::GlyphRecord const &child, maxp::MaximumProfileTable &maxp) {
+    auto gid = addCompositeGlyph({child}, maxp);
+    if (!gid) {
+      return EGLYF_NULLOPT_PUSH(gid.status());
     }
-    auto g = glyphs[child.glyphIndex];
+    return *gid;
+  }
+
+  Optional<uint16_t> addCompositeGlyph(std::vector<CompositeGlyph::GlyphRecord> const &children, maxp::MaximumProfileTable &maxp) {
+    using namespace std;
+    if (children.empty()) {
+      return EGLYF_NULLOPT;
+    }
     uint16_t gid = glyphs.size();
     CompositeGlyph add;
-    float xscale = 1;
-    float yscale = 1;
-    float scale01 = 0;
-    float scale10 = 0;
-    float dx = 0;
-    float dy = 0;
-    if (child.scale) {
-      if (holds_alternative<F2DOT14>(*child.scale)) {
-        auto const &scale = get<F2DOT14>(*child.scale);
-        xscale = scale.toFloat();
-        yscale = scale.toFloat();
-      } else if (holds_alternative<Vec<F2DOT14>>(*child.scale)) {
-        auto const &scale = get<Vec<F2DOT14>>(*child.scale);
-        xscale = scale.x.toFloat();
-        yscale = scale.y.toFloat();
-      }
-    }
-    if (child.scale2) {
-      scale01 = child.scale2->x.toFloat();
-      scale10 = child.scale2->y.toFloat();
-    }
-    if (holds_alternative<Vec<uint8_t>>(child.offset)) {
-      auto const &offset = get<Vec<uint8_t>>(child.offset);
-      dx = offset.x;
-      dy = offset.y;
-    } else if (holds_alternative<Vec<int8_t>>(child.offset)) {
-      auto const &offset = get<Vec<int8_t>>(child.offset);
-      dx = offset.x;
-      dy = offset.y;
-    } else if (holds_alternative<Vec<uint16_t>>(child.offset)) {
-      auto const &offset = get<Vec<uint16_t>>(child.offset);
-      dx = offset.x;
-      dy = offset.y;
-    } else if (holds_alternative<Vec<int16_t>>(child.offset)) {
-      auto const &offset = get<Vec<int16_t>>(child.offset);
-      dx = offset.x;
-      dy = offset.y;
-    }
-    if (holds_alternative<ReadonlyGlyph>(g)) {
-      auto rg = get<ReadonlyGlyph>(g);
-      add.header = rg.header;
-      Vec<float> topLeft = Vec<float>(rg.header.xMin, rg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
-      Vec<float> topRight = Vec<float>(rg.header.xMax, rg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
-      Vec<float> bottomLeft = Vec<float>(rg.header.xMin, rg.header.yMax).transform(xscale, scale10, scale01, yscale, dx, dy);
-      Vec<float> bottomRight = Vec<float>(rg.header.xMax, rg.header.yMax).transform(xscale, scale10, scale01, yscale, dx, dy);
-      add.header.xMin = (int16_t)floor(min({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
-      add.header.xMax = (int16_t)ceil(max({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
-      add.header.yMin = (int16_t)floor(min({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y}));
-      add.header.yMax = (int16_t)ceil(max({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y}));
-    } else if (holds_alternative<SimpleGlyph>(g)) {
-      auto sg = get<SimpleGlyph>(g);
-      add.header = sg.header;
-      Vec<float> topLeft = Vec<float>(sg.header.xMin, sg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
-      Vec<float> topRight = Vec<float>(sg.header.xMax, sg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
-      Vec<float> bottomLeft = Vec<float>(sg.header.xMin, sg.header.yMax).transform(xscale, scale10, scale01, yscale, dx, dy);
-      Vec<float> bottomRight = Vec<float>(sg.header.xMax, sg.header.yMax).transform(xscale, scale10, scale01, yscale, dx, dy);
-      add.header.xMin = (int16_t)floor(min({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
-      add.header.xMax = (int16_t)ceil(max({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
-      add.header.yMin = (int16_t)floor(min({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y}));
-      add.header.yMax = (int16_t)ceil(max({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y}));
-    } else if (holds_alternative<CompositeGlyph>(g)) {
-      auto cg = get<CompositeGlyph>(g);
-      add.header = cg.header;
-      Vec<float> topLeft = Vec<float>(cg.header.xMin, cg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
-      Vec<float> topRight = Vec<float>(cg.header.xMax, cg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
-      Vec<float> bottomLeft = Vec<float>(cg.header.xMin, cg.header.yMax).transform(xscale, scale10, scale01, yscale, dx, dy);
-      Vec<float> bottomRight = Vec<float>(cg.header.xMax, cg.header.yMax).transform(xscale, scale10, scale01, yscale, dx, dy);
-      add.header.xMin = (int16_t)floor(min({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
-      add.header.xMax = (int16_t)ceil(max({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
-      add.header.yMin = (int16_t)floor(min({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y}));
-      add.header.yMax = (int16_t)ceil(max({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y}));
-    } else {
-      return EGLYF_NULLOPT_WHAT("Cannot create composite glyph from empty glyph");
-    }
     add.header.numberOfContours = -1;
-    add.records.push_back(child);
+
+    optional<Rect<int16_t>> bounds;
+    for (auto const &child : children) {
+      auto g = glyphs[child.glyphIndex];
+      if (child.glyphIndex >= glyphs.size()) {
+        return EGLYF_NULLOPT_WHAT("Child glyph index out of range");
+      }
+      float xscale = 1;
+      float yscale = 1;
+      float scale01 = 0;
+      float scale10 = 0;
+      float dx = 0;
+      float dy = 0;
+      if (child.scale) {
+        if (holds_alternative<F2DOT14>(*child.scale)) {
+          auto const &scale = get<F2DOT14>(*child.scale);
+          xscale = scale.toFloat();
+          yscale = scale.toFloat();
+        } else if (holds_alternative<Vec<F2DOT14>>(*child.scale)) {
+          auto const &scale = get<Vec<F2DOT14>>(*child.scale);
+          xscale = scale.x.toFloat();
+          yscale = scale.y.toFloat();
+        }
+      }
+      if (child.scale2) {
+        scale01 = child.scale2->x.toFloat();
+        scale10 = child.scale2->y.toFloat();
+      }
+      if (holds_alternative<Vec<uint8_t>>(child.offset)) {
+        auto const &offset = get<Vec<uint8_t>>(child.offset);
+        dx = offset.x;
+        dy = offset.y;
+      } else if (holds_alternative<Vec<int8_t>>(child.offset)) {
+        auto const &offset = get<Vec<int8_t>>(child.offset);
+        dx = offset.x;
+        dy = offset.y;
+      } else if (holds_alternative<Vec<uint16_t>>(child.offset)) {
+        auto const &offset = get<Vec<uint16_t>>(child.offset);
+        dx = offset.x;
+        dy = offset.y;
+      } else if (holds_alternative<Vec<int16_t>>(child.offset)) {
+        auto const &offset = get<Vec<int16_t>>(child.offset);
+        dx = offset.x;
+        dy = offset.y;
+      }
+      if (holds_alternative<ReadonlyGlyph>(g)) {
+        auto rg = get<ReadonlyGlyph>(g);
+        Vec<float> topLeft = Vec<float>(rg.header.xMin, rg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
+        Vec<float> topRight = Vec<float>(rg.header.xMax, rg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
+        Vec<float> bottomLeft = Vec<float>(rg.header.xMin, rg.header.yMax).transform(xscale, scale10, scale01, yscale, dx, dy);
+        Vec<float> bottomRight = Vec<float>(rg.header.xMax, rg.header.yMax).transform(xscale, scale10, scale01, yscale, dx, dy);
+        int16_t xMin = (int16_t)floor(min({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
+        int16_t xMax = (int16_t)ceil(max({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
+        int16_t yMin = (int16_t)floor(min({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y}));
+        int16_t yMax = (int16_t)ceil(max({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y}));
+        if (bounds) {
+          bounds->updateBound(xMin, yMin, xMax, yMax);
+        } else {
+          bounds = Rect<int16_t>(xMin, yMin, xMax, yMax);
+        }
+      } else if (holds_alternative<SimpleGlyph>(g)) {
+        auto sg = get<SimpleGlyph>(g);
+        Vec<float> topLeft = Vec<float>(sg.header.xMin, sg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
+        Vec<float> topRight = Vec<float>(sg.header.xMax, sg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
+        Vec<float> bottomLeft = Vec<float>(sg.header.xMin, sg.header.yMax).transform(xscale, scale10, scale01, yscale, dx, dy);
+        Vec<float> bottomRight = Vec<float>(sg.header.xMax, sg.header.yMax).transform(xscale, scale10, scale01, yscale, dx, dy);
+        int16_t xMin = (int16_t)floor(min({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
+        int16_t xMax = (int16_t)ceil(max({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
+        int16_t yMin = (int16_t)floor(min({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y}));
+        int16_t yMax = (int16_t)ceil(max({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y}));
+        if (bounds) {
+          bounds->updateBound(xMin, yMin, xMax, yMax);
+        } else {
+          bounds = Rect<int16_t>(xMin, yMin, xMax, yMax);
+        }
+      } else if (holds_alternative<CompositeGlyph>(g)) {
+        auto cg = get<CompositeGlyph>(g);
+        Vec<float> topLeft = Vec<float>(cg.header.xMin, cg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
+        Vec<float> topRight = Vec<float>(cg.header.xMax, cg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
+        Vec<float> bottomLeft = Vec<float>(cg.header.xMin, cg.header.yMax).transform(xscale, scale10, scale01, yscale, dx, dy);
+        Vec<float> bottomRight = Vec<float>(cg.header.xMax, cg.header.yMax).transform(xscale, scale10, scale01, yscale, dx, dy);
+        int16_t xMin = (int16_t)floor(min({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
+        int16_t xMax = (int16_t)ceil(max({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
+        int16_t yMin = (int16_t)floor(min({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y}));
+        int16_t yMax = (int16_t)ceil(max({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y}));
+        if (bounds) {
+          bounds->updateBound(xMin, yMin, xMax, yMax);
+        } else {
+          bounds = Rect<int16_t>(xMin, yMin, xMax, yMax);
+        }
+      } else {
+        return EGLYF_NULLOPT_WHAT("Cannot create composite glyph from empty glyph");
+      }
+      add.records.push_back(child);
+    }
+    if (!bounds) {
+      return EGLYF_NULLOPT;
+    }
+    add.header.xMin = bounds->xMin;
+    add.header.yMin = bounds->yMin;
+    add.header.xMax = bounds->xMax;
+    add.header.yMax = bounds->yMax;
     glyphs.push_back(add);
 
     uint16_t depth = 2;
