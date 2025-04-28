@@ -21,6 +21,7 @@
 #include "Optional.hpp"
 
 #include "Type.hpp"
+#include "Point.hpp"
 #include "io/InputStream.hpp"
 #include "io/OutputStream.hpp"
 #include "io/OffsetInputStream.hpp"

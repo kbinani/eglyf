@@ -102,6 +102,7 @@ list(APPEND src_files
   src/editor/CartoucheGlyph.hpp
   src/editor/QuadraticEquation.hpp
   src/editor/Line.hpp
+  src/Point.hpp
 )
 
 juce_add_binary_data(eglyf-binary-data

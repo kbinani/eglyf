@@ -57,15 +57,6 @@ public:
   struct EmptyGlyph {
   };
 
-  struct Point {
-    Point() : x(0), y(0), control(false) {}
-    Point(int16_t x, int16_t y, bool control = false) : x(x), y(y), control(control) {}
-
-    int16_t x;
-    int16_t y;
-    bool control;
-  };
-
   struct Contour {
     std::vector<Point> points;
   };
