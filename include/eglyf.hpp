@@ -22,6 +22,8 @@
 
 #include "Type.hpp"
 #include "Point.hpp"
+#include "Contour.hpp"
+#include "Shape.hpp"
 #include "io/InputStream.hpp"
 #include "io/OutputStream.hpp"
 #include "io/OffsetInputStream.hpp"

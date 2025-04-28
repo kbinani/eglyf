@@ -103,6 +103,8 @@ list(APPEND src_files
   src/editor/QuadraticEquation.hpp
   src/editor/Line.hpp
   src/Point.hpp
+  src/Shape.hpp
+  src/Contour.hpp
 )
 
 juce_add_binary_data(eglyf-binary-data
