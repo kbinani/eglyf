@@ -2098,9 +2098,11 @@ public:
       if (code.size() == 1) {
         single[code[0]] = glyph;
         ligature[code.size() + 1][code + " "] = glyph;
+        ligature[code.size() + 1][code + "-"] = glyph;
       } else {
         ligature[code.size()][code] = glyph;
         ligature[code.size() + 1][code + " "] = glyph;
+        ligature[code.size() + 1][code + "-"] = glyph;
       }
     }
 
