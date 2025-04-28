@@ -283,7 +283,7 @@ public:
 
   Optional<uint16_t> addSimpleGlyph(std::string const &name,
                                     gdef::GlyphDefinitionTable::Class classValue,
-                                    std::vector<Contour> const &contours,
+                                    std::vector<glyf::GlyphDataTable::Contour> const &contours,
                                     uint16_t advanceWidth,
                                     int16_t lsb) {
     using namespace std;

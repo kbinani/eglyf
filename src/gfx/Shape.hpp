@@ -2,9 +2,9 @@
 
 namespace eglyf {
 
-class Contour {
+class Shape {
 public:
-  std::vector<Point> points;
+  std::vector<Path> paths;
 };
 
 } // namespace eglyf

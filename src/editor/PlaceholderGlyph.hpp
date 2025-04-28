@@ -48,6 +48,7 @@ public:
   static Status Create(FontFile &font, int16_t base, int16_t hfu, int16_t sb, int chu, int16_t vfu, int vhu) {
     using namespace std;
     using SimpleGlyph = glyf::GlyphDataTable::SimpleGlyph;
+    using Contour = glyf::GlyphDataTable::Contour;
 
     auto &outlines = font.outlines;
     if (!holds_alternative<FontFile::TrueTypeOutlines>(outlines)) {

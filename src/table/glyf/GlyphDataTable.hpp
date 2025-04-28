@@ -57,6 +57,11 @@ public:
   struct EmptyGlyph {
   };
 
+  class Contour {
+  public:
+    std::vector<Point> points;
+  };
+
   struct SimpleGlyph {
     enum : uint8_t {
       ON_CURVE = 0x01,

@@ -13,12 +13,13 @@ class CartoucheGlyph {
     int16_t jointLength;
   };
 
-  static Contour CreateContour_cb(Param const &p, int16_t width, int16_t height, int16_t bottom) {
+  static glyf::GlyphDataTable::Contour CreateContour_cb(Param const &p, int16_t width, int16_t height, int16_t bottom) {
     using Class = gdef::GlyphDefinitionTable::Class;
     using GlyphRecord = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord;
+    using Contour = glyf::GlyphDataTable::Contour;
 
-    auto [out1, out2, out3, out4] = QuadraticBezier::LeftCartouche(Vec<int16_t>(p.sideBearing + width, bottom + height / 2), height, width);
-    auto [in4, in3, in2, in1] = QuadraticBezier::LeftCartouche(Vec<int16_t>(p.sideBearing + width, bottom + height / 2), height - 2 * p.lineWidth, width - p.lineWidth);
+    auto [out1, out2, out3, out4] = QuadraticBezier<int16_t>::LeftCartouche(Vec<int16_t>(p.sideBearing + width, bottom + height / 2), height, width);
+    auto [in4, in3, in2, in1] = QuadraticBezier<int16_t>::LeftCartouche(Vec<int16_t>(p.sideBearing + width, bottom + height / 2), height - 2 * p.lineWidth, width - p.lineWidth);
     Contour c;
     c.points.emplace_back(out1.p0.x + p.approachLength + p.jointLength, out1.p0.y);
 
@@ -50,13 +51,14 @@ class CartoucheGlyph {
     return c;
   }
 
-  static Status CreateContour_crb(Param const &p, int16_t width, int16_t height, int16_t bottom, Contour &c, float &cutX) {
+  static Status CreateContour_crb(Param const &p, int16_t width, int16_t height, int16_t bottom, glyf::GlyphDataTable::Contour &c, float &cutX) {
     using namespace std;
     using Class = gdef::GlyphDefinitionTable::Class;
     using GlyphRecord = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord;
+    using Contour = glyf::GlyphDataTable::Contour;
 
-    auto [out1, out2, out3, out4] = QuadraticBezier::LeftCartouche(Vec<int16_t>(p.sideBearing + width, bottom + height / 2), height, width);
-    vector<float> t;
+    auto [out1, out2, out3, out4] = QuadraticBezier<int16_t>::LeftCartouche(Vec<int16_t>(p.sideBearing + width, bottom + height / 2), height, width);
+    vector<double> t;
     cutX = p.sideBearing + p.lineWidth - p.lineWidth * 9 / 32;
     out1.getTWhenX(cutX, t);
     if (t.empty()) {
@@ -117,7 +119,7 @@ class CartoucheGlyph {
 
       c.points.emplace_back(out4.p2.x + p.approachLength + p.jointLength, out4.p2.y);
     }
-    auto [in4, in3, in2, in1] = QuadraticBezier::LeftCartouche(Vec<int16_t>(p.sideBearing + width, bottom + height / 2), height - 2 * p.lineWidth, width - p.lineWidth);
+    auto [in4, in3, in2, in1] = QuadraticBezier<int16_t>::LeftCartouche(Vec<int16_t>(p.sideBearing + width, bottom + height / 2), height - 2 * p.lineWidth, width - p.lineWidth);
     c.points.emplace_back(in1.p2.x + p.approachLength + p.jointLength, in1.p2.y);
 
     c.points.emplace_back(in1.p2.x, in1.p2.y);
@@ -168,6 +170,7 @@ class CartoucheGlyph {
     using namespace std;
     using Class = gdef::GlyphDefinitionTable::Class;
     using GlyphRecord = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord;
+    using Contour = glyf::GlyphDataTable::Contour;
 
     Contour c;
     float cutX;
@@ -195,8 +198,9 @@ class CartoucheGlyph {
     return Status::Ok();
   }
 
-  static void CreateContour_O33aeL(Param const &p, int16_t top, int16_t height, std::vector<Contour> &contours, int16_t &advanceWidth) {
+  static void CreateContour_O33aeL(Param const &p, int16_t top, int16_t height, std::vector<glyf::GlyphDataTable::Contour> &contours, int16_t &advanceWidth) {
     using namespace std;
+    using Contour = glyf::GlyphDataTable::Contour;
 
     int16_t h1 = (int16_t)round(p.scale * 0.093333f);
     int16_t h2 = (int16_t)round(p.scale * 0.089118f);
@@ -319,8 +323,10 @@ class CartoucheGlyph {
     advanceWidth = x[9] + p.sideBearing;
   }
 
-  static void CreateContour_hwttb(Param const &p, int16_t top, int16_t height, std::vector<Contour> &contours, int16_t &advanceWidth, int16_t &advanceHeight) {
+  static void CreateContour_hwttb(Param const &p, int16_t top, int16_t height, std::vector<glyf::GlyphDataTable::Contour> &contours, int16_t &advanceWidth, int16_t &advanceHeight) {
     using namespace std;
+    using Contour = glyf::GlyphDataTable::Contour;
+
     int16_t width = (int16_t)round(p.scale * 0.315197f);
     int16_t h = (int16_t)round(p.scale * 0.375235f);
     int16_t w = (int16_t)round(p.scale * 0.147280f);
@@ -354,6 +360,7 @@ public:
     using namespace std;
     using Class = gdef::GlyphDefinitionTable::Class;
     using GlyphRecord = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord;
+    using Contour = glyf::GlyphDataTable::Contour;
 
     int16_t scale = min(chu * hfu, vhu * vfu);
     int16_t lineWidth = max(1, scale / 32);
