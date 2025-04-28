@@ -86,6 +86,60 @@ public:
     return false;
   }
 
+  bool intersects(Line const &b) const {
+    using namespace std;
+    float a0x = p0.x;
+    float a0y = p0.y;
+    float a1x = p1.x;
+    float a1y = p1.y;
+    float a2x = p2.x;
+    float a2y = p2.y;
+
+    float b0x = b.x0;
+    float b0y = b.y0;
+    float b1x = b.x1;
+    float b1y = b.y1;
+
+    float vx = b1x - b0x;
+    float vy = b1y - b0y;
+    float nx = vy;
+    float ny = -vx;
+
+    float num = vx * vx + vy * vy;
+    if (num <= numeric_limits<float>::epsilon()) {
+      return false;
+    }
+
+    float A = nx * (a0x - 2 * a1x + a2x) + ny * (a0y - 2 * a1y + a2y);
+    float B = 2 * (nx * (a1x - a0x) + nx * (a1y - a0y));
+    float C = nx * (a0x - b0x) + ny * (a0y - b0y);
+
+    float D = B * B - 4 * A * C;
+    if (D < 0) {
+      return false;
+    }
+    float t0 = (-B + sqrt(D)) / (2 * A);
+    float t1 = (-B - sqrt(D)) / (2 * A);
+    if (t1 < t0) {
+      swap(t0, t1);
+    }
+    if (0 <= t0 && t0 <= 1) {
+      float t = t0;
+      float s = (((1 - t) * (1 - t) * a0x + 2 * t * (1 - t) * a1x + t * t * a2x - b0x) * vx + ((1 - t) * (1 - t) * a0y + 2 * t * (1 - t) * a1y + t * t * a2y - b0y) * vy) / num;
+      if (0 <= s && s <= 1) {
+        return true;
+      }
+    }
+    if (0 <= t1 && t1 <= 1) {
+      float t = t1;
+      float s = (((1 - t) * (1 - t) * a0x + 2 * t * (1 - t) * a1x + t * t * a2x - b0x) * vx + ((1 - t) * (1 - t) * a0y + 2 * t * (1 - t) * a1y + t * t * a2y - b0y) * vy) / num;
+      if (0 <= s && s <= 1) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   Rect<float> boundingBox() const {
     auto [xMin, xMax] = x.minmax(0, 1);
     auto [yMin, yMax] = y.minmax(0, 1);
@@ -140,6 +194,35 @@ public:
         upper2.rotatedCW90().translated(center.x, center.y),
         lower1.rotatedCW90().translated(center.x, center.y),
         lower2.rotatedCW90().translated(center.x, center.y)};
+  }
+
+  static bool Intersects(std::variant<Line, QuadraticBezier> a, std::variant<Line, QuadraticBezier> b, float toleranceLength) {
+    using namespace std;
+    if (holds_alternative<Line>(a)) {
+      auto const &lineA = std::get<Line>(a);
+      if (holds_alternative<Line>(b)) {
+        auto const &lineB = std::get<Line>(b);
+        return lineA.intersects(lineB);
+      } else if (holds_alternative<QuadraticBezier>(b)) {
+        auto const &bezierB = std::get<QuadraticBezier>(b);
+        return bezierB.intersects(lineA);
+      } else [[unlikely]] {
+        return false;
+      }
+    } else if (holds_alternative<QuadraticBezier>(a)) {
+      auto const &bezierA = std::get<QuadraticBezier>(a);
+      if (holds_alternative<Line>(b)) {
+        auto const &lineB = std::get<Line>(b);
+        return bezierA.intersects(lineB);
+      } else if (holds_alternative<QuadraticBezier>(b)) {
+        auto const &bezierB = std::get<QuadraticBezier>(b);
+        return bezierA.intersects(bezierB, toleranceLength);
+      } else [[unlikely]] {
+        return false;
+      }
+    } else [[unlikely]] {
+      return false;
+    }
   }
 
 private:
