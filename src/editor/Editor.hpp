@@ -2000,6 +2000,55 @@ public:
     mapping["9"] = {"Z15h"};
     mapping["nn"] = {"M22a"};
 
+    auto const add = [&](string mdc, char32_t cp) {
+      auto gid = font->cmap->getGlyphID((uint32_t)cp);
+      if (!gid) {
+        return;
+      }
+      auto name = font->post->getName(*gid);
+      if (!name) {
+        return;
+      }
+      vector<string> c;
+      c.push_back(*name);
+      mapping[mdc] = c;
+    };
+
+    add("Aa1", U'𓐍');
+    add("Aa2", U'𓐎');
+    add("Aa3", U'𓐏');
+    add("Aa4", U'𓐐');
+    add("Aa5", U'𓐑');
+    add("Aa6", U'𓐒');
+    add("Aa7", U'𓐓');
+    add("Aa7A", U'𓐔');
+    add("Aa7B", U'𓐕');
+    add("Aa8", U'𓐖');
+    add("Aa9", U'𓐗');
+    add("Aa10", U'𓐘');
+    add("Aa11", U'𓐙');
+    add("Aa12", U'𓐚');
+    add("Aa13", U'𓐛');
+    add("Aa14", U'𓐜');
+    add("Aa15", U'𓐝');
+    add("Aa16", U'𓐞');
+    add("Aa17", U'𓐟');
+    add("Aa18", U'𓐠');
+    add("Aa19", U'𓐡');
+    add("Aa20", U'𓐢');
+    add("Aa21", U'𓐣');
+    add("Aa22", U'𓐤');
+    add("Aa23", U'𓐥');
+    add("Aa24", U'𓐦');
+    add("Aa25", U'𓐧');
+    add("Aa26", U'𓐨');
+    add("Aa27", U'𓐩');
+    add("Aa28", U'𓐪');
+    add("Aa29", U'𓐫');
+    add("Aa30", U'𓐬');
+    add("Aa31", U'𓐭');
+    add("Aa32", U'𓐮');
+
     auto const &table = GlyphNames::GetTable();
     for (auto const &[cp, name] : table) {
       mapping[name] = {name};
