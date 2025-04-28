@@ -14,29 +14,35 @@
   font-display: block;
 }
 .reference {
-  background-color: rgba(0, 0, 0, 0.2);
-  font-size: 60px;
+  font-size: 40px;
   font-family: 'ReferenceFont';
 }
 .test {
-  background-color: rgba(0, 0, 0, 0.2);
-  font-size: 60px;
+  font-size: 40px;
   font-family: 'TestFont';
 }
 .mdc {
-  font-size: 60px;
+  font-size: 40px;
   font-family: 'TestFont';
 }
 </style>
 </head>
 <body>
-<table border=1 id="table"></table>
+<table border=1 id="table">
+<tr>
+  <td>MdC</td>
+  <td>reference font</td>
+  <td>rendering Unicode characters</td>
+  <td>rendering MdC</td>
+</tr>
+</table>
 <script type="text/javascript">
   const cb = "&#x13379;";
   const esb = "&#x1343c;";
   const ese = "&#x1343d;";
   const ce = "&#x1337a;"
   const A1 = "&#x13000;";
+  const E1 = "&#x130d2;";
   const hwtb = "&#x13258;"
   const O33a = "&#x13282;";
   const crb = "&#x1342f;";
@@ -46,44 +52,71 @@
   const hwttb = "&#x1325A;";
   const hwtte = "&#x1325B;";
   const hwtbe = "&#x1325C;";
+  const vj = "&#x13430;";
+  const O1 = "&#x13250;";
+  const N35 = "&#x13216;";
+  const X1 = "&#x133cf;";
+  const B1 = "&#x13050;";
+  const hj = "&#x13431;";
+  const Z2 = "&#x133e5;";
+  const D40 = "&#x130a1;";
+  const xa = "&#x1320d;";
+  const Aa15 = "&#x1341d;";
+  const R19 = "&#x132c6;";
+  const mr = "&#x13338;";
+  const mAat = "&#x13066;";
+  const ra = "&#x131f3;";
+  const i = "&#x131cb;";
+  const mn = "&#x133e0;";
+  const N36 = "&#x13218;";
+  const ms = "&#x1311f;";
+  const s = "&#x132f4;";
+  const G39 = "&#x1316d;"
+  const Z1 = "&#x133e4;"
+  const sw = "&#x131d3;"
   const data = [
-    ["A1", `${A1}`],
-    ["A1 vj O1", `${A1}&#x13430;&#x13250;`],
-    ["N35 vj X1", "&#x13216;&#x13430;&#x133cf;"],
-    ["A1 hj B1 vj Z2", `${A1}&#x13431;&#x13050;&#x13430;&#x133e5;`],
-    ["G39&ra <i mn:n:N36 ra:1 ms s sw>", "𓅭𓇳𓍹𓐼𓇋𓏠𓐰𓈖𓐰𓈘𓇳𓐰𓏤𓄟𓋴𓇓𓐽𓍺"],
-    ["a", "𓃒𓐰𓂡𓌸𓁦"],
-    ["test", `${hwtb}${esb}&#x130d2;&#x13430;&#x130a1;&#x1320d;&#x13430;&#x1341d;&#x132c6;${ese}${O33a}`],
-    ["test", `${hwtb}${esb}&#x130d2;&#x13430;&#x130a1;&#x13338;&#x13066;${ese}${O33a}`],
-    ["test", `${hwtb}${esb}&#x130d2;&#x13430;&#x130a1;&#x13338;&#x13066;${cb}${esb}&#x131f3;&#x131cb;&#x133e0;&#x13430;&#x13216;&#x13430;&#x13218;&#x1311f;&#x132f4;&#x132f4;${ese}${ce}${ese}${O33a}`],
-    ["test", `${hwtb}${esb}${A1}${cb}${esb}${A1}${ese}${ce}${ese}${O33a}`],
-    ["test", `${hwtb}${esb}${A1}${ese}${O33a}`, "<s1 A1 s2>"],
-    ["test", `${hwtb}${esb}${A1}${hwtb}${esb}${A1}${ese}${O33a}${ese}${O33a}`, "<s1 A1 <s1 A1 s2> s2>"],
-    ["test", `${cb}${esb}${A1}${cb}${esb}${A1}${ese}${ce}${ese}${ce}`, "<1 A1 < A1 2> >"],
-    ["test", `${crb}${esb}${A1}${crb}${esb}${A1}${ese}${cre}${ese}${cre}`, "<2 A1 <2 A1 1> 1>"],
-    ["", `${hwtbb}${esb}${A1}${ese}${hwte}`],
-    ["", `${hwttb}${esb}${A1}${ese}${hwtte}`],
-    ["", `${hwttb}${esb}${A1}${ese}${hwtbe}`],
-    ["", `${hwttb}${esb}${A1}${hwttb}${esb}${A1}${ese}${hwte}${ese}${hwte}`, "<h3 A1 <h3 A1 h1> h1>"],
-    ["", `${hwtbb}${esb}${A1}${hwtbb}${esb}${A1}${ese}${hwtbe}${ese}${hwtbe}`, "<h2 A1 <h2 A1 h2> h2>"],
-    ["", `${hwttb}${esb}${A1}${hwttb}${esb}${A1}${ese}${hwtte}${ese}${hwtte}`, "<h3 A1 <h3 A1 h3> h3>"],
+    [`${A1}`, "A1"],
+    [`${A1}${vj}${O1}`, "A1:O1"],
+    [`${N35}${vj}${X1}`, "n:t"],
+    [`${A1}${hj}${B1}${vj}${Z2}`, "A1*B1:Z2"],
+    [`${G39}${ra}${cb}${esb}${i}${mn}${vj}${N35}${vj}${N36}${ra}${vj}${Z1}${ms}${s}${sw}${ese}${ce}`, "G39 ra <i mn:n:N36 ra:1 ms s sw>"],
+    [`${E1}${vj}${D40}${mr}${mAat}`, "E1:D40 mr mAat"],
+    [`${hwtb}${esb}${E1}${vj}${D40}${xa}${vj}${Aa15}${R19}${ese}${O33a}`, "<s1 E1:D40 xa:Aa15 R19 s2>"],
+    [`${hwtb}${esb}${E1}${vj}${D40}${mr}${mAat}${ese}${O33a}`, "<h1 E1:D40 mr mAat s2>"],
+    [`${hwtb}${esb}${E1}${vj}${D40}${mr}${mAat}${cb}${esb}${ra}${i}${mn}${vj}${N35}${vj}${N36}${ms}${s}${s}${ese}${ce}${ese}${O33a}`, "<h1 E1:D40 mr mAat <ra i mn:n:N36 ms s s> s2>"],
+    [`${hwtb}${esb}${A1}${cb}${esb}${A1}${ese}${ce}${ese}${O33a}`, "<h1 A1 < A1 > s2>"],
+    [`${hwtb}${esb}${A1}${ese}${O33a}`, "<s1 A1 s2>"],
+    [`${hwtb}${esb}${A1}${hwtb}${esb}${A1}${ese}${O33a}${ese}${O33a}`, "<s1 A1 <s1 A1 s2> s2>"],
+    [`${cb}${esb}${A1}${cb}${esb}${A1}${ese}${ce}${ese}${ce}`, "<1 A1 < A1 2> >"],
+    [`${crb}${esb}${A1}${crb}${esb}${A1}${ese}${cre}${ese}${cre}`, "<2 A1 <2 A1 1> 1>"],
+    [`${hwtbb}${esb}${A1}${ese}${hwte}`, "<h2 A1 h1>"],
+    [`${hwttb}${esb}${A1}${ese}${hwtte}`, "<h3 A1 h3>"],
+    [`${hwttb}${esb}${A1}${ese}${hwtbe}`, "<h3 A1 h2>"],
+    [`${hwttb}${esb}${A1}${hwttb}${esb}${A1}${ese}${hwte}${ese}${hwte}`, "<h3 A1 <h3 A1 h1> h1>"],
+    [`${hwtbb}${esb}${A1}${hwtbb}${esb}${A1}${ese}${hwtbe}${ese}${hwtbe}`, "<h2 A1 <h2 A1 h2> h2>"],
+    [`${hwttb}${esb}${A1}${hwttb}${esb}${A1}${ese}${hwtte}${ese}${hwtte}`, "<h3-A1-<h3-A1-h3>-h3>"],
   ];
   const table = document.getElementById("table");
+  const filter = (s) => {
+    return s.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+  };
   const makeTd = (content, klass) => {
     const td = document.createElement("td");
     const div = document.createElement("div");
     if (typeof content === "string") {
-      div.innerHTML = content.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+      div.innerHTML = filter(content);
     }
     div.classList.add(klass);
     td.appendChild(div);
     return td;
   };
-  for (const [label, hieroglyph, mdc] of data) {
+  for (const [hieroglyph, mdc] of data) {
     const tr = document.createElement("tr");
 
     const title = document.createElement("td");
-    title.innerHTML = label;
+    if (typeof mdc === "string") {
+      title.innerHTML = filter(mdc);
+    }
     tr.appendChild(title);
 
     const reference = makeTd(hieroglyph, "reference");
