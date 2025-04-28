@@ -123,6 +123,14 @@ struct Rect {
     this->yMax = std::max(this->yMax, yMax);
   }
 
+  bool intersects(Rect<T> const &o) const {
+    return !(
+        o.xMin > xMax ||
+        o.yMin > yMax ||
+        xMin > o.xMax ||
+        yMin > o.yMax);
+  }
+
   T width() const { return xMax - xMin; }
   T height() const { return yMax - yMin; }
 };

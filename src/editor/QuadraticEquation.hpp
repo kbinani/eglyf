@@ -36,6 +36,25 @@ public:
     return (a2 * x + a1) * x + a0;
   }
 
+  std::pair<float, float> minmax(float x0, float x1) const {
+    using namespace std;
+    float y0 = get(x0);
+    float y1 = get(x1);
+    if (a2 <= numeric_limits<float>::epsilon()) {
+      if (a1 <= numeric_limits<float>::epsilon()) {
+        return make_pair(a0, a0);
+      }
+      return make_pair(min(y0, y1), max(y0, y1));
+    }
+    float x = (-0.5f * a1) / a2;
+    if (x0 <= x && x <= x1) {
+      float y = get(x);
+      return make_pair(min({y0, y, y1}), max({y0, y, y1}));
+    } else {
+      return make_pair(min(y0, y1), max(y0, y1));
+    }
+  }
+
 public:
   float a2;
   float a1;

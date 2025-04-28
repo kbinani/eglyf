@@ -41,6 +41,57 @@ public:
     return make_pair(c1, c2);
   }
 
+  float length() const {
+    // https://stackoverflow.com/questions/11854907/calculate-the-length-of-a-segment-of-a-quadratic-bezier
+    float x0 = p0.x;
+    float x1 = p1.x;
+    float x2 = p2.x;
+    float y0 = p0.y;
+    float y1 = p1.y;
+    float y2 = p2.y;
+    float A = (x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0);
+    float B = (x1 - x0) * (x0 - 2 * x1 + x2) + (y1 - y0) * (y0 - 2 * y1 + y2);
+    float C = (x0 - 2 * x1 + x2) * (x0 - 2 * x1 + x2) + (y0 - 2 * y1 + y2) * (y0 - 2 * y1 + y2);
+    return (C + B) / C * sqrt(A + 2 * B + C) - B / C * sqrt(A) + (A * C - B * B) / pow(C, 1.5f) * log((C + B + sqrt(C * (A + 2 * B + C))) / (B + sqrt(C * A)));
+  }
+
+  bool intersects(QuadraticBezier const &a, float toleranceLength) const {
+    using namespace std;
+
+    QuadraticBezier const &b = *this;
+    Rect<float> boundsA = a.boundingBox();
+    Rect<float> boundsB = b.boundingBox();
+    if (!boundsA.intersects(boundsB)) {
+      return false;
+    }
+
+    float la = a.length();
+    float lb = b.length();
+    int na = max(1, (int)ceil(la / toleranceLength));
+    int nb = max(1, (int)ceil(lb / toleranceLength));
+
+    for (int ia = 0; ia < na; ia++) {
+      float ta0 = ia / (float)na;
+      float ta1 = (ia + 1) / (float)na;
+      Line sa(a.x.get(ta0), a.y.get(ta0), a.x.get(ta1), a.y.get(ta1));
+      for (int ib = 0; ib < nb; ib++) {
+        float tb0 = ib / (float)nb;
+        float tb1 = (ib + 1) / (float)nb;
+        Line sb(b.x.get(tb0), b.y.get(tb0), b.x.get(tb1), b.y.get(tb1));
+        if (sa.intersects(sb)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  Rect<float> boundingBox() const {
+    auto [xMin, xMax] = x.minmax(0, 1);
+    auto [yMin, yMax] = y.minmax(0, 1);
+    return Rect<float>(xMin, yMin, xMax, yMax);
+  }
+
   static std::array<QuadraticBezier, 4> LeftCartouche(Vec<int16_t> center, int16_t height, int16_t width) {
     using namespace std;
     float a = height / 2.0f;
