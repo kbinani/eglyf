@@ -2137,6 +2137,9 @@ public:
     mapping["("] = {"ss"};
     mapping[")"] = {"se"};
     mapping["##"] = {"mi"};
+    mapping["\\r1"] = {"VS3"};
+    mapping["\\r2"] = {"VS2"};
+    mapping["\\r3"] = {"VS1"};
     mapping["<"] = {"cb", "esb"};
     mapping["<1"] = {"cb", "esb"};
     mapping["<2"] = {"crb", "esb"};
