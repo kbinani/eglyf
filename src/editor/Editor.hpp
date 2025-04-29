@@ -45,9 +45,6 @@ public:
     std::variant<SkipMarks, ProcessMarks> marks;
 
     struct Context {
-      Context(std::initializer_list<GG> left, std::initializer_list<GG> right) : left(left), right(right) {
-      }
-
       std::vector<GG> left;
       std::vector<GG> right;
     };
@@ -1309,15 +1306,60 @@ public:
 
   Status replaceLookup_bl_perglyphsize() {
     using namespace std;
+    using Pos = Insertion::Pos;
     auto first = ranges::find_if(lookups, [](auto const &l) { return l.first.starts_with("bl") && l.first.find("_perglyphsize_") != string::npos; });
     if (first == lookups.end()) {
       return EGLYF_ERROR;
     }
+    size_t index = distance(lookups.begin(), first);
     ranges::for_each(lookups, [](auto &it) {
       if (it.first.starts_with("bl") && it.first.find("_perglyphsize_") != string::npos) {
         it.second->substitutions.clear();
       }
     });
+    auto block = getGlyphByName("block");
+    size_t count = 0;
+    for (auto pos : {Pos::TopStart, Pos::BottomStart, Pos::TopEnd, Pos::BottomEnd, Pos::Top, Pos::Middle, Pos::Bottom}) {
+      map<WxH, vector<pair<string, Insertion::Info>>> sizes;
+      for (auto const &[name, plan] : insertionPlans) {
+        auto found = plan.insertions.find(pos);
+        if (found == plan.insertions.end()) {
+          continue;
+        }
+        for (auto const &[size, info] : found->second) {
+          sizes[size].push_back(make_pair(name, info));
+        }
+      }
+      for (auto const &[size, infos] : sizes) {
+        auto lookup = make_shared<Lookup>();
+        for (auto const &[name, info] : infos) {
+          auto g = getGlyphByName(name);
+          auto context = make_shared<Lookup::Context>();
+          context->left.push_back(g);
+          lookup->inContexts.push_back(context);
+        }
+        int sw = WidthFromWxH(size);
+        int sh = HeightFromWxH(size);
+        for (int h = 2; h <= chu; h++) {
+          for (int v = 2; v <= vhu; v++) {
+            for (int iw = 1; iw <= sw; iw++) {
+              for (int ih = 1; ih <= sh; ih++) {
+                auto s = make_shared<Lookup::Substitution>();
+                auto tsIn = getGlyphByName(format("ts{}{}", h, v));
+                auto tsOut = getGlyphByName(format("ts{}{}", iw, ih));
+                s->input.push_back(tsIn);
+                s->output.push_back(block);
+                s->output.push_back(tsOut);
+                lookup->substitutions.push_back(s);
+              }
+            }
+          }
+        }
+        auto n = format("_bl_ad_{}", count);
+        lookups.insert(lookups.begin() + index + count, make_pair(n, lookup));
+        count++;
+      }
+    }
     // TODO:
     return Status::Ok();
   }
@@ -1651,12 +1693,10 @@ public:
     return Status::Ok();
   }
 
-  static juce::String JuceStringFromU32String(std::u32string const &s) {
-    return juce::String(juce::CharPointer_UTF32((juce::juce_wchar *)s.c_str()), juce::CharPointer_UTF32((juce::juce_wchar *)(s.c_str() + s.size())));
-  }
-
   Status insertMdCLookup() {
     using namespace std;
+    using Pos = Insertion::Pos;
+
     map<string, vector<string>> mapping;
 
     mapping["A"] = {"G1"};
@@ -2096,6 +2136,7 @@ public:
     mapping["*"] = {"hj"};
     mapping["("] = {"ss"};
     mapping[")"] = {"se"};
+    mapping["##"] = {"mi"};
     mapping["<"] = {"cb", "esb"};
     mapping["<1"] = {"cb", "esb"};
     mapping["<2"] = {"crb", "esb"};
@@ -2111,6 +2152,27 @@ public:
     mapping["<s1"] = {"hwtb", "esb"};
     mapping["s2>"] = {"ese", "O33a"};
 
+    for (auto const &[name, plan] : insertionPlans) {
+      for (auto const &[pos, infos] : plan.insertions) {
+        auto ps = Insertion::StringFromPos(pos);
+        switch (pos) {
+        case Pos::TopStart:
+        case Pos::BottomStart:
+        case Pos::Top:
+          mapping["&" + name] = {name, ps};
+          break;
+        case Pos::TopEnd:
+        case Pos::BottomEnd:
+        case Pos::Bottom:
+          mapping[name + "&"] = {name, ps};
+          break;
+        default:
+          break;
+        }
+      }
+    }
+
+    set<string> ligs;
     map<string, string> codes;
     map<string, vector<string>> multiple;
     for (auto const &[input, output] : mapping) {
@@ -2121,8 +2183,11 @@ public:
         for (auto const &o : output) {
           name += format(".{}", o);
         }
-        if (auto gid = font->addEmptyGlyph(name, gdef::GlyphDefinitionTable::Class::Mark, 0, 0); !gid) {
-          return EGLYF_STATUS_PUSH(gid.status());
+        if (ligs.find(name) == ligs.end()) {
+          if (auto gid = font->addEmptyGlyph(name, gdef::GlyphDefinitionTable::Class::Mark, 0, 0); !gid) {
+            return EGLYF_STATUS_PUSH(gid.status());
+          }
+          ligs.insert(name);
         }
         codes[input] = name;
         multiple[name] = output;
@@ -2221,6 +2286,10 @@ public:
   }
 
   Status postprocess() {
+    using namespace std;
+    if (auto st = Insertion::CreatePlan(*font, insertionPlans); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
     if (auto st = insertMdCLookup(); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
@@ -3751,6 +3820,8 @@ public:
 
   std::shared_ptr<std::map<std::set<uint16_t>, std::pair<std::shared_ptr<Coverage>, size_t>>> markFilteringSets;
   std::shared_ptr<std::unordered_map<uint16_t, uint16_t>> markAttachClasses;
+
+  std::map<std::string, Insertion::Plan> insertionPlans;
 
   // unit per horizontal grid
   int16_t hfu;

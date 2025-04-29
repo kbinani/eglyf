@@ -15,6 +15,27 @@ public:
     Bottom, // bi
   };
 
+  static std::string StringFromPos(Pos p) {
+    switch (p) {
+    case Pos::TopStart:
+      return "ts";
+    case Pos::BottomStart:
+      return "bs";
+    case Pos::TopEnd:
+      return "te";
+    case Pos::BottomEnd:
+      return "be";
+    case Pos::Top:
+      return "ti";
+    case Pos::Middle:
+      return "mi";
+    case Pos::Bottom:
+      return "bi";
+    default:
+      assert(false);
+    }
+  }
+
   struct Info {
     explicit Info(WxH size, std::optional<int> dx = std::nullopt, std::optional<int> dy = std::nullopt) : size(size), dx(dx), dy(dy) {}
     WxH size;
@@ -35,7 +56,6 @@ public:
     auto const ti = Pos::Top;
     auto const bi = Pos::Bottom;
     auto const mi = Pos::Middle;
-
     out["A14"] = Plan({
         {bi, {{66, Info(22)}}},
     });
@@ -200,7 +220,6 @@ public:
     out["E18"] = Plan({
         {bs, {{66, Info(21)}}},
         {te, {{66, Info(41)}}},
-        {be, {{66, Info(11)}}},
     });
     out["E19"] = Plan({
         {te, {{66, Info(41)}}},
@@ -318,7 +337,6 @@ public:
     out["G7"] = Plan({
         {bs, {{56, Info(21)}}},
         {te, {{56, Info(21)}}},
-        {be, {{56, Info(22)}}},
     });
     out["G8"] = Plan({
         {te, {{56, Info(11)}}},
@@ -365,17 +383,14 @@ public:
     out["G23"] = Plan({
         {bs, {{65, Info(21, nullopt, 2)}}},
         {te, {{65, Info(32)}}},
-        {be, {{65, Info(21)}}},
     });
     out["G25"] = Plan({
         {bs, {{65, Info(22, nullopt, 2)}}},
         {te, {{66, Info(22)}, {65, Info(22)}, {56, Info(22)}, {55, Info(22)}, {54, Info(22)}, {44, Info(22)}, {33, Info(11)}, {22, Info(11)}}},
-        {be, {{65, Info(21)}}},
     });
     out["G26"] = Plan({
         {bs, {{56, Info(21)}}},
         {te, {{56, Info(21)}}},
-        {be, {{56, Info(21)}}},
     });
     out["G26a"] = Plan({
         {bs, {{66, Info(22, nullopt, 2)}}},
@@ -420,7 +435,6 @@ public:
     out["G39"] = Plan({
         {bs, {{66, Info(21, nullopt, 1)}}},
         {te, {{66, Info(22)}, {65, Info(22)}, {56, Info(22)}, {55, Info(22)}, {54, Info(22)}, {44, Info(22)}, {43, Info(11)}, {42, Info(11)}, {33, Info(11)}, {22, Info(11)}}},
-        {be, {{65, Info(21)}, {44, Info(11)}, {42, Info(11)}, {22, Info(11)}}},
     });
     out["G41"] = Plan({
         {bs, {{66, Info(12)}}},

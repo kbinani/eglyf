@@ -74,4 +74,12 @@ using F2DOT14 = impl::FixedFloat<int16_t, 14, float>;
 
 using WxH = int;
 
+inline int WidthFromWxH(WxH v) {
+  return v / 10;
+}
+
+inline int HeightFromWxH(WxH v) {
+  return v % 10;
+}
+
 } // namespace eglyf
