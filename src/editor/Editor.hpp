@@ -2152,20 +2152,63 @@ public:
     mapping["<s1"] = {"hwtb", "esb"};
     mapping["s2>"] = {"ese", "O33a"};
 
+    vector<shared_ptr<Lookup>> reorder;
+    map<Pos, shared_ptr<Lookup>> insertionLookups;
+    insertionLookups[Pos::TopStart] = getLookupByName("mdc004");
+    insertionLookups[Pos::BottomStart] = getLookupByName("mdc005");
+    insertionLookups[Pos::Top] = getLookupByName("mdc006");
+    insertionLookups[Pos::TopEnd] = getLookupByName("mdc007");
+    insertionLookups[Pos::BottomEnd] = getLookupByName("mdc008");
+    insertionLookups[Pos::Bottom] = getLookupByName("mdc009");
+
+    auto ampGID = font->cmap->getGlyphID('&');
+    if (!ampGID) {
+      return EGLYF_ERROR;
+    }
+    auto ampGlyph = getGlyphByID(*ampGID);
+    auto spaceGID = font->cmap->getGlyphID(' ');
+    if (!spaceGID) {
+      return EGLYF_ERROR;
+    }
+    auto spaceGlyph = getGlyphByID(*spaceGID);
+
+    for (auto &[pos, lookup] : insertionLookups) {
+      auto s = make_shared<Lookup::Substitution>();
+      s->input.push_back(ampGlyph);
+      auto ps = Insertion::StringFromPos(pos);
+      s->output.push_back(getGlyphByName(ps));
+      lookup->substitutions.push_back(s);
+      lookup->base = Lookup::ProcessBase{};
+      lookup->marks = Lookup::ProcessMarks(Lookup::ProcessMarks::All{});
+    }
     for (auto const &[name, plan] : insertionPlans) {
       for (auto const &[pos, infos] : plan.insertions) {
-        auto ps = Insertion::StringFromPos(pos);
+        auto g = getGlyphByName(name);
         switch (pos) {
         case Pos::TopStart:
         case Pos::BottomStart:
-        case Pos::Top:
-          mapping["&" + name] = {name, ps};
+        case Pos::Top: {
+          auto context1 = make_shared<Lookup::Context>();
+          context1->right.push_back(g);
+          auto context2 = make_shared<Lookup::Context>();
+          context2->right.push_back(spaceGlyph);
+          context2->right.push_back(g);
+          insertionLookups[pos]->inContexts.push_back(context1);
+          insertionLookups[pos]->inContexts.push_back(context2);
           break;
+        }
         case Pos::TopEnd:
         case Pos::BottomEnd:
-        case Pos::Bottom:
-          mapping[name + "&"] = {name, ps};
+        case Pos::Bottom: {
+          auto context1 = make_shared<Lookup::Context>();
+          context1->left.push_back(g);
+          auto context2 = make_shared<Lookup::Context>();
+          context2->left.push_back(g);
+          context2->left.push_back(spaceGlyph);
+          insertionLookups[pos]->inContexts.push_back(context1);
+          insertionLookups[pos]->inContexts.push_back(context2);
           break;
+        }
         default:
           break;
         }
@@ -2209,36 +2252,10 @@ public:
       }
     }
 
-    auto multipleLookup = getLookupByName("mdc003");
-    multipleLookup->base = Lookup::ProcessBase{};
-    multipleLookup->marks = Lookup::ProcessMarks(Lookup::ProcessMarks::All{});
-    for (auto const &[input, output] : multiple) {
-      auto s = make_shared<Lookup::Substitution>();
-      s->input.push_back(getGlyphByName(input));
-      for (auto const &o : output) {
-        s->output.push_back(getGlyphByName(o));
-      }
-      multipleLookup->substitutions.push_back(s);
-    }
-
-    auto singleLookup = getLookupByName("mdc002");
-    singleLookup->base = Lookup::ProcessBase{};
-    singleLookup->marks = Lookup::ProcessMarks(Lookup::ProcessMarks::All{});
-    for (auto const &[code, output] : single) {
-      auto s = make_shared<Lookup::Substitution>();
-      auto gid = font->cmap->getGlyphID(code);
-      if (!gid) {
-        continue;
-      }
-      auto g = getGlyphByID(*gid);
-      s->input.push_back(g);
-      s->output.push_back(output);
-      singleLookup->substitutions.push_back(s);
-    }
-
     auto ligatureLookup = getLookupByName("mdc001");
     ligatureLookup->base = Lookup::ProcessBase{};
     ligatureLookup->marks = Lookup::ProcessMarks(Lookup::ProcessMarks::All{});
+    reorder.push_back(ligatureLookup);
     for (auto it = ligature.rbegin(); it != ligature.rend(); it++) {
       size_t count = it->first;
       map<string, shared_ptr<Glyph>> const &glyphList = it->second;
@@ -2262,15 +2279,68 @@ public:
       }
     }
 
-    lookups.erase(ranges::remove_if(lookups, [&](auto const &it) { return it.second == singleLookup || it.second == ligatureLookup || it.second == multipleLookup; }).begin(), lookups.end());
-    lookups.insert(lookups.begin(), make_pair(multipleLookup->name, multipleLookup));
-    lookups.insert(lookups.begin(), make_pair(singleLookup->name, singleLookup));
-    lookups.insert(lookups.begin(), make_pair(ligatureLookup->name, ligatureLookup));
+    auto singleLookup = getLookupByName("mdc002");
+    singleLookup->base = Lookup::ProcessBase{};
+    singleLookup->marks = Lookup::ProcessMarks(Lookup::ProcessMarks::All{});
+    reorder.push_back(singleLookup);
+    for (auto const &[code, output] : single) {
+      auto s = make_shared<Lookup::Substitution>();
+      auto gid = font->cmap->getGlyphID(code);
+      if (!gid) {
+        continue;
+      }
+      auto g = getGlyphByID(*gid);
+      s->input.push_back(g);
+      s->output.push_back(output);
+      singleLookup->substitutions.push_back(s);
+    }
+
+    auto multipleLookup = getLookupByName("mdc003");
+    multipleLookup->base = Lookup::ProcessBase{};
+    multipleLookup->marks = Lookup::ProcessMarks(Lookup::ProcessMarks::All{});
+    reorder.push_back(multipleLookup);
+    for (auto const &[input, output] : multiple) {
+      auto s = make_shared<Lookup::Substitution>();
+      s->input.push_back(getGlyphByName(input));
+      for (auto const &o : output) {
+        s->output.push_back(getGlyphByName(o));
+      }
+      multipleLookup->substitutions.push_back(s);
+    }
+
+    for (auto const &[_, lookup] : insertionLookups) {
+      reorder.push_back(lookup);
+    }
+
+    auto cleanupLookup = getLookupByName("mdc010");
+    cleanupLookup->base = Lookup::ProcessBase{};
+    cleanupLookup->marks = Lookup::ProcessMarks(Lookup::ProcessMarks::All{});
+    reorder.push_back(cleanupLookup);
+    for (auto const &[pos, lookup] : insertionLookups) {
+      auto ps = getGlyphByName(Insertion::StringFromPos(pos));
+
+      auto s1 = make_shared<Lookup::Substitution>();
+      s1->input.push_back(spaceGlyph);
+      s1->input.push_back(ps);
+      s1->output.push_back(ps);
+      cleanupLookup->substitutions.push_back(s1);
+
+      auto s2 = make_shared<Lookup::Substitution>();
+      s2->input.push_back(ps);
+      s2->input.push_back(spaceGlyph);
+      s2->output.push_back(ps);
+      cleanupLookup->substitutions.push_back(s2);
+    }
+
+    lookups.erase(ranges::remove_if(lookups, [&](auto const &it) { return ranges::find(reorder, it.second) != reorder.end(); }).begin(), lookups.end());
+    for (auto it = reorder.rbegin(); it != reorder.rend(); it++) {
+      lookups.insert(lookups.begin(), make_pair((*it)->name, *it));
+    }
 
     auto feature = make_shared<Feature>("Ligature", FCC("liga"));
-    feature->lookups.push_back(multipleLookup);
-    feature->lookups.push_back(ligatureLookup);
-    feature->lookups.push_back(singleLookup);
+    for (auto const &lookup : reorder) {
+      feature->lookups.push_back(lookup);
+    }
 
     set<shared_ptr<LangSys>> done;
     for (auto &script : scripts) {
