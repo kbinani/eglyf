@@ -1295,6 +1295,44 @@ public:
     if (auto st = replaceLookup_ps046_targetglyphs_1_A(); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
+    if (auto st = replaceLookup_ps046_targetglyphs_1_A(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    if (auto st = replaceLookup_bl_perglyphsize(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    if (auto st = replaceLookup_ab_perglyphsize(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    return Status::Ok();
+  }
+
+  Status replaceLookup_bl_perglyphsize() {
+    using namespace std;
+    auto first = ranges::find_if(lookups, [](auto const &l) { return l.first.starts_with("bl") && l.first.find("_perglyphsize_") != string::npos; });
+    if (first == lookups.end()) {
+      return EGLYF_ERROR;
+    }
+    ranges::for_each(lookups, [](auto &it) {
+      if (it.first.starts_with("bl") && it.first.find("_perglyphsize_") != string::npos) {
+        it.second->substitutions.clear();
+      }
+    });
+    // TODO:
+    return Status::Ok();
+  }
+
+  Status replaceLookup_ab_perglyphsize() {
+    using namespace std;
+    auto first = ranges::find_if(lookups, [](auto const &l) { return l.first.starts_with("ab") && l.first.find("_perglyphsize_") != string::npos; });
+    if (first == lookups.end()) {
+      return EGLYF_ERROR;
+    }
+    ranges::for_each(lookups, [](auto &it) {
+      if (it.first.starts_with("ab") && it.first.find("_perglyphsize_") != string::npos) {
+        it.second->substitutions.clear();
+      }
+    });
     return Status::Ok();
   }
 

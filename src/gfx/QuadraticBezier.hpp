@@ -29,20 +29,15 @@ public:
     ranges::sort(t);
   }
 
-  template <class F>
-    requires requires(F f) {
-      std::is_floating_point_v<F>;
-    }
-  Vec<F> get(F t) const {
-    return Vec<F>(x.get(t), y.get(t));
+  Vec<T> get(double t) const {
+    return Vec<T>(x.get(t), y.get(t));
   }
 
   std::pair<QuadraticBezier<T>, QuadraticBezier<T>> cut(double t) const {
     using namespace std;
-    auto m = get<double>(t);
-    auto mi = NewVec(m.x, m.y);
-    QuadraticBezier<T> c1(p0, NewVec((1 - t) * p0.x + t * p1.x, (1 - t) * p0.y + t * p1.y), mi);
-    QuadraticBezier<T> c2(mi, NewVec((1 - t) * p1.x + t * p2.x, (1 - t) * p1.y + t * p2.y), p2);
+    Vec<T> m = get(t);
+    QuadraticBezier<T> c1(p0, NewVec((1 - t) * p0.x + t * p1.x, (1 - t) * p0.y + t * p1.y), m);
+    QuadraticBezier<T> c2(m, NewVec((1 - t) * p1.x + t * p2.x, (1 - t) * p1.y + t * p2.y), p2);
     return make_pair(c1, c2);
   }
 
