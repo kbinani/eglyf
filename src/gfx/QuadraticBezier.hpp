@@ -29,34 +29,38 @@ public:
     ranges::sort(t);
   }
 
-  Vec<T> get(T t) const {
-    return Vec<T>(x.get(t), y.get(t));
+  template <class F>
+    requires requires(F f) {
+      std::is_floating_point_v<F>;
+    }
+  Vec<F> get(F t) const {
+    return Vec<F>(x.get(t), y.get(t));
   }
 
-  std::pair<QuadraticBezier, QuadraticBezier> cut(float t) const {
+  std::pair<QuadraticBezier<T>, QuadraticBezier<T>> cut(double t) const {
     using namespace std;
-    auto m = get(t);
+    auto m = get<double>(t);
     auto mi = NewVec(m.x, m.y);
-    QuadraticBezier c1(p0, NewVec((1 - t) * p0.x + t * p1.x, (1 - t) * p0.y + t * p1.y), mi);
-    QuadraticBezier c2(mi, NewVec((1 - t) * p1.x + t * p2.x, (1 - t) * p1.y + t * p2.y), p2);
+    QuadraticBezier<T> c1(p0, NewVec((1 - t) * p0.x + t * p1.x, (1 - t) * p0.y + t * p1.y), mi);
+    QuadraticBezier<T> c2(mi, NewVec((1 - t) * p1.x + t * p2.x, (1 - t) * p1.y + t * p2.y), p2);
     return make_pair(c1, c2);
   }
 
-  float length() const {
+  double length() const {
     // https://stackoverflow.com/questions/11854907/calculate-the-length-of-a-segment-of-a-quadratic-bezier
-    float x0 = p0.x;
-    float x1 = p1.x;
-    float x2 = p2.x;
-    float y0 = p0.y;
-    float y1 = p1.y;
-    float y2 = p2.y;
-    float A = (x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0);
-    float B = (x1 - x0) * (x0 - 2 * x1 + x2) + (y1 - y0) * (y0 - 2 * y1 + y2);
-    float C = (x0 - 2 * x1 + x2) * (x0 - 2 * x1 + x2) + (y0 - 2 * y1 + y2) * (y0 - 2 * y1 + y2);
+    double x0 = p0.x;
+    double x1 = p1.x;
+    double x2 = p2.x;
+    double y0 = p0.y;
+    double y1 = p1.y;
+    double y2 = p2.y;
+    double A = (x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0);
+    double B = (x1 - x0) * (x0 - 2 * x1 + x2) + (y1 - y0) * (y0 - 2 * y1 + y2);
+    double C = (x0 - 2 * x1 + x2) * (x0 - 2 * x1 + x2) + (y0 - 2 * y1 + y2) * (y0 - 2 * y1 + y2);
     return (C + B) / C * sqrt(A + 2 * B + C) - B / C * sqrt(A) + (A * C - B * B) / pow(C, 1.5f) * log((C + B + sqrt(C * (A + 2 * B + C))) / (B + sqrt(C * A)));
   }
 
-  bool intersects(QuadraticBezier const &a, float toleranceLength) const {
+  bool intersects(QuadraticBezier const &a, double toleranceLength) const {
     using namespace std;
 
     QuadraticBezier const &b = *this;
@@ -66,18 +70,18 @@ public:
       return false;
     }
 
-    float la = a.length();
-    float lb = b.length();
+    double la = a.length();
+    double lb = b.length();
     int na = max(1, (int)ceil(la / toleranceLength));
     int nb = max(1, (int)ceil(lb / toleranceLength));
 
     for (int ia = 0; ia < na; ia++) {
-      float ta0 = ia / (float)na;
-      float ta1 = (ia + 1) / (float)na;
+      double ta0 = ia / (double)na;
+      double ta1 = (ia + 1) / (double)na;
       Line sa(a.x.get(ta0), a.y.get(ta0), a.x.get(ta1), a.y.get(ta1));
       for (int ib = 0; ib < nb; ib++) {
-        float tb0 = ib / (float)nb;
-        float tb1 = (ib + 1) / (float)nb;
+        double tb0 = ib / (double)nb;
+        double tb1 = (ib + 1) / (double)nb;
         Line sb(b.x.get(tb0), b.y.get(tb0), b.x.get(tb1), b.y.get(tb1));
         if (sa.intersects(sb)) {
           return true;
@@ -155,20 +159,20 @@ public:
 
   static std::array<QuadraticBezier<T>, 4> LeftCartouche(Vec<int16_t> center, int16_t height, int16_t width) {
     using namespace std;
-    float a = height / 2.0f;
-    float b = width;
-    float c = a * (2 - sqrt(3.0f));
-    float d = b / sqrt(3.0f);
+    double a = height / 2.0;
+    double b = width;
+    double c = a * (2 - sqrt(3.0));
+    double d = b / sqrt(3.0);
     QuadraticBezier<T> upper1(NewVec(a, 0),
                               NewVec(a, d),
-                              NewVec(a / 2, sqrt(3.0f) / 2 * b));
-    QuadraticBezier<T> upper2(NewVec(a / 2, sqrt(3.0f) / 2 * b),
+                              NewVec(a / 2, sqrt(3.0) / 2 * b));
+    QuadraticBezier<T> upper2(NewVec(a / 2, sqrt(3.0) / 2 * b),
                               NewVec(c, b),
                               NewVec(0, b));
     QuadraticBezier<T> lower1(NewVec(0, b),
                               NewVec(-c, b),
-                              NewVec(-a / 2, sqrt(3.0f) / 2 * b));
-    QuadraticBezier<T> lower2(NewVec(-a / 2, sqrt(3.0f) / 2 * b),
+                              NewVec(-a / 2, sqrt(3.0) / 2 * b));
+    QuadraticBezier<T> lower2(NewVec(-a / 2, sqrt(3.0) / 2 * b),
                               NewVec(-a, d),
                               NewVec(-a, 0));
     return {
@@ -176,31 +180,6 @@ public:
         upper2.rotatedCCW90().translated(center.x, center.y),
         lower1.rotatedCCW90().translated(center.x, center.y),
         lower2.rotatedCCW90().translated(center.x, center.y)};
-  }
-
-  static std::array<QuadraticBezier, 4> RightCartouche(Vec<int16_t> center, int16_t height, int16_t width) {
-    using namespace std;
-    float a = height / 2.0f;
-    float b = width;
-    float c = a * (2 - sqrt(3.0f));
-    float d = b / sqrt(3.0f);
-    QuadraticBezier upper1(NewVec(-a, 0),
-                           NewVec(-a, d),
-                           NewVec(-a / 2, sqrt(3.0f) / 2 * b));
-    QuadraticBezier upper2(NewVec(-a / 2, sqrt(3.0f) / 2 * b),
-                           NewVec(-c, b),
-                           NewVec(0, b));
-    QuadraticBezier lower1(NewVec(0, b),
-                           NewVec(c, b),
-                           NewVec(a / 2, sqrt(3.0f) / 2 * b));
-    QuadraticBezier lower2(NewVec(a / 2, sqrt(3.0f) / 2 * b),
-                           NewVec(a, d),
-                           NewVec(a, 0));
-    return {
-        upper1.rotatedCW90().translated(center.x, center.y),
-        upper2.rotatedCW90().translated(center.x, center.y),
-        lower1.rotatedCW90().translated(center.x, center.y),
-        lower2.rotatedCW90().translated(center.x, center.y)};
   }
 
   static bool Intersects(std::variant<Line<T>, QuadraticBezier<T>> a, std::variant<Line<T>, QuadraticBezier<T>> b, double toleranceLength) {
@@ -233,7 +212,7 @@ public:
   }
 
 private:
-  static Vec<int16_t> NewVec(float x, float y) {
+  static Vec<int16_t> NewVec(double x, double y) {
     return Vec<int16_t>((int16_t)round(x), (int16_t)round(y));
   }
 
