@@ -10,9 +10,9 @@ struct Vec {
   Vec() : x(T()), y(T()) {}
   Vec(T x, T y) : x(x), y(y) {}
 
-  Vec<T> transform(T xscale, T scale10, T scale01, T yscale, T dx, T dy) const {
-    T x = xscale * this->x + scale10 * this->y + dx;
-    T y = scale01 * this->x + yscale * this->y + dy;
+  Vec<T> transformed(Transform<T> const &t) const {
+    T x = t.xscale * this->x + t.scale10 * this->y + t.dx;
+    T y = t.scale01 * this->x + t.yscale * this->y + t.dy;
     return Vec<T>(x, y);
   }
 

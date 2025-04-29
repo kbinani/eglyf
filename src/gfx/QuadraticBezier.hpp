@@ -147,6 +147,12 @@ public:
     return Rect<double>(xMin, yMin, xMax, yMax);
   }
 
+  QuadraticBezier<T> transformed(Transform<T> const &txm) const {
+    return QuadraticBezier<T>(p0.transformed(txm),
+                              p1.transformed(txm),
+                              p2.transformed(txm));
+  }
+
   static std::array<QuadraticBezier<T>, 4> LeftCartouche(Vec<int16_t> center, int16_t height, int16_t width) {
     using namespace std;
     float a = height / 2.0f;

@@ -17,6 +17,14 @@ public:
     return false;
   }
 
+  Shape transformed(Transform<double> const &txm) const {
+    Shape s;
+    for (auto const &p : paths) {
+      s.paths.push_back(p.transformed(txm));
+    }
+    return s;
+  }
+
 public:
   std::vector<Path> paths;
 };

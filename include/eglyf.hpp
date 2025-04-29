@@ -21,6 +21,7 @@
 #include "Optional.hpp"
 
 #include "Type.hpp"
+#include "gfx/Transform.hpp"
 #include "gfx/Vec.hpp"
 #include "gfx/Rect.hpp"
 #include "gfx/Point.hpp"

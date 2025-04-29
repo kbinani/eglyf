@@ -775,12 +775,13 @@ public:
         dx = offset.x;
         dy = offset.y;
       }
+      Transform<float> txm(xscale, scale10, scale01, yscale, dx, dy);
       if (holds_alternative<ReadonlyGlyph>(g)) {
         auto rg = get<ReadonlyGlyph>(g);
-        Vec<float> topLeft = Vec<float>(rg.header.xMin, rg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
-        Vec<float> topRight = Vec<float>(rg.header.xMax, rg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
-        Vec<float> bottomLeft = Vec<float>(rg.header.xMin, rg.header.yMax).transform(xscale, scale10, scale01, yscale, dx, dy);
-        Vec<float> bottomRight = Vec<float>(rg.header.xMax, rg.header.yMax).transform(xscale, scale10, scale01, yscale, dx, dy);
+        Vec<float> topLeft = Vec<float>(rg.header.xMin, rg.header.yMin).transformed(txm);
+        Vec<float> topRight = Vec<float>(rg.header.xMax, rg.header.yMin).transformed(txm);
+        Vec<float> bottomLeft = Vec<float>(rg.header.xMin, rg.header.yMax).transformed(txm);
+        Vec<float> bottomRight = Vec<float>(rg.header.xMax, rg.header.yMax).transformed(txm);
         int16_t xMin = (int16_t)floor(min({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
         int16_t xMax = (int16_t)ceil(max({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
         int16_t yMin = (int16_t)floor(min({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y}));
@@ -792,10 +793,10 @@ public:
         }
       } else if (holds_alternative<SimpleGlyph>(g)) {
         auto sg = get<SimpleGlyph>(g);
-        Vec<float> topLeft = Vec<float>(sg.header.xMin, sg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
-        Vec<float> topRight = Vec<float>(sg.header.xMax, sg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
-        Vec<float> bottomLeft = Vec<float>(sg.header.xMin, sg.header.yMax).transform(xscale, scale10, scale01, yscale, dx, dy);
-        Vec<float> bottomRight = Vec<float>(sg.header.xMax, sg.header.yMax).transform(xscale, scale10, scale01, yscale, dx, dy);
+        Vec<float> topLeft = Vec<float>(sg.header.xMin, sg.header.yMin).transformed(txm);
+        Vec<float> topRight = Vec<float>(sg.header.xMax, sg.header.yMin).transformed(txm);
+        Vec<float> bottomLeft = Vec<float>(sg.header.xMin, sg.header.yMax).transformed(txm);
+        Vec<float> bottomRight = Vec<float>(sg.header.xMax, sg.header.yMax).transformed(txm);
         int16_t xMin = (int16_t)floor(min({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
         int16_t xMax = (int16_t)ceil(max({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
         int16_t yMin = (int16_t)floor(min({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y}));
@@ -807,10 +808,10 @@ public:
         }
       } else if (holds_alternative<CompositeGlyph>(g)) {
         auto cg = get<CompositeGlyph>(g);
-        Vec<float> topLeft = Vec<float>(cg.header.xMin, cg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
-        Vec<float> topRight = Vec<float>(cg.header.xMax, cg.header.yMin).transform(xscale, scale10, scale01, yscale, dx, dy);
-        Vec<float> bottomLeft = Vec<float>(cg.header.xMin, cg.header.yMax).transform(xscale, scale10, scale01, yscale, dx, dy);
-        Vec<float> bottomRight = Vec<float>(cg.header.xMax, cg.header.yMax).transform(xscale, scale10, scale01, yscale, dx, dy);
+        Vec<float> topLeft = Vec<float>(cg.header.xMin, cg.header.yMin).transformed(txm);
+        Vec<float> topRight = Vec<float>(cg.header.xMax, cg.header.yMin).transformed(txm);
+        Vec<float> bottomLeft = Vec<float>(cg.header.xMin, cg.header.yMax).transformed(txm);
+        Vec<float> bottomRight = Vec<float>(cg.header.xMax, cg.header.yMax).transformed(txm);
         int16_t xMin = (int16_t)floor(min({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
         int16_t xMax = (int16_t)ceil(max({topLeft.x, topRight.x, bottomLeft.x, bottomRight.x}));
         int16_t yMin = (int16_t)floor(min({topLeft.y, topRight.y, bottomLeft.y, bottomRight.y}));

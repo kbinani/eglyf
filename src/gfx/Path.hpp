@@ -54,6 +54,23 @@ public:
     return false;
   }
 
+  Path transformed(Transform<double> const &txm) const {
+    using namespace std;
+    Path p;
+    for (auto const &e : elements) {
+      if (holds_alternative<Line<double>>(e)) {
+        auto const &l = get<Line<double>>(e);
+        p.elements.push_back(l.transformed(txm));
+      } else if (holds_alternative<QuadraticBezier<double>>(e)) {
+        auto const &b = get<QuadraticBezier<double>>(e);
+        p.elements.push_back(b.transformed(txm));
+      } else [[unlikely]] {
+        assert(false);
+      }
+    }
+    return p;
+  }
+
 public:
   std::vector<Element> elements;
 };

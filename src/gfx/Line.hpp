@@ -26,6 +26,14 @@ public:
     return 0 <= t && t <= 1 && 0 <= u && u <= 1;
   }
 
+  Line<T> transformed(Transform<T> const &txm) const {
+    Vec<T> p0(x0, y0);
+    Vec<T> p1(x1, y1);
+    auto p0_ = p0.transformed(txm);
+    auto p1_ = p1.transformed(txm);
+    return Line<T>(p0_.x, p0_.y, p1_.x, p1_.y);
+  }
+
 public:
   T x0;
   T y0;
