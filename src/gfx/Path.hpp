@@ -41,6 +41,19 @@ public:
     return Status::Ok();
   }
 
+  bool intersects(Path const &o, double toleranceLength) const {
+    for (size_t i = 0; i < elements.size(); i++) {
+      auto const &e = elements[i];
+      for (size_t j = 0; j < o.elements.size(); j++) {
+        auto const &oe = o.elements[j];
+        if (QuadraticBezier<double>::Intersects(e, oe, toleranceLength)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
 public:
   std::vector<Element> elements;
 };

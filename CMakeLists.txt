@@ -105,6 +105,8 @@ list(APPEND src_files
   src/gfx/Point.hpp
   src/gfx/Shape.hpp
   src/gfx/Path.hpp
+  src/gfx/Vec.hpp
+  src/gfx/Rect.hpp
 )
 
 juce_add_binary_data(eglyf-binary-data

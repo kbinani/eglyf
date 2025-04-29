@@ -60,8 +60,8 @@ public:
     using namespace std;
 
     QuadraticBezier const &b = *this;
-    Rect<float> boundsA = a.boundingBox();
-    Rect<float> boundsB = b.boundingBox();
+    Rect<double> boundsA = a.boundingBox();
+    Rect<double> boundsB = b.boundingBox();
     if (!boundsA.intersects(boundsB)) {
       return false;
     }
@@ -199,24 +199,24 @@ public:
 
   static bool Intersects(std::variant<Line<T>, QuadraticBezier<T>> a, std::variant<Line<T>, QuadraticBezier<T>> b, double toleranceLength) {
     using namespace std;
-    if (holds_alternative<Line>(a)) {
-      auto const &lineA = std::get<Line>(a);
-      if (holds_alternative<Line>(b)) {
-        auto const &lineB = std::get<Line>(b);
+    if (holds_alternative<Line<T>>(a)) {
+      auto const &lineA = std::get<Line<T>>(a);
+      if (holds_alternative<Line<T>>(b)) {
+        auto const &lineB = std::get<Line<T>>(b);
         return lineA.intersects(lineB);
-      } else if (holds_alternative<QuadraticBezier>(b)) {
-        auto const &bezierB = std::get<QuadraticBezier>(b);
+      } else if (holds_alternative<QuadraticBezier<T>>(b)) {
+        auto const &bezierB = std::get<QuadraticBezier<T>>(b);
         return bezierB.intersects(lineA);
       } else [[unlikely]] {
         return false;
       }
-    } else if (holds_alternative<QuadraticBezier>(a)) {
-      auto const &bezierA = std::get<QuadraticBezier>(a);
-      if (holds_alternative<Line>(b)) {
-        auto const &lineB = std::get<Line>(b);
+    } else if (holds_alternative<QuadraticBezier<T>>(a)) {
+      auto const &bezierA = std::get<QuadraticBezier<T>>(a);
+      if (holds_alternative<Line<T>>(b)) {
+        auto const &lineB = std::get<Line<T>>(b);
         return bezierA.intersects(lineB);
-      } else if (holds_alternative<QuadraticBezier>(b)) {
-        auto const &bezierB = std::get<QuadraticBezier>(b);
+      } else if (holds_alternative<QuadraticBezier<T>>(b)) {
+        auto const &bezierB = std::get<QuadraticBezier<T>>(b);
         return bezierA.intersects(bezierB, toleranceLength);
       } else [[unlikely]] {
         return false;

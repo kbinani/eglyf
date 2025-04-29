@@ -21,6 +21,8 @@
 #include "Optional.hpp"
 
 #include "Type.hpp"
+#include "gfx/Vec.hpp"
+#include "gfx/Rect.hpp"
 #include "gfx/Point.hpp"
 #include "gfx/Line.hpp"
 #include "gfx/QuadraticEquation.hpp"
