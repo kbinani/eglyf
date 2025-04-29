@@ -341,6 +341,15 @@ public:
       }
     }
 
+    Optional<SimpleGlyph> toSimpleGlyph() const {
+      ByteInputStream s(data);
+      auto sg = SimpleGlyph::Read(header, s);
+      if (!sg) {
+        return EGLYF_NULLOPT_PUSH(sg.status());
+      }
+      return *sg;
+    }
+
     Header header;
     uint16_t numPoints;
     std::string data;
@@ -386,6 +395,50 @@ public:
         }
         r.offset = Vec<int16_t>(dx, dy);
         return r;
+      }
+
+      template <class T>
+      Transform<T> transform() const {
+        using namespace std;
+        T xscale = 1;
+        T yscale = 1;
+        T scale01 = 0;
+        T scale10 = 0;
+        T dx = 0;
+        T dy = 0;
+        if (scale) {
+          if (holds_alternative<F2DOT14>(*scale)) {
+            auto const &s = get<F2DOT14>(*scale);
+            xscale = s.toFloat();
+            yscale = s.toFloat();
+          } else if (holds_alternative<Vec<F2DOT14>>(*scale)) {
+            auto const &s = get<Vec<F2DOT14>>(*scale);
+            xscale = s.x.toFloat();
+            yscale = s.y.toFloat();
+          }
+        }
+        if (scale2) {
+          scale01 = scale2->x.toFloat();
+          scale10 = scale2->y.toFloat();
+        }
+        if (holds_alternative<Vec<uint8_t>>(offset)) {
+          auto const &o = get<Vec<uint8_t>>(offset);
+          dx = o.x;
+          dy = o.y;
+        } else if (holds_alternative<Vec<int8_t>>(offset)) {
+          auto const &o = get<Vec<int8_t>>(offset);
+          dx = o.x;
+          dy = o.y;
+        } else if (holds_alternative<Vec<uint16_t>>(offset)) {
+          auto const &o = get<Vec<uint16_t>>(offset);
+          dx = o.x;
+          dy = o.y;
+        } else if (holds_alternative<Vec<int16_t>>(offset)) {
+          auto const &o = get<Vec<int16_t>>(offset);
+          dx = o.x;
+          dy = o.y;
+        }
+        return Transform<T>(xscale, scale10, scale01, yscale, dx, dy);
       }
     };
 
@@ -737,45 +790,7 @@ public:
       if (child.glyphIndex >= glyphs.size()) {
         return EGLYF_NULLOPT_WHAT("Child glyph index out of range");
       }
-      float xscale = 1;
-      float yscale = 1;
-      float scale01 = 0;
-      float scale10 = 0;
-      float dx = 0;
-      float dy = 0;
-      if (child.scale) {
-        if (holds_alternative<F2DOT14>(*child.scale)) {
-          auto const &scale = get<F2DOT14>(*child.scale);
-          xscale = scale.toFloat();
-          yscale = scale.toFloat();
-        } else if (holds_alternative<Vec<F2DOT14>>(*child.scale)) {
-          auto const &scale = get<Vec<F2DOT14>>(*child.scale);
-          xscale = scale.x.toFloat();
-          yscale = scale.y.toFloat();
-        }
-      }
-      if (child.scale2) {
-        scale01 = child.scale2->x.toFloat();
-        scale10 = child.scale2->y.toFloat();
-      }
-      if (holds_alternative<Vec<uint8_t>>(child.offset)) {
-        auto const &offset = get<Vec<uint8_t>>(child.offset);
-        dx = offset.x;
-        dy = offset.y;
-      } else if (holds_alternative<Vec<int8_t>>(child.offset)) {
-        auto const &offset = get<Vec<int8_t>>(child.offset);
-        dx = offset.x;
-        dy = offset.y;
-      } else if (holds_alternative<Vec<uint16_t>>(child.offset)) {
-        auto const &offset = get<Vec<uint16_t>>(child.offset);
-        dx = offset.x;
-        dy = offset.y;
-      } else if (holds_alternative<Vec<int16_t>>(child.offset)) {
-        auto const &offset = get<Vec<int16_t>>(child.offset);
-        dx = offset.x;
-        dy = offset.y;
-      }
-      Transform<float> txm(xscale, scale10, scale01, yscale, dx, dy);
+      Transform<float> txm = child.transform<float>();
       if (holds_alternative<ReadonlyGlyph>(g)) {
         auto rg = get<ReadonlyGlyph>(g);
         Vec<float> topLeft = Vec<float>(rg.header.xMin, rg.header.yMin).transformed(txm);
@@ -904,6 +919,57 @@ public:
     maxp.maxContours = max(maxp.maxContours, (uint16_t)g.header.numberOfContours);
 
     return gid;
+  }
+
+  Status toShape(uint16_t gid, Shape &out) const {
+    using namespace std;
+    if (gid >= glyphs.size()) {
+      return EGLYF_ERROR;
+    }
+    auto const &g = glyphs[gid];
+    if (holds_alternative<EmptyGlyph>(g)) {
+      return Status::Ok();
+    } else if (holds_alternative<SimpleGlyph>(g)) {
+      auto const &sg = get<SimpleGlyph>(g);
+      for (auto const &c : sg.contours) {
+        Path p;
+        if (auto st = Path::FromPoints(c.points, p); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
+        out.paths.push_back(p);
+      }
+      return Status::Ok();
+    } else if (holds_alternative<ReadonlyGlyph>(g)) {
+      auto const &rg = get<ReadonlyGlyph>(g);
+      auto sg = rg.toSimpleGlyph();
+      if (!sg) {
+        return EGLYF_STATUS_PUSH(sg.status());
+      }
+      for (auto const &c : sg->contours) {
+        Path p;
+        if (auto st = Path::FromPoints(c.points, p); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
+        out.paths.push_back(p);
+      }
+      return Status::Ok();
+    } else if (holds_alternative<CompositeGlyph>(g)) {
+      auto const &cg = get<CompositeGlyph>(g);
+      for (auto const &r : cg.records) {
+        auto txm = r.transform<double>();
+        Shape s;
+        if (auto st = toShape(r.glyphIndex, s); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
+        for (auto const &p : s.paths) {
+          out.paths.push_back(p.transformed(txm));
+        }
+      }
+      return Status::Ok();
+    } else [[unlikely]] {
+      return EGLYF_ERROR;
+    }
+    return Status::Ok();
   }
 
   static std::optional<Rect<int16_t>> Bounds(Glyph const &glyph) {
