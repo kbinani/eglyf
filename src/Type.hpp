@@ -72,4 +72,6 @@ public:
 
 using F2DOT14 = impl::FixedFloat<int16_t, 14, float>;
 
+using WxH = int;
+
 } // namespace eglyf

@@ -114,7 +114,7 @@ public:
     int hGrids;
     int vGrids;
     std::shared_ptr<Glyph> base;
-    std::map<int, std::shared_ptr<Glyph>> variants;
+    std::map<WxH, std::shared_ptr<Glyph>> variants;
   };
 
 public:
@@ -998,7 +998,7 @@ public:
   Status createSizeVariants() {
     using namespace std;
 
-    map<int, vector<int>> variationChain;
+    map<WxH, vector<WxH>> variationChain;
     variationChain[76] = {75, 56, 55, 45, 44, 33, 22, 11};
     variationChain[66] = {55, 44, 33, 22, 11};
     variationChain[65] = {55, 54, 45, 44, 32, 21, 11};
@@ -1030,7 +1030,7 @@ public:
     variationChain[16] = {15, 14, 13, 12, 11};
     variationChain[12] = {11};
 
-    deque<pair<int, float>> sizeList;
+    deque<pair<WxH, float>> sizeList;
     for (auto const &[key, _] : variationChain) {
       int h = key / 10;
       int v = key % 10;
@@ -1211,7 +1211,7 @@ public:
           auto index = distance(sizeList.begin(), first);
           for (size_t i = index; i < sizeList.size(); i++) {
             auto const &it = sizeList[i];
-            int key = it.first;
+            WxH key = it.first;
             int h = key / 10;
             int v = key % 10;
             if (h < hGrids || v < vGrids) {
@@ -1237,7 +1237,7 @@ public:
         continue;
       }
 
-      for (auto key : chain->second) {
+      for (WxH key : chain->second) {
         int yLevel = key % 10;
         int xLevel = key / 10;
 
