@@ -1209,6 +1209,7 @@ public:
 
       SizeVariants sv;
       sv.base = baseGlyph.glyph;
+      sv.bounds = rect;
       sv.hGrids = hGrids;
       sv.vGrids = vGrids;
 
@@ -1222,24 +1223,10 @@ public:
         int xLevel = key / 10;
 
         string n = format("{0}_{1}{2}", name, xLevel, yLevel);
-        float xScale = hfu * xLevel / (float)width;
-        float yScale = vfu * yLevel / (float)height;
-        float scale = min({1.0f, xScale, yScale});
-        int16_t dx;
-        int16_t dy;
-        int16_t lsb;
-        if (scale < 1) {
-          dx = (int16_t)round(-xMid * scale);
-          dy = (int16_t)round((base - rect.yMin) * scale);
-          lsb = (int16_t)round((rect.xMin - xMid) * scale);
-        } else {
-          dx = -xMid;
-          dy = base - rect.yMin;
-          lsb = rect.xMin - xMid;
-        }
+        SizeVariants::Resize resize = sv.transform(xLevel, yLevel, hfu, vfu, base);
         auto classValue = gdef::GlyphDefinitionTable::Class::Mark;
-        auto record = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord::New(baseGlyph.gid, dx, dy, scale);
-        auto newGid = font->addCompositeGlyph(n, classValue, record, 0, lsb);
+        auto record = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord::New(baseGlyph.gid, resize.dx, resize.dy, resize.scale);
+        auto newGid = font->addCompositeGlyph(n, classValue, record, 0, resize.lsb);
         if (!newGid) {
           return EGLYF_STATUS_PUSH(newGid.status());
         }
