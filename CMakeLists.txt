@@ -109,6 +109,7 @@ list(APPEND src_files
   src/gfx/Rect.hpp
   src/gfx/Transform.hpp
   src/editor/Insertion.hpp
+  src/editor/Config.hpp
 )
 
 juce_add_binary_data(eglyf-binary-data

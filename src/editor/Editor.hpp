@@ -2363,8 +2363,10 @@ public:
     if (auto st = Insertion::CreatePlan(*font, insertionPlans); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
-    if (auto st = insertMdCLookup(); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
+    if (cfg.enableSubstMdc) {
+      if (auto st = insertMdCLookup(); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
     }
     if (auto st = replaceLookups(); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
@@ -3882,6 +3884,8 @@ public:
   static int constexpr hhu = 8;
   static int constexpr vhu = 6;
   static int constexpr chu = 6;
+
+  Config cfg;
 
   std::shared_ptr<FontFile> font;
   std::unordered_map<std::string, std::shared_ptr<Glyph>> glyphs;

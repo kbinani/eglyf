@@ -99,5 +99,6 @@
 #include "editor/PlaceholderGlyph.hpp"
 #include "editor/CartoucheGlyph.hpp"
 #include "editor/Insertion.hpp"
+#include "editor/Config.hpp"
 #include "editor/Editor.hpp"
 #include "editor/VtpParser.hpp"
