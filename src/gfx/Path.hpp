@@ -26,7 +26,7 @@ public:
         if (next.control) {
           return EGLYF_ERROR;
         }
-        QuadraticBezier<double> q({prev.x, prev.y}, {p.x, p.y}, {next.x, next.y});
+        QuadraticBezier<double> q(Vec<double>(prev.x, prev.y), Vec<double>(p.x, p.y), Vec<double>(next.x, next.y));
         out.elements.push_back(q);
         prev = next;
         i += 2;
