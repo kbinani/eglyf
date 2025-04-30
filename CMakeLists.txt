@@ -112,6 +112,7 @@ list(APPEND src_files
   src/editor/Config.hpp
   src/editor/Glyph.hpp
   src/editor/Group.hpp
+  src/editor/SizeVariants.hpp
 )
 
 juce_add_binary_data(eglyf-binary-data

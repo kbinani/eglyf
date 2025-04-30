@@ -97,13 +97,6 @@ public:
     Script(std::string const &name, Tag const &tag) : name(name), tag(tag) {}
   };
 
-  struct SizeVariants {
-    int hGrids;
-    int vGrids;
-    std::shared_ptr<Glyph> base;
-    std::map<WxH, std::shared_ptr<Glyph>> variants;
-  };
-
 public:
   explicit Editor(std::shared_ptr<FontFile> const &font) : font(font) {
   }
@@ -2450,7 +2443,7 @@ public:
 
   Status postprocess() {
     using namespace std;
-    if (auto st = Insertion::CreatePlan(*font, insertionPlans); !st.ok()) {
+    if (auto st = Insertion::CreatePlan(*font, sizeVariants, insertionPlans); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
     if (cfg.enableSubstMdc) {
