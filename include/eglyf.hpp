@@ -98,6 +98,8 @@
 #include "GlyphNames.hpp"
 #include "editor/PlaceholderGlyph.hpp"
 #include "editor/CartoucheGlyph.hpp"
+#include "editor/Glyph.hpp"
+#include "editor/Group.hpp"
 #include "editor/Insertion.hpp"
 #include "editor/Config.hpp"
 #include "editor/Editor.hpp"

@@ -4,16 +4,6 @@ namespace eglyf {
 
 class Editor : public std::enable_shared_from_this<Editor> {
 public:
-  struct Glyph {
-    std::string name;
-    std::optional<uint16_t> id;
-    gdef::GlyphDefinitionTable::Class classDef = gdef::GlyphDefinitionTable::Class::Mark;
-  };
-
-  struct Group {
-    std::vector<std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>>> members;
-  };
-
   using GG = std::variant<std::shared_ptr<Glyph>, std::shared_ptr<Group>>;
 
   struct Anchor {

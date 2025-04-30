@@ -110,6 +110,8 @@ list(APPEND src_files
   src/gfx/Transform.hpp
   src/editor/Insertion.hpp
   src/editor/Config.hpp
+  src/editor/Glyph.hpp
+  src/editor/Group.hpp
 )
 
 juce_add_binary_data(eglyf-binary-data

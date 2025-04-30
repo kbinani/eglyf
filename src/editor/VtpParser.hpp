@@ -5,10 +5,10 @@ namespace eglyf {
 class VtpParser {
 private:
   struct GroupBuilder {
-    GroupBuilder(std::shared_ptr<Editor> const &editor, std::shared_ptr<Editor::Group> const &group) : editor(editor), group(group) {
+    GroupBuilder(std::shared_ptr<Editor> const &editor, std::shared_ptr<Group> const &group) : editor(editor), group(group) {
     }
 
-    std::shared_ptr<Editor::Group> endGroup() {
+    std::shared_ptr<Group> endGroup() {
       return group;
     }
 
@@ -39,7 +39,7 @@ private:
     }
 
     std::weak_ptr<Editor> editor;
-    std::shared_ptr<Editor::Group> group;
+    std::shared_ptr<Group> group;
   };
 
   std::shared_ptr<GroupBuilder> defineGroup(std::string const &name) {
@@ -276,8 +276,8 @@ private:
 
       if (l == "EXCEPT_CONTEXT") {
         auto context = make_shared<Editor::Lookup::Context>(
-            initializer_list<variant<shared_ptr<Editor::Glyph>, shared_ptr<Editor::Group>>>{},
-            initializer_list<variant<shared_ptr<Editor::Glyph>, shared_ptr<Editor::Group>>>{});
+            initializer_list<variant<shared_ptr<Glyph>, shared_ptr<Group>>>{},
+            initializer_list<variant<shared_ptr<Glyph>, shared_ptr<Group>>>{});
         auto status = parseContext(lines, i, *context);
         if (!status.ok()) {
           return EGLYF_STATUS_PUSH(status);
@@ -287,8 +287,8 @@ private:
         }
       } else if (l == "IN_CONTEXT") {
         auto context = make_shared<Editor::Lookup::Context>(
-            initializer_list<variant<shared_ptr<Editor::Glyph>, shared_ptr<Editor::Group>>>{},
-            initializer_list<variant<shared_ptr<Editor::Glyph>, shared_ptr<Editor::Group>>>{});
+            initializer_list<variant<shared_ptr<Glyph>, shared_ptr<Group>>>{},
+            initializer_list<variant<shared_ptr<Glyph>, shared_ptr<Group>>>{});
         auto status = parseContext(lines, i, *context);
         if (!status.ok()) {
           return EGLYF_STATUS_PUSH(status);
@@ -546,7 +546,7 @@ private:
 
         auto anchorName = tokens[j + 2];
 
-        variant<shared_ptr<Editor::Glyph>, shared_ptr<Editor::Group>> target;
+        variant<shared_ptr<Glyph>, shared_ptr<Group>> target;
 
         if (type == "GLYPH") {
           target = editor->getGlyphByName(string(unquote(name)));
