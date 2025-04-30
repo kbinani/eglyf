@@ -41,51 +41,6 @@ public:
     return make_pair(c1, c2);
   }
 
-  double length() const {
-    // https://stackoverflow.com/questions/11854907/calculate-the-length-of-a-segment-of-a-quadratic-bezier
-    double x0 = p0.x;
-    double x1 = p1.x;
-    double x2 = p2.x;
-    double y0 = p0.y;
-    double y1 = p1.y;
-    double y2 = p2.y;
-    double A = (x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0);
-    double B = (x1 - x0) * (x0 - 2 * x1 + x2) + (y1 - y0) * (y0 - 2 * y1 + y2);
-    double C = (x0 - 2 * x1 + x2) * (x0 - 2 * x1 + x2) + (y0 - 2 * y1 + y2) * (y0 - 2 * y1 + y2);
-    return (C + B) / C * sqrt(A + 2 * B + C) - B / C * sqrt(A) + (A * C - B * B) / pow(C, 1.5f) * log((C + B + sqrt(C * (A + 2 * B + C))) / (B + sqrt(C * A)));
-  }
-
-  bool intersects(QuadraticBezier const &a, double toleranceLength) const {
-    using namespace std;
-
-    QuadraticBezier const &b = *this;
-    Rect<double> boundsA = a.boundingBox();
-    Rect<double> boundsB = b.boundingBox();
-    if (!boundsA.intersects(boundsB)) {
-      return false;
-    }
-
-    double la = a.length();
-    double lb = b.length();
-    int na = max(1, (int)ceil(la / toleranceLength));
-    int nb = max(1, (int)ceil(lb / toleranceLength));
-
-    for (int ia = 0; ia < na; ia++) {
-      double ta0 = ia / (double)na;
-      double ta1 = (ia + 1) / (double)na;
-      Line sa(a.x.get(ta0), a.y.get(ta0), a.x.get(ta1), a.y.get(ta1));
-      for (int ib = 0; ib < nb; ib++) {
-        double tb0 = ib / (double)nb;
-        double tb1 = (ib + 1) / (double)nb;
-        Line sb(b.x.get(tb0), b.y.get(tb0), b.x.get(tb1), b.y.get(tb1));
-        if (sa.intersects(sb)) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
   bool intersects(Line<T> const &b) const {
     using namespace std;
     double a0x = p0.x;
@@ -177,30 +132,18 @@ public:
         lower2.rotatedCCW90().translated(center.x, center.y)};
   }
 
-  static bool Intersects(std::variant<Line<T>, QuadraticBezier<T>> a, std::variant<Line<T>, QuadraticBezier<T>> b, double toleranceLength) {
+  static bool Intersects(std::variant<Line<T>, QuadraticBezier<T>> a, Rect<T> const &r) {
     using namespace std;
+    Line<T> up(r.xMin, r.yMax, r.xMax, r.yMax);
+    Line<T> left(r.xMin, r.yMax, r.xMin, r.yMin);
+    Line<T> bottom(r.xMin, r.yMin, r.xMax, r.yMin);
+    Line<T> right(r.xMax, r.yMax, r.xMax, r.yMin);
     if (holds_alternative<Line<T>>(a)) {
       auto const &lineA = std::get<Line<T>>(a);
-      if (holds_alternative<Line<T>>(b)) {
-        auto const &lineB = std::get<Line<T>>(b);
-        return lineA.intersects(lineB);
-      } else if (holds_alternative<QuadraticBezier<T>>(b)) {
-        auto const &bezierB = std::get<QuadraticBezier<T>>(b);
-        return bezierB.intersects(lineA);
-      } else [[unlikely]] {
-        return false;
-      }
+      return lineA.intersects(up) || lineA.intersects(left) || lineA.intersects(bottom) || lineA.intersects(right);
     } else if (holds_alternative<QuadraticBezier<T>>(a)) {
       auto const &bezierA = std::get<QuadraticBezier<T>>(a);
-      if (holds_alternative<Line<T>>(b)) {
-        auto const &lineB = std::get<Line<T>>(b);
-        return bezierA.intersects(lineB);
-      } else if (holds_alternative<QuadraticBezier<T>>(b)) {
-        auto const &bezierB = std::get<QuadraticBezier<T>>(b);
-        return bezierA.intersects(bezierB, toleranceLength);
-      } else [[unlikely]] {
-        return false;
-      }
+      return bezierA.intersects(up) || bezierA.intersects(left) || bezierA.intersects(bottom) || bezierA.intersects(right);
     } else [[unlikely]] {
       return false;
     }
