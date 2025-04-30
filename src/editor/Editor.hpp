@@ -1307,6 +1307,7 @@ public:
   Status replaceLookup_bl_perglyphsize() {
     using namespace std;
     using Pos = Insertion::Pos;
+
     auto first = ranges::find_if(lookups, [](auto const &l) { return l.first.starts_with("bl") && l.first.find("_perglyphsize_") != string::npos; });
     if (first == lookups.end()) {
       return EGLYF_ERROR;
@@ -1317,64 +1318,111 @@ public:
         it.second->substitutions.clear();
       }
     });
-    auto block = getGlyphByName("block");
-    size_t count = 0;
-    for (auto pos : {Pos::TopStart, Pos::BottomStart, Pos::TopEnd, Pos::BottomEnd, Pos::Top, Pos::Middle, Pos::Bottom}) {
-      map<WxH, vector<pair<string, Insertion::Info>>> sizes;
-      for (auto const &[name, plan] : insertionPlans) {
-        auto found = plan.insertions.find(pos);
-        if (found == plan.insertions.end()) {
-          continue;
-        }
-        for (auto const &[size, info] : found->second) {
-          sizes[size].push_back(make_pair(name, info));
-        }
-      }
-      for (auto const &[size, infos] : sizes) {
-        auto lookup = make_shared<Lookup>();
-        for (auto const &[name, info] : infos) {
-          auto g = getGlyphByName(name);
-          auto context = make_shared<Lookup::Context>();
-          context->left.push_back(g);
-          lookup->inContexts.push_back(context);
-        }
-        int sw = WidthFromWxH(size);
-        int sh = HeightFromWxH(size);
-        for (int h = 2; h <= chu; h++) {
-          for (int v = 2; v <= vhu; v++) {
-            for (int iw = 1; iw <= sw; iw++) {
-              for (int ih = 1; ih <= sh; ih++) {
-                auto s = make_shared<Lookup::Substitution>();
-                auto tsIn = getGlyphByName(format("ts{}{}", h, v));
-                auto tsOut = getGlyphByName(format("ts{}{}", iw, ih));
-                s->input.push_back(tsIn);
-                s->output.push_back(block);
-                s->output.push_back(tsOut);
-                lookup->substitutions.push_back(s);
-              }
-            }
-          }
-        }
-        auto n = format("_bl_ad_{}", count);
-        lookups.insert(lookups.begin() + index + count, make_pair(n, lookup));
-        count++;
-      }
+    if (auto st = replaceLookup_perglyphsize(index, "bl", ""); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
-    // TODO:
     return Status::Ok();
   }
 
   Status replaceLookup_ab_perglyphsize() {
     using namespace std;
+    using Pos = Insertion::Pos;
+
     auto first = ranges::find_if(lookups, [](auto const &l) { return l.first.starts_with("ab") && l.first.find("_perglyphsize_") != string::npos; });
     if (first == lookups.end()) {
       return EGLYF_ERROR;
     }
+    size_t index = distance(lookups.begin(), first);
     ranges::for_each(lookups, [](auto &it) {
       if (it.first.starts_with("ab") && it.first.find("_perglyphsize_") != string::npos) {
         it.second->substitutions.clear();
       }
     });
+    if (auto st = replaceLookup_perglyphsize(index, "ab", "2"); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    return Status::Ok();
+  }
+
+  Status replaceLookup_perglyphsize(size_t index, std::string const &lookupTableName, std::string const &suffix) {
+    using namespace std;
+    using Pos = Insertion::Pos;
+
+    shared_ptr<Lookup> insertAfterLookup = lookups[index].second;
+
+    shared_ptr<Feature> feature;
+    int indexInFeature = -1;
+    for (auto const &[_, script] : scripts) {
+      for (auto const &langSys : script->langSysList) {
+        for (auto const &f : langSys->features) {
+          auto found = ranges::find(f->lookups, insertAfterLookup);
+          if (found != f->lookups.end()) {
+            feature = f;
+            indexInFeature = distance(f->lookups.begin(), found);
+            break;
+          }
+        }
+        if (feature) {
+          break;
+        }
+      }
+      if (feature) {
+        break;
+      }
+    }
+    if (!feature) {
+      return EGLYF_ERROR;
+    }
+    auto block = getGlyphByName("block");
+    size_t count = 0;
+    for (auto pos : {Pos::TopStart, Pos::BottomStart, Pos::TopEnd, Pos::BottomEnd, Pos::Top, Pos::Middle, Pos::Bottom}) {
+      auto spos = Insertion::StringFromPos(pos);
+      map<map<WxH, WxH>, vector<string>> sizes;
+      for (auto const &[name, plan] : insertionPlans) {
+        auto found = plan.insertions.find(pos);
+        if (found == plan.insertions.end()) {
+          continue;
+        }
+        if (found->second.empty()) {
+          return EGLYF_ERROR;
+        }
+        map<WxH, WxH> key;
+        for (auto const &[size, info] : found->second) {
+          key[size] = info.size;
+        }
+        sizes[key].push_back(name);
+      }
+      for (auto const &[key, names] : sizes) {
+        auto lookup = make_shared<Lookup>();
+        lookup->base = Lookup::ProcessBase{};
+        lookup->marks = Lookup::ProcessMarks(Lookup::ProcessMarks::All{});
+        for (auto const &name : names) {
+          auto g = getGlyphByName(name);
+          auto context = make_shared<Lookup::Context>();
+          context->left.push_back(g);
+          lookup->inContexts.push_back(context);
+        }
+        for (auto [input, output] : key) {
+          int iw = WidthFromWxH(input);
+          int ih = HeightFromWxH(input);
+          int ow = WidthFromWxH(output);
+          int oh = HeightFromWxH(output);
+
+          auto s = make_shared<Lookup::Substitution>();
+          auto posIn = getGlyphByName(format("{}{}{}{}", spos, suffix, iw, ih));
+          auto posOut = getGlyphByName(format("{}{}{}{}", spos, suffix, ow, oh));
+          s->input.push_back(posIn);
+          s->output.push_back(block);
+          s->output.push_back(posOut);
+          lookup->substitutions.push_back(s);
+        }
+        // TODO: mapping for smaller key
+        auto n = format("_{}_{}_{}", lookupTableName, spos, count);
+        lookups.insert(lookups.begin() + index + count, make_pair(n, lookup));
+        feature->lookups.insert(feature->lookups.begin() + indexInFeature + count, lookup);
+        count++;
+      }
+    }
     return Status::Ok();
   }
 
