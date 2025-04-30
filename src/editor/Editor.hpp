@@ -1402,6 +1402,7 @@ public:
           context->left.push_back(g);
           lookup->inContexts.push_back(context);
         }
+        set<WxH> done;
         for (auto [input, output] : key) {
           int iw = WidthFromWxH(input);
           int ih = HeightFromWxH(input);
@@ -1415,8 +1416,35 @@ public:
           s->output.push_back(block);
           s->output.push_back(posOut);
           lookup->substitutions.push_back(s);
+
+          done.insert(input);
         }
-        // TODO: mapping for smaller key
+        auto largest = key.rbegin();
+        int xMaxIn = WidthFromWxH(largest->first);
+        int yMaxIn = HeightFromWxH(largest->first);
+        int xMaxOut = WidthFromWxH(largest->second);
+        int yMaxOut = HeightFromWxH(largest->second);
+        double shrinkScale = min(xMaxOut / (double)xMaxIn, yMaxOut / (double)yMaxIn);
+        for (int x = 1; x <= chu; x++) {
+          for (int y = 1; y <= vhu; y++) {
+            WxH inputSize = x * 10 + y;
+            if (done.find(inputSize) != done.end()) {
+              continue;
+            }
+            int outputX = (int)floor(x * shrinkScale);
+            int outputY = (int)floor(y * shrinkScale);
+            if (outputX < 1 || outputY < 1) {
+              continue;
+            }
+            auto s = make_shared<Lookup::Substitution>();
+            auto posIn = getGlyphByName(format("{}{}{}{}", spos, suffix, x, y));
+            auto posOut = getGlyphByName(format("{}{}{}{}", spos, suffix, outputX, outputY));
+            s->input.push_back(posIn);
+            s->output.push_back(block);
+            s->output.push_back(posOut);
+            lookup->substitutions.push_back(s);
+          }
+        }
         auto n = format("_{}_{}_{}", lookupTableName, spos, count);
         lookups.insert(lookups.begin() + index + count, make_pair(n, lookup));
         feature->lookups.insert(feature->lookups.begin() + indexInFeature + count, lookup);
