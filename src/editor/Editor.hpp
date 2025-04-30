@@ -2239,6 +2239,7 @@ public:
     insertionLookups[Pos::TopEnd] = getLookupByName("mdc007");
     insertionLookups[Pos::BottomEnd] = getLookupByName("mdc008");
     insertionLookups[Pos::Bottom] = getLookupByName("mdc009");
+    insertionLookups[Pos::Middle] = getLookupByName("mdc010");
 
     auto ampGID = font->cmap->getGlyphID('&');
     if (!ampGID) {
@@ -2261,8 +2262,31 @@ public:
       lookup->marks = Lookup::ProcessMarks(Lookup::ProcessMarks::All{});
     }
     for (auto const &[name, plan] : insertionPlans) {
+      auto g = getGlyphByName(name);
+      if (plan.insertions.size() == 1) {
+        auto const &[pos, infos] = *plan.insertions.begin();
+
+        auto context1 = make_shared<Lookup::Context>();
+        context1->right.push_back(g);
+
+        auto context2 = make_shared<Lookup::Context>();
+        context2->right.push_back(spaceGlyph);
+        context2->right.push_back(g);
+
+        auto context3 = make_shared<Lookup::Context>();
+        context3->left.push_back(g);
+
+        auto context4 = make_shared<Lookup::Context>();
+        context4->left.push_back(g);
+        context4->left.push_back(spaceGlyph);
+
+        insertionLookups[pos]->inContexts.push_back(context1);
+        insertionLookups[pos]->inContexts.push_back(context2);
+        insertionLookups[pos]->inContexts.push_back(context3);
+        insertionLookups[pos]->inContexts.push_back(context4);
+        continue;
+      }
       for (auto const &[pos, infos] : plan.insertions) {
-        auto g = getGlyphByName(name);
         switch (pos) {
         case Pos::TopStart:
         case Pos::BottomStart:
@@ -2391,7 +2415,7 @@ public:
       reorder.push_back(lookup);
     }
 
-    auto cleanupLookup = getLookupByName("mdc010");
+    auto cleanupLookup = getLookupByName("mdc011");
     cleanupLookup->base = Lookup::ProcessBase{};
     cleanupLookup->marks = Lookup::ProcessMarks(Lookup::ProcessMarks::All{});
     reorder.push_back(cleanupLookup);
