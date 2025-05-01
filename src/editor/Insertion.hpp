@@ -396,7 +396,7 @@ public:
         for (int ix = ix0; ix <= ix1; ix++) {
           for (int iy = iy0; iy <= iy1; iy++) {
             Rect<double> sub(left + ix * xres, bottom + iy * yres, left + ix * xres + w, bottom + iy * yres + h);
-            if (x0 <= sub.xMin && sub.xMax <= x1 && y0 <= sub.yMin && sub.yMax <= y1) {
+            if (limit.xMin <= sub.xMin && sub.xMax <= limit.xMax && limit.yMin <= sub.yMin && sub.yMax <= limit.yMax) {
               if (!shape.intersects(sub)) {
                 ok.push_back(make_pair(sz, Vec<int16_t>(ix, iy)));
               }
