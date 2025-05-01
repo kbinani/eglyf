@@ -30,12 +30,13 @@ public:
           QuadraticBezier<double> q(Vec<double>(prev.x, prev.y), Vec<double>(p.x, p.y), Vec<double>(mid.x, mid.y));
           elements.push_back(q);
           prev = mid;
+          i++;
         } else {
           QuadraticBezier<double> q(Vec<double>(prev.x, prev.y), Vec<double>(p.x, p.y), Vec<double>(next.x, next.y));
           elements.push_back(q);
           prev = next;
+          i += 2;
         }
-        i += 2;
       } else {
         Line<double> l(prev.x, prev.y, p.x, p.y);
         elements.push_back(l);
