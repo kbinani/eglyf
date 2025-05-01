@@ -34,6 +34,11 @@ public:
     return Line<T>(p0_.x, p0_.y, p1_.x, p1_.y);
   }
 
+  void toSvg(std::ostream &out) const {
+    using namespace std;
+    out << format(R"(<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="black" />)", x0, y0, x1, y1) << endl;
+  }
+
 public:
   T x0;
   T y0;

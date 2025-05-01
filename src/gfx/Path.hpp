@@ -43,6 +43,11 @@ public:
         i++;
       }
     }
+    Point first = points[0];
+    if (prev.x != first.x || prev.y != first.y) {
+      Line<double> l(prev.x, prev.y, first.x, first.y);
+      elements.push_back(l);
+    }
     out.elements.swap(elements);
     return Status::Ok();
   }
@@ -72,6 +77,13 @@ public:
       }
     }
     return p;
+  }
+
+  void toSvg(std::ostream &out) const {
+    using namespace std;
+    for (auto const &e : elements) {
+      visit([&](auto const &v) { v.toSvg(out); }, e);
+    }
   }
 
 public:

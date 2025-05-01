@@ -149,6 +149,14 @@ public:
     }
   }
 
+  void toSvg(std::ostream &out) const {
+    using namespace std;
+    stringstream d;
+    d << "M " << p0.x << "," << p0.y;
+    d << " Q " << p1.x << "," << p1.y << " " << p2.x << "," << p2.y;
+    out << format(R"(<path d="{}" stroke="black" fill="none" />)", d.str()) << endl;
+  }
+
 private:
   static Vec<int16_t> NewVec(double x, double y) {
     return Vec<int16_t>((int16_t)round(x), (int16_t)round(y));
