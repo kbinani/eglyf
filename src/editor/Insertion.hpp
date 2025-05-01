@@ -387,7 +387,6 @@ public:
         WxH sz = x * 10 + y;
         if (!shape.intersects(rect)) {
           ok.push_back(make_pair(sz, Vec<int16_t>(0, 0)));
-          continue;
         }
         int ix0 = (int)floor((x0 - left) / xres);
         int ix1 = (int)ceil((x1 - (left + w)) / yres);
