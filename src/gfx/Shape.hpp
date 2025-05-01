@@ -23,11 +23,9 @@ public:
   }
 
   void toSvg(std::ostream &out) const {
-    out << R"(<svg xmlns="http://www.w3.org/2000/svg">)";
     for (auto const &p : paths) {
       p.toSvg(out);
     }
-    out << "</svg>";
   }
 
 public:

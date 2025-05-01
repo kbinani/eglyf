@@ -34,6 +34,14 @@ struct Rect {
         yMin > o.yMax);
   }
 
+  bool contains(Vec<T> const &p) const {
+    return xMin <= p.x && p.x <= xMax && yMin <= p.y && p.y <= yMax;
+  }
+
+  bool contains(T x, T y) const {
+    return xMin <= x && x <= xMax && yMin <= y && y <= yMax;
+  }
+
   T width() const { return xMax - xMin; }
   T height() const { return yMax - yMin; }
 };

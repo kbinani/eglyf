@@ -140,9 +140,15 @@ public:
     Line<T> right(r.xMax, r.yMax, r.xMax, r.yMin);
     if (holds_alternative<Line<T>>(a)) {
       auto const &lineA = std::get<Line<T>>(a);
+      if (r.contains(lineA.x0, lineA.y0) || r.contains(lineA.x1, lineA.y1)) {
+        return true;
+      }
       return lineA.intersects(up) || lineA.intersects(left) || lineA.intersects(bottom) || lineA.intersects(right);
     } else if (holds_alternative<QuadraticBezier<T>>(a)) {
       auto const &bezierA = std::get<QuadraticBezier<T>>(a);
+      if (r.contains(bezierA.p0) || r.contains(bezierA.p2)) {
+        return true;
+      }
       return bezierA.intersects(up) || bezierA.intersects(left) || bezierA.intersects(bottom) || bezierA.intersects(right);
     } else [[unlikely]] {
       return false;
