@@ -1364,6 +1364,11 @@ public:
         if (sv == sizeVariants.end()) {
           continue;
         }
+        // IN_CONTEXT
+        //  LEFT GLYPH "G27"
+        //  LEFT GLYPH "bs22"
+        // END_CONTEXT
+
         auto mark = format("{}{}", Insertion::StringFromPos(pos), size);
         auto mg = getGlyphByName(mark);
         auto context = make_shared<Lookup::Context>();
@@ -1376,6 +1381,7 @@ public:
       }
 
       for (WxH size : sizes) {
+        // ADJUST_SINGLE GLYPH "it22" BY POS DY 279 END_POS
         auto it = getGlyphByName(format("it{}", size));
         adjust->glyphs.push_back(Lookup::AdjustGlyph(it, dx, dy));
 
