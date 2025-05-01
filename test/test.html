@@ -14,16 +14,19 @@
   font-display: block;
 }
 .reference {
-  font-size: 40px;
+  font-size: 30px;
   font-family: 'ReferenceFont';
+  white-space: pre;
 }
 .test {
-  font-size: 40px;
+  font-size: 30px;
   font-family: 'TestFont';
+  white-space: pre;
 }
 .mdc {
-  font-size: 40px;
+  font-size: 30px;
   font-family: 'TestFont';
+  white-space: pre;
 }
 </style>
 </head>
@@ -99,6 +102,7 @@
   const xrw = "&#x132A4;";
   const r = "&#x1308B;";
   const st = "&#x132A8;";
+  const G37 = "&#x1316A;";
   const data = [
     [`${A1}`, "A1"],
     [`${A1}${vj}${O1}`, "A1:O1"],
@@ -129,6 +133,7 @@
       `${cb}${esb}${nTr}${nfr}${nb}${vj}${N17}${vj}${N17}${nb}${vj}${ir}${vj}${x}${hj}${t}${L2a}${cb}${esb}${ra}${mn}${xpr}${ese}${ce}${mAa}${vj}${xrw}${VS3}${x}${vj}${r}${ir}${vj}${st}${hj}${nTr}${ese}${ce}`,
       "<nTr nfr nb:N17:N17 nb:ir:x*t L2a<ra mn xpr> mAa:xrw\\r1 x:r ir:st*nTr>"
     ],
+    [`${G37}${bs}${t}`, `G37&t`],
   ];
   const table = document.getElementById("table");
   const filter = (s) => {

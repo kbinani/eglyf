@@ -1271,6 +1271,146 @@ public:
     if (auto st = replaceLookup_ab_perglyphsize(); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
+    if (auto st = replaceLookup_mk_dist_offset(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    return Status::Ok();
+  }
+
+  Status replaceLookup_mk_dist_offset() {
+    using namespace std;
+    using Pos = Insertion::Pos;
+    using Info = Insertion::Info;
+
+    auto first = ranges::find_if(lookups, [](auto const &l) { return l.first.starts_with("mk") && l.first.find("_dist_offset_") != string::npos; });
+    if (first == lookups.end()) {
+      return EGLYF_ERROR;
+    }
+    size_t index = distance(lookups.begin(), first);
+    ranges::for_each(lookups, [](auto &it) {
+      if (it.first.starts_with("mk") && it.first.find("_dist_offset_") != string::npos) {
+        it.second->substitutions.clear();
+      }
+    });
+
+    shared_ptr<Feature> feature;
+    int indexInFeature = -1;
+    size_t count = 0;
+    for (auto const &[_, script] : scripts) {
+      for (auto const &langSys : script->langSysList) {
+        for (auto const &f : langSys->features) {
+          auto found = ranges::find(f->lookups, first->second);
+          if (found != f->lookups.end()) {
+            feature = f;
+            indexInFeature = distance(f->lookups.begin(), found);
+            break;
+          }
+        }
+        if (feature) {
+          break;
+        }
+      }
+      if (feature) {
+        break;
+      }
+    }
+    if (!feature) {
+      return EGLYF_ERROR;
+    }
+
+    map<int, vector<tuple<string, Pos, WxH>>> x;
+    map<int, vector<tuple<string, Pos, WxH>>> y;
+    map<pair<int, int>, vector<tuple<string, Pos, WxH>>> xy;
+
+    for (auto i = insertionPlans.begin(); i != insertionPlans.end(); i++) {
+      string const &name = i->first;
+      Insertion::Plan const &plan = i->second;
+      for (auto j = plan.insertions.begin(); j != plan.insertions.end(); j++) {
+        Pos pos = j->first;
+        map<WxH, Info> const &infos = j->second;
+        for (auto k = infos.begin(); k != infos.end(); k++) {
+          Info const &info = k->second;
+          if (!info.dx && !info.dy) {
+            continue;
+          }
+          WxH size = info.size;
+          if (info.dx && info.dy) {
+            auto key = make_pair(*info.dx, *info.dy);
+            xy[key].push_back(make_tuple(name, pos, size));
+          } else if (info.dx) {
+            x[*info.dx].push_back(make_tuple(name, pos, size));
+          } else {
+            y[*info.dy].push_back(make_tuple(name, pos, size));
+          }
+        }
+      }
+    }
+
+    auto const process = [&](vector<tuple<string, Pos, WxH>> const &glyphs, optional<int16_t> dx, optional<int16_t> dy) {
+      auto lookup = make_shared<Lookup>();
+      lookup->base = Lookup::ProcessBase{};
+      lookup->marks = Lookup::ProcessMarks(Lookup::ProcessMarks::All{});
+
+      auto adjust = make_shared<Lookup::AdjustSingle>();
+      lookup->adjustSingle = adjust;
+
+      set<WxH> sizes;
+
+      for (auto j = glyphs.begin(); j != glyphs.end(); j++) {
+        string const &name = get<0>(*j);
+        Pos pos = get<1>(*j);
+        WxH size = get<2>(*j);
+        auto sv = sizeVariants.find(name);
+        if (sv == sizeVariants.end()) {
+          continue;
+        }
+        auto mark = format("{}{}", Insertion::StringFromPos(pos), size);
+        auto mg = getGlyphByName(mark);
+        auto context = make_shared<Lookup::Context>();
+        shared_ptr<Glyph> glyph = getGlyphByName(name);
+        context->left.push_back(glyph);
+        context->left.push_back(mg);
+
+        lookup->inContexts.push_back(context);
+        sizes.insert(size);
+      }
+
+      for (WxH size : sizes) {
+        auto it = getGlyphByName(format("it{}", size));
+        adjust->glyphs.push_back(Lookup::AdjustGlyph(it, dx, dy));
+
+        auto itR = getGlyphByName(format("it{}R", size));
+        adjust->glyphs.push_back(Lookup::AdjustGlyph(itR, dx, dy));
+      }
+
+      string n = format("_mk_dist_offset_{}", count);
+      lookups.insert(lookups.begin() + index + count, make_pair(n, lookup));
+      feature->lookups.insert(feature->lookups.begin() + indexInFeature + count, lookup);
+
+      count++;
+    };
+
+    for (auto i = x.begin(); i != x.end(); i++) {
+      int dx = i->first;
+      int16_t dx16 = dx * hfu * chu / insertionResolution;
+      vector<tuple<string, Pos, WxH>> const &glyphs = i->second;
+      process(glyphs, dx16, nullopt);
+    }
+    for (auto i = y.begin(); i != y.end(); i++) {
+      int dy = i->first;
+      int16_t dy16 = dy * vfu * vhu / insertionResolution;
+      vector<tuple<string, Pos, WxH>> const &glyphs = i->second;
+      process(glyphs, nullopt, dy16);
+    }
+    for (auto i = xy.begin(); i != xy.end(); i++) {
+      int dx = i->first.first;
+      int dy = i->first.second;
+      int16_t dx16 = dx * hfu * chu / insertionResolution;
+      int16_t dy16 = dy * vfu * vhu / insertionResolution;
+      vector<tuple<string, Pos, WxH>> const &glyphs = i->second;
+      process(glyphs, dx16, dy16);
+    }
+
     return Status::Ok();
   }
 
@@ -3954,6 +4094,7 @@ public:
   static int constexpr hhu = 8;
   static int constexpr vhu = 6;
   static int constexpr chu = 6;
+  static int constexpr insertionResolution = 20;
 
   Config cfg;
 
