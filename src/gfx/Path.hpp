@@ -19,10 +19,12 @@ public:
     for (int i = 1; i < points.size();) {
       Point p = points[i];
       if (p.control) {
+        Point next;
         if (i + 1 >= points.size()) {
-          return EGLYF_ERROR;
+          next = points[0];
+        } else {
+          next = points[i + 1];
         }
-        Point next = points[i + 1];
         if (next.control) {
           Point mid((p.x + next.x) / 2, (p.y + next.y) / 2);
           QuadraticBezier<double> q(Vec<double>(prev.x, prev.y), Vec<double>(p.x, p.y), Vec<double>(mid.x, mid.y));
