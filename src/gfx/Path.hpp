@@ -28,11 +28,11 @@ public:
         if (next.control) {
           Point mid((p.x + next.x) / 2, (p.y + next.y) / 2);
           QuadraticBezier<double> q(Vec<double>(prev.x, prev.y), Vec<double>(p.x, p.y), Vec<double>(mid.x, mid.y));
-          out.elements.push_back(q);
+          elements.push_back(q);
           prev = mid;
         } else {
           QuadraticBezier<double> q(Vec<double>(prev.x, prev.y), Vec<double>(p.x, p.y), Vec<double>(next.x, next.y));
-          out.elements.push_back(q);
+          elements.push_back(q);
           prev = next;
         }
         i += 2;
