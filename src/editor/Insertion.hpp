@@ -55,6 +55,7 @@ public:
                            int16_t hfu,
                            int16_t vfu,
                            int16_t base,
+                           int insertionResolution,
                            std::map<std::string, Plan> &out) {
     using namespace std;
     auto const ts = Pos::TopStart;
@@ -260,7 +261,7 @@ public:
       }
       WxH baseSize = found->second.hGrids * 10 + found->second.vGrids;
       for (Pos pos : poss) {
-        auto result = ScanInsertionSpot(font, name, baseSize, pos, chu, vhu, hfu, vfu, base);
+        auto result = ScanInsertionSpot(font, name, baseSize, pos, chu, vhu, hfu, vfu, base, insertionResolution);
         if (result) {
           WxH sz = result->first;
           Vec<int16_t> offset = result->second;
@@ -276,7 +277,7 @@ public:
         for (auto i = found->second.variants.begin(); i != found->second.variants.end(); i++) {
           WxH variantSize = i->first;
           shared_ptr<Glyph> g = i->second;
-          auto r = ScanInsertionSpot(font, g->name, variantSize, pos, chu, vhu, hfu, vfu, base);
+          auto r = ScanInsertionSpot(font, g->name, variantSize, pos, chu, vhu, hfu, vfu, base, insertionResolution);
           if (r) {
             WxH sz = r->first;
             Vec<int16_t> offset = r->second;
@@ -304,8 +305,13 @@ public:
                                                                        int16_t vhu,
                                                                        int16_t hfu,
                                                                        int16_t vfu,
-                                                                       int16_t base) {
+                                                                       int16_t base,
+                                                                       int insertionResolution) {
     using namespace std;
+    int const res = insertionResolution;
+    double const xres = hfu * chu / double(res);
+    double const yres = vfu * vhu / double(res);
+
     if (!holds_alternative<FontFile::TrueTypeOutlines>(font.outlines)) {
       return nullopt;
     }
@@ -330,6 +336,8 @@ public:
     int height = HeightFromWxH(size) * vfu;
     int x0 = -width / 2;
     int y0 = base;
+    int x1 = x0 + width;
+    int y1 = y0 + height;
     deque<pair<WxH, Vec<int16_t>>> ok;
     for (int x = 1; x <= xMax; x++) {
       for (int y = 1; y <= yMax; y++) {
@@ -337,40 +345,63 @@ public:
         int h = y * vfu;
         int left;
         int bottom;
+        Rect<int16_t> limit;
         switch (pos) {
         case Pos::TopStart:
           left = x0;
-          bottom = y0 + height - h;
+          bottom = y1 - h;
+          limit = Rect<int16_t>(x0, max(y0 + height / 2 - h, y0), min(x0 + width / 2 + w, x1), y1);
           break;
         case Pos::BottomStart:
           left = x0;
           bottom = y0;
+          limit = Rect<int16_t>(x0, y0, min(x0 + width / 2 + w, x1), min(y0 + height / 2 + h, y1));
           break;
         case Pos::TopEnd:
           left = x0 + width - w;
           bottom = y0 + height - h;
+          limit = Rect<int16_t>(max(x0 + width / 2 - w, x0), max(y0 + height / 2 - h, y0), x1, y1);
           break;
         case Pos::BottomEnd:
           left = x0 + width - w;
           bottom = y0;
+          limit = Rect<int16_t>(max(x0 + width / 2 - w, x0), y0, x1, min(y0 + height / 2 - h, y0));
           break;
         case Pos::Top:
           left = x0 + width / 2 - w / 2;
           bottom = y0 + height - h;
+          limit = Rect<int16_t>(max(x0 + width / 2 - w, x0), max(y0 + height / 2 - h, y0), min(x0 + width / 2 + w, x1), y1);
           break;
         case Pos::Middle:
           left = x0 + width / 2 - w / 2;
           bottom = y0 + height / 2 - h / 2;
+          limit = Rect<int16_t>(max(x0 + width / 2 - w, x0), max(y0 + height / 2 - h, y0), min(x0 + width / 2 + w, x1), min(y0 + height / 2 + h, y1));
           break;
         case Pos::Bottom:
           left = x0 + width / 2 - w / 2;
           bottom = y0;
+          limit = Rect<int16_t>(max(x0 + width / 2 - w, x0), y0, min(x0 + width / 2 + w, x1), min(y0 + height / 2 + h, y1));
           break;
         }
         Rect<double> rect(left, bottom, left + w, bottom + h);
+        WxH sz = x * 10 + y;
         if (!shape.intersects(rect)) {
-          WxH sz = x * 10 + y;
           ok.push_back(make_pair(sz, Vec<int16_t>(0, 0)));
+          continue;
+        }
+        int ix0 = (int)floor((x0 - left) / xres);
+        int ix1 = (int)ceil((x1 - (left + w)) / yres);
+        int iy0 = (int)floor((y0 - bottom) / xres);
+        int iy1 = (int)ceil((y1 - (bottom + h)) / yres);
+        for (int ix = ix0; ix <= ix1; ix++) {
+          for (int iy = iy0; iy <= iy1; iy++) {
+            Rect<double> sub(left + ix * xres, bottom + iy * yres, left + ix * xres + w, bottom + iy * yres + h);
+            if (x0 <= sub.xMin && sub.xMax <= x1 && y0 <= sub.yMin && sub.yMax <= y1) {
+              if (!shape.intersects(sub)) {
+                ok.push_back(make_pair(sz, Vec<int16_t>(ix, iy)));
+              }
+            }
+          }
         }
       }
     }
