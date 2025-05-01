@@ -82,4 +82,16 @@ inline int HeightFromWxH(WxH v) {
   return v % 10;
 }
 
+inline double AspectRatioFromWxH(WxH v) {
+  double w = WidthFromWxH(v);
+  double h = HeightFromWxH(v);
+  return w / h;
+}
+
+inline int AreaFromWxH(WxH v) {
+  int w = WidthFromWxH(v);
+  int h = HeightFromWxH(v);
+  return w * h;
+}
+
 } // namespace eglyf

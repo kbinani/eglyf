@@ -258,22 +258,38 @@ public:
       if (found == sizeVariants.end()) {
         continue;
       }
-      int size = found->second.hGrids * 10 + found->second.vGrids;
+      WxH baseSize = found->second.hGrids * 10 + found->second.vGrids;
       for (Pos pos : poss) {
-        auto result = ScanInsertionSpot(font, name, size, pos, chu, vhu, hfu, vfu, base);
-        if (!result) {
-          continue;
+        auto result = ScanInsertionSpot(font, name, baseSize, pos, chu, vhu, hfu, vfu, base);
+        if (result) {
+          WxH sz = result->first;
+          Vec<int16_t> offset = result->second;
+          Info info(sz);
+          if (offset.x != 0) {
+            info.dx = offset.x;
+          }
+          if (offset.y != 0) {
+            info.dy = offset.y;
+          }
+          out[name].insertions[pos][baseSize] = info;
         }
-        WxH sz = result->first;
-        Vec<int16_t> offset = result->second;
-        Info info(sz);
-        if (offset.x != 0) {
-          info.dx = offset.x;
+        for (auto i = found->second.variants.begin(); i != found->second.variants.end(); i++) {
+          WxH variantSize = i->first;
+          shared_ptr<Glyph> g = i->second;
+          auto r = ScanInsertionSpot(font, g->name, variantSize, pos, chu, vhu, hfu, vfu, base);
+          if (r) {
+            WxH sz = r->first;
+            Vec<int16_t> offset = r->second;
+            Info info(sz);
+            if (offset.x != 0) {
+              info.dx = offset.x;
+            }
+            if (offset.y != 0) {
+              info.dy = offset.y;
+            }
+            out[name].insertions[pos][variantSize] = info;
+          }
         }
-        if (offset.y != 0) {
-          info.dy = offset.y;
-        }
-        out[name].insertions[pos][size] = info;
       }
     }
 
@@ -355,7 +371,6 @@ public:
         if (!shape.intersects(rect)) {
           WxH sz = x * 10 + y;
           ok.push_back(make_pair(sz, Vec<int16_t>(0, 0)));
-          cout << name << ":" << StringFromPos(pos) << ":[" << x << ", " << y << "]" << endl;
         }
       }
     }
@@ -363,15 +378,11 @@ public:
       return nullopt;
     }
     ranges::sort(ok, [=](auto const &a, auto const &b) {
-      int wA = WidthFromWxH(a.first);
-      int hA = HeightFromWxH(a.first);
-      int wB = WidthFromWxH(b.first);
-      int hB = HeightFromWxH(b.first);
-      int sA = wA * hA;
-      int sB = wB * hB;
+      int sA = AreaFromWxH(a.first);
+      int sB = AreaFromWxH(b.first);
       if (sA == sB) {
-        double aA = wA / (double)hA;
-        double aB = wB / (double)hB;
+        double aA = AspectRatioFromWxH(a.first);
+        double aB = AspectRatioFromWxH(b.first);
         double aO = wO / (double)hO;
         return fabs(aA - aO) < fabs(aB - aO);
       } else {
