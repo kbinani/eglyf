@@ -3262,6 +3262,11 @@ public:
   Status compile() {
     using namespace std;
 
+    lookups.erase(ranges::remove_if(lookups, [](auto const &it) {
+                    return it.second->substitutions.empty() && !it.second->adjustSingle && !it.second->attach;
+                  }).begin(),
+                  lookups.end());
+
     auto gpos = make_shared<gpos::GlyphPositioningTable>();
     auto gsub = make_shared<gsub::GlyphSubstitutionTable>();
 
