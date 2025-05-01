@@ -2433,6 +2433,15 @@ public:
         }
       }
     }
+    set<Pos> removeAsEmpty;
+    for (auto const &[pos, lookup] : insertionLookups) {
+      if (lookup->inContexts.empty()) {
+        removeAsEmpty.insert(pos);
+      }
+    }
+    for (auto pos : removeAsEmpty) {
+      insertionLookups.erase(pos);
+    }
 
     set<string> ligs;
     map<string, string> codes;
