@@ -37,6 +37,7 @@ public:
   }
 
   struct Info {
+    Info() = default;
     explicit Info(WxH size, std::optional<int> dx = std::nullopt, std::optional<int> dy = std::nullopt) : size(size), dx(dx), dy(dy) {}
     WxH size;
     std::optional<int> dx;
@@ -47,7 +48,14 @@ public:
     std::map<Pos, std::map<WxH, Info>> insertions;
   };
 
-  static Status CreatePlan_(FontFile const &font, std::unordered_map<std::string, SizeVariants> const &sizeVariants, std::map<std::string, Plan> &out) {
+  static Status CreatePlan(FontFile const &font,
+                           std::unordered_map<std::string, SizeVariants> const &sizeVariants,
+                           int16_t chu,
+                           int16_t vhu,
+                           int16_t hfu,
+                           int16_t vfu,
+                           int16_t base,
+                           std::map<std::string, Plan> &out) {
     using namespace std;
     auto const ts = Pos::TopStart;
     auto const bs = Pos::BottomStart;
@@ -245,639 +253,133 @@ public:
     positions["Z11"] = {bs, be};
     positions["Z6"] = {bs};
 
+    for (auto const &[name, poss] : positions) {
+      auto found = sizeVariants.find(name);
+      if (found == sizeVariants.end()) {
+        continue;
+      }
+      int size = found->second.hGrids * 10 + found->second.vGrids;
+      for (Pos pos : poss) {
+        auto result = ScanInsertionSpot(font, name, size, pos, chu, vhu, hfu, vfu, base);
+        if (!result) {
+          continue;
+        }
+        WxH sz = result->first;
+        Vec<int16_t> offset = result->second;
+        Info info(sz);
+        if (offset.x != 0) {
+          info.dx = offset.x;
+        }
+        if (offset.y != 0) {
+          info.dy = offset.y;
+        }
+        out[name].insertions[pos][size] = info;
+      }
+    }
+
     return Status::Ok();
   }
 
-  static Status CreatePlan(FontFile const &font, std::unordered_map<std::string, SizeVariants> const &sizeVariants, std::map<std::string, Plan> &out) {
+  static std::optional<std::pair<WxH, Vec<int16_t>>> ScanInsertionSpot(FontFile const &font,
+                                                                       std::string const &name,
+                                                                       WxH size,
+                                                                       Pos pos,
+                                                                       int16_t chu,
+                                                                       int16_t vhu,
+                                                                       int16_t hfu,
+                                                                       int16_t vfu,
+                                                                       int16_t base) {
     using namespace std;
-    auto const ts = Pos::TopStart;
-    auto const bs = Pos::BottomStart;
-    auto const te = Pos::TopEnd;
-    auto const be = Pos::BottomEnd;
-    auto const ti = Pos::Top;
-    auto const bi = Pos::Bottom;
-    auto const mi = Pos::Middle;
-    out["A14"] = Plan({
-        {bi, {{66, Info(22)}}},
-    });
-    out["A16"] = Plan({
-        {te, {{46, Info(21)}}},
-    });
-    out["A18"] = Plan({
-        {be, {{46, Info(21)}}},
-    });
-    out["A26"] = Plan({
-        {bs, {{46, Info(13)}}},
-    });
-    out["A28"] = Plan({
-        {bs, {{56, Info(13)}}},
-        {be, {{56, Info(13)}}},
-    });
-    out["A30"] = Plan({
-        {bs, {{46, Info(14)}}},
-    });
-    out["A40"] = Plan({
-        {ts, {{46, Info(13)}}},
-    });
-    out["A41"] = Plan({
-        {ts, {{46, Info(13)}}},
-    });
-    out["A43"] = Plan({
-        {ts, {{46, Info(13)}}},
-    });
-    out["A45"] = Plan({
-        {ts, {{46, Info(13)}}},
-    });
-    out["A50"] = Plan({
-        {ts, {{56, Info(23)}}},
-    });
-    out["A55"] = Plan({
-        {bi, {{64, Info(42)}}},
-    });
-    out["B1"] = Plan({
-        {ts, {{46, Info(13)}}},
-    });
-    out["C1"] = Plan({
-        {ts, {{46, Info(13)}}},
-    });
-    out["C2a"] = Plan({
-        {ts, {{36, Info(13)}}},
-    });
-    out["C9"] = Plan({
-        {ts, {{36, Info(13)}}},
-    });
-    out["C10"] = Plan({
-        {ts, {{36, Info(13)}}},
-    });
-    out["D3"] = Plan({
-        {bs, {{63, Info(22)}}},
-    });
-    out["D17"] = Plan({
-        {te, {{64, Info(32)}, {62, Info(31)}, {43, Info(21)}, {32, Info(11)}}},
-    });
-    out["D28"] = Plan({
-        {mi, {{55, Info(23)}}},
-        {ti, {{55, Info(24)}}},
-    });
-    out["D28o"] = Plan({
-        {mi, {{55, Info(23)}}},
-        {bi, {{55, Info(24)}}},
-    });
-    out["D32"] = Plan({
-        {mi, {{56, Info(22)}}},
-        {bi, {{56, Info(24)}}},
-    });
-    out["D36"] = Plan({
-        {ts, {{63, Info(51)}}},
-        {ti, {{66, Info(43)}}},
-    });
-    out["D40"] = Plan({
-        {ti, {{63, Info(41)}}},
-    });
-    out["D41"] = Plan({
-        {ts, {{66, Info(41)}}},
-    });
-    out["D42"] = Plan({
-        {ts, {{63, Info(51)}}},
-        {ti, {{63, Info(41)}}},
-    });
-    out["D45"] = Plan({
-        {ti, {{64, Info(21)}}},
-    });
-    out["D52"] = Plan({
-        {bs, {{63, Info(41)}}},
-    });
-    out["D53"] = Plan({
-        {bs, {{63, Info(41)}}},
-    });
-    out["D54"] = Plan({
-        {ts, {{54, Info(12)}}},
-    });
-    out["D55"] = Plan({
-        {te, {{54, Info(12)}}},
-    });
-    out["D56"] = Plan({
-        {ts, {{36, Info(15)}}},
-    });
-    out["D58"] = Plan({
-        {ts, {{46, Info(24)}}},
-    });
-    out["D60"] = Plan({
-        {mi, {{46, Info(13)}}},
-    });
-    out["D66"] = Plan({
-        {ts, {{64, Info(42)}}},
-        {ti, {{64, Info(22)}}},
-    });
-    out["E1"] = Plan({
-        {te, {{66, Info(31)}}},
-    });
-    out["E3"] = Plan({
-        {te, {{66, Info(41)}}},
-    });
-    out["E6"] = Plan({
-        {te, {{66, Info(32)}}},
-        {bi, {{66, Info(12)}}},
-    });
-    out["E7"] = Plan({
-        {te, {{66, Info(32)}}},
-    });
-    out["E8"] = Plan({
-        {te, {{66, Info(41)}}},
-    });
-    out["E8a"] = Plan({
-        {bs, {{66, Info(32)}}},
-        {te, {{66, Info(22)}}},
-    });
-    out["E9"] = Plan({
-        {bs, {{65, Info(51)}}},
-        {te, {{65, Info(31)}}},
-        {ti, {{65, Info(21)}}},
-    });
-    out["E10"] = Plan({
-        {te, {{65, Info(21)}}},
-    });
-    out["E11"] = Plan({
-        {te, {{65, Info(21)}}},
-    });
-    out["E15"] = Plan({
-        {bs, {{66, Info(52)}}},
-        {te, {{66, Info(32)}}},
-        {ti, {{66, Info(21)}}},
-    });
-    out["E16"] = Plan({
-        {te, {{66, Info(32)}}},
-        {ti, {{66, Info(21)}}},
-    });
-    out["E16a"] = Plan({
-        {te, {{66, Info(22)}}},
-    });
-    out["E17"] = Plan({
-        {te, {{66, Info(42)}}},
-    });
-    out["E17a"] = Plan({
-        {te, {{66, Info(32)}}},
-    });
-    out["E18"] = Plan({
-        {bs, {{66, Info(21)}}},
-        {te, {{66, Info(41)}}},
-    });
-    out["E19"] = Plan({
-        {te, {{66, Info(41)}}},
-    });
-    out["E20"] = Plan({
-        {te, {{66, Info(32)}}},
-        {ti, {{66, Info(23)}}},
-    });
-    out["E20a"] = Plan({
-        {te, {{56, Info(21)}}},
-    });
-    out["E21"] = Plan({
-        {ti, {{65, Info(22)}}},
-    });
-    out["E22"] = Plan({
-        {te, {{64, Info(41)}}},
-    });
-    out["E23"] = Plan({
-        {te, {{63, Info(31)}}},
-    });
-    out["E27"] = Plan({
-        {te, {{46, Info(23)}}},
-    });
-    out["E29"] = Plan({
-        {te, {{56, Info(32)}}},
-    });
-    out["E31"] = Plan({
-        {te, {{66, Info(32)}}},
-    });
-    out["E32"] = Plan({
-        {te, {{65, Info(31)}}},
-    });
-    out["E34"] = Plan({
-        {te, {{64, Info(12)}}},
-    });
-    out["E38"] = Plan({
-        {te, {{65, Info(41)}}},
-    });
-    out["E100"] = Plan({
-        {te, {{64, Info(41)}}},
-    });
-    out["F1"] = Plan({
-        {ti, {{44, Info(11)}}},
-    });
-    out["F4"] = Plan({
-        {ts, {{66, Info(33)}, {65, Info(33)}, {64, Info(33)}, {63, Info(32)}, {62, Info(21)}, {54, Info(23)}, {52, Info(21)}, {32, Info(11)}}},
-    });
-    out["F5"] = Plan({
-        {ti, {{56, Info(11)}}},
-    });
-    out["F6"] = Plan({
-        {te, {{66, Info(12)}}},
-        {ti, {{66, Info(11)}}},
-    });
-    out["F13"] = Plan({
-        {ti, {{64, Info(24)}}},
-    });
-    out["F13a"] = Plan({
-        {ti, {{64, Info(22)}}},
-    });
-    out["F16"] = Plan({
-        {te, {{64, Info(31)}}},
-    });
-    out["F18"] = Plan({
-        {te, {{62, Info(41)}}},
-    });
-    out["F19"] = Plan({
-        {ts, {{63, Info(31)}}},
-    });
-    out["F20"] = Plan({
-        {bs, {{66, Info(54)}, {56, Info(43)}, {63, Info(42)}, {33, Info(21)}}},
-    });
-    out["F29"] = Plan({
-        {bs, {{56, Info(22)}}},
-        {be, {{56, Info(22)}}},
-    });
-    out["F30"] = Plan({
-        {bs, {{65, Info(42)}}},
-    });
-    out["F39"] = Plan({
-        {bs, {{55, Info(31)}}},
-    });
-    out["F40"] = Plan({
-        {bi, {{66, Info(42)}}},
-    });
-    out["F45"] = Plan({
-        {bs, {{46, Info(14)}}},
-        {be, {{46, Info(14)}}},
-    });
-    out["F45a"] = Plan({
-        {bs, {{46, Info(14)}}},
-        {be, {{46, Info(14)}}},
-    });
-    out["G1"] = Plan({
-        {bs, {{66, Info(22, nullopt, 2)}}},
-    });
-    out["G2"] = Plan({
-        {bs, {{66, Info(12, nullopt, 2)}}},
-    });
-    out["G3"] = Plan({
-        {bs, {{66, Info(21, nullopt, 5)}}},
-    });
-    out["G4"] = Plan({
-        {bs, {{66, Info(12, nullopt, 2)}}},
-    });
-    out["G5"] = Plan({
-        {bs, {{66, Info(12, nullopt, 2)}}},
-    });
-    out["G6"] = Plan({
-        {bs, {{66, Info(12, nullopt, 2)}}},
-    });
-    out["G6a"] = Plan({
-        {te, {{66, Info(22)}}},
-    });
-    out["G7"] = Plan({
-        {bs, {{56, Info(21)}}},
-        {te, {{56, Info(21)}}},
-    });
-    out["G8"] = Plan({
-        {te, {{56, Info(11)}}},
-    });
-    out["G9"] = Plan({
-        {bs, {{56, Info(12)}}},
-        {te, {{56, Info(32)}, {55, Info(22)}, {45, Info(22)}}},
-    });
-    out["G10"] = Plan({
-        {te, {{66, Info(22)}}},
-        {be, {{66, Info(11)}}},
-    });
-    out["G11a"] = Plan({
-        {bs, {{66, Info(22)}}},
-        {te, {{66, Info(12)}}},
-    });
-    out["G13"] = Plan({
-        {te, {{66, Info(33)}}},
-    });
-    out["G14"] = Plan({
-        {bs, {{66, Info(22, nullopt, 1)}}},
-    });
-    out["G15"] = Plan({
-        {bs, {{66, Info(22, nullopt, 2)}}},
-    });
-    out["G17"] = Plan({
-        {bs, {{66, Info(12, nullopt, 2)}}},
-        {te, {{66, Info(23)}}},
-    });
-    out["G18"] = Plan({
-        {bs, {{66, Info(12, nullopt, 2)}}},
-    });
-    out["G20"] = Plan({
-        {bs, {{66, Info(22, nullopt, 2)}}},
-    });
-    out["G21"] = Plan({
-        {bs, {{66, Info(21, nullopt, 2)}}},
-        {te, {{66, Info(23)}}},
-    });
-    out["G22"] = Plan({
-        {bs, {{65, Info(21, nullopt, 2)}}},
-        {te, {{65, Info(32)}}},
-    });
-    out["G23"] = Plan({
-        {bs, {{65, Info(21, nullopt, 2)}}},
-        {te, {{65, Info(32)}}},
-    });
-    out["G25"] = Plan({
-        {bs, {{65, Info(22, nullopt, 2)}}},
-        {te, {{66, Info(22)}, {65, Info(22)}, {56, Info(22)}, {55, Info(22)}, {54, Info(22)}, {44, Info(22)}, {33, Info(11)}, {22, Info(11)}}},
-    });
-    out["G26"] = Plan({
-        {bs, {{56, Info(21)}}},
-        {te, {{56, Info(21)}}},
-    });
-    out["G26a"] = Plan({
-        {bs, {{66, Info(22, nullopt, 2)}}},
-    });
-    out["G27"] = Plan({
-        {bs, {{65, Info(22, nullopt, 3)}}},
-        {te, {{65, Info(21)}}},
-    });
-    out["G28"] = Plan({
-        {bs, {{64, Info(22, nullopt, 4)}}},
-        {te, {{64, Info(11)}}},
-    });
-    out["G31"] = Plan({
-        {bs, {{66, Info(22, nullopt, 2)}}},
-        {te, {{66, Info(12)}}},
-    });
-    out["G32"] = Plan({
-        {te, {{66, Info(12)}}},
-    });
-    out["G33"] = Plan({
-        {bs, {{66, Info(22, nullopt, 2)}}},
-    });
-    out["G34"] = Plan({
-        {bs, {{56, Info(22, nullopt, 1)}}},
-    });
-    out["G35"] = Plan({
-        {bs, {{65, Info(21, nullopt, 3)}}},
-        {te, {{65, Info(32)}}},
-    });
-    out["G36"] = Plan({
-        {bs, {{65, Info(11, nullopt, 4)}}},
-        {te, {{65, Info(31)}}},
-    });
-    out["G37"] = Plan({
-        {bs, {{65, Info(11, nullopt, 4)}}},
-        {te, {{65, Info(31)}}},
-    });
-    out["G38"] = Plan({
-        {bs, {{66, Info(21, nullopt, 1)}}},
-        {te, {{66, Info(32)}}},
-    });
-    out["G39"] = Plan({
-        {bs, {{66, Info(21, nullopt, 1)}}},
-        {te, {{66, Info(22)}, {65, Info(22)}, {56, Info(22)}, {55, Info(22)}, {54, Info(22)}, {44, Info(22)}, {43, Info(11)}, {42, Info(11)}, {33, Info(11)}, {22, Info(11)}}},
-    });
-    out["G41"] = Plan({
-        {bs, {{66, Info(12)}}},
-    });
-    out["G42"] = Plan({
-        {bs, {{65, Info(21, nullopt, 3)}}},
-        {te, {{65, Info(31)}}},
-    });
-    out["G43"] = Plan({
-        {bs, {{46, Info(11, nullopt, 2)}}},
-        {be, {{46, Info(11)}}},
-    });
-    out["G44"] = Plan({
-        {bs, {{66, Info(11, nullopt, 2)}}},
-        {te, {{66, Info(21)}}},
-    });
-    out["G45"] = Plan({
-        {bs, {{66, Info(22, nullopt, 2)}}},
-    });
-    out["G47"] = Plan({
-        {bs, {{66, Info(11)}}},
-        {te, {{66, Info(31)}}},
-    });
-    out["G50"] = Plan({
-        {bs, {{65, Info(12, nullopt, 2)}}},
-    });
-    out["G53"] = Plan({
-        {te, {{66, Info(23)}}},
-    });
-    out["I1"] = Plan({
-        {bs, {{66, Info(52)}, {65, Info(52)}, {55, Info(42)}, {45, Info(32)}}},
-    });
-    out["I3"] = Plan({
-        {te, {{62, Info(21)}}},
-    });
-    out["I5"] = Plan({
-        {te, {{63, Info(11)}}},
-    });
-    out["I7"] = Plan({
-        {te, {{66, Info(21)}}},
-    });
-    out["I8"] = Plan({
-        {bs, {{56, Info(42)}}},
-        {te, {{56, Info(21)}}},
-    });
-    out["I9"] = Plan({
-        {te, {{62, Info(41)}}},
-    });
-    out["I10"] = Plan({
-        {bs, {{66, Info(54)}, {56, Info(43)}, {63, Info(51)}, {33, Info(21)}}},
-    });
-    out["I10a"] = Plan({
-        {bs, {{66, Info(54)}, {56, Info(43)}, {63, Info(51)}, {33, Info(21)}}},
-        {ti, {{66, Info(31)}}},
-    });
-    out["I11"] = Plan({
-        {bs, {{66, Info(54)}, {56, Info(43)}, {63, Info(51)}, {33, Info(21)}}},
-        {te, {{66, Info(31)}}},
-    });
-    out["L1"] = Plan({
-        {bi, {{46, Info(11)}}},
-    });
-    out["M9"] = Plan({
-        {bs, {{66, Info(52)}}},
-    });
-    out["M10"] = Plan({
-        {bs, {{55, Info(42)}}},
-    });
-    out["M26"] = Plan({
-        {bs, {{46, Info(11)}}},
-        {be, {{46, Info(11)}}},
-    });
-    out["M27"] = Plan({
-        {bs, {{66, Info(21)}}},
-        {be, {{66, Info(21)}}},
-    });
-    out["N2"] = Plan({
-        {bs, {{66, Info(22)}}},
-        {be, {{66, Info(22)}}},
-    });
-    out["N3"] = Plan({
-        {bs, {{56, Info(22)}}},
-        {be, {{56, Info(22)}}},
-    });
-    out["N11"] = Plan({
-        {bi, {{62, Info(21)}}},
-    });
-    out["N36"] = Plan({
-        {mi, {{62, Info(31)}}},
-    });
-    out["N37"] = Plan({
-        {mi, {{62, Info(51)}}},
-    });
-    out["O1"] = Plan({
-        {bi, {{53, Info(13)}}},
-        {mi, {{53, Info(42)}}},
-    });
-    out["O6"] = Plan({
-        {mi, {{36, Info(42)}}},
-    });
-    out["O13a"] = Plan({
-        {mi, {{66, Info(33, 1, nullopt)}}},
-    });
-    out["O14"] = Plan({
-        {be, {{66, Info(44)}}},
-    });
-    out["O16"] = Plan({
-        {mi, {{64, Info(41)}}},
-    });
-    out["O17"] = Plan({
-        {mi, {{64, Info(31)}}},
-    });
-    out["O18"] = Plan({
-        {mi, {{66, Info(43)}}},
-    });
-    out["O26"] = Plan({
-        {mi, {{46, Info(24)}}},
-    });
-    out["O32"] = Plan({
-        {mi, {{46, Info(13)}}},
-        {bi, {{46, Info(13)}}},
-    });
-    out["O36"] = Plan({
-        {mi, {{46, Info(14)}}},
-    });
-    out["Q2"] = Plan({
-        {ts, {{64, Info(32)}}},
-    });
-    out["R8"] = Plan({
-        {bs, {{36, Info(24)}}},
-    });
-    out["R12"] = Plan({
-        {bs, {{64, Info(32)}}},
-        {be, {{64, Info(12)}}},
-    });
-    out["R13"] = Plan({
-        {te, {{56, Info(11)}}},
-        {be, {{56, Info(12)}}},
-    });
-    out["S1"] = Plan({
-        {ts, {{46, Info(22)}}},
-    });
-    out["S2"] = Plan({
-        {ts, {{66, Info(32)}}},
-    });
-    out["S22"] = Plan({
-        {ti, {{64, Info(21)}}},
-        {bi, {{64, Info(31)}}},
-    });
-    out["S28"] = Plan({
-        {bs, {{66, Info(23)}}},
-    });
-    out["T5"] = Plan({
-        {bi, {{66, Info(12)}}},
-    });
-    out["T6"] = Plan({
-        {bs, {{66, Info(21)}}},
-    });
-    out["T7a"] = Plan({
-        {bs, {{36, Info(24)}}},
-    });
-    out["T14"] = Plan({
-        {bs, {{26, Info(14)}}},
-    });
-    out["T32"] = Plan({
-        {bs, {{65, Info(22, nullopt, 4)}}},
-    });
-    out["U1"] = Plan({
-        {ts, {{66, Info(34)}}},
-    });
-    out["U2"] = Plan({
-        {ts, {{65, Info(34)}}},
-        {te, {{65, Info(12)}}},
-    });
-    out["U15"] = Plan({
-        {te, {{63, Info(42)}}},
-    });
-    out["U19"] = Plan({
-        {te, {{63, Info(31)}}},
-        {ti, {{63, Info(21)}}},
-    });
-    out["U21"] = Plan({
-        {te, {{62, Info(31)}}},
-        {ti, {{62, Info(21)}}},
-        {bi, {{62, Info(21)}}},
-    });
-    out["V6"] = Plan({
-        {mi, {{23, Info(11)}}},
-    });
-    out["V7"] = Plan({
-        {mi, {{23, Info(11)}}},
-    });
-    out["V10"] = Plan({
-        {mi, {{53, Info(32)}}},
-    });
-    out["V10n"] = Plan({
-        {mi, {{46, Info(34)}}},
-    });
-    out["V12"] = Plan({
-        {bs, {{53, Info(32)}}},
-    });
-    out["V15"] = Plan({
-        {bs, {{65, Info(21, nullopt, 6)}}},
-    });
-    out["V22"] = Plan({
-        {bs, {{64, Info(43)}}},
-    });
-    out["V23"] = Plan({
-        {bs, {{64, Info(43)}}},
-    });
-    out["V23a"] = Plan({
-        {bs, {{66, Info(43)}}},
-    });
-    out["W4"] = Plan({
-        {mi, {{66, Info(32)}}},
-    });
-    out["Z6"] = Plan({
-        {bs, {{64, Info(32)}}},
-    });
-    out["Z10"] = Plan({
-        {ti, {{63, Info(21)}}},
-        {bi, {{63, Info(21)}}},
-    });
-    out["Z11"] = Plan({
-        {bs, {{46, Info(12)}}},
-        {be, {{46, Info(12)}}},
-    });
-    out["J7"] = Plan({
-        {ts, {{63, Info(41)}}},
-        {ti, {{63, Info(21)}}},
-    });
-    out["J13"] = Plan({
-        {mi, {{62, Info(21)}}},
-    });
-    out["J15"] = Plan({
-        {mi, {{62, Info(21)}}},
-    });
-    out["J19"] = Plan({
-        {mi, {{44, Info(12)}}},
-        {bi, {{44, Info(12)}}},
-    });
-    return Status::Ok();
+    if (!holds_alternative<FontFile::TrueTypeOutlines>(font.outlines)) {
+      return nullopt;
+    }
+    auto const &outlines = get<FontFile::TrueTypeOutlines>(font.outlines);
+    auto const &glyf = outlines.glyf;
+    auto gid = font.post->getGlyphID(name);
+    if (!gid) {
+      return nullopt;
+    }
+    Shape shape;
+    if (auto st = glyf->toShape(*gid, shape); !st.ok()) {
+      return nullopt;
+    }
+    int wO = WidthFromWxH(size);
+    int hO = HeightFromWxH(size);
+    int xMax = wO - 1;
+    int yMax = hO - 1;
+    if (xMax < 1 || yMax < 1) {
+      return nullopt;
+    }
+    int width = WidthFromWxH(size) * hfu;
+    int height = HeightFromWxH(size) * vfu;
+    int x0 = -width / 2;
+    int y0 = base;
+    deque<pair<WxH, Vec<int16_t>>> ok;
+    for (int x = 1; x <= xMax; x++) {
+      for (int y = 1; y <= yMax; y++) {
+        int w = x * hfu;
+        int h = y * vfu;
+        int left;
+        int bottom;
+        switch (pos) {
+        case Pos::TopStart:
+          left = x0;
+          bottom = y0 + height - h;
+          break;
+        case Pos::BottomStart:
+          left = x0;
+          bottom = y0;
+          break;
+        case Pos::TopEnd:
+          left = x0 + width - w;
+          bottom = y0 + height - h;
+          break;
+        case Pos::BottomEnd:
+          left = x0 + width - w;
+          bottom = y0;
+          break;
+        case Pos::Top:
+          left = x0 + width / 2 - w / 2;
+          bottom = y0 + height - h;
+          break;
+        case Pos::Middle:
+          left = x0 + width / 2 - w / 2;
+          bottom = y0 + height / 2 - h / 2;
+          break;
+        case Pos::Bottom:
+          left = x0 + width / 2 - w / 2;
+          bottom = y0;
+          break;
+        }
+        Rect<double> rect(left, bottom, left + w, bottom + h);
+        if (!shape.intersects(rect)) {
+          WxH sz = x * 10 + y;
+          ok.push_back(make_pair(sz, Vec<int16_t>(0, 0)));
+          cout << name << ":" << StringFromPos(pos) << ":[" << x << ", " << y << "]" << endl;
+        }
+      }
+    }
+    if (ok.empty()) {
+      return nullopt;
+    }
+    ranges::sort(ok, [=](auto const &a, auto const &b) {
+      int wA = WidthFromWxH(a.first);
+      int hA = HeightFromWxH(a.first);
+      int wB = WidthFromWxH(b.first);
+      int hB = HeightFromWxH(b.first);
+      int sA = wA * hA;
+      int sB = wB * hB;
+      if (sA == sB) {
+        double aA = wA / (double)hA;
+        double aB = wB / (double)hB;
+        double aO = wO / (double)hO;
+        return fabs(aA - aO) < fabs(aB - aO);
+      } else {
+        return sA > sB;
+      }
+    });
+    auto largest = *ok.begin();
+    return largest;
   }
 };
 

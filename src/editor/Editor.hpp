@@ -2576,7 +2576,7 @@ public:
 
   Status postprocess() {
     using namespace std;
-    if (auto st = Insertion::CreatePlan(*font, sizeVariants, insertionPlans); !st.ok()) {
+    if (auto st = Insertion::CreatePlan(*font, sizeVariants, chu, vhu, hfu, vfu, base, insertionPlans); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
     if (cfg.enableSubstMdc) {
