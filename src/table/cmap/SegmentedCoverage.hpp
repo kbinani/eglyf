@@ -46,7 +46,7 @@ public:
         return EGLYF_ERROR;
       }
       for (uint32_t charCode = startCharCode; charCode <= endCharCode; charCode++) {
-        uint16_t gid = startGlyphID + (charCode - startCharCode);;
+        uint16_t gid = startGlyphID + (uint16_t)(charCode - startCharCode);
         if (gid != 0) {
           ret->mapping[charCode] = gid;
         }
