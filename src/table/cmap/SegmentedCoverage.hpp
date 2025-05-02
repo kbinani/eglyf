@@ -46,7 +46,10 @@ public:
         return EGLYF_ERROR;
       }
       for (uint32_t charCode = startCharCode; charCode <= endCharCode; charCode++) {
-        ret->mapping[charCode] = startGlyphID + (charCode - startCharCode);
+        uint16_t gid = startGlyphID + (charCode - startCharCode);;
+        if (gid != 0) {
+          ret->mapping[charCode] = gid;
+        }
       }
     }
     out.reset(ret.release());
@@ -86,6 +89,9 @@ public:
     for (auto it : mapping) {
       auto codepoint = it.first;
       auto gid = it.second;
+      if (gid == 0) {
+        continue;
+      }
       if (current) {
         if (current->endCharCode + 1 == codepoint && current->startGlyphID + (codepoint - current->startCharCode) == gid) {
           current->endCharCode = codepoint;
@@ -157,7 +163,11 @@ public:
   }
 
   Status map(uint32_t codepoint, uint16_t glyphID) {
-    mapping[codepoint] = glyphID;
+    if (glyphID == 0) {
+      mapping.erase(codepoint);
+    } else {
+      mapping[codepoint] = glyphID;
+    }
     return Status::Ok();
   }
 

@@ -103,11 +103,18 @@ public:
         size_t offset = iRO / 2 + i - segCount;
         for (int c = _startCode; c <= _endCode; c++) {
           size_t index = offset + (size_t)(c - _startCode);
-          ret->mapping[c] = glyphIDArray[index];
+          auto gid = glyphIDArray[index];
+          if (gid != 0) {
+            ret->mapping[c] = glyphIDArray[index];
+          }
         }
       } else {
         for (int c = _startCode; c <= _endCode; c++) {
-          ret->mapping[c] = (uint16_t)((c + (int32_t)_idDelta) & 0xffff);
+          auto gid = (uint16_t)((c + (int32_t)_idDelta) & 0xffff);
+          ;
+          if (gid != 0) {
+            ret->mapping[c] = gid;
+          }
         }
       }
     }
@@ -140,6 +147,9 @@ public:
     for (auto const &it : mapping) {
       uint32_t codepoint = it.first;
       uint16_t gid = it.second;
+      if (gid == 0) {
+        continue;
+      }
 
       int16_t const delta = 0xffff & ((0x10000 | (int32_t)gid) - (int32_t)codepoint);
 
@@ -283,7 +293,11 @@ public:
   }
 
   Status map(uint32_t codepoint, uint16_t glyphID) {
-    mapping[codepoint] = glyphID;
+    if (glyphID == 0) {
+      mapping.erase(codepoint);
+    } else {
+      mapping[codepoint] = glyphID;
+    }
     return Status::Ok();
   }
 
