@@ -39,6 +39,11 @@ public:
     out << format(R"(<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="black" />)", x0, y0, x1, y1) << endl;
   }
 
+  Rect<double> boundingBox() const {
+    using namespace std;
+    return Rect<double>(min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1));
+  }
+
 public:
   T x0;
   T y0;

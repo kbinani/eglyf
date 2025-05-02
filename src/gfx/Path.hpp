@@ -87,6 +87,23 @@ public:
     }
   }
 
+  std::optional<Rect<double>> boundingBox() const {
+    using namespace std;
+    optional<Rect<double>> ret;
+    for (auto const &e : elements) {
+      visit([&](auto const &v) {
+        auto bounds = v.boundingBox();
+        if (ret) {
+          ret->updateBound(bounds.xMin, bounds.yMin, bounds.xMax, bounds.yMax);
+        } else {
+          ret = bounds;
+        }
+      },
+            e);
+    }
+    return ret;
+  }
+
 public:
   std::vector<Element> elements;
 };
