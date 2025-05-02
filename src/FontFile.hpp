@@ -601,11 +601,11 @@ public:
           ff->nameLookupTable[name] = i;
           ff->names.push_back(name);
         } else {
-          auto i = index - 258;
-          if (i >= d.nameStrings.size()) {
+          auto idx = index - 258;
+          if (idx >= d.nameStrings.size()) {
             break;
           }
-          string name = d.nameStrings[i];
+          string name = d.nameStrings[idx];
           ff->nameLookupTable[name] = i;
           ff->names.push_back(name);
         }
