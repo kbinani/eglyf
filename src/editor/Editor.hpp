@@ -1151,20 +1151,6 @@ public:
       baseGlyphs[name] = bg;
     }
 
-    for (int h = 1; h <= hhu; h++) {
-      string name = format("QB{}", h);
-      if (auto gid = font->postGetGlyphID(name); gid) {
-        if (auto st = font->postSetName(*gid, "." + name); !st.ok()) {
-          return EGLYF_STATUS_PUSH(st);
-        }
-      }
-      int16_t width = sb + h * hfu + sb;
-      auto newGid = font->addEmptyGlyph(name, gdef::GlyphDefinitionTable::Class::Base, width, 0);
-      if (!newGid) {
-        return EGLYF_STATUS_PUSH(newGid.status());
-      }
-    }
-
     auto glyphsSet1 = getGroupByName("glyphs_set1");
 
     for (auto const &it : baseGlyphs) {
@@ -2550,8 +2536,38 @@ public:
     return Status::Ok();
   }
 
+  Status createQuadratBase() {
+    using namespace std;
+    if (!holds_alternative<FontFile::TrueTypeOutlines>(font->outlines)) {
+      return EGLYF_ERROR;
+    }
+    auto &glyf = get<FontFile::TrueTypeOutlines>(font->outlines).glyf;
+    for (int h = 1; h <= hhu; h++) {
+      string name = format("QB{}", h);
+      auto gid = font->postGetGlyphID(name);
+      if (!gid) {
+        return EGLYF_ERROR;
+      }
+      glyf::GlyphDataTable::EmptyGlyph eg;
+      glyf->glyphs[*gid] = eg;
+
+      hmtx::HorizontalMetricsTable::LongHorMetric hm;
+      hm.advanceWidth = sb + h * hfu + sb;
+      hm.lsb = 0;
+      font->hmtx->metrics[*gid] = hm;
+
+      if (auto st = font->setGlyphClass(*gid, gdef::GlyphDefinitionTable::Class::Base); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+    }
+    return Status::Ok();
+  }
+
   Status postprocess() {
     using namespace std;
+    if (auto st = createQuadratBase(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
     if (auto st = PlaceholderGlyph::Create(*font, base, hfu, sb, chu, vfu, vhu); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
