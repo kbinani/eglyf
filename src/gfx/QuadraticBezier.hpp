@@ -41,54 +41,47 @@ public:
     return make_pair(c1, c2);
   }
 
-  bool intersects(Line<T> const &b) const {
+  bool intersects(Rect<T> const &b) const {
+    return intersectsH(b.yMin, b.xMin, b.xMax) ||
+           intersectsH(b.yMax, b.xMin, b.xMax) ||
+           intersectsV(b.xMin, b.yMin, b.yMax) ||
+           intersectsV(b.xMax, b.yMin, b.yMax);
+  }
+
+  bool intersectsH(T y, T x0, T x1) const {
     using namespace std;
-    double a0x = p0.x;
-    double a0y = p0.y;
-    double a1x = p1.x;
-    double a1y = p1.y;
-    double a2x = p2.x;
-    double a2y = p2.y;
-
-    double b0x = b.x0;
-    double b0y = b.y0;
-    double b1x = b.x1;
-    double b1y = b.y1;
-
-    double vx = b1x - b0x;
-    double vy = b1y - b0y;
-    double nx = vy;
-    double ny = -vx;
-
-    double num = vx * vx + vy * vy;
-    if (num <= numeric_limits<double>::epsilon()) {
+    QuadraticEquation q(p0.y - 2 * p1.y + p2.y, -2 * p0.y + 2 * p1.y, p0.y - y);
+    vector<double> roots;
+    q.roots(roots);
+    if (roots.empty()) {
       return false;
     }
-
-    double A = nx * (a0x - 2 * a1x + a2x) + ny * (a0y - 2 * a1y + a2y);
-    double B = 2 * (nx * (a1x - a0x) + nx * (a1y - a0y));
-    double C = nx * (a0x - b0x) + ny * (a0y - b0y);
-
-    double D = B * B - 4 * A * C;
-    if (D < 0) {
-      return false;
-    }
-    double t0 = (-B + sqrt(D)) / (2 * A);
-    double t1 = (-B - sqrt(D)) / (2 * A);
-    if (t1 < t0) {
-      swap(t0, t1);
-    }
-    if (0 <= t0 && t0 <= 1) {
-      double t = t0;
-      double s = (((1 - t) * (1 - t) * a0x + 2 * t * (1 - t) * a1x + t * t * a2x - b0x) * vx + ((1 - t) * (1 - t) * a0y + 2 * t * (1 - t) * a1y + t * t * a2y - b0y) * vy) / num;
-      if (0 <= s && s <= 1) {
+    for (double t : roots) {
+      if (t < 0 || 1 < t) {
+        continue;
+      }
+      double v = x.get(t);
+      if (x0 <= v && v <= x1) {
         return true;
       }
     }
-    if (0 <= t1 && t1 <= 1) {
-      double t = t1;
-      double s = (((1 - t) * (1 - t) * a0x + 2 * t * (1 - t) * a1x + t * t * a2x - b0x) * vx + ((1 - t) * (1 - t) * a0y + 2 * t * (1 - t) * a1y + t * t * a2y - b0y) * vy) / num;
-      if (0 <= s && s <= 1) {
+    return false;
+  }
+
+  bool intersectsV(T x, T y0, T y1) const {
+    using namespace std;
+    QuadraticEquation q(p0.x - 2 * p1.x + p2.x, -2 * p0.x + 2 * p1.x, p0.x - x);
+    vector<double> roots;
+    q.roots(roots);
+    if (roots.empty()) {
+      return false;
+    }
+    for (double t : roots) {
+      if (t < 0 || 1 < t) {
+        continue;
+      }
+      double v = y.get(t);
+      if (y0 <= v && v <= y1) {
         return true;
       }
     }
@@ -149,7 +142,7 @@ public:
       if (r.contains(bezierA.p0) || r.contains(bezierA.p2)) {
         return true;
       }
-      return bezierA.intersects(up) || bezierA.intersects(left) || bezierA.intersects(bottom) || bezierA.intersects(right);
+      return bezierA.intersects(r);
     } else [[unlikely]] {
       return false;
     }

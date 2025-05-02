@@ -113,6 +113,7 @@ list(APPEND src_files
   src/editor/Glyph.hpp
   src/editor/Group.hpp
   src/editor/SizeVariants.hpp
+  src/gfx/QuadraticBezierTests.hpp
 )
 
 juce_add_binary_data(eglyf-binary-data

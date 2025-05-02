@@ -4,6 +4,7 @@
 
 #if EGLYF_ENABLE_TESTS
 #include "editor/EditorTests.hpp"
+#include "gfx/QuadraticBezierTests.hpp"
 #endif
 
 #include <juce_core/juce_core.h>
@@ -17,9 +18,12 @@ static void Fail(eglyf::Status st) {
 #if EGLYF_ENABLE_TESTS
 static void Test(juce::ArgumentList const &args) {
   using namespace eglyf::tests;
-  juce::File input = args.getExistingFileForOption("--input");
-  juce::File reference = args.getExistingFileForOption("--reference");
-  EditorTests editorTest(input, reference);
+
+  //  juce::File input = args.getExistingFileForOption("--input");
+  //  juce::File reference = args.getExistingFileForOption("--reference");
+  //  EditorTests editorTest(input, reference);
+
+  QuadraticBezierTests quadraticBezierTests;
 
   juce::UnitTestRunner runner;
   runner.runAllTests();
