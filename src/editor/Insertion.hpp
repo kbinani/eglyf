@@ -406,6 +406,8 @@ public:
     }
     if (ok.empty()) {
       return nullopt;
+    } else if (ok.size() == 1) {
+      return ok.front();
     }
     ranges::sort(ok, [=](auto const &a, auto const &b) {
       int sA = AreaFromWxH(a.first);
@@ -419,8 +421,86 @@ public:
         return sA > sB;
       }
     });
-    auto largest = *ok.begin();
-    return largest;
+
+    pair<WxH, Vec<int16_t>> front = ok.front();
+    ok.erase(ranges::remove_if(ok, [&](auto const &it) { return AreaFromWxH(it.first) != AreaFromWxH(front.first); }).begin(), ok.end());
+    if (ok.size() == 1) {
+      return front;
+    }
+
+    int xSign = 0;
+    int ySign = 0;
+    switch (pos) {
+    case Pos::TopStart:
+      xSign = -1;
+      ySign = 1;
+      break;
+    case Pos::BottomStart:
+      xSign = -1;
+      ySign = -1;
+      break;
+    case Pos::TopEnd:
+      xSign = 1;
+      ySign = 1;
+      break;
+    case Pos::BottomEnd:
+      xSign = 1;
+      ySign = -1;
+      break;
+    case Pos::Top:
+      xSign = 0;
+      ySign = 1;
+      break;
+    case Pos::Middle:
+      xSign = 0;
+      ySign = 0;
+      break;
+    case Pos::Bottom:
+      xSign = 0;
+      ySign = -1;
+      break;
+    }
+    ranges::sort(ok, [=](auto const &a, auto const &b) {
+      Vec<int16_t> va = a.second;
+      Vec<int16_t> vb = b.second;
+      switch (xSign) {
+      case 0:
+        if (abs(va.x) != abs(vb.x)) {
+          return abs(va.x) < abs(vb.x);
+        }
+        break;
+      case 1:
+        if (va.x != vb.x) {
+          return va.x > vb.x;
+        }
+        break;
+      case -1:
+        if (va.x != vb.x) {
+          return va.x < vb.x;
+        }
+        break;
+      }
+      switch (ySign) {
+      case 0:
+        if (abs(va.y) != abs(vb.y)) {
+          return abs(va.y) < abs(vb.y);
+        }
+        break;
+      case 1:
+        if (va.y != vb.y) {
+          return va.y > vb.y;
+        }
+        break;
+      case -1:
+        if (va.y != vb.y) {
+          return va.y < vb.y;
+        }
+        break;
+      }
+      return false;
+    });
+    pair<WxH, Vec<int16_t>> best = ok.front();
+    return best;
   }
 };
 
