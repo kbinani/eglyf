@@ -663,12 +663,9 @@ public:
     if (current == name) {
       return Status::Ok();
     }
-    auto found = nameLookupTable.find(current);
-    if (found == nameLookupTable.end()) {
-      return EGLYF_ERROR;
-    }
     names[glyphID] = name;
-    found->second = glyphID;
+    nameLookupTable.erase(current);
+    nameLookupTable[name] = glyphID;
     return Status::Ok();
   }
 
