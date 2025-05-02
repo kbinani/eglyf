@@ -317,7 +317,7 @@ public:
     }
     auto const &outlines = get<FontFile::TrueTypeOutlines>(font.outlines);
     auto const &glyf = outlines.glyf;
-    auto gid = font.post->getGlyphID(name);
+    auto gid = font.postGetGlyphID(name);
     if (!gid) {
       return nullopt;
     }

@@ -62,7 +62,7 @@ private:
     auto g = editor->getGlyphByName(name);
     auto font = editor->font;
     uint16_t glyphID = 0;
-    if (auto gid = font->post->getGlyphID(name); gid) {
+    if (auto gid = font->postGetGlyphID(name); gid) {
       glyphID = *gid;
       if (!font->gdef) {
         font->gdef = make_shared<gdef::GlyphDefinitionTable>();

@@ -106,7 +106,7 @@ public:
     if (auto found = glyphs.find(name); found == glyphs.end()) {
       auto g = make_shared<Glyph>();
       g->name = name;
-      auto gid = font->post->getGlyphID(name);
+      auto gid = font->postGetGlyphID(name);
       if (gid) {
         g->id = *gid;
       }
@@ -122,7 +122,7 @@ public:
     if (auto found = glyphsLut.find(gid); found != glyphsLut.end()) {
       return found->second;
     }
-    if (auto name = font->post->getName(gid); name) {
+    if (auto name = font->postGetName(gid); name) {
       auto g = getGlyphByName(*name);
       g->id = gid;
       glyphsLut[gid] = g;
@@ -1093,9 +1093,9 @@ public:
       } else {
         name = format("u{0:x}", cp);
       }
-      if (auto currentName = font->post->getName(gid); currentName) {
+      if (auto currentName = font->postGetName(gid); currentName) {
         if (name == *currentName) {
-          if (auto st = font->post->setName(gid, "." + name); !st.ok()) {
+          if (auto st = font->postSetName(gid, "." + name); !st.ok()) {
             return EGLYF_STATUS_PUSH(st);
           }
         }
@@ -1153,8 +1153,8 @@ public:
 
     for (int h = 1; h <= hhu; h++) {
       string name = format("QB{}", h);
-      if (auto gid = font->post->getGlyphID(name); gid) {
-        if (auto st = font->post->setName(*gid, "." + name); !st.ok()) {
+      if (auto gid = font->postGetGlyphID(name); gid) {
+        if (auto st = font->postSetName(*gid, "." + name); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
       }
@@ -2277,7 +2277,7 @@ public:
       if (!gid) {
         return;
       }
-      auto name = font->post->getName(*gid);
+      auto name = font->postGetName(*gid);
       if (!name) {
         return;
       }

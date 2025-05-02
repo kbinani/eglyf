@@ -711,11 +711,11 @@ public:
     for (int s = 1; s <= hhu; s++) {
       auto name = format("QD{}", s);
       int16_t w = sb + s * hfu + sb;
-      auto qo = font.post->getGlyphID(format("QO{}", s));
+      auto qo = font.postGetGlyphID(format("QO{}", s));
       if (!qo) {
         return EGLYF_ERROR;
       }
-      auto qc = font.post->getGlyphID(format("QC{}", s));
+      auto qc = font.postGetGlyphID(format("QC{}", s));
       if (!qc) {
         return EGLYF_ERROR;
       }

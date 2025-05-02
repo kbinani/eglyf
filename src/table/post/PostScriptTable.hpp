@@ -81,20 +81,6 @@ public:
   };
 
   struct Version2Data {
-    static Optional<Version2Data> Migrate(ReadonlyVersion2Data const &in) {
-      Version2Data r;
-      for (uint16_t index : in.glyphNameIndex) {
-        if (index < 258) {
-          r.names.push_back(index);
-        } else if (index - 258 < in.nameStrings.size()) {
-          r.names.push_back(in.nameStrings[index - 258]);
-        } else {
-          return EGLYF_NULLOPT;
-        }
-      }
-      return r;
-    }
-
     Status encode(OutputStream &out) const {
       using namespace std;
       if (!out.sizeU16(names.size())) {
@@ -167,6 +153,21 @@ public:
       return Status::Ok();
     }
 
+    Optional<uint16_t> addName(std::string const &name) {
+      using namespace std;
+      auto const &ps = OSXPostScriptNameMap();
+      size_t gid = names.size();
+      if (gid > numeric_limits<uint16_t>::max()) {
+        return EGLYF_NULLOPT;
+      }
+      if (auto found = ps.find(name); found == ps.end()) {
+        names.push_back(name);
+      } else {
+        names.push_back(found->second);
+      }
+      return gid;
+    }
+
     std::vector<std::variant<uint16_t, std::string>> names;
   };
 
@@ -206,12 +207,6 @@ private:
     return ret;
   }
 
-  static std::vector<std::string> const &OSXPostScriptNames() {
-    using namespace std;
-    static unique_ptr<vector<string> const> const sTable(CreateOSXPostScriptNames());
-    return *sTable;
-  }
-
   static std::unordered_map<std::string, uint16_t> *CreateOSXPostScriptNameMap() {
     using namespace std;
     auto ret = new std::unordered_map<std::string, uint16_t>();
@@ -222,13 +217,19 @@ private:
     return ret;
   }
 
+public:
+  static std::vector<std::string> const &OSXPostScriptNames() {
+    using namespace std;
+    static unique_ptr<vector<string> const> const sTable(CreateOSXPostScriptNames());
+    return *sTable;
+  }
+
   static std::unordered_map<std::string, uint16_t> const &OSXPostScriptNameMap() {
     using namespace std;
     static unique_ptr<unordered_map<string, uint16_t> const> const sMap(CreateOSXPostScriptNameMap());
     return *sMap;
   }
 
-public:
   Optional<EncodeResult> encode() const override {
     using namespace std;
     ByteOutputStream out;
@@ -335,40 +336,6 @@ public:
     return Status::Ok();
   }
 
-  Optional<uint16_t> addName(std::string const &name) {
-    using namespace std;
-    if (holds_alternative<string>(data)) {
-      return EGLYF_NULLOPT;
-    }
-    if (ranges::any_of(name, InvalidNameCharacter)) {
-      return EGLYF_NULLOPT;
-    }
-    Version2Data *d = nullptr;
-    if (holds_alternative<ReadonlyVersion2Data>(data)) {
-      auto migrated = Version2Data::Migrate(get<ReadonlyVersion2Data>(data));
-      if (!migrated) {
-        return EGLYF_NULLOPT_PUSH(migrated.status());
-      }
-      data = *migrated;
-      d = &get<Version2Data>(data);
-    } else {
-      d = &get<Version2Data>(data);
-    }
-    auto const &ps = OSXPostScriptNameMap();
-    size_t gid = d->names.size();
-    if (gid > numeric_limits<uint16_t>::max()) {
-      return EGLYF_NULLOPT;
-    }
-    if (auto found = ps.find(name); found == ps.end()) {
-      d->names.push_back(name);
-    } else {
-      d->names.push_back(found->second);
-    }
-    auto &lut = ensureLookupTable();
-    lut[name] = gid;
-    return static_cast<uint16_t>(gid);
-  }
-
   std::optional<std::string> getName(uint16_t glyphID) const {
     using namespace std;
     if (holds_alternative<Version2Data>(data)) {
@@ -390,88 +357,6 @@ public:
     }
   }
 
-  Status setName(uint16_t glyphID, std::string const &name) {
-    using namespace std;
-    Version2Data d;
-    if (holds_alternative<ReadonlyVersion2Data>(data)) {
-      auto migrated = Version2Data::Migrate(get<ReadonlyVersion2Data>(data));
-      if (!migrated) {
-        return EGLYF_STATUS_PUSH(migrated.status());
-      }
-      d = *migrated;
-    } else if (holds_alternative<string>(data)) {
-      return EGLYF_ERROR;
-    } else {
-      d = get<Version2Data>(data);
-    }
-    if (auto st = d.setName(glyphID, name); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
-    }
-    data = d;
-    auto &lut = ensureLookupTable();
-    lut[name] = glyphID;
-    return Status::Ok();
-  }
-
-  std::optional<uint16_t> getGlyphID(std::string const &name) {
-    using namespace std;
-    auto const &lut = ensureLookupTable();
-    if (auto found = lut.find(name); found != lut.end()) {
-      return found->second;
-    } else {
-      return nullopt;
-    }
-  }
-
-private:
-  std::unordered_map<std::string, uint16_t> &ensureLookupTable() {
-    using namespace std;
-    if (nameLookupTable) {
-      return *nameLookupTable;
-    }
-    auto t = make_shared<unordered_map<string, uint16_t>>();
-    auto const &table = PostScriptTable::OSXPostScriptNames();
-    if (holds_alternative<Version2Data>(data)) {
-      auto const &d = get<Version2Data>(data);
-      for (size_t i = 0; i < d.names.size(); i++) {
-        auto entry = d.names[i];
-        if (holds_alternative<string>(entry)) {
-          string name = get<string>(entry);
-          (*t)[name] = i;
-        } else {
-          uint16_t index = get<uint16_t>(entry);
-          if (index < table.size()) {
-            string name = table[index];
-            (*t)[name] = i;
-          } else {
-            break;
-          }
-        }
-      }
-    } else if (holds_alternative<ReadonlyVersion2Data>(data)) {
-      auto const &d = get<ReadonlyVersion2Data>(data);
-      for (size_t i = 0; i < d.glyphNameIndex.size(); i++) {
-        uint16_t index = d.glyphNameIndex[i];
-        if (index < 258) {
-          if (index >= table.size()) {
-            break;
-          }
-          string name = table[index];
-          (*t)[name] = i;
-        } else {
-          auto i = index - 258;
-          if (i >= d.nameStrings.size()) {
-            break;
-          }
-          string name = d.nameStrings[i];
-          (*t)[name] = i;
-        }
-      }
-    }
-    nameLookupTable = t;
-    return *t;
-  }
-
 public:
   Version16Dot16 version;
   Fixed italicAngle;
@@ -484,9 +369,6 @@ public:
   uint32_t maxMemType1;
 
   std::variant<Version2Data, ReadonlyVersion2Data, std::string> data;
-
-private:
-  std::shared_ptr<std::unordered_map<std::string, uint16_t>> nameLookupTable;
 };
 
 } // namespace eglyf::post

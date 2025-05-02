@@ -14,6 +14,17 @@ public:
   Status write(OutputStream &out) {
     using namespace std;
 
+    if (holds_alternative<post::PostScriptTable::Version2Data>(post->data) || holds_alternative<post::PostScriptTable::ReadonlyVersion2Data>(post->data)) {
+      post::PostScriptTable::Version2Data next;
+      for (uint16_t gid = 0; gid < names.size(); gid++) {
+        if (auto id = next.addName(names[gid]); !id) {
+          return EGLYF_STATUS_PUSH(id.status());
+        }
+      }
+
+      post->data = next;
+    }
+
     map<array<uint8_t, 4>, std::shared_ptr<Table>> all;
     for (auto const &it : tables) {
       all[it.first] = it.second;
@@ -539,6 +550,55 @@ public:
       ff->tables[tr.tag] = make_shared<ReadonlyTable>(*buffer);
     }
 
+    auto const &table = post::PostScriptTable::OSXPostScriptNames();
+    if (holds_alternative<post::PostScriptTable::Version2Data>(ff->post->data)) {
+      auto const &d = get<post::PostScriptTable::Version2Data>(ff->post->data);
+      for (size_t i = 0; i < d.names.size(); i++) {
+        auto entry = d.names[i];
+        if (holds_alternative<string>(entry)) {
+          string name = get<string>(entry);
+          ff->nameLookupTable[name] = i;
+          ff->names.push_back(name);
+        } else {
+          uint16_t index = get<uint16_t>(entry);
+          if (index < table.size()) {
+            string name = table[index];
+            ff->nameLookupTable[name] = i;
+            ff->names.push_back(name);
+          } else {
+            break;
+          }
+        }
+      }
+    } else if (holds_alternative<post::PostScriptTable::ReadonlyVersion2Data>(ff->post->data)) {
+      auto const &d = get<post::PostScriptTable::ReadonlyVersion2Data>(ff->post->data);
+      for (size_t i = 0; i < d.glyphNameIndex.size(); i++) {
+        uint16_t index = d.glyphNameIndex[i];
+        if (index < 258) {
+          if (index >= table.size()) {
+            break;
+          }
+          string name = table[index];
+          ff->nameLookupTable[name] = i;
+          ff->names.push_back(name);
+        } else {
+          auto i = index - 258;
+          if (i >= d.nameStrings.size()) {
+            break;
+          }
+          string name = d.nameStrings[i];
+          ff->nameLookupTable[name] = i;
+          ff->names.push_back(name);
+        }
+      }
+    } else {
+      for (uint16_t gid = 0; gid < ff->maxp->numGlyphs; gid++) {
+        string name = format("gid{}", gid);
+        ff->names.push_back(name);
+        ff->nameLookupTable[name] = gid;
+      }
+    }
+
     out.swap(ff);
     return Status::Ok();
   }
@@ -549,6 +609,48 @@ public:
     } else {
       return EGLYF_NULLOPT_PUSH(gid.status());
     }
+  }
+
+  std::optional<uint16_t> postGetGlyphID(std::string const &name) const {
+    using namespace std;
+    if (auto found = nameLookupTable.find(name); found != nameLookupTable.end()) {
+      return found->second;
+    } else {
+      return nullopt;
+    }
+  }
+
+  Optional<uint16_t> postAddName(std::string const &name) {
+    using namespace std;
+    uint16_t gid = names.size();
+    names.push_back(name);
+    nameLookupTable[name] = gid;
+    return gid;
+  }
+
+  Optional<std::string> postGetName(uint16_t glyphID) const {
+    if (glyphID >= names.size()) {
+      return EGLYF_NULLOPT;
+    }
+    return names[glyphID];
+  }
+
+  Status postSetName(uint16_t glyphID, std::string const &name) {
+    using namespace std;
+    if (glyphID >= names.size()) {
+      return EGLYF_ERROR;
+    }
+    string current = names[glyphID];
+    if (current == name) {
+      return Status::Ok();
+    }
+    auto found = nameLookupTable.find(current);
+    if (found == nameLookupTable.end()) {
+      return EGLYF_ERROR;
+    }
+    names[glyphID] = name;
+    found->second = glyphID;
+    return Status::Ok();
   }
 
 private:
@@ -565,7 +667,7 @@ private:
     if (!gid) {
       return EGLYF_NULLOPT_PUSH(gid.status());
     }
-    if (auto postGid = post->addName(name); postGid) {
+    if (auto postGid = postAddName(name); postGid) {
       if (*gid != *postGid) {
         return EGLYF_NULLOPT_WHAT("Glyph ID mismatch with post table");
       }
@@ -614,6 +716,10 @@ public:
   std::shared_ptr<vmtx::VerticalMetricsTable> vmtx;
 
   std::map<std::array<uint8_t, 4>, std::shared_ptr<Table>> tables;
+
+private:
+  std::vector<std::string> names;
+  std::unordered_map<std::string, uint16_t> nameLookupTable;
 };
 
 } // namespace eglyf
