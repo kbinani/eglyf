@@ -2384,13 +2384,6 @@ public:
       if (plan.insertions.size() == 1) {
         auto const &[pos, infos] = *plan.insertions.begin();
 
-        auto context1 = make_shared<Lookup::Context>();
-        context1->right.push_back(g);
-
-        auto context2 = make_shared<Lookup::Context>();
-        context2->right.push_back(spaceGlyph);
-        context2->right.push_back(g);
-
         auto context3 = make_shared<Lookup::Context>();
         context3->left.push_back(g);
 
@@ -2398,41 +2391,18 @@ public:
         context4->left.push_back(g);
         context4->left.push_back(spaceGlyph);
 
-        insertionLookups[pos]->inContexts.push_back(context1);
-        insertionLookups[pos]->inContexts.push_back(context2);
         insertionLookups[pos]->inContexts.push_back(context3);
         insertionLookups[pos]->inContexts.push_back(context4);
         continue;
       }
       for (auto const &[pos, infos] : plan.insertions) {
-        switch (pos) {
-        case Pos::TopStart:
-        case Pos::BottomStart:
-        case Pos::Top: {
-          auto context1 = make_shared<Lookup::Context>();
-          context1->right.push_back(g);
-          auto context2 = make_shared<Lookup::Context>();
-          context2->right.push_back(spaceGlyph);
-          context2->right.push_back(g);
-          insertionLookups[pos]->inContexts.push_back(context1);
-          insertionLookups[pos]->inContexts.push_back(context2);
-          break;
-        }
-        case Pos::TopEnd:
-        case Pos::BottomEnd:
-        case Pos::Bottom: {
-          auto context1 = make_shared<Lookup::Context>();
-          context1->left.push_back(g);
-          auto context2 = make_shared<Lookup::Context>();
-          context2->left.push_back(g);
-          context2->left.push_back(spaceGlyph);
-          insertionLookups[pos]->inContexts.push_back(context1);
-          insertionLookups[pos]->inContexts.push_back(context2);
-          break;
-        }
-        default:
-          break;
-        }
+        auto context1 = make_shared<Lookup::Context>();
+        context1->left.push_back(g);
+        auto context2 = make_shared<Lookup::Context>();
+        context2->left.push_back(g);
+        context2->left.push_back(spaceGlyph);
+        insertionLookups[pos]->inContexts.push_back(context1);
+        insertionLookups[pos]->inContexts.push_back(context2);
       }
     }
     set<Pos> removeAsEmpty;
@@ -2538,7 +2508,9 @@ public:
       multipleLookup->substitutions.push_back(s);
     }
 
-    for (auto const &[_, lookup] : insertionLookups) {
+    for (auto it = insertionLookups.begin(); it != insertionLookups.end(); it++) {
+      auto pos = it->first;
+      auto lookup = it->second;
       reorder.push_back(lookup);
     }
 
