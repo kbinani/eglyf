@@ -63,12 +63,15 @@ public:
     if (!out.u16(numTables)) {
       return EGLYF_ERROR_WHAT("Failed to write numTables");
     }
+    uint16_t searchRange = pow(2, (int)floor(log2(numTables))) * 16;
     if (!out.u16(searchRange)) {
       return EGLYF_ERROR_WHAT("Failed to write searchRange");
     }
+    uint16_t entrySelector = (uint16_t)floor(log2(numTables));
     if (!out.u16(entrySelector)) {
       return EGLYF_ERROR_WHAT("Failed to write entrySelector");
     }
+    uint16_t rangeShift = (numTables * 16) - searchRange;
     if (!out.u16(rangeShift)) {
       return EGLYF_ERROR_WHAT("Failed to write rangeShift");
     }
