@@ -1068,10 +1068,14 @@ public:
       sumHeight += rect.height();
       sumCount++;
     }
-    hfu = (int16_t)ceil(sumWidth / (float)sumCount / chu);
-    vfu = (int16_t)ceil(sumHeight / (float)sumCount / vhu);
+
+    float scale = min(sumWidth / (float)sumCount, sumHeight / (float)sumCount);
+    float lineWidth = max(1.0f, scale / 32);
+    float s = (sumHeight / (float)sumCount) / (8 * lineWidth + sumHeight / (float)sumCount);
+    hfu = (int16_t)ceil(sumWidth / (float)sumCount / chu * s);
+    vfu = (int16_t)ceil(sumHeight / (float)sumCount / vhu * s);
+    base = (int16_t)round(4 * lineWidth);
     sb = hfu / 3;
-    base = 0;
 
     struct BaseGlyph {
       uint16_t gid;
