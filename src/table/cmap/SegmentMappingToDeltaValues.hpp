@@ -202,9 +202,24 @@ public:
     }
     if (current) {
       segs.push_back(*current);
+      if (current->endCode != 0xffff) {
+        Seg s;
+        s.startCode = 0xffff;
+        s.endCode = 0xffff;
+        s.idDelta = 0;
+        s.glyphIDArray.push_back(0);
+        segs.push_back(s);
+      }
+    } else {
+      Seg s;
+      s.startCode = 0xffff;
+      s.endCode = 0xffff;
+      s.idDelta = 0;
+      s.glyphIDArray.push_back(0);
+      segs.push_back(s);
     }
 
-    if (!out.sizeU16(2 * (size_t)segs.size())) {
+    if (!out.sizeU16(2 * segs.size())) {
       return EGLYF_ERROR;
     }
     uint16_t segCount = segs.size();
