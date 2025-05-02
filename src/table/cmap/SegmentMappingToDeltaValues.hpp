@@ -111,7 +111,6 @@ public:
       } else {
         for (int c = _startCode; c <= _endCode; c++) {
           auto gid = (uint16_t)((c + (int32_t)_idDelta) & 0xffff);
-          ;
           if (gid != 0) {
             ret->mapping[c] = gid;
           }

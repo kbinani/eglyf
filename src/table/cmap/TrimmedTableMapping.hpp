@@ -65,7 +65,7 @@ public:
     if (codepoint < firstCode) {
       int num = firstCode - codepoint;
       glyphIDArray.resize(glyphIDArray.size() + num);
-      for (int i = glyphIDArray.size(); i > num; i--) {
+      for (int i = glyphIDArray.size() - 1; i >= num; i--) {
         glyphIDArray[i] = glyphIDArray[i - num];
       }
       glyphIDArray[0] = glyphID;
