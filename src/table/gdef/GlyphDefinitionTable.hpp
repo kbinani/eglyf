@@ -401,8 +401,17 @@ public:
       if (!in.seek(markAttachClassDefOffset)) {
         return EGLYF_ERROR;
       }
-      if (auto st = ClassDef::Read(in, ret->markAttachClassDef); !st.ok()) {
-        return EGLYF_STATUS_PUSH(st);
+      uint16_t format;
+      if (!in.u16(&format)) {
+        return EGLYF_ERROR;
+      }
+      if (format == 1 || format == 2) {
+        if (!in.seek(markAttachClassDefOffset)) {
+          return EGLYF_ERROR;
+        }
+        if (auto st = ClassDef::Read(in, ret->markAttachClassDef); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
       }
     }
 
