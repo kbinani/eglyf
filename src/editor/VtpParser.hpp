@@ -59,8 +59,34 @@ private:
 
   Status defineGlyph(std::string const &name, std::optional<uint32_t> unicode, gdef::GlyphDefinitionTable::Class classDef) {
     using namespace std;
-    auto g = editor->getGlyphByName(name);
+
     auto font = editor->font;
+
+    bool hieroglyph = false;
+    auto underbar = name.find('_');
+    if (underbar == string::npos) {
+      if (GlyphNames::GetCodepoint(name)) {
+        hieroglyph = true;
+      }
+    } else {
+      auto prefix = name.substr(0, underbar);
+      if (GlyphNames::GetCodepoint(prefix)) {
+        hieroglyph = true;
+      }
+    }
+    if (!hieroglyph) {
+      auto gid = font->postGetGlyphID(name);
+      if (gid) {
+        auto const &table = post::PostScriptTable::OSXPostScriptNameMap();
+        if (auto found = table.find(name); found == table.end()) {
+          if (auto st = font->postSetName(*gid, format(".{}", name)); !st.ok()) {
+            return EGLYF_STATUS_PUSH(st);
+          }
+        }
+      }
+    }
+
+    auto g = editor->getGlyphByName(name);
     uint16_t glyphID = 0;
     if (auto gid = font->postGetGlyphID(name); gid) {
       glyphID = *gid;
