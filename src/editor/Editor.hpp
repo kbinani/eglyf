@@ -1044,6 +1044,8 @@ public:
 
     if (!font->gdef) {
       font->gdef = make_shared<gdef::GlyphDefinitionTable>();
+      font->gdef->majorVersion = 1;
+      font->gdef->minorVersion = 3;
     }
     if (!font->gdef->glyphClassDef) {
       font->gdef->glyphClassDef = make_shared<ClassDef>();
