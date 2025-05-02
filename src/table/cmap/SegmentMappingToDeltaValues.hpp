@@ -141,7 +141,7 @@ public:
       uint32_t codepoint = it.first;
       uint16_t gid = it.second;
 
-      uint16_t const delta = 0xffff & ((0x10000 | (int32_t)gid) - (int32_t)codepoint);
+      int16_t const delta = 0xffff & ((0x10000 | (int32_t)gid) - (int32_t)codepoint);
 
       if (current) {
         if (current->endCode + 1 == codepoint) {
