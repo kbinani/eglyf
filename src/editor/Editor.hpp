@@ -1165,13 +1165,6 @@ public:
       }
     }
 
-    if (auto st = PlaceholderGlyph::Create(*font, base, hfu, sb, chu, vfu, vhu); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
-    }
-    if (auto st = CartoucheGlyph::Create(*font, base, hfu, sb, hhu, chu, vfu, vhu); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
-    }
-
     auto glyphsSet1 = getGroupByName("glyphs_set1");
 
     for (auto const &it : baseGlyphs) {
@@ -2559,6 +2552,12 @@ public:
 
   Status postprocess() {
     using namespace std;
+    if (auto st = PlaceholderGlyph::Create(*font, base, hfu, sb, chu, vfu, vhu); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    if (auto st = CartoucheGlyph::Create(*font, base, hfu, sb, hhu, chu, vfu, vhu); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
     if (auto st = Insertion::CreatePlan(*font, sizeVariants, chu, vhu, hfu, vfu, base, insertionResolution, insertionPlans); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }

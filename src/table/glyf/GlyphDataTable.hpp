@@ -780,7 +780,41 @@ public:
     if (children.empty()) {
       return EGLYF_NULLOPT;
     }
+
     uint16_t gid = glyphs.size();
+    EmptyGlyph placeholder;
+    glyphs.push_back(placeholder);
+
+    if (auto st = replaceOutline(gid, children, maxp); !st.ok()) {
+      return EGLYF_NULLOPT_PUSH(st);
+    }
+
+    return gid;
+  }
+
+  Optional<uint16_t> addSimpleGlyph(std::vector<Contour> const &contours, maxp::MaximumProfileTable &maxp) {
+    using namespace std;
+
+    if (contours.size() > numeric_limits<int16_t>::max()) [[unlikely]] {
+      return EGLYF_NULLOPT;
+    }
+    if (glyphs.size() + 1 > numeric_limits<uint16_t>::max()) [[unlikely]] {
+      return EGLYF_NULLOPT;
+    }
+
+    uint16_t gid = glyphs.size();
+    EmptyGlyph placeholder;
+    glyphs.push_back(placeholder);
+
+    if (auto st = replaceOutline(gid, contours, maxp); !st.ok()) {
+      return EGLYF_NULLOPT_PUSH(st);
+    }
+
+    return gid;
+  }
+
+  Status replaceOutline(uint16_t gid, std::vector<CompositeGlyph::GlyphRecord> const &children, maxp::MaximumProfileTable &maxp) {
+    using namespace std;
     CompositeGlyph add;
     add.header.numberOfContours = -1;
 
@@ -788,7 +822,7 @@ public:
     for (auto const &child : children) {
       auto g = glyphs[child.glyphIndex];
       if (child.glyphIndex >= glyphs.size()) {
-        return EGLYF_NULLOPT_WHAT("Child glyph index out of range");
+        return EGLYF_ERROR_WHAT("Child glyph index out of range");
       }
       Transform<float> txm = child.transform<float>();
       if (holds_alternative<ReadonlyGlyph>(g)) {
@@ -837,18 +871,19 @@ public:
           bounds = Rect<int16_t>(xMin, yMin, xMax, yMax);
         }
       } else {
-        return EGLYF_NULLOPT_WHAT("Cannot create composite glyph from empty glyph");
+        return EGLYF_ERROR_WHAT("Cannot create composite glyph from empty glyph");
       }
       add.records.push_back(child);
     }
     if (!bounds) {
-      return EGLYF_NULLOPT;
+      return EGLYF_ERROR;
     }
     add.header.xMin = bounds->xMin;
     add.header.yMin = bounds->yMin;
     add.header.xMax = bounds->xMax;
     add.header.yMax = bounds->yMax;
-    glyphs.push_back(add);
+
+    glyphs[gid] = add;
 
     uint16_t depth = 2;
     set<uint16_t> path;
@@ -857,24 +892,23 @@ public:
     uint16_t compositeContours = 0;
     for (auto const &record : add.records) {
       if (!visit(record, depth, path, maxp, compositePoints, compositeContours)) {
-        return EGLYF_NULLOPT_WHAT("Failed to visit composite glyph record");
+        return EGLYF_ERROR_WHAT("Failed to visit composite glyph record");
       }
     }
     maxp.maxComponentElements = (std::max)(maxp.maxComponentElements, (uint16_t)add.records.size());
     maxp.maxCompositePoints = (std::max)(maxp.maxCompositePoints, compositePoints);
     maxp.maxCompositeContours = (std::max)(maxp.maxCompositeContours, compositeContours);
 
-    return gid;
+    return Status::Ok();
   }
 
-  Optional<uint16_t> addSimpleGlyph(std::vector<Contour> const &contours, maxp::MaximumProfileTable &maxp) {
+  Status replaceOutline(uint16_t gid, std::vector<Contour> const &contours, maxp::MaximumProfileTable &maxp) {
     using namespace std;
-
-    if (contours.size() > numeric_limits<int16_t>::max()) [[unlikely]] {
-      return EGLYF_NULLOPT;
+    if (gid >= glyphs.size()) {
+      return EGLYF_ERROR;
     }
-    if (glyphs.size() + 1 > numeric_limits<uint16_t>::max()) [[unlikely]] {
-      return EGLYF_NULLOPT;
+    if (contours.size() > numeric_limits<int16_t>::max()) [[unlikely]] {
+      return EGLYF_ERROR;
     }
 
     size_t numPoints = 0;
@@ -895,14 +929,12 @@ public:
       }
     }
     if (!bounds) {
-      auto gid = addEmptyGlyph();
-      if (!gid) {
-        return EGLYF_NULLOPT_PUSH(gid.status());
-      }
-      return *gid;
+      EmptyGlyph g;
+      glyphs[gid] = g;
+      return Status::Ok();
     }
     if (numPoints > numeric_limits<uint16_t>::max()) [[unlikely]] {
-      return EGLYF_NULLOPT;
+      return EGLYF_ERROR;
     }
 
     g.numPoints = numPoints;
@@ -912,13 +944,12 @@ public:
     g.header.xMax = bounds->xMax;
     g.header.yMax = bounds->yMax;
 
-    uint16_t gid = glyphs.size();
-    glyphs.push_back(g);
+    glyphs[gid] = g;
 
     maxp.maxPoints = max(maxp.maxPoints, g.numPoints);
     maxp.maxContours = max(maxp.maxContours, (uint16_t)g.header.numberOfContours);
 
-    return gid;
+    return Status::Ok();
   }
 
   Status toShape(uint16_t gid, Shape &out) const {

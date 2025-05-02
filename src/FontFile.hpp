@@ -316,6 +316,22 @@ public:
     });
   }
 
+  Status setGlyphClass(uint16_t gid, gdef::GlyphDefinitionTable::Class c) {
+    using namespace std;
+    if (!gdef) {
+      gdef = make_shared<gdef::GlyphDefinitionTable>();
+      gdef->majorVersion = 1;
+      gdef->minorVersion = 2;
+    }
+    if (!gdef->glyphClassDef) {
+      gdef->glyphClassDef = make_shared<ClassDef>();
+    }
+    if (auto st = gdef->glyphClassDef->add(gid, static_cast<uint16_t>(c)); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    return Status::Ok();
+  }
+
   static Status Read(InputStream &in, std::shared_ptr<FontFile> &out) {
     using namespace std;
     auto ff = make_shared<FontFile>();
@@ -677,15 +693,7 @@ private:
     } else {
       return EGLYF_NULLOPT_PUSH(postGid.status());
     }
-    if (!gdef) {
-      gdef = make_shared<gdef::GlyphDefinitionTable>();
-      gdef->majorVersion = 1;
-      gdef->minorVersion = 2;
-    }
-    if (!gdef->glyphClassDef) {
-      gdef->glyphClassDef = make_shared<ClassDef>();
-    }
-    if (auto st = gdef->glyphClassDef->add(*gid, static_cast<uint16_t>(classValue)); !st.ok()) {
+    if (auto st = setGlyphClass(*gid, classValue); !st.ok()) {
       return EGLYF_NULLOPT_PUSH(st);
     }
     maxp->numGlyphs = tto.glyf->glyphs.size();

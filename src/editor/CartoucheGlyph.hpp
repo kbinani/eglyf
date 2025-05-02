@@ -145,19 +145,19 @@ class CartoucheGlyph {
     auto c = CreateContour_cb(p, width, height, bottom);
 
     int16_t advanceWidth = p.sideBearing + width + p.approachLength;
-    auto cbL = font.addSimpleGlyph(name, Class::Base, {c}, advanceWidth, p.sideBearing);
+    auto cbL = ReplaceSimpleGlyph(font, name, Class::Base, {c}, advanceWidth, p.sideBearing);
     if (!cbL) {
       return EGLYF_STATUS_PUSH(cbL.status());
     }
 
     for (auto const &c : copy) {
-      auto gid = font.addCompositeGlyph(c, Class::Base, GlyphRecord::New(*cbL), advanceWidth, -p.jointLength);
+      auto gid = ReplaceCompositeGlyph(font, c, Class::Base, GlyphRecord::New(*cbL), advanceWidth, -p.jointLength);
       if (!gid) {
         return EGLYF_STATUS_PUSH(gid.status());
       }
     }
     for (auto const &m : mirror) {
-      auto gid = font.addCompositeGlyph(m, Class::Base, GlyphRecord::New(*cbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -p.jointLength);
+      auto gid = ReplaceCompositeGlyph(font, m, Class::Base, GlyphRecord::New(*cbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -p.jointLength);
       if (!gid) {
         return EGLYF_STATUS_PUSH(gid.status());
       }
@@ -179,18 +179,18 @@ class CartoucheGlyph {
     }
 
     int16_t advanceWidth = p.sideBearing + width + p.approachLength;
-    auto crbL = font.addSimpleGlyph(name, Class::Base, {c}, advanceWidth, cutX - p.lineWidth);
+    auto crbL = ReplaceSimpleGlyph(font, name, Class::Base, {c}, advanceWidth, cutX - p.lineWidth);
     if (!crbL) {
       return EGLYF_STATUS_PUSH(crbL.status());
     }
     for (auto const &c : copy) {
-      auto gid = font.addCompositeGlyph(c, Class::Base, GlyphRecord::New(*crbL), advanceWidth, -p.jointLength);
+      auto gid = ReplaceCompositeGlyph(font, c, Class::Base, GlyphRecord::New(*crbL), advanceWidth, -p.jointLength);
       if (!gid) {
         return EGLYF_STATUS_PUSH(gid.status());
       }
     }
     for (auto const &m : mirror) {
-      auto gid = font.addCompositeGlyph(m, Class::Base, GlyphRecord::New(*crbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -p.jointLength);
+      auto gid = ReplaceCompositeGlyph(font, m, Class::Base, GlyphRecord::New(*crbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -p.jointLength);
       if (!gid) {
         return EGLYF_STATUS_PUSH(gid.status());
       }
@@ -355,6 +355,90 @@ class CartoucheGlyph {
     advanceHeight = 2 * top - height;
   }
 
+  static Optional<uint16_t> ReplaceSimpleGlyph(FontFile &font,
+                                               std::string const &name,
+                                               gdef::GlyphDefinitionTable::Class classValue,
+                                               std::vector<glyf::GlyphDataTable::Contour> const &contours,
+                                               uint16_t advanceWidth,
+                                               int16_t lsb) {
+    using namespace std;
+    auto gid = font.postGetGlyphID(name);
+    if (!gid) {
+      return EGLYF_NULLOPT;
+    }
+
+    auto &outlines = font.outlines;
+    if (!holds_alternative<FontFile::TrueTypeOutlines>(outlines)) {
+      return EGLYF_NULLOPT;
+    }
+    auto &glyf = get<FontFile::TrueTypeOutlines>(outlines).glyf;
+
+    if (auto st = glyf->replaceOutline(*gid, contours, *font.maxp); !st.ok()) {
+      return EGLYF_NULLOPT_PUSH(st);
+    }
+
+    hmtx::HorizontalMetricsTable::LongHorMetric hm;
+    hm.advanceWidth = advanceWidth;
+    hm.lsb = lsb;
+    font.hmtx->metrics[*gid] = hm;
+
+    if (auto st = font.setGlyphClass(*gid, classValue); !st.ok()) {
+      return EGLYF_NULLOPT_PUSH(st);
+    }
+
+    return *gid;
+  }
+
+  static Optional<uint16_t> ReplaceCompositeGlyph(FontFile &font,
+                                                  std::string const &name,
+                                                  gdef::GlyphDefinitionTable::Class classValue,
+                                                  std::vector<glyf::GlyphDataTable::CompositeGlyph::GlyphRecord> const &children,
+                                                  uint16_t advanceWidth,
+                                                  int16_t lsb) {
+    using namespace std;
+    auto gid = font.postGetGlyphID(name);
+    if (!gid) {
+      return EGLYF_NULLOPT;
+    }
+
+    auto &outlines = font.outlines;
+    if (!holds_alternative<FontFile::TrueTypeOutlines>(outlines)) {
+      return EGLYF_NULLOPT;
+    }
+    auto &glyf = get<FontFile::TrueTypeOutlines>(outlines).glyf;
+
+    if (auto st = glyf->replaceOutline(*gid, children, *font.maxp); !st.ok()) {
+      return EGLYF_NULLOPT_PUSH(st);
+    }
+
+    hmtx::HorizontalMetricsTable::LongHorMetric hm;
+    hm.advanceWidth = advanceWidth;
+    hm.lsb = lsb;
+    font.hmtx->metrics[*gid] = hm;
+
+    if (auto st = font.setGlyphClass(*gid, classValue); !st.ok()) {
+      return EGLYF_NULLOPT_PUSH(st);
+    }
+
+    return *gid;
+  }
+
+  static Optional<uint16_t> ReplaceCompositeGlyph(FontFile &font,
+                                                  std::string const &name,
+                                                  gdef::GlyphDefinitionTable::Class classValue,
+                                                  glyf::GlyphDataTable::CompositeGlyph::GlyphRecord record,
+                                                  uint16_t advanceWidth,
+                                                  int16_t lsb) {
+    using namespace std;
+    vector<glyf::GlyphDataTable::CompositeGlyph::GlyphRecord> children;
+    children.push_back(record);
+    auto gid = ReplaceCompositeGlyph(font, name, classValue, children, advanceWidth, lsb);
+    if (!gid) {
+      return EGLYF_NULLOPT_PUSH(gid.status());
+    }
+    return *gid;
+  }
+
 public:
   static Status Create(FontFile &font, int16_t base, int16_t hfu, int16_t sb, int hhu, int chu, int16_t vfu, int vhu) {
     using namespace std;
@@ -417,17 +501,17 @@ public:
       c.points.emplace_back(sideBearing + w + jointLength, bottom + lineWidth);
       c.points.emplace_back(sideBearing + w + jointLength, bottom);
       c.points.emplace_back(sideBearing, bottom);
-      auto hwtbL = font.addSimpleGlyph("hwtbL", Class::Base, {c}, advanceWidth, sideBearing);
+      auto hwtbL = ReplaceSimpleGlyph(font, "hwtbL", Class::Base, {c}, advanceWidth, sideBearing);
       if (!hwtbL) {
         return EGLYF_STATUS_PUSH(hwtbL.status());
       }
-      auto hwteR = font.addCompositeGlyph("hwteR", Class::Base, GlyphRecord::New(*hwtbL), advanceWidth, sideBearing);
+      auto hwteR = ReplaceCompositeGlyph(font, "hwteR", Class::Base, GlyphRecord::New(*hwtbL), advanceWidth, sideBearing);
       if (!hwteR) {
         return EGLYF_STATUS_PUSH(hwteR.status());
       }
 
       for (auto const &n : {"hwtbR", "hwteL"}) {
-        auto gid = font.addCompositeGlyph(n, Class::Base, GlyphRecord::New(*hwtbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
+        auto gid = ReplaceCompositeGlyph(font, n, Class::Base, GlyphRecord::New(*hwtbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
         if (!gid) {
           return EGLYF_STATUS_PUSH(gid.status());
         }
@@ -446,17 +530,17 @@ public:
       c.points.emplace_back(sideBearing + w + jointLength, obottom + lineWidth);
       c.points.emplace_back(sideBearing + w + jointLength, obottom);
       c.points.emplace_back(sideBearing, obottom);
-      auto hwtobL = font.addSimpleGlyph("hwtobL", Class::Base, {c}, advanceWidth, sideBearing);
+      auto hwtobL = ReplaceSimpleGlyph(font, "hwtobL", Class::Base, {c}, advanceWidth, sideBearing);
       if (!hwtobL) {
         return EGLYF_STATUS_PUSH(hwtobL.status());
       }
-      auto hwtoeR = font.addCompositeGlyph("hwtoeR", Class::Base, GlyphRecord::New(*hwtobL), advanceWidth, sideBearing);
+      auto hwtoeR = ReplaceCompositeGlyph(font, "hwtoeR", Class::Base, GlyphRecord::New(*hwtobL), advanceWidth, sideBearing);
       if (!hwtoeR) {
         return EGLYF_STATUS_PUSH(hwtoeR.status());
       }
 
       for (auto const &n : {"hwtobR", "hwtoeL"}) {
-        auto gid = font.addCompositeGlyph(n, Class::Base, GlyphRecord::New(*hwtobL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
+        auto gid = ReplaceCompositeGlyph(font, n, Class::Base, GlyphRecord::New(*hwtobL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
         if (!gid) {
           return EGLYF_STATUS_PUSH(gid.status());
         }
@@ -467,29 +551,29 @@ public:
       int16_t advanceWidth;
       int16_t advanceHeight;
       CreateContour_hwttb(p, top, height, contours, advanceWidth, advanceHeight);
-      auto hwttbL = font.addSimpleGlyph("hwttbL", Class::Base, contours, advanceWidth, p.sideBearing);
+      auto hwttbL = ReplaceSimpleGlyph(font, "hwttbL", Class::Base, contours, advanceWidth, p.sideBearing);
       if (!hwttbL) {
         return EGLYF_STATUS_PUSH(hwttbL.status());
       }
 
       for (auto const &n : {"hwttbR", "hwtteL"}) {
-        auto gid = font.addCompositeGlyph(n, Class::Base, GlyphRecord::New(*hwttbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
+        auto gid = ReplaceCompositeGlyph(font, n, Class::Base, GlyphRecord::New(*hwttbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
         if (!gid) {
           return EGLYF_STATUS_PUSH(gid.status());
         }
       }
-      auto hwtteR = font.addCompositeGlyph("hwtteR", Class::Base, GlyphRecord::New(*hwttbL), advanceWidth, p.sideBearing);
+      auto hwtteR = ReplaceCompositeGlyph(font, "hwtteR", Class::Base, GlyphRecord::New(*hwttbL), advanceWidth, p.sideBearing);
       if (!hwtteR) {
         return EGLYF_STATUS_PUSH(hwtteR.status());
       }
       for (auto const &n : {"hwtbbL", "hwtbeR"}) {
-        auto gid = font.addCompositeGlyph("hwtbbL", Class::Base, GlyphRecord::New(*hwttbL, 0, advanceHeight, Vec<float>(1, -1)), advanceWidth, p.sideBearing);
+        auto gid = ReplaceCompositeGlyph(font, "hwtbbL", Class::Base, GlyphRecord::New(*hwttbL, 0, advanceHeight, Vec<float>(1, -1)), advanceWidth, p.sideBearing);
         if (!gid) {
           return EGLYF_STATUS_PUSH(gid.status());
         }
       }
       for (auto const &n : {"hwtbbR", "hwtbeL"}) {
-        auto gid = font.addCompositeGlyph(n, Class::Base, GlyphRecord::New(*hwttbL, advanceWidth, advanceHeight, Vec<float>(-1, -1)), advanceWidth, -jointLength);
+        auto gid = ReplaceCompositeGlyph(font, n, Class::Base, GlyphRecord::New(*hwttbL, advanceWidth, advanceHeight, Vec<float>(-1, -1)), advanceWidth, -jointLength);
         if (!gid) {
           return EGLYF_STATUS_PUSH(gid.status());
         }
@@ -521,16 +605,16 @@ public:
       c1.points.emplace_back(advanceWidth + jointLength, obottom + lineWidth);
       c1.points.emplace_back(advanceWidth + jointLength, obottom);
 
-      auto hwtdbL = font.addSimpleGlyph("hwtdbL", Class::Base, {c, c0, c1}, advanceWidth, -jointLength);
+      auto hwtdbL = ReplaceSimpleGlyph(font, "hwtdbL", Class::Base, {c, c0, c1}, advanceWidth, -jointLength);
       if (!hwtdbL) {
         return EGLYF_STATUS_PUSH(hwtdbL.status());
       }
-      auto hwtdeR = font.addCompositeGlyph("hwtdeR", Class::Base, GlyphRecord::New(*hwtdbL), advanceWidth, -jointLength);
+      auto hwtdeR = ReplaceCompositeGlyph(font, "hwtdeR", Class::Base, GlyphRecord::New(*hwtdbL), advanceWidth, -jointLength);
       if (!hwtdeR) {
         return EGLYF_STATUS_PUSH(hwtdeR.status());
       }
       for (auto const &n : {"hwtdbR", "hwtdeL"}) {
-        auto gid = font.addCompositeGlyph(n, Class::Base, GlyphRecord::New(*hwtdbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
+        auto gid = ReplaceCompositeGlyph(font, n, Class::Base, GlyphRecord::New(*hwtdbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
         if (!gid) {
           return EGLYF_STATUS_PUSH(gid.status());
         }
@@ -541,28 +625,28 @@ public:
       int16_t advanceWidth;
       int16_t advanceHeight;
       CreateContour_hwttb(p, otop, oheight, contours, advanceWidth, advanceHeight);
-      auto hwtotbL = font.addSimpleGlyph("hwtotbL", Class::Base, contours, advanceWidth, p.sideBearing);
+      auto hwtotbL = ReplaceSimpleGlyph(font, "hwtotbL", Class::Base, contours, advanceWidth, p.sideBearing);
       if (!hwtotbL) {
         return EGLYF_STATUS_PUSH(hwtotbL.status());
       }
-      auto hwtoteR = font.addCompositeGlyph("hwtoteR", Class::Base, GlyphRecord::New(*hwtotbL), advanceWidth, sideBearing);
+      auto hwtoteR = ReplaceCompositeGlyph(font, "hwtoteR", Class::Base, GlyphRecord::New(*hwtotbL), advanceWidth, sideBearing);
       if (!hwtoteR) {
         return EGLYF_STATUS_PUSH(hwtoteR.status());
       }
       for (auto const &n : {"hwtotbR", "hwtoteL"}) {
-        auto gid = font.addCompositeGlyph(n, Class::Base, GlyphRecord::New(*hwtotbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -p.jointLength);
+        auto gid = ReplaceCompositeGlyph(font, n, Class::Base, GlyphRecord::New(*hwtotbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -p.jointLength);
         if (!gid) {
           return EGLYF_STATUS_PUSH(gid.status());
         }
       }
       for (auto const &n : {"hwtobbL", "hwtobeR"}) {
-        auto gid = font.addCompositeGlyph(n, Class::Base, GlyphRecord::New(*hwtotbL, 0, advanceHeight, Vec<float>(1, -1)), advanceWidth, p.sideBearing);
+        auto gid = ReplaceCompositeGlyph(font, n, Class::Base, GlyphRecord::New(*hwtotbL, 0, advanceHeight, Vec<float>(1, -1)), advanceWidth, p.sideBearing);
         if (!gid) {
           return EGLYF_STATUS_PUSH(gid.status());
         }
       }
       for (auto const &n : {"hwtobbR", "hwtobeL"}) {
-        auto gid = font.addCompositeGlyph(n, Class::Base, GlyphRecord::New(*hwtotbL, advanceWidth, advanceHeight, Vec<float>(-1, -1)), advanceWidth, -p.jointLength);
+        auto gid = ReplaceCompositeGlyph(font, n, Class::Base, GlyphRecord::New(*hwtotbL, advanceWidth, advanceHeight, Vec<float>(-1, -1)), advanceWidth, -p.jointLength);
         if (!gid) {
           return EGLYF_STATUS_PUSH(gid.status());
         }
@@ -588,24 +672,24 @@ public:
       c1.points.emplace_back(advanceWidth + jointLength, obottom);
       contours.push_back(c1);
 
-      auto hwtdtbL = font.addSimpleGlyph("hwtdtbL", Class::Base, contours, advanceWidth, -p.jointLength);
+      auto hwtdtbL = ReplaceSimpleGlyph(font, "hwtdtbL", Class::Base, contours, advanceWidth, -p.jointLength);
       if (!hwtdtbL) {
         return EGLYF_STATUS_PUSH(hwtdtbL.status());
       }
       for (auto const &n : {"hwtdbbL", "hwtdteR", "hwtdbeR"}) {
-        auto gid = font.addCompositeGlyph(n, Class::Base, GlyphRecord::New(*hwtdtbL, 0, advanceHeight, Vec<float>(1, -1)), advanceWidth, -p.jointLength);
+        auto gid = ReplaceCompositeGlyph(font, n, Class::Base, GlyphRecord::New(*hwtdtbL, 0, advanceHeight, Vec<float>(1, -1)), advanceWidth, -p.jointLength);
         if (!gid) {
           return EGLYF_STATUS_PUSH(gid.status());
         }
       }
       for (auto const &n : {"hwtdteL", "hwtdtbR"}) {
-        auto gid = font.addCompositeGlyph(n, Class::Base, GlyphRecord::New(*hwtdtbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -p.jointLength);
+        auto gid = ReplaceCompositeGlyph(font, n, Class::Base, GlyphRecord::New(*hwtdtbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -p.jointLength);
         if (!gid) {
           return EGLYF_STATUS_PUSH(gid.status());
         }
       }
       for (auto const &n : {"hwtdbbR", "hwtdbeL"}) {
-        auto gid = font.addCompositeGlyph(n, Class::Base, GlyphRecord::New(*hwtdtbL, advanceWidth, advanceHeight, Vec<float>(-1, -1)), advanceWidth, -p.jointLength);
+        auto gid = ReplaceCompositeGlyph(font, n, Class::Base, GlyphRecord::New(*hwtdtbL, advanceWidth, advanceHeight, Vec<float>(-1, -1)), advanceWidth, -p.jointLength);
         if (!gid) {
           return EGLYF_STATUS_PUSH(gid.status());
         }
@@ -616,11 +700,11 @@ public:
       vector<Contour> contours;
       int16_t advanceWidth;
       CreateContour_O33aeL(p, top, height, contours, advanceWidth);
-      auto O33aeL = font.addSimpleGlyph("O33aeL", Class::Base, contours, advanceWidth, -p.jointLength);
+      auto O33aeL = ReplaceSimpleGlyph(font, "O33aeL", Class::Base, contours, advanceWidth, -p.jointLength);
       if (!O33aeL) {
         return EGLYF_STATUS_PUSH(O33aeL.status());
       }
-      auto O33aeR = font.addCompositeGlyph("O33aeR", Class::Base, GlyphRecord::New(*O33aeL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
+      auto O33aeR = ReplaceCompositeGlyph(font, "O33aeR", Class::Base, GlyphRecord::New(*O33aeL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
       if (!O33aeR) {
         return EGLYF_STATUS_PUSH(O33aeR.status());
       }
@@ -630,11 +714,11 @@ public:
       vector<Contour> contours;
       int16_t advanceWidth;
       CreateContour_O33aeL(p, otop, oheight, contours, advanceWidth);
-      auto O33aoeL = font.addSimpleGlyph("O33aoeL", Class::Base, contours, advanceWidth, -p.jointLength);
+      auto O33aoeL = ReplaceSimpleGlyph(font, "O33aoeL", Class::Base, contours, advanceWidth, -p.jointLength);
       if (!O33aoeL) {
         return EGLYF_STATUS_PUSH(O33aoeL.status());
       }
-      auto O33aoeR = font.addCompositeGlyph("O33aoeR", Class::Base, GlyphRecord::New(*O33aoeL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
+      auto O33aoeR = ReplaceCompositeGlyph(font, "O33aoeR", Class::Base, GlyphRecord::New(*O33aoeL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
       if (!O33aoeR) {
         return EGLYF_STATUS_PUSH(O33aoeR.status());
       }
@@ -659,11 +743,11 @@ public:
       c1.points.emplace_back(advanceWidth + jointLength, obottom);
       contours.push_back(c1);
 
-      auto O33adeL = font.addSimpleGlyph("O33adeL", Class::Base, contours, advanceWidth, -p.jointLength);
+      auto O33adeL = ReplaceSimpleGlyph(font, "O33adeL", Class::Base, contours, advanceWidth, -p.jointLength);
       if (!O33adeL) {
         return EGLYF_STATUS_PUSH(O33adeL.status());
       }
-      auto O33adeR = font.addCompositeGlyph("O33adeR", Class::Base, GlyphRecord::New(*O33adeL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
+      auto O33adeR = ReplaceCompositeGlyph(font, "O33adeR", Class::Base, GlyphRecord::New(*O33adeL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -jointLength);
       if (!O33adeR) {
         return EGLYF_STATUS_PUSH(O33adeR.status());
       }
@@ -683,7 +767,7 @@ public:
       c1.points.emplace_back(w + jointLength, bottom);
       c1.points.emplace_back(-jointLength, bottom);
 
-      auto gid = font.addSimpleGlyph(name, gdef::GlyphDefinitionTable::Class::Base, {c0, c1}, w, -jointLength);
+      auto gid = ReplaceSimpleGlyph(font, name, gdef::GlyphDefinitionTable::Class::Base, {c0, c1}, w, -jointLength);
       if (!gid) {
         return EGLYF_STATUS_PUSH(gid.status());
       }
@@ -703,7 +787,7 @@ public:
       c1.points.emplace_back(w + jointLength, obottom);
       c1.points.emplace_back(-jointLength, obottom);
 
-      auto gid = font.addSimpleGlyph(name, gdef::GlyphDefinitionTable::Class::Base, {c0, c1}, w, -jointLength);
+      auto gid = ReplaceSimpleGlyph(font, name, gdef::GlyphDefinitionTable::Class::Base, {c0, c1}, w, -jointLength);
       if (!gid) {
         return EGLYF_STATUS_PUSH(gid.status());
       }
@@ -722,7 +806,7 @@ public:
       vector<GlyphRecord> children;
       children.push_back(GlyphRecord::New(*qo));
       children.push_back(GlyphRecord::New(*qc));
-      auto gid = font.addCompositeGlyph(name, Class::Base, children, w, -p.jointLength);
+      auto gid = ReplaceCompositeGlyph(font, name, Class::Base, children, w, -p.jointLength);
       if (!gid) {
         return EGLYF_STATUS_PUSH(gid.status());
       }
@@ -743,17 +827,17 @@ public:
       c1.points.emplace_back(-jointLength, obottom);
       c1.points.emplace_back(w + jointLength, obottom);
 
-      auto cdbL = font.addSimpleGlyph("cdbL", Class::Base, {c0, c1, c}, w, -jointLength);
+      auto cdbL = ReplaceSimpleGlyph(font, "cdbL", Class::Base, {c0, c1, c}, w, -jointLength);
       if (!cdbL) {
         return EGLYF_STATUS_PUSH(cdbL.status());
       }
       for (auto const &n : {"cdbR", "cdreL"}) {
-        auto gid = font.addCompositeGlyph(n, Class::Base, GlyphRecord::New(*cdbL, w, 0, Vec<float>(-1, 1)), w, -jointLength);
+        auto gid = ReplaceCompositeGlyph(font, n, Class::Base, GlyphRecord::New(*cdbL, w, 0, Vec<float>(-1, 1)), w, -jointLength);
         if (!gid) {
           return EGLYF_STATUS_PUSH(gid.status());
         }
       }
-      auto cdreR = font.addCompositeGlyph("cdreR", Class::Base, GlyphRecord::New(*cdbL), w, -jointLength);
+      auto cdreR = ReplaceCompositeGlyph(font, "cdreR", Class::Base, GlyphRecord::New(*cdbL), w, -jointLength);
       if (!cdreR) {
         return EGLYF_STATUS_PUSH(cdreR.status());
       }
@@ -778,19 +862,19 @@ public:
       c1.points.emplace_back(-jointLength, obottom);
       c1.points.emplace_back(w + jointLength, obottom);
 
-      auto cdrbL = font.addSimpleGlyph("cdrbL", Class::Base, {c0, c1, c}, w, -jointLength);
+      auto cdrbL = ReplaceSimpleGlyph(font, "cdrbL", Class::Base, {c0, c1, c}, w, -jointLength);
       if (!cdrbL) {
         return EGLYF_STATUS_PUSH(cdrbL.status());
       }
 
       for (auto const &n : {"cdrbR", "cdeL"}) {
-        auto gid = font.addCompositeGlyph(n, Class::Base, GlyphRecord::New(*cdrbL, w, 0, Vec<float>(-1, 1)), w, -jointLength);
+        auto gid = ReplaceCompositeGlyph(font, n, Class::Base, GlyphRecord::New(*cdrbL, w, 0, Vec<float>(-1, 1)), w, -jointLength);
         if (!gid) {
           return EGLYF_STATUS_PUSH(gid.status());
         }
       }
 
-      auto cdeR = font.addCompositeGlyph("cdeR", Class::Base, GlyphRecord::New(*cdrbL), w, -jointLength);
+      auto cdeR = ReplaceCompositeGlyph(font, "cdeR", Class::Base, GlyphRecord::New(*cdrbL), w, -jointLength);
       if (!cdeR) {
         return EGLYF_STATUS_PUSH(cdeR.status());
       }

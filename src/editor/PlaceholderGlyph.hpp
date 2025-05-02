@@ -145,9 +145,21 @@ public:
           c.points.emplace_back(x0 - reticle, y0 - p.t);
           contours.push_back(c);
         }
-        auto gid = font.addSimpleGlyph(name, gdef::GlyphDefinitionTable::Class::Mark, contours, 0, -(x.s + p.t));
+        auto gid = font.postGetGlyphID(name);
         if (!gid) {
-          return EGLYF_STATUS_PUSH(gid.status());
+          return EGLYF_ERROR;
+        }
+        if (auto st = glyf->replaceOutline(*gid, contours, *font.maxp); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
+
+        hmtx::HorizontalMetricsTable::LongHorMetric hm;
+        hm.advanceWidth = 0;
+        hm.lsb = -(x.s + p.t);
+        font.hmtx->metrics[*gid] = hm;
+
+        if (auto st = font.setGlyphClass(*gid, gdef::GlyphDefinitionTable::Class::Mark); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
         }
       }
     }
