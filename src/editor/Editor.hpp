@@ -1042,15 +1042,6 @@ public:
       return EGLYF_ERROR;
     }
 
-    if (!font->gdef) {
-      font->gdef = make_shared<gdef::GlyphDefinitionTable>();
-      font->gdef->majorVersion = 1;
-      font->gdef->minorVersion = 3;
-    }
-    if (!font->gdef->glyphClassDef) {
-      font->gdef->glyphClassDef = make_shared<ClassDef>();
-    }
-
     uint64_t sumWidth = 0;
     uint64_t sumHeight = 0;
     uint64_t sumCount = 0;
@@ -1231,6 +1222,15 @@ public:
   }
 
   Status preprocess() {
+    using namespace std;
+    if (!font->gdef) {
+      font->gdef = make_shared<gdef::GlyphDefinitionTable>();
+      font->gdef->majorVersion = 1;
+      font->gdef->minorVersion = 3;
+    }
+    if (!font->gdef->glyphClassDef) {
+      font->gdef->glyphClassDef = make_shared<ClassDef>();
+    }
     if (auto st = createSizeVariants(); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }

@@ -90,14 +90,6 @@ private:
     uint16_t glyphID = 0;
     if (auto gid = font->postGetGlyphID(name); gid) {
       glyphID = *gid;
-      if (!font->gdef) {
-        font->gdef = make_shared<gdef::GlyphDefinitionTable>();
-        font->gdef->majorVersion = 1;
-        font->gdef->minorVersion = 2;
-      }
-      if (!font->gdef->glyphClassDef) {
-        font->gdef->glyphClassDef = make_shared<ClassDef>();
-      }
       if (auto st = font->gdef->glyphClassDef->add(*gid, static_cast<uint16_t>(classDef)); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
