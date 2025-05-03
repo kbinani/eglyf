@@ -294,16 +294,20 @@ public:
     return Status::Ok();
   }
 
-  Optional<uint16_t> getGlyphID(uint32_t codepoint) const {
+  std::optional<uint16_t> getGlyphID(uint32_t codepoint) const {
     using namespace std;
     if (codepoint > 0xffff) {
-      return 0;
+      return nullopt;
     }
-    if (auto found = mapping.find(codepoint); found != mapping.end()) {
-      return found->second;
-    } else {
-      return 0;
+    auto found = mapping.find(codepoint);
+    ;
+    if (found == mapping.end()) {
+      return nullopt;
     }
+    if (found->second == 0) {
+      return nullopt;
+    }
+    return found->second;
   }
 
   Status map(uint32_t codepoint, uint16_t glyphID) {

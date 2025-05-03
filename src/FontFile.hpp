@@ -622,11 +622,12 @@ public:
     return Status::Ok();
   }
 
-  Optional<uint16_t> getGlyphID(uint32_t codepoint) const {
+  std::optional<uint16_t> getGlyphID(uint32_t codepoint) const {
+    using namespace std;
     if (auto gid = cmap->getGlyphID(codepoint); gid) {
       return *gid;
     } else {
-      return EGLYF_NULLOPT_PUSH(gid.status());
+      return nullopt;
     }
   }
 

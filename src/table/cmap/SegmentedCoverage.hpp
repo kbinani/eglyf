@@ -150,16 +150,17 @@ public:
     return Status::Ok();
   }
 
-  Optional<uint16_t> getGlyphID(uint32_t codepoint) const {
+  std::optional<uint16_t> getGlyphID(uint32_t codepoint) const {
     using namespace std;
-    if (auto found = mapping.find(codepoint); found != mapping.end()) {
-      if (found->second > numeric_limits<uint16_t>::max()) {
-        return EGLYF_NULLOPT;
-      } else {
-        return (uint16_t)found->second;
-      }
+    auto found = mapping.find(codepoint);
+    if (found == mapping.end()) {
+      return nullopt;
     }
-    return EGLYF_NULLOPT;
+    uint32_t gid = found->second;
+    if (gid == 0 || gid > numeric_limits<uint16_t>::max()) {
+      return nullopt;
+    }
+    return (uint16_t)gid;
   }
 
   Status map(uint32_t codepoint, uint16_t glyphID) {

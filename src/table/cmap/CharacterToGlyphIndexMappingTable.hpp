@@ -213,7 +213,7 @@ public:
     return EncodeResult(out.data());
   }
 
-  Optional<uint16_t> getGlyphID(uint32_t codepoint) const {
+  std::optional<uint16_t> getGlyphID(uint32_t codepoint) const {
     using namespace std;
     for (auto const &subtable : sortedSubtables) {
       if (auto format12 = dynamic_pointer_cast<cmap::SegmentedCoverage>(subtable); format12) {
@@ -226,7 +226,7 @@ public:
         }
       }
     }
-    return 0;
+    return nullopt;
   }
 
   Status map(uint32_t codepoint, uint16_t glyphID) {
