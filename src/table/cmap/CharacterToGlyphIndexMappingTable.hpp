@@ -6,6 +6,9 @@ namespace eglyf::cmap {
 class CharacterToGlyphIndexMappingTable : public Table {
 public:
   struct EncodingRecord {
+    EncodingRecord() = default;
+    EncodingRecord(uint16_t platformID, uint16_t encodingID, std::shared_ptr<cmap::CmapSubtable> const &subtable) : platformID(platformID), encodingID(encodingID), subtable(subtable) {}
+
     uint16_t platformID;
     uint16_t encodingID;
     std::shared_ptr<cmap::CmapSubtable> subtable;
@@ -32,7 +35,7 @@ public:
       uint16_t encodingID;
       Offset32 subtableOffset;
     };
-    vector<Record> encodingRecords;
+    vector<Record> records;
     for (uint16_t i = 0; i < numTables; i++) {
       Record r;
       if (!in.u16(&r.platformID)) {
@@ -44,17 +47,18 @@ public:
       if (!in.o32(&r.subtableOffset)) {
         return EGLYF_ERROR_WHAT("Failed to read subtableOffset");
       }
-      encodingRecords.push_back(r);
+      records.push_back(r);
     }
     std::map<Offset32, shared_ptr<cmap::CmapSubtable>> tables;
     auto ret = make_unique<CharacterToGlyphIndexMappingTable>();
-    for (auto const &record : encodingRecords) {
+    vector<EncodingRecord> encodingRecords;
+    for (auto const &record : records) {
       EncodingRecord r;
       r.platformID = record.platformID;
       r.encodingID = record.encodingID;
       if (auto found = tables.find(record.subtableOffset); found != tables.end()) {
         r.subtable = found->second;
-        ret->encodingRecords.push_back(r);
+        encodingRecords.push_back(r);
         continue;
       }
       if (!in.seek(record.subtableOffset)) {
@@ -122,7 +126,7 @@ public:
       default:
         return EGLYF_ERROR_WHAT("Unsupported cmap subtable format: " + std::to_string(fmt));
       }
-      ret->encodingRecords.push_back(r);
+      encodingRecords.push_back(r);
       tables[record.subtableOffset] = r.subtable;
     }
 
@@ -140,7 +144,7 @@ public:
 
     vector<EncodingRecord> sorted;
     set<shared_ptr<cmap::CmapSubtable>> added;
-    for (auto const &r : ret->encodingRecords) {
+    for (auto const &r : encodingRecords) {
       switch (r.platformID) {
       case 0:
         break;
@@ -166,10 +170,28 @@ public:
     ranges::sort(sorted, [](auto const &a, auto const &b) {
       int bitsA = NumBits(a.subtable);
       int bitsB = NumBits(b.subtable);
-      return bitsA > bitsB;
+      return bitsA < bitsB;
     });
     for (auto const &s : sorted) {
-      ret->sortedSubtables.push_back(s.subtable);
+      if (auto format4 = dynamic_pointer_cast<SegmentMappingToDeltaValues>(s.subtable); format4) {
+        format4->forEach([&](uint32_t cp, uint32_t gid) {
+          if (gid != 0) {
+            ret->mapping[cp] = gid;
+          }
+        });
+      } else if (auto format6 = dynamic_pointer_cast<TrimmedTableMapping>(s.subtable); format6) {
+        format6->forEach([&](uint32_t cp, uint32_t gid) {
+          if (gid != 0) {
+            ret->mapping[cp] = gid;
+          }
+        });
+      } else if (auto format12 = dynamic_pointer_cast<SegmentedCoverage>(s.subtable); format12) {
+        format12->forEach([&](uint32_t cp, uint32_t gid) {
+          if (gid != 0) {
+            ret->mapping[cp] = gid;
+          }
+        });
+      }
     }
 
     out.reset(ret.release());
@@ -183,6 +205,29 @@ public:
     if (!writer->u16(0)) {
       return EGLYF_NULLOPT_WHAT("Failed to write format");
     }
+
+    auto format4 = make_shared<SegmentMappingToDeltaValues>();
+    auto format12 = make_shared<SegmentedCoverage>();
+    for (auto const [codepoint, gid] : mapping) {
+      if (gid == 0) {
+        continue;
+      }
+      if (codepoint <= 0xffff) {
+        format4->map(codepoint, gid);
+      }
+      format12->map(codepoint, gid);
+    }
+
+    vector<EncodingRecord> encodingRecords;
+    EncodingRecord unicode3(0, 3, format4);
+    encodingRecords.push_back(unicode3);
+    EncodingRecord unicode4(0, 4, format12);
+    encodingRecords.push_back(unicode4);
+    EncodingRecord win1(3, 1, format4);
+    encodingRecords.push_back(win1);
+    EncodingRecord win10(3, 10, format12);
+    encodingRecords.push_back(win10);
+
     if (!writer->sizeU16(encodingRecords.size())) {
       return EGLYF_NULLOPT_WHAT("Failed to write encoding records size");
     }
@@ -215,64 +260,25 @@ public:
 
   std::optional<uint16_t> getGlyphID(uint32_t codepoint) const {
     using namespace std;
-    for (auto const &subtable : sortedSubtables) {
-      if (auto format12 = dynamic_pointer_cast<cmap::SegmentedCoverage>(subtable); format12) {
-        if (auto gid = format12->getGlyphID(codepoint); gid) {
-          return *gid;
-        }
-      } else if (auto format4 = dynamic_pointer_cast<cmap::SegmentMappingToDeltaValues>(subtable); format4) {
-        if (auto gid = format4->getGlyphID(codepoint); gid) {
-          return *gid;
-        }
-      }
+    auto found = mapping.find(codepoint);
+    if (found == mapping.end()) {
+      return nullopt;
+    } else {
+      return found->second;
     }
-    return nullopt;
   }
 
-  Status map(uint32_t codepoint, uint16_t glyphID) {
+  void map(uint32_t codepoint, uint16_t glyphID) {
     using namespace std;
-    set<shared_ptr<cmap::CmapSubtable>> done;
-    for (size_t i = 0; i < encodingRecords.size(); i++) {
-      auto &r = encodingRecords[i];
-      if (done.find(r.subtable) != done.end()) {
-        continue;
-      }
-      done.insert(r.subtable);
-      if (auto format4 = dynamic_pointer_cast<cmap::SegmentMappingToDeltaValues>(r.subtable); format4 && codepoint <= 0xffff) {
-        if (auto st = format4->map((uint16_t)codepoint, glyphID); !st.ok()) {
-          return EGLYF_STATUS_PUSH(st);
-        }
-      } else if (auto format6 = dynamic_pointer_cast<cmap::TrimmedTableMapping>(r.subtable); format6 && codepoint <= 0xffff) {
-        if (auto st = format6->map((uint16_t)codepoint, glyphID); !st.ok()) {
-          return EGLYF_STATUS_PUSH(st);
-        }
-        if (format6->writeMayFail()) {
-          shared_ptr<cmap::SegmentMappingToDeltaValues> format4;
-          if (auto st = format6->convertToFormat4(format4); !st.ok()) {
-            return EGLYF_ERROR_WHAT("Failed to convert format 6 to format 4");
-          }
-          r.subtable = format4;
-          done.insert(format4);
-          for (size_t j = 0; j < encodingRecords.size(); j++) {
-            if (encodingRecords[j].subtable == format6) {
-              encodingRecords[j].subtable = format4;
-            }
-          }
-        }
-      } else if (auto format12 = dynamic_pointer_cast<cmap::SegmentedCoverage>(r.subtable); format12) {
-        if (auto st = format12->map(codepoint, glyphID); !st.ok()) {
-          return EGLYF_STATUS_PUSH(st);
-        }
-      }
+    if (glyphID == 0) {
+      mapping.erase(codepoint);
+    } else {
+      mapping[codepoint] = glyphID;
     }
-    return Status::Ok();
   }
-
-public:
-  std::vector<EncodingRecord> encodingRecords;
 
 private:
-  std::deque<std::shared_ptr<cmap::CmapSubtable>> sortedSubtables;
+  std::map<uint32_t, uint32_t> mapping;
 };
 
 } // namespace eglyf::cmap

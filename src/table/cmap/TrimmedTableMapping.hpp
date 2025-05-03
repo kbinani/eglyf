@@ -97,13 +97,20 @@ public:
     ret->language = language;
     uint32_t code = firstCode;
     for (auto gid : glyphIDArray) {
-      if (auto st = ret->map(code, gid); !st.ok()) {
-        return EGLYF_STATUS_PUSH(st);
-      }
+      ret->map(code, gid);
       code++;
     }
     out.reset(ret.release());
     return Status::Ok();
+  }
+
+  void forEach(std::function<void(uint32_t codepoint, uint32_t gid)> cb) const {
+    if (!cb) {
+      return;
+    }
+    for (size_t i = 0; i < glyphIDArray.size(); i++) {
+      cb(firstCode + i, glyphIDArray[i]);
+    }
   }
 
 public:

@@ -1142,9 +1142,7 @@ public:
       if (!newGid) {
         return EGLYF_STATUS_PUSH(newGid.status());
       }
-      if (auto st = font->cmap->map(cp, *newGid); !st.ok()) {
-        return EGLYF_STATUS_PUSH(st);
-      }
+      font->cmap->map(cp, *newGid);
       if (!found) {
         continue;
       }

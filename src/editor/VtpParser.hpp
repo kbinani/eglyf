@@ -111,9 +111,7 @@ private:
       }
     }
     if (unicode) {
-      if (auto st = font->cmap->map(*unicode, glyphID); !st.ok()) {
-        return EGLYF_STATUS_PUSH(st);
-      }
+      font->cmap->map(*unicode, glyphID);
     }
     g->id = glyphID;
     g->classDef = classDef;

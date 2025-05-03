@@ -163,13 +163,21 @@ public:
     return (uint16_t)gid;
   }
 
-  Status map(uint32_t codepoint, uint16_t glyphID) {
+  void map(uint32_t codepoint, uint16_t glyphID) {
     if (glyphID == 0) {
       mapping.erase(codepoint);
     } else {
       mapping[codepoint] = glyphID;
     }
-    return Status::Ok();
+  }
+
+  void forEach(std::function<void(uint32_t codepoint, uint32_t gid)> cb) const {
+    if (!cb) {
+      return;
+    }
+    for (auto [cp, gid] : mapping) {
+      cb(cp, gid);
+    }
   }
 
 public:
