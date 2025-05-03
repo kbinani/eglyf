@@ -53,6 +53,20 @@ public:
     return Status::Ok();
   }
 
+  static Path MakeRect(double x0, double y0, double x1, double y1) {
+    Path p;
+    p.elements.push_back(Line<double>(x0, y0, x0, y1));
+    p.elements.push_back(Line<double>(x0, y1, x1, y1));
+    p.elements.push_back(Line<double>(x1, y1, x1, y0));
+    p.elements.push_back(Line<double>(x1, y0, x0, y0));
+    return p;
+  }
+
+  template <class T>
+  static Path MakeRect(Rect<T> const &r) {
+    return MakeRect(r.xMin, r.yMin, r.xMax, r.yMax);
+  }
+
   bool intersects(Rect<double> const &r) const {
     for (size_t i = 0; i < elements.size(); i++) {
       auto const &e = elements[i];
