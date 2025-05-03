@@ -34,9 +34,9 @@ public:
     return Line<T>(p0_.x, p0_.y, p1_.x, p1_.y);
   }
 
-  void toSvg(std::ostream &out) const {
+  void toSvg(std::ostream &out, std::string const &color) const {
     using namespace std;
-    out << format(R"(<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="black" />)", x0, y0, x1, y1) << endl;
+    out << format(R"(<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" />)", x0, y0, x1, y1, color) << endl;
   }
 
   Rect<double> boundingBox() const {

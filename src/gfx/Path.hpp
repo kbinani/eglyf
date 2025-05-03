@@ -77,13 +77,14 @@ public:
         assert(false);
       }
     }
+    p.color = color;
     return p;
   }
 
   void toSvg(std::ostream &out) const {
     using namespace std;
     for (auto const &e : elements) {
-      visit([&](auto const &v) { v.toSvg(out); }, e);
+      visit([&](auto const &v) { v.toSvg(out, color); }, e);
     }
   }
 
@@ -106,6 +107,7 @@ public:
 
 public:
   std::vector<Element> elements;
+  std::string color;
 };
 
 } // namespace eglyf

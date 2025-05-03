@@ -952,7 +952,7 @@ public:
     return Status::Ok();
   }
 
-  Status toShape(uint16_t gid, Shape &out) const {
+  Status toShape(uint16_t gid, Shape &out, std::string color = "black") const {
     using namespace std;
     if (gid >= glyphs.size()) {
       return EGLYF_ERROR;
@@ -967,6 +967,7 @@ public:
         if (auto st = Path::FromPoints(c.points, p); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
+        p.color = color;
         out.paths.push_back(p);
       }
       return Status::Ok();
@@ -981,6 +982,7 @@ public:
         if (auto st = Path::FromPoints(c.points, p); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
+        p.color = color;
         out.paths.push_back(p);
       }
       return Status::Ok();
@@ -989,7 +991,7 @@ public:
       for (auto const &r : cg.records) {
         auto txm = r.transform<double>();
         Shape s;
-        if (auto st = toShape(r.glyphIndex, s); !st.ok()) {
+        if (auto st = toShape(r.glyphIndex, s, color); !st.ok()) {
           return EGLYF_STATUS_PUSH(st);
         }
         for (auto const &p : s.paths) {

@@ -148,12 +148,12 @@ public:
     }
   }
 
-  void toSvg(std::ostream &out) const {
+  void toSvg(std::ostream &out, std::string const &color) const {
     using namespace std;
     stringstream d;
     d << "M " << p0.x << "," << p0.y;
     d << " Q " << p1.x << "," << p1.y << " " << p2.x << "," << p2.y;
-    out << format(R"(<path d="{}" stroke="black" fill="none" />)", d.str()) << endl;
+    out << format(R"(<path d="{}" stroke="{}" fill="none" />)", d.str(), color) << endl;
   }
 
 private:
