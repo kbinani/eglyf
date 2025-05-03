@@ -1164,6 +1164,20 @@ public:
       bg.glyph = newGlyph;
       bg.bounds = *newBounds;
       baseGlyphs[name] = bg;
+      if constexpr (false) {
+        Shape s;
+        glyf->toShape(*newGid, s, "black");
+        Path box = Path::MakeRect(-hfu * chu / 2, base - margin, hfu * chu / 2, base - margin + vfu * vhu);
+        box.color = "red";
+        s.paths.push_back(box);
+        Path mg = Path::MakeRect(-hfu * chu / 2 + margin, base, hfu * chu / 2 - margin, base + vfu * vhu - 2 * margin);
+        mg.color = "blue";
+        s.paths.push_back(mg);
+        Path bnds = Path::MakeRect(*newBounds);
+        bnds.color = "green";
+        s.paths.push_back(bnds);
+        s.toSvg(cout);
+      }
     }
 
     auto glyphsSet1 = getGroupByName("glyphs_set1");
