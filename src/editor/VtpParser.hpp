@@ -94,12 +94,15 @@ private:
         return EGLYF_STATUS_PUSH(st);
       }
     } else {
-      auto underbar = name.find('_');
-      if (underbar != string::npos) {
-        auto prefix = name.substr(0, underbar);
-        if (GlyphNames::GetCodepoint(prefix)) {
-          return Status::Ok();
+      if (hieroglyph) {
+        if (unicode) {
+          auto gid1 = font->cmap->getGlyphID(*unicode);
+          if (gid1) {
+            g->id = *gid1;
+            g->classDef = classDef;
+          }
         }
+        return Status::Ok();
       }
       if (auto gid1 = font->addEmptyGlyph(name, classDef, 0, 0); gid1) {
         glyphID = *gid1;
