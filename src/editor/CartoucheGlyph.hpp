@@ -440,14 +440,13 @@ class CartoucheGlyph {
   }
 
 public:
-  static Status Create(FontFile &font, int16_t base, int16_t hfu, int16_t sb, int hhu, int chu, int16_t vfu, int vhu) {
+  static Status Create(FontFile &font, int16_t base, int16_t hfu, int16_t sb, int hhu, int chu, int16_t vfu, int vhu, int lineWidth) {
     using namespace std;
     using Class = gdef::GlyphDefinitionTable::Class;
     using GlyphRecord = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord;
     using Contour = glyf::GlyphDataTable::Contour;
 
     int16_t scale = min(chu * hfu, vhu * vfu);
-    int16_t lineWidth = max(1, scale / 32);
     int16_t vSpace = lineWidth;
     int16_t approachLength = lineWidth / 2;
     int16_t sideBearing = 2 * lineWidth;

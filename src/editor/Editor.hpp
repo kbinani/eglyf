@@ -2571,7 +2571,7 @@ public:
     if (auto st = PlaceholderGlyph::Create(*font, base, hfu, sb, chu, vfu, vhu); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
-    if (auto st = CartoucheGlyph::Create(*font, base, hfu, sb, hhu, chu, vfu, vhu); !st.ok()) {
+    if (auto st = CartoucheGlyph::Create(*font, base, hfu, sb, hhu, chu, vfu, vhu, lineWidth); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
     if (auto st = Insertion::CreatePlan(*font, sizeVariants, chu, vhu, hfu, vfu, base, insertionResolution, insertionPlans); !st.ok()) {
