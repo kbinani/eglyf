@@ -125,6 +125,53 @@ public:
       ret->encodingRecords.push_back(r);
       tables[record.subtableOffset] = r.subtable;
     }
+
+    static auto const NumBits = [](shared_ptr<cmap::CmapSubtable> const &subtable) {
+      if (dynamic_pointer_cast<SegmentMappingToDeltaValues>(subtable)) {
+        return 16;
+      } else if (dynamic_pointer_cast<SegmentedCoverage>(subtable)) {
+        return 32;
+      } else if (dynamic_pointer_cast<TrimmedTableMapping>(subtable)) {
+        return 16;
+      } else {
+        return -1;
+      }
+    };
+
+    vector<EncodingRecord> sorted;
+    set<shared_ptr<cmap::CmapSubtable>> added;
+    for (auto const &r : ret->encodingRecords) {
+      switch (r.platformID) {
+      case 0:
+        break;
+      case 3:
+        switch (r.encodingID) {
+        case 1:
+        case 10:
+          break;
+        default:
+          continue;
+        }
+        break;
+      default:
+        continue;
+      }
+      if (added.find(r.subtable) != added.end()) {
+        continue;
+      }
+      sorted.push_back(r);
+      added.insert(r.subtable);
+    }
+
+    ranges::sort(sorted, [](auto const &a, auto const &b) {
+      int bitsA = NumBits(a.subtable);
+      int bitsB = NumBits(b.subtable);
+      return bitsA > bitsB;
+    });
+    for (auto const &s : sorted) {
+      ret->sortedSubtables.push_back(s.subtable);
+    }
+
     out.reset(ret.release());
     return Status::Ok();
   }
@@ -168,27 +215,16 @@ public:
 
   Optional<uint16_t> getGlyphID(uint32_t codepoint) const {
     using namespace std;
-    auto p0e4 = find_if(encodingRecords.rbegin(), encodingRecords.rend(), [](EncodingRecord const &r) {
-      return r.platformID == 0 && (r.encodingID == 4 || r.encodingID == 6);
-    });
-    if (p0e4 == encodingRecords.rend()) {
-      return 0;
-    }
-    auto const &subtable = p0e4->subtable;
-    if (auto format12 = dynamic_pointer_cast<cmap::SegmentedCoverage>(subtable); format12) {
-      if (auto gid = format12->getGlyphID(codepoint); gid) {
-        return *gid;
-      } else {
-        return EGLYF_NULLOPT_PUSH(gid.status());
+    for (auto const &subtable : sortedSubtables) {
+      if (auto format12 = dynamic_pointer_cast<cmap::SegmentedCoverage>(subtable); format12) {
+        if (auto gid = format12->getGlyphID(codepoint); gid) {
+          return *gid;
+        }
+      } else if (auto format4 = dynamic_pointer_cast<cmap::SegmentMappingToDeltaValues>(subtable); format4) {
+        if (auto gid = format4->getGlyphID(codepoint); gid) {
+          return *gid;
+        }
       }
-    } else if (auto format4 = dynamic_pointer_cast<cmap::SegmentMappingToDeltaValues>(subtable); format4) {
-      if (auto gid = format4->getGlyphID(codepoint); gid) {
-        return *gid;
-      } else {
-        return EGLYF_NULLOPT_PUSH(gid.status());
-      }
-    } else {
-      return 0;
     }
     return 0;
   }
@@ -234,6 +270,9 @@ public:
 
 public:
   std::vector<EncodingRecord> encodingRecords;
+
+private:
+  std::deque<std::shared_ptr<cmap::CmapSubtable>> sortedSubtables;
 };
 
 } // namespace eglyf::cmap
