@@ -29,7 +29,7 @@ struct SizeVariants {
     Resize ret;
     ret.scale = scale;
     ret.dx = (int16_t)round(-xMid * scale);
-    ret.dy = (int16_t)round((yAfter - yBefore) * scale);
+    ret.dy = (int16_t)round(yAfter - yMid * scale);
     ret.lsb = (int16_t)round((bounds.xMin - xMid) * scale);
     return ret;
   }
