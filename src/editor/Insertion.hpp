@@ -259,7 +259,7 @@ public:
       if (found == sizeVariants.end()) {
         continue;
       }
-      WxH baseSize = found->second.hGrids * 10 + found->second.vGrids;
+      WxH baseSize = found->second.size;
       for (Pos pos : poss) {
         auto result = ScanInsertionSpot(font, name, baseSize, pos, chu, vhu, hfu, vfu, base, insertionResolution);
         if (result) {

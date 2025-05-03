@@ -10,29 +10,31 @@ struct SizeVariants {
     int16_t lsb;
   };
 
-  Resize transform(int xLevel, int yLevel, int16_t hfu, int16_t vfu, int16_t base) const {
+  Resize transform(int xLevel, int yLevel, int16_t hfu, int16_t vfu, int16_t base, int16_t lineWidth) const {
+    return Transform(bounds, xLevel, yLevel, hfu, vfu, base, lineWidth);
+  }
+
+  static Resize Transform(Rect<int16_t> const &bounds, int xLevel, int yLevel, int16_t hfu, int16_t vfu, int16_t base, int16_t lineWidth) {
     using namespace std;
+    int16_t margin = lineWidth / 2;
     auto width = bounds.width();
     auto height = bounds.height();
-    float xScale = hfu * xLevel / (float)width;
-    float yScale = vfu * yLevel / (float)height;
+    double xScale = (hfu * xLevel - 2 * margin) / (double)width;
+    double yScale = (vfu * yLevel - 2 * margin) / (double)height;
+    double scale = min({1.0, xScale, yScale});
+    double xMid = (bounds.xMin + bounds.xMax) * 0.5;
+    double yMid = (bounds.yMin + bounds.yMax) * 0.5;
+    double yBefore = yMid;
+    double yAfter = base - margin + vfu * yLevel * 0.5;
     Resize ret;
-    ret.scale = min({1.0f, xScale, yScale});
-    int16_t xMid = (bounds.xMin + bounds.xMax) / 2;
-    if (ret.scale < 1) {
-      ret.dx = (int16_t)round(-xMid * ret.scale);
-      ret.dy = (int16_t)round((base - bounds.yMin) * ret.scale);
-      ret.lsb = (int16_t)round((bounds.xMin - xMid) * ret.scale);
-    } else {
-      ret.dx = -xMid;
-      ret.dy = base - bounds.yMin;
-      ret.lsb = bounds.xMin - xMid;
-    }
+    ret.scale = scale;
+    ret.dx = (int16_t)round(-xMid * scale);
+    ret.dy = (int16_t)round((yAfter - yBefore) * scale);
+    ret.lsb = (int16_t)round((bounds.xMin - xMid) * scale);
     return ret;
   }
 
-  int hGrids;
-  int vGrids;
+  WxH size;
   Rect<int16_t> bounds;
   std::shared_ptr<Glyph> base;
   std::map<WxH, std::shared_ptr<Glyph>> variants;

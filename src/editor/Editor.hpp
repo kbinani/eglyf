@@ -1012,9 +1012,7 @@ public:
 
     deque<pair<WxH, float>> sizeList;
     for (auto const &[key, _] : variationChain) {
-      int h = key / 10;
-      int v = key % 10;
-      sizeList.push_back(make_pair(h * 10 + v, h * v));
+      sizeList.push_back(make_pair(key, AreaFromWxH(key)));
     }
     ranges::stable_sort(sizeList, [](auto const &a, auto const &b) { return a.second < b.second; });
 
@@ -1043,7 +1041,8 @@ public:
     }
 
     uint64_t sumWidth = 0;
-    uint64_t sumHeight = 0;
+    int64_t sumTop = 0;
+    int64_t sumBottom = 0;
     uint64_t sumCount = 0;
     for (auto const &name : {"A7", "A10", "A14", "A14a", "A37", "A38", "A39", "A52", "A64", "A70", "C11", "D30", "D33", "D34", "D34a", "D50c", "D52a", "D57", "D59", "D67h", "E1", "E3", "E4", "E6", "E7", "E8", "E8a", "E14", "E15", "E16", "E16a", "E17", "E17a", "E18", "E19", "E20", "E26", "E28", "E28a", "E30", "E31", "E37", "F6", "F14", "F15", "F40", "F50", "G1", "G2", "G3", "G4", "G5", "G6", "G6a", "G7a", "G10", "G11a", "G13", "G14", "G15", "G17", "G19", "G20", "G20a", "G21", "G23", "G25", "G26a", "G29", "G31", "G32", "G33", "G38", "G39", "G40", "G41", "G44", "G45", "G45a", "G47", "G51", "G53", "G54", "I1", "I4", "I10", "I10a", "I11", "I11a", "K7", "L2", "L2a", "M1a", "M1b", "M3a", "M9", "M12b", "M14", "M20", "M22a", "M27", "M42", "M43", "N2", "N13", "N14", "N35a", "NU5", "NU11", "NU17", "O1a", "O2", "O8", "O9", "O10", "O10a", "O10b", "O12", "O13", "O14", "O15", "O18", "O19", "O19a", "O22", "O23", "O27", "P5", "P7", "P9", "P10", "R1", "R2", "R3", "R10", "R26", "S2", "S4", "S6", "S7", "S13", "S14", "S14a", "S14b", "S15", "S28", "S30", "S31", "T5", "T6", "T32a", "T33a", "U1", "U4", "U5", "U35", "U38", "V1d", "V1e", "V1f", "V1g", "V2a", "V4", "V20h", "V21", "V28a", "V81", "W4", "W14a", "W17a", "W18", "W18a", "J22", "O13a"}) {
       auto cp = GlyphNames::GetCodepoint(name);
@@ -1056,19 +1055,27 @@ public:
       }
       Rect<int16_t> rect = found->second.second;
       sumWidth += rect.width();
-      sumHeight += rect.height();
+      sumTop += rect.yMax;
+      sumBottom += rect.yMin;
       sumCount++;
     }
 
-    float scale = min(sumWidth / (float)sumCount, sumHeight / (float)sumCount);
-    float lineWidth = max(1.0f, scale / 32);
-    float s = (sumHeight / (float)sumCount) / (8 * lineWidth + sumHeight / (float)sumCount);
-    hfu = (int16_t)ceil(sumWidth / (float)sumCount / chu * s);
-    vfu = (int16_t)ceil(sumHeight / (float)sumCount / vhu * s);
-    base = (int16_t)round(4 * lineWidth);
+    int averageTop = (int)round(sumTop / (double)sumCount);
+    int averageBottom = (int)round(sumBottom / (double)sumCount);
+    int height = averageTop - averageBottom;
+    int width = (int)round(sumWidth / (double)sumCount);
+    int scale = min(height, width);
+    lineWidth = (int16_t)max(1, scale / 32);
+    int margin = lineWidth / 2;
+    int h = height - 8 * lineWidth - 2 * margin;
+    double s = h / (double)height;
+    vfu = (int16_t)round((h + 2 * margin) / (double)vhu);
+    hfu = (int16_t)round(width * s / chu);
+    base = averageBottom + 4 * lineWidth + margin;
     sb = hfu / 3;
 
     struct BaseGlyph {
+      WxH size;
       uint16_t gid;
       shared_ptr<Glyph> glyph;
       Rect<int16_t> bounds;
@@ -1095,31 +1102,43 @@ public:
           }
         }
       }
-      // https://gyazo.com/574d65263fcd74d9d9163bd9e9179a6e
-      auto w = rect.width();
-      auto h = rect.height();
-      float const scale = min({1.0f, vhu * vfu / (float)h, chu * hfu / (float)w});
-      int16_t xMid = (rect.xMin + rect.xMax) / 2;
-      int16_t dx;
-      int16_t dy;
-      int16_t lsb;
-      if (scale < 1) {
-        dx = (int16_t)round(-xMid * scale);
-        dy = (int16_t)round((base - rect.yMin) * scale);
-        lsb = (int16_t)round((rect.xMin - xMid) * scale);
-      } else {
-        dx = -xMid;
-        dy = base - rect.yMin;
-        lsb = rect.xMin - xMid;
+
+      double s2 = min({1.0, (chu * hfu - 2 * margin) / (rect.width() * s), (vhu * vfu - 2 * margin) / (rect.height() * s)});
+      int hGrids = clamp((int)ceil((rect.width() * s * s2 + 2 * margin) / (double)hfu), 1, chu);
+      int vGrids = clamp((int)ceil((rect.height() * s * s2 + 2 * margin) / (double)vfu), 1, vhu);
+
+      auto chain = variationChain.find(hGrids * 10 + vGrids);
+      if (chain == variationChain.end()) {
+        if (auto first = ranges::find_if(sizeList, [=](auto const &it) { return it.second >= hGrids * vGrids; }); first != sizeList.end()) {
+          auto index = distance(sizeList.begin(), first);
+          for (size_t i = index; i < sizeList.size(); i++) {
+            auto const &it = sizeList[i];
+            WxH key = it.first;
+            int h = WidthFromWxH(key);
+            int v = HeightFromWxH(key);
+            if (h < hGrids || v < vGrids) {
+              continue;
+            }
+            chain = variationChain.find(key);
+            if (chain != variationChain.end()) {
+              hGrids = h;
+              vGrids = v;
+              break;
+            }
+          }
+        }
       }
+
+      // https://gyazo.com/a419984f058fbf8655e2e30abbac091e
+      SizeVariants::Resize op = SizeVariants::Transform(rect, hGrids, vGrids, hfu, vfu, base, lineWidth);
       glyf::GlyphDataTable::CompositeGlyph::GlyphRecord record;
-      if (scale < 1) {
-        record = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord::New(gid, dx, dy, scale);
+      if (op.scale < 1) {
+        record = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord::New(gid, op.dx, op.dy, op.scale);
       } else {
-        record = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord::New(gid, dx, dy);
+        record = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord::New(gid, op.dx, op.dy);
       }
       auto classValue = gdef::GlyphDefinitionTable::Class::Mark;
-      auto newGid = font->addCompositeGlyph(name, classValue, record, 0, lsb);
+      auto newGid = font->addCompositeGlyph(name, classValue, record, 0, op.lsb);
       if (!newGid) {
         return EGLYF_STATUS_PUSH(newGid.status());
       }
@@ -1135,14 +1154,15 @@ public:
       }
       newGlyph->classDef = classValue;
       auto newGlyphData = glyf->glyphs[*newGid];
-      auto b = glyf::GlyphDataTable::Bounds(newGlyphData);
-      if (!b) {
+      auto newBounds = glyf::GlyphDataTable::Bounds(newGlyphData);
+      if (!newBounds) {
         return EGLYF_ERROR;
       }
       BaseGlyph bg;
+      bg.size = hGrids * 10 + vGrids;
       bg.gid = *newGid;
       bg.glyph = newGlyph;
-      bg.bounds = *b;
+      bg.bounds = *newBounds;
       baseGlyphs[name] = bg;
     }
 
@@ -1152,54 +1172,30 @@ public:
       auto const &name = it.first;
       BaseGlyph const &baseGlyph = it.second;
       Rect<int16_t> const &rect = baseGlyph.bounds;
+      WxH size = baseGlyph.size;
       int const width = rect.width();
       int const height = rect.height();
 
-      float const baseScale = min({1.0f, vhu * vfu / (float)height, chu * hfu / (float)width});
-      int hGrids = clamp((int)ceilf(width * baseScale / hfu), 1, hhu);
-      int vGrids = clamp((int)ceilf(height * baseScale / vfu), 1, vhu);
-
-      int16_t xMid = (rect.xMin + rect.xMax) / 2;
-
-      auto chain = variationChain.find(hGrids * 10 + vGrids);
-      if (chain == variationChain.end()) {
-        if (auto first = ranges::find_if(sizeList, [=](auto const &it) { return it.second >= hGrids * vGrids; }); first != sizeList.end()) {
-          auto index = distance(sizeList.begin(), first);
-          for (size_t i = index; i < sizeList.size(); i++) {
-            auto const &it = sizeList[i];
-            WxH key = it.first;
-            int h = key / 10;
-            int v = key % 10;
-            if (h < hGrids || v < vGrids) {
-              continue;
-            }
-            chain = variationChain.find(key);
-            if (chain != variationChain.end()) {
-              hGrids = h;
-              vGrids = v;
-              break;
-            }
-          }
-        }
-      }
+      int hGrids = WidthFromWxH(size);
+      int vGrids = HeightFromWxH(size);
 
       SizeVariants sv;
       sv.base = baseGlyph.glyph;
       sv.bounds = rect;
-      sv.hGrids = hGrids;
-      sv.vGrids = vGrids;
+      sv.size = size;
 
+      auto chain = variationChain.find(size);
       if (chain == variationChain.end()) {
         sizeVariants[name] = sv;
         continue;
       }
 
       for (WxH key : chain->second) {
-        int yLevel = key % 10;
-        int xLevel = key / 10;
+        int yLevel = HeightFromWxH(key);
+        int xLevel = WidthFromWxH(key);
 
         string n = format("{0}_{1}{2}", name, xLevel, yLevel);
-        SizeVariants::Resize resize = sv.transform(xLevel, yLevel, hfu, vfu, base);
+        SizeVariants::Resize resize = sv.transform(xLevel, yLevel, hfu, vfu, base, lineWidth);
         auto classValue = gdef::GlyphDefinitionTable::Class::Mark;
         auto record = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord::New(baseGlyph.gid, resize.dx, resize.dy, resize.scale);
         auto newGid = font->addCompositeGlyph(n, classValue, record, 0, resize.lsb);
@@ -1600,13 +1596,13 @@ public:
 
       auto s = make_shared<Lookup::Substitution>();
       s->input.push_back(sv.base);
-      auto et = getGlyphByName(format("et{0}{1}", sv.hGrids, sv.vGrids));
+      auto et = getGlyphByName(format("et{0}{1}", WidthFromWxH(sv.size), HeightFromWxH(sv.size)));
       s->output.push_back(et);
       string tsh = "";
       for (auto const &[variant, glyph] : sv.variants) {
         tsh = format("{0}", variant) + tsh;
       }
-      tsh = format("{0}{1}", sv.hGrids, sv.vGrids) + tsh;
+      tsh = format("{0}{1}", WidthFromWxH(sv.size), HeightFromWxH(sv.size)) + tsh;
       tsh = "tsh" + tsh;
       s->output.push_back(getGlyphByName(tsh));
       s->output.push_back(sv.base);
@@ -1797,7 +1793,7 @@ public:
       auto const &sv = it.second;
 
       auto s = make_shared<Lookup::Substitution>();
-      auto et = format("et{0}{1}", sv.hGrids, sv.vGrids);
+      auto et = format("et{0}{1}", WidthFromWxH(sv.size), HeightFromWxH(sv.size));
       s->input.push_back(getGlyphByName(et));
       s->input.push_back(sv.base);
       s->output.push_back(sv.base);
@@ -3186,12 +3182,12 @@ public:
         // DEF_ANCHOR "MARK_center" ON 1811 GLYPH A1 COMPONENT 1 AT  POS DY 930 END_POS END_ANCHOR
         {
           auto glyph = getGlyphByName(n);
-          int16_t dy = sv.vGrids * vfu / 2;
+          int16_t dy = HeightFromWxH(sv.size) * vfu / 2;
           MARK_center->second->glyphs[glyph] = Vec<optional<int16_t>>(nullopt, dy);
         }
         for (auto const &[key, glyph] : sv.variants) {
           // DEF_ANCHOR "MARK_center" ON 2888 GLYPH A1_11 COMPONENT 1 AT  POS DY 144 END_POS END_ANCHOR
-          int v = key % 10;
+          int v = HeightFromWxH(key);
           int16_t dy = v * vfu / 2; // TODO: this equation is not sure
           MARK_center->second->glyphs[glyph] = Vec<optional<int16_t>>(nullopt, dy);
         }
@@ -4132,6 +4128,7 @@ public:
   // font side bearings: hfu / 3
   int16_t sb;
   int16_t base;
+  int16_t lineWidth;
 };
 
 } // namespace eglyf
