@@ -70,6 +70,12 @@ public:
       std::vector<GG> output;
     };
     std::vector<std::shared_ptr<Substitution>> substitutions;
+
+    void clear() {
+      substitutions.clear();
+      adjustSingle = nullptr;
+      attach = nullptr;
+    }
   };
 
   struct Feature {
@@ -1282,7 +1288,7 @@ public:
     size_t index = distance(lookups.begin(), first);
     ranges::for_each(lookups, [](auto &it) {
       if (it.first.starts_with("mk") && it.first.find("_dist_offset_") != string::npos) {
-        it.second->substitutions.clear();
+        it.second->clear();
       }
     });
 
@@ -1424,7 +1430,7 @@ public:
     size_t index = distance(lookups.begin(), first);
     ranges::for_each(lookups, [](auto &it) {
       if (it.first.starts_with("bl") && it.first.find("_perglyphsize_") != string::npos) {
-        it.second->substitutions.clear();
+        it.second->clear();
       }
     });
     if (auto st = replaceLookup_perglyphsize(index, "bl", ""); !st.ok()) {
@@ -1444,7 +1450,7 @@ public:
     size_t index = distance(lookups.begin(), first);
     ranges::for_each(lookups, [](auto &it) {
       if (it.first.starts_with("ab") && it.first.find("_perglyphsize_") != string::npos) {
-        it.second->substitutions.clear();
+        it.second->clear();
       }
     });
     if (auto st = replaceLookup_perglyphsize(index, "ab", "2"); !st.ok()) {
