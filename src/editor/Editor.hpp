@@ -1016,6 +1016,110 @@ public:
     variationChain[16] = {15, 14, 13, 12, 11};
     variationChain[12] = {11};
 
+    // n
+    static set<string> const rotate90 = {
+        "A1",
+        "D27",
+        "F16",
+        "F28",
+        "F32",
+        "F37b",
+        "F51",
+        "J11",
+        "J12",
+        "J21",
+        "J8",
+        "K6",
+        "M10",
+        "M17",
+        "M3",
+        "M9",
+        "N11",
+        "N12",
+        "O31",
+        "O36",
+        "O39",
+        "Q3",
+        "R24",
+        "S10",
+        "S18",
+        "T1",
+        "T16",
+        "T22",
+        "U7",
+        "U8",
+        "V10",
+        "V11",
+        "V26",
+        "V27",
+        "X4a",
+        "Z10",
+        "Z11",
+        "Z7",
+    };
+    // o
+    static set<string> const rotate180 = {
+        "A1",
+        "D28",
+        "H8",
+        "J11",
+        "M3",
+        "M44",
+        "N10",
+        "N11",
+        "N12",
+        "O31",
+        "O6",
+        "P8",
+        "T10",
+        "T16",
+        "T2",
+        "T21",
+        "T22",
+        "T35",
+        "T9",
+        "T9a",
+    };
+    // t
+    static set<string> const rotate270 = {
+        "A1",
+        "F23",
+        "F51",
+        "H5",
+        "J11",
+        "J30",
+        "J32",
+        "K6",
+        "M44",
+        "M72",
+        "N35",
+        "O29",
+        "P8",
+        "S18",
+        "S20",
+        "S33",
+        "S37",
+        "S42",
+        "S43",
+        "T10",
+        "T16a",
+        "T21",
+        "T35",
+        "T8",
+        "T8a",
+        "T9",
+        "T9a",
+        "U22",
+        "U42",
+        "V12a",
+        "V19",
+        "V7a",
+        "W1",
+        "W14",
+        "W2",
+        "Y2",
+    };
+
     deque<pair<WxH, float>> sizeList;
     for (auto const &[key, _] : variationChain) {
       sizeList.push_back(make_pair(key, AreaFromWxH(key)));
@@ -1088,6 +1192,100 @@ public:
     };
     map<string, BaseGlyph> baseGlyphs;
 
+    auto const decideSize = [this, &variationChain, &sizeList](int margin, double s, int width, int height) -> WxH {
+      double s2 = min({1.0, (chu * hfu - 2 * margin) / (width * s), (vhu * vfu - 2 * margin) / (height * s)});
+      int hGrids = clamp((int)ceil((width * s * s2 + 2 * margin) / (double)hfu), 1, (int)chu);
+      int vGrids = clamp((int)ceil((height * s * s2 + 2 * margin) / (double)vfu), 1, (int)vhu);
+
+      auto chain = variationChain.find(hGrids * 10 + vGrids);
+      if (chain != variationChain.end()) {
+        return hGrids * 10 + vGrids;
+      }
+      auto first = ranges::find_if(sizeList, [=](auto const &it) {
+        return it.second >= hGrids * vGrids;
+      });
+      if (first == sizeList.end()) {
+        return hGrids * 10 + vGrids;
+      }
+      auto index = distance(sizeList.begin(), first);
+      for (size_t i = index; i < sizeList.size(); i++) {
+        auto const &it = sizeList[i];
+        WxH key = it.first;
+        int h = WidthFromWxH(key);
+        int v = HeightFromWxH(key);
+        if (h < hGrids || v < vGrids) {
+          continue;
+        }
+        chain = variationChain.find(key);
+        if (chain != variationChain.end()) {
+          hGrids = h;
+          vGrids = v;
+          break;
+        }
+      }
+      return hGrids * 10 + vGrids;
+    };
+
+    auto const createBaseGlyph = [this, &glyf](string const &name,
+                                               WxH size,
+                                               uint32_t codepoint,
+                                               uint16_t gid,
+                                               bool isNamedGlyph,
+                                               Rect<int16_t> const &r,
+                                               Transform<int16_t> const &pre,
+                                               shared_ptr<BaseGlyph> &out) -> Status {
+      int hGrids = WidthFromWxH(size);
+      int vGrids = HeightFromWxH(size);
+
+      Rect<int16_t> rect;
+      if (pre.isIdentity()) {
+        rect = r;
+      } else {
+        rect = r.transformed(pre);
+      }
+
+      // https://gyazo.com/a419984f058fbf8655e2e30abbac091e
+      SizeVariants::Resize op = SizeVariants::Transform(rect, hGrids, vGrids, hfu, vfu, base, lineWidth);
+      glyf::GlyphDataTable::CompositeGlyph::GlyphRecord record;
+      if (pre.isIdentity()) {
+        if (op.scale < 1) {
+          record = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord::New(gid, op.dx, op.dy, op.scale);
+        } else {
+          record = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord::New(gid, op.dx, op.dy);
+        }
+      } else {
+        Transform<float> left(op.scale, 0, 0, op.scale, op.dx, op.dy);
+        Transform<float> right(pre.xscale, pre.scale10, pre.scale01, pre.yscale, pre.dx, pre.dy);
+        record = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord::New(gid, Transform<float>::Concat(left, right));
+      }
+      auto classValue = gdef::GlyphDefinitionTable::Class::Mark;
+      auto newGid = font->addCompositeGlyph(name, classValue, record, 0, op.lsb);
+      if (!newGid) {
+        return EGLYF_STATUS_PUSH(newGid.status());
+      }
+      font->cmap->map(codepoint, *newGid);
+      if (!isNamedGlyph) {
+        return Status::Ok();
+      }
+      auto newGlyph = getGlyphByName(name);
+      if (!newGlyph) {
+        return EGLYF_ERROR;
+      }
+      newGlyph->classDef = classValue;
+      auto newGlyphData = glyf->glyphs[*newGid];
+      auto newBounds = glyf::GlyphDataTable::Bounds(newGlyphData);
+      if (!newBounds) {
+        return EGLYF_ERROR;
+      }
+      auto bg = make_shared<BaseGlyph>();
+      bg->size = hGrids * 10 + vGrids;
+      bg->gid = *newGid;
+      bg->glyph = newGlyph;
+      bg->bounds = *newBounds;
+      out.swap(bg);
+      return Status::Ok();
+    };
+
     for (auto const &it : bounds) {
       auto const &gid = it.first;
       auto const &item = it.second;
@@ -1108,79 +1306,50 @@ public:
           }
         }
       }
+      WxH sizeNormal = decideSize(margin, s, rect.width(), rect.height());
+      WxH sizeRotated = decideSize(margin, s, rect.height(), rect.width());
 
-      double s2 = min({1.0, (chu * hfu - 2 * margin) / (rect.width() * s), (vhu * vfu - 2 * margin) / (rect.height() * s)});
-      int hGrids = clamp((int)ceil((rect.width() * s * s2 + 2 * margin) / (double)hfu), 1, chu);
-      int vGrids = clamp((int)ceil((rect.height() * s * s2 + 2 * margin) / (double)vfu), 1, vhu);
+      shared_ptr<BaseGlyph> normal;
+      if (auto st = createBaseGlyph(name, sizeNormal, cp, gid, (bool)found, rect, Transform<int16_t>(), normal); st.ok()) {
+        if (normal) {
+          baseGlyphs[name] = *normal;
+        }
+      } else {
+        return EGLYF_STATUS_PUSH(st);
+      }
 
-      auto chain = variationChain.find(hGrids * 10 + vGrids);
-      if (chain == variationChain.end()) {
-        if (auto first = ranges::find_if(sizeList, [=](auto const &it) { return it.second >= hGrids * vGrids; }); first != sizeList.end()) {
-          auto index = distance(sizeList.begin(), first);
-          for (size_t i = index; i < sizeList.size(); i++) {
-            auto const &it = sizeList[i];
-            WxH key = it.first;
-            int h = WidthFromWxH(key);
-            int v = HeightFromWxH(key);
-            if (h < hGrids || v < vGrids) {
-              continue;
-            }
-            chain = variationChain.find(key);
-            if (chain != variationChain.end()) {
-              hGrids = h;
-              vGrids = v;
-              break;
-            }
+      if (rotate90.find(name) != rotate90.end()) {
+        shared_ptr<BaseGlyph> rot90;
+        string name90 = format("{}n", name);
+        if (auto st = createBaseGlyph(name90, sizeRotated, cp, gid, (bool)found, rect, Transform<int16_t>::CW90(), rot90); st.ok()) {
+          if (rot90) {
+            baseGlyphs[name90] = *rot90;
           }
+        } else {
+          return EGLYF_STATUS_PUSH(st);
         }
       }
-
-      // https://gyazo.com/a419984f058fbf8655e2e30abbac091e
-      SizeVariants::Resize op = SizeVariants::Transform(rect, hGrids, vGrids, hfu, vfu, base, lineWidth);
-      glyf::GlyphDataTable::CompositeGlyph::GlyphRecord record;
-      if (op.scale < 1) {
-        record = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord::New(gid, op.dx, op.dy, op.scale);
-      } else {
-        record = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord::New(gid, op.dx, op.dy);
+      if (rotate180.find(name) != rotate180.end()) {
+        shared_ptr<BaseGlyph> rot180;
+        string name180 = format("{}o", name);
+        if (auto st = createBaseGlyph(name180, sizeNormal, cp, gid, (bool)found, rect, Transform<int16_t>::CW180(), rot180); st.ok()) {
+          if (rot180) {
+            baseGlyphs[name180] = *rot180;
+          }
+        } else {
+          return EGLYF_STATUS_PUSH(st);
+        }
       }
-      auto classValue = gdef::GlyphDefinitionTable::Class::Mark;
-      auto newGid = font->addCompositeGlyph(name, classValue, record, 0, op.lsb);
-      if (!newGid) {
-        return EGLYF_STATUS_PUSH(newGid.status());
-      }
-      font->cmap->map(cp, *newGid);
-      if (!found) {
-        continue;
-      }
-      auto newGlyph = getGlyphByName(name);
-      if (!newGlyph) {
-        return EGLYF_ERROR;
-      }
-      newGlyph->classDef = classValue;
-      auto newGlyphData = glyf->glyphs[*newGid];
-      auto newBounds = glyf::GlyphDataTable::Bounds(newGlyphData);
-      if (!newBounds) {
-        return EGLYF_ERROR;
-      }
-      BaseGlyph bg;
-      bg.size = hGrids * 10 + vGrids;
-      bg.gid = *newGid;
-      bg.glyph = newGlyph;
-      bg.bounds = *newBounds;
-      baseGlyphs[name] = bg;
-      if constexpr (false) {
-        Shape s;
-        glyf->toShape(*newGid, s, "black");
-        Path box = Path::MakeRect(-hfu * chu / 2, base - margin, hfu * chu / 2, base - margin + vfu * vhu);
-        box.color = "red";
-        s.paths.push_back(box);
-        Path mg = Path::MakeRect(-hfu * chu / 2 + margin, base, hfu * chu / 2 - margin, base + vfu * vhu - 2 * margin);
-        mg.color = "blue";
-        s.paths.push_back(mg);
-        Path bnds = Path::MakeRect(*newBounds);
-        bnds.color = "green";
-        s.paths.push_back(bnds);
-        s.toSvg(cout);
+      if (rotate270.find(name) != rotate270.end()) {
+        shared_ptr<BaseGlyph> rot270;
+        string name270 = format("{}t", name);
+        if (auto st = createBaseGlyph(name270, sizeRotated, cp, gid, (bool)found, rect, Transform<int16_t>::CW270(), rot270); st.ok()) {
+          if (rot270) {
+            baseGlyphs[name270] = *rot270;
+          }
+        } else {
+          return EGLYF_STATUS_PUSH(st);
+        }
       }
     }
 

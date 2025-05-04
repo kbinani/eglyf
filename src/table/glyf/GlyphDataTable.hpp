@@ -413,6 +413,16 @@ public:
         return r;
       }
 
+      static GlyphRecord New(uint16_t glyphIndex, Transform<float> txm) {
+        GlyphRecord r;
+        r.glyphIndex = glyphIndex;
+        r.flags = ARGS_ARE_XY_VALUES | ARG_1_AND_2_ARE_WORDS | WE_HAVE_AN_X_AND_Y_SCALE | WE_HAVE_A_TWO_BY_TWO;
+        r.scale = Vec<F2DOT14>(F2DOT14::FromFloat(txm.xscale), F2DOT14::FromFloat(txm.yscale));
+        r.scale2 = Vec<F2DOT14>(F2DOT14::FromFloat(txm.scale01), F2DOT14::FromFloat(txm.scale10));
+        r.offset = Vec<int16_t>((int16_t)round(txm.dx), (int16_t)round(txm.dy));
+        return r;
+      }
+
       template <class T>
       Transform<T> transform() const {
         using namespace std;

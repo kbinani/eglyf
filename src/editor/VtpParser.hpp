@@ -63,16 +63,25 @@ private:
     auto font = editor->font;
 
     bool hieroglyph = false;
+    string basename = name;
     auto underbar = name.find('_');
-    if (underbar == string::npos) {
-      if (GlyphNames::GetCodepoint(name)) {
-        hieroglyph = true;
-      }
-    } else {
-      auto prefix = name.substr(0, underbar);
-      if (GlyphNames::GetCodepoint(prefix)) {
-        hieroglyph = true;
-      }
+    if (underbar != string::npos) {
+      basename = name.substr(0, underbar);
+    }
+    if (basename.ends_with("R")) {
+      basename = basename.substr(0, basename.size() - 1);
+    }
+    if (basename.ends_with("o")) {
+      basename = basename.substr(0, basename.size() - 1);
+    }
+    if (basename.ends_with("n")) {
+      basename = basename.substr(0, basename.size() - 1);
+    }
+    if (basename.ends_with("t")) {
+      basename = basename.substr(0, basename.size() - 1);
+    }
+    if (GlyphNames::GetCodepoint(basename)) {
+      hieroglyph = true;
     }
     if (!hieroglyph) {
       auto gid = font->postGetGlyphID(name);

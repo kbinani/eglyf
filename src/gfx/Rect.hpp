@@ -42,6 +42,13 @@ struct Rect {
     return xMin <= x && x <= xMax && yMin <= y && y <= yMax;
   }
 
+  Rect<T> transformed(Transform<T> const &txm) const {
+    using namespace std;
+    Vec<T> p0 = Vec<T>(xMin, yMin).transformed(txm);
+    Vec<T> p1 = Vec<T>(xMax, yMax).transformed(txm);
+    return Rect(min(p0.x, p1.x), min(p0.y, p1.y), max(p0.x, p1.x), max(p0.y, p1.y));
+  }
+
   T width() const { return xMax - xMin; }
   T height() const { return yMax - yMin; }
 };
