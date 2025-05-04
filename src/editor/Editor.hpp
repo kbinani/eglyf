@@ -1324,6 +1324,9 @@ public:
         if (auto st = createBaseGlyph(name90, sizeRotated, cp, gid, (bool)found, rect, Transform<int16_t>::CW90(), rot90); st.ok()) {
           if (rot90) {
             baseGlyphs[name90] = *rot90;
+            if (auto st2 = font->cmap->addUVS(cp, 0xfe00, rot90->gid); !st2.ok()) {
+              return EGLYF_STATUS_PUSH(st2);
+            }
           }
         } else {
           return EGLYF_STATUS_PUSH(st);
@@ -1335,6 +1338,9 @@ public:
         if (auto st = createBaseGlyph(name180, sizeNormal, cp, gid, (bool)found, rect, Transform<int16_t>::CW180(), rot180); st.ok()) {
           if (rot180) {
             baseGlyphs[name180] = *rot180;
+            if (auto st2 = font->cmap->addUVS(cp, 0xfe01, rot180->gid); !st2.ok()) {
+              return EGLYF_STATUS_PUSH(st2);
+            }
           }
         } else {
           return EGLYF_STATUS_PUSH(st);
@@ -1346,6 +1352,9 @@ public:
         if (auto st = createBaseGlyph(name270, sizeRotated, cp, gid, (bool)found, rect, Transform<int16_t>::CW270(), rot270); st.ok()) {
           if (rot270) {
             baseGlyphs[name270] = *rot270;
+          }
+          if (auto st2 = font->cmap->addUVS(cp, 0xfe02, rot270->gid); !st2.ok()) {
+            return EGLYF_STATUS_PUSH(st2);
           }
         } else {
           return EGLYF_STATUS_PUSH(st);

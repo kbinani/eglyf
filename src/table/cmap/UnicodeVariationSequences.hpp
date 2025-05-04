@@ -73,7 +73,7 @@ public:
   };
 
   struct NonDefaultUVS {
-    std::vector<UVSMapping> uvsMappings;
+    std::map<uint24, uint16_t> mappings;
 
     static Optional<NonDefaultUVS> Read(InputStream &in) {
       uint32_t numUVSMappings;
@@ -83,7 +83,7 @@ public:
       NonDefaultUVS ret;
       for (uint32_t i = 0; i < numUVSMappings; i++) {
         if (auto m = UVSMapping::Read(in); m) {
-          ret.uvsMappings.push_back(*m);
+          ret.mappings[m->unicodeValue] = m->glyphID;
         } else {
           return EGLYF_NULLOPT_PUSH(m.status());
         }
@@ -92,23 +92,26 @@ public:
     }
 
     Status write(OutputStream &out) const {
-      if (!out.sizeU32(uvsMappings.size())) {
+      if (!out.sizeU32(mappings.size())) {
         return EGLYF_ERROR;
       }
-      for (auto const &m : uvsMappings) {
-        if (!out.u24(m.unicodeValue)) {
+      for (auto [unicodeValue, glyphID] : mappings) {
+        if (!out.u24(unicodeValue)) {
           return EGLYF_ERROR;
         }
-        if (!out.u16(m.glyphID)) {
+        if (!out.u16(glyphID)) {
           return EGLYF_ERROR;
         }
       }
       return Status::Ok();
     }
+
+    void add(uint24 codepoint, uint16_t glyphID) {
+      mappings[codepoint] = glyphID;
+    }
   };
 
   struct VariationSelector {
-    uint24 varSelector;
     std::optional<DefaultUVS> defaultUVS;
     std::optional<NonDefaultUVS> nonDefaultUVS;
   };
@@ -151,7 +154,6 @@ public:
     auto ret = make_unique<UnicodeVariationSequences>();
     for (auto const &s : varSelectors) {
       VariationSelector vs;
-      vs.varSelector = s.varSelector;
       if (s.defaultUVSOffset > 0) {
         if (!in.seek(s.defaultUVSOffset)) {
           return EGLYF_ERROR;
@@ -172,7 +174,7 @@ public:
           return EGLYF_STATUS_PUSH(nduvs.status());
         }
       }
-      ret->varSelectors.push_back(vs);
+      ret->varSelectors[s.varSelector] = vs;
     }
     out.reset(ret.release());
     return Status::Ok();
@@ -193,8 +195,8 @@ public:
       return EGLYF_ERROR;
     }
     vector<pair<OffsetWriter::Handle32, OffsetWriter::Handle32>> offsets;
-    for (auto const &selector : varSelectors) {
-      if (!out.u24(selector.varSelector)) {
+    for (auto const &[varSelector, selector] : varSelectors) {
+      if (!out.u24(varSelector)) {
         return EGLYF_ERROR;
       }
       auto defaultUVSOffset = writer->o32();
@@ -207,8 +209,9 @@ public:
       }
       offsets.push_back(make_pair(defaultUVSOffset, nonDefaultUVSOffset));
     }
-    for (size_t i = 0; i < varSelectors.size(); i++) {
-      auto const &selector = varSelectors[i];
+    size_t i = 0;
+    for (auto it = varSelectors.begin(); it != varSelectors.end(); it++, i++) {
+      auto const &selector = it->second;
       auto [defaultUVSOffset, nonDefaultUVSOffset] = offsets[i];
       if (selector.defaultUVS) {
         if (auto st = defaultUVSOffset->mark(); !st.ok()) {
@@ -241,8 +244,34 @@ public:
     return EGLYF_STATUS_PUSH(writer->commit());
   }
 
+  Status add(uint32_t codepoint, uint16_t selector, uint16_t glyphID) {
+    using namespace std;
+    auto cp = UInt24FromUInt32(codepoint);
+    if (!cp) {
+      return EGLYF_ERROR;
+    }
+    uint24 sel = UInt24FromUInt16(selector);
+    auto found = varSelectors.find(sel);
+    if (found == varSelectors.end()) {
+      VariationSelector s;
+      if (!s.nonDefaultUVS) {
+        s.nonDefaultUVS = NonDefaultUVS();
+      }
+      s.nonDefaultUVS->add(*cp, glyphID);
+      varSelectors[sel] = s;
+      return Status::Ok();
+    } else {
+      VariationSelector &s = found->second;
+      if (!s.nonDefaultUVS) {
+        s.nonDefaultUVS = NonDefaultUVS();
+      }
+      s.nonDefaultUVS->add(*cp, glyphID);
+      return Status::Ok();
+    }
+  }
+
 public:
-  std::vector<VariationSelector> varSelectors;
+  std::map<uint24, VariationSelector> varSelectors;
 };
 
 } // namespace eglyf::cmap

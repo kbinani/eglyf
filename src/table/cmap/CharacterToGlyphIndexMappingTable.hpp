@@ -147,6 +147,11 @@ public:
     for (auto const &r : encodingRecords) {
       switch (r.platformID) {
       case 0:
+        if (r.encodingID == 5) {
+          if (auto uvs = dynamic_pointer_cast<UnicodeVariationSequences>(r.subtable); uvs) {
+            ret->uvs = uvs;
+          }
+        }
         break;
       case 3:
         switch (r.encodingID) {
@@ -227,6 +232,10 @@ public:
     encodingRecords.push_back(win1);
     EncodingRecord win10(3, 10, format12);
     encodingRecords.push_back(win10);
+    if (uvs) {
+      EncodingRecord uvsRecord(0, 5, uvs);
+      encodingRecords.push_back(uvsRecord);
+    }
 
     if (!writer->sizeU16(encodingRecords.size())) {
       return EGLYF_NULLOPT_WHAT("Failed to write encoding records size");
@@ -277,8 +286,17 @@ public:
     }
   }
 
+  Status addUVS(uint32_t codepoint, uint16_t selector, uint16_t glyphID) {
+    using namespace std;
+    if (!uvs) {
+      uvs = make_shared<UnicodeVariationSequences>();
+    }
+    return EGLYF_STATUS_PUSH(uvs->add(codepoint, selector, glyphID));
+  }
+
 private:
   std::map<uint32_t, uint32_t> mapping;
+  std::shared_ptr<UnicodeVariationSequences> uvs;
 };
 
 } // namespace eglyf::cmap

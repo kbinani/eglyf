@@ -15,6 +15,27 @@ using UFWORD = uint16_t;
 
 using uint24 = std::array<uint8_t, 3>;
 
+inline std::optional<uint24> UInt24FromUInt32(uint32_t v) {
+  using namespace std;
+  if (v > 0xffffff) {
+    return nullopt;
+  }
+  array<uint8_t, 3> ret;
+  ret[0] = (uint8_t)(0xff & (v >> 16));
+  ret[1] = (uint8_t)(0xff & (v >> 8));
+  ret[2] = (uint8_t)(0xff & v);
+  return ret;
+}
+
+inline uint24 UInt24FromUInt16(uint16_t v) {
+  using namespace std;
+  array<uint8_t, 3> ret;
+  ret[0] = 0;
+  ret[1] = (uint8_t)(0xff & (v >> 8));
+  ret[2] = (uint8_t)(0xff & v);
+  return ret;
+}
+
 struct Version16Dot16 {
   uint16_t major;
   uint16_t minor;
