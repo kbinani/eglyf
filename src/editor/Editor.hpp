@@ -1397,21 +1397,21 @@ public:
 
     for (auto i = x.begin(); i != x.end(); i++) {
       int dx = i->first;
-      int16_t dx16 = dx * hfu * chu / insertionResolution;
+      int16_t dx16 = (int16_t)round(dx * hfu * chu / (double)insertionResolution);
       vector<tuple<string, Pos, WxH>> const &glyphs = i->second;
       process(glyphs, dx16, nullopt);
     }
     for (auto i = y.begin(); i != y.end(); i++) {
       int dy = i->first;
-      int16_t dy16 = dy * vfu * vhu / insertionResolution;
+      int16_t dy16 = (int16_t)round(dy * vfu * vhu / (double)insertionResolution);
       vector<tuple<string, Pos, WxH>> const &glyphs = i->second;
       process(glyphs, nullopt, dy16);
     }
     for (auto i = xy.begin(); i != xy.end(); i++) {
       int dx = i->first.first;
       int dy = i->first.second;
-      int16_t dx16 = dx * hfu * chu / insertionResolution;
-      int16_t dy16 = dy * vfu * vhu / insertionResolution;
+      int16_t dx16 = (int16_t)round(dx * hfu * chu / (double)insertionResolution);
+      int16_t dy16 = (int16_t)round(dy * vfu * vhu / (double)insertionResolution);
       vector<tuple<string, Pos, WxH>> const &glyphs = i->second;
       process(glyphs, dx16, dy16);
     }
@@ -2592,7 +2592,7 @@ public:
     if (auto st = CartoucheGlyph::Create(*font, base, hfu, sb, hhu, chu, vfu, vhu, lineWidth); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
-    if (auto st = Insertion::CreatePlan(*font, sizeVariants, chu, vhu, hfu, vfu, base, insertionResolution, insertionPlans); !st.ok()) {
+    if (auto st = Insertion::CreatePlan(*font, sizeVariants, chu, vhu, hfu, vfu, base, lineWidth, insertionResolution, insertionPlans); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
     if (cfg.enableSubstMdc) {

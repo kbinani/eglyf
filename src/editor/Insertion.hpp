@@ -55,6 +55,7 @@ public:
                            int16_t hfu,
                            int16_t vfu,
                            int16_t base,
+                           int16_t lineWidth,
                            int insertionResolution,
                            std::map<std::string, Plan> &out) {
     using namespace std;
@@ -261,7 +262,7 @@ public:
       }
       WxH baseSize = found->second.size;
       for (Pos pos : poss) {
-        auto result = ScanInsertionSpot(font, name, baseSize, pos, chu, vhu, hfu, vfu, base, insertionResolution);
+        auto result = ScanInsertionSpot(font, name, baseSize, pos, chu, vhu, hfu, vfu, base, lineWidth, insertionResolution);
         if (result) {
           WxH sz = result->first;
           Vec<int16_t> offset = result->second;
@@ -277,7 +278,7 @@ public:
         for (auto i = found->second.variants.begin(); i != found->second.variants.end(); i++) {
           WxH variantSize = i->first;
           shared_ptr<Glyph> g = i->second;
-          auto r = ScanInsertionSpot(font, g->name, variantSize, pos, chu, vhu, hfu, vfu, base, insertionResolution);
+          auto r = ScanInsertionSpot(font, g->name, variantSize, pos, chu, vhu, hfu, vfu, base, lineWidth, insertionResolution);
           if (r) {
             WxH sz = r->first;
             Vec<int16_t> offset = r->second;
@@ -306,11 +307,13 @@ public:
                                                                        int16_t hfu,
                                                                        int16_t vfu,
                                                                        int16_t base,
+                                                                       int16_t lineWidth,
                                                                        int insertionResolution) {
     using namespace std;
     int const res = insertionResolution;
     double const xres = hfu * chu / double(res);
     double const yres = vfu * vhu / double(res);
+    int const margin = lineWidth / 2;
 
     if (!holds_alternative<FontFile::TrueTypeOutlines>(font.outlines)) {
       return nullopt;
@@ -335,7 +338,7 @@ public:
     int width = WidthFromWxH(size) * hfu;
     int height = HeightFromWxH(size) * vfu;
     int x0 = -width / 2;
-    int y0 = base;
+    int y0 = base - margin;
     int x1 = x0 + width;
     int y1 = y0 + height;
     deque<pair<WxH, Vec<int16_t>>> ok;
