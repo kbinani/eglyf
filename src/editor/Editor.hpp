@@ -2595,6 +2595,27 @@ public:
     if (auto st = Insertion::CreatePlan(*font, sizeVariants, chu, vhu, hfu, vfu, base, lineWidth, insertionResolution, insertionPlans); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
+    if constexpr (false) {
+      if (holds_alternative<FontFile::TrueTypeOutlines>(font->outlines)) {
+        using Contour = glyf::GlyphDataTable::Contour;
+        auto process = [this](string const &name, int x, int y) {
+          auto &glyf = get<FontFile::TrueTypeOutlines>(font->outlines).glyf;
+          auto bs11 = getGlyphByName(name);
+          vector<Contour> contours;
+          int margin = lineWidth / 2;
+          Contour::MakeRect(-hfu * x / 2, 0, hfu * x / 2, vfu * y, contours);
+          glyf->replaceOutline(*bs11->id, contours, *font->maxp);
+          hmtx::HorizontalMetricsTable::LongHorMetric hm;
+          hm.advanceWidth = 0;
+          hm.lsb = -hfu * x / 2;
+          font->hmtx->metrics[*bs11->id] = hm;
+        };
+        process("G37", 6, 5);
+        process("bs11", 1, 1);
+        process("it11", 1, 1);
+        process("m0", 1, 1);
+      }
+    }
     if (cfg.enableSubstMdc) {
       if (auto st = insertMdCLookup(); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
