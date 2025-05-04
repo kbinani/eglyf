@@ -58,12 +58,12 @@ class CartoucheGlyph {
     using Contour = glyf::GlyphDataTable::Contour;
 
     auto [out1, out2, out3, out4] = QuadraticBezier<int16_t>::LeftCartouche(Vec<int16_t>(p.sideBearing + width, bottom + height / 2), height, width);
-    vector<double> t;
+    array<double, 2> t;
     cutX = p.sideBearing + p.lineWidth - p.lineWidth * 9 / 32;
-    out1.getTWhenX(cutX, t);
-    if (t.empty()) {
-      out2.getTWhenX(cutX, t);
-      if (t.empty()) {
+    size_t num = out1.getTWhenX(cutX, t);
+    if (num == 0) {
+      num = out2.getTWhenX(cutX, t);
+      if (num == 0) {
         return EGLYF_ERROR;
       }
       auto [out2_, _] = out2.cut(t[0]);
@@ -97,11 +97,10 @@ class CartoucheGlyph {
       c.points.emplace_back(joint.x - p.lineWidth, bottom);
       c.points.emplace_back(joint.x, bottom);
     }
-    t.clear();
-    out3.getTWhenX(cutX, t);
-    if (t.empty()) {
-      out4.getTWhenX(cutX, t);
-      if (t.empty()) {
+    num = out3.getTWhenX(cutX, t);
+    if (num == 0) {
+      num = out4.getTWhenX(cutX, t);
+      if (num == 0) {
         return EGLYF_ERROR;
       }
       auto [_, out4_] = out4.cut(t[0]);

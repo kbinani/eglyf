@@ -19,14 +19,26 @@ public:
     return QuadraticBezier(p0.translated(dx, dy), p1.translated(dx, dy), p2.translated(dx, dy));
   }
 
-  void getTWhenX(double x, std::vector<double> &t) const {
+  size_t getTWhenX(double x, std::array<double, 2> &t) const {
     using namespace std;
     QuadraticEquation qe(p0.x - 2 * p1.x + p2.x,
                          -2 * p0.x + 2 * p1.x,
                          p0.x - x);
-    qe.roots(t);
-    t.erase(ranges::remove_if(t, [](double t) { return t < 0 || 1 < t; }).begin(), t.end());
-    ranges::sort(t);
+    int count = qe.roots(t);
+    if (count == 0) {
+      return 0;
+    }
+    for (int i = 0; i < count;) {
+      if (t[i] < 0 || 1 < t[i]) {
+        for (int j = i; j < count - 1; j++) {
+          t[j] = t[j + 1];
+        }
+        count--;
+      } else {
+        i++;
+      }
+    }
+    return count;
   }
 
   Vec<T> get(double t) const {
@@ -51,12 +63,13 @@ public:
   bool intersectsH(T y, T x0, T x1) const {
     using namespace std;
     QuadraticEquation q(p0.y - 2 * p1.y + p2.y, -2 * p0.y + 2 * p1.y, p0.y - y);
-    vector<double> roots;
-    q.roots(roots);
-    if (roots.empty()) {
+    array<double, 2> roots;
+    size_t num = q.roots(roots);
+    if (num == 0) {
       return false;
     }
-    for (double t : roots) {
+    for (size_t i = 0; i < num; i++) {
+      double t = roots[i];
       if (t < 0 || 1 < t) {
         continue;
       }
@@ -71,12 +84,13 @@ public:
   bool intersectsV(T x, T y0, T y1) const {
     using namespace std;
     QuadraticEquation q(p0.x - 2 * p1.x + p2.x, -2 * p0.x + 2 * p1.x, p0.x - x);
-    vector<double> roots;
-    q.roots(roots);
-    if (roots.empty()) {
+    array<double, 2> roots;
+    size_t num = q.roots(roots);
+    if (num == 0) {
       return false;
     }
-    for (double t : roots) {
+    for (size_t i = 0; i < num; i++) {
+      double t = roots[i];
       if (t < 0 || 1 < t) {
         continue;
       }

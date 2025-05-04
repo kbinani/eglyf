@@ -6,29 +6,35 @@ class QuadraticEquation {
 public:
   QuadraticEquation(double a2, double a1, double a0) : a2(a2), a1(a1), a0(a0) {}
 
-  void roots(std::vector<double> &out) const {
+  size_t roots(std::array<double, 2> &out) const {
     using namespace std;
     if (fabs(a2) <= numeric_limits<double>::epsilon()) {
       if (fabs(a1) <= numeric_limits<double>::epsilon()) {
-        return;
+        return 0;
       }
-      out.push_back(-a0 / a1);
-      return;
+      out[0] = -a0 / a1;
+      return 1;
     }
     double D = a1 * a1 - 4 * a2 * a0;
     if (D < 0) {
-      return;
+      return 0;
     } else if (D == 0) {
-      out.push_back(-a1 / (2 * a2));
-      return;
+      out[0] = -a1 / (2 * a2);
+      return 1;
     }
-    double x0 = (-a1 + sqrt(D)) / (2 * a2);
-    double x1 = (-a1 - sqrt(D)) / (2 * a2);
+    double sqD = sqrt(D);
+    double x0 = (-a1 + sqD) / (2 * a2);
+    double x1 = (-a1 - sqD) / (2 * a2);
     if (fabs(x0 - x1) <= numeric_limits<double>::epsilon()) {
-      out.push_back((x0 + x1) / 2);
+      out[0] = (x0 + x1) / 2;
+      return 1;
     } else {
-      out.push_back(x0);
-      out.push_back(x1);
+      if (x0 > x1) {
+        swap(x0, x1);
+      }
+      out[0] = x0;
+      out[1] = x1;
+      return 2;
     }
   }
 
