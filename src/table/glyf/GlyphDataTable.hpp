@@ -59,6 +59,22 @@ public:
 
   class Contour {
   public:
+    static void MakeRect(int16_t x0, int16_t y0, int16_t x1, int16_t y1, std::vector<Contour> &out) {
+      Contour c;
+      c.points.push_back(Point(x0, y0));
+      c.points.push_back(Point(x0, y1));
+      c.points.push_back(Point(x1, y1));
+      c.points.push_back(Point(x1, y0));
+      out.push_back(c);
+
+      Contour a;
+      a.points.push_back(Point(x0 + 1, y0 + 1));
+      a.points.push_back(Point(x1 - 1, y0 + 1));
+      a.points.push_back(Point(x1 - 1, y1 - 1));
+      a.points.push_back(Point(x0 + 1, y1 - 1));
+      out.push_back(a);
+    }
+
     std::vector<Point> points;
   };
 
