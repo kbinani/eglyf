@@ -105,6 +105,12 @@
   const G37 = "&#x1316A;";
   const w = "&#x13171;";
   const mirror = "&#x13440;";
+  const ewb = "&#x1343E;";
+  const ewe = "&#x1343F;";
+  const hwtwb = "&#x13288;";
+  const hwtwe = "&#x13289;";
+  const cwb = "&#x13286;";
+  const cwe = "&#x13287;";
   const data = [
     [`${A1}`, "A1"],
     [`${A1}${vj}${O1}`, "A1:O1"],
@@ -138,6 +144,8 @@
     [`${G37}${bs}${t}`, `G37&t`],
     [`${w}${bs}${t}${te}${t}`, `w&t&t`],
     [`${A1}${mirror}${A1}`, `A1\\A1`],
+    [`${cwb}${ewb}${A1}${ewe}${cwe}`, ``],
+    [`${hwtwb}${ewb}${A1}${t}${N35}${ewe}${hwtwe}`, `<F A1 >`],
   ];
   const table = document.getElementById("table");
   const filter = (s) => {

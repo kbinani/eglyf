@@ -11,6 +11,8 @@ class CartoucheGlyph {
     int16_t lineWidth;
     int16_t approachLength;
     int16_t jointLength;
+    int16_t walledLineWidth;
+    int16_t wallHeight;
   };
 
   static glyf::GlyphDataTable::Contour CreateContour_cb(Param const &p, int16_t width, int16_t height, int16_t bottom) {
@@ -450,6 +452,8 @@ public:
     int16_t approachLength = lineWidth / 2;
     int16_t sideBearing = 2 * lineWidth;
     int16_t jointLength = max(1, lineWidth / 2);
+    int16_t walledLineWidth = max(1, (int)round(lineWidth * 0.59375));
+    int16_t wallHeight = max(1, (int)round(lineWidth * 0.75));
 
     Param p;
     p.scale = scale;
@@ -457,6 +461,8 @@ public:
     p.approachLength = approachLength;
     p.sideBearing = sideBearing;
     p.jointLength = jointLength;
+    p.walledLineWidth = walledLineWidth;
+    p.wallHeight = wallHeight;
 
     int16_t top = base + vfu * vhu + vSpace + lineWidth;
     int16_t bottom = base - vSpace - lineWidth;
@@ -805,6 +811,43 @@ public:
       children.push_back(GlyphRecord::New(*qo));
       children.push_back(GlyphRecord::New(*qc));
       auto gid = ReplaceCompositeGlyph(font, name, Class::Base, children, w, -p.jointLength);
+      if (!gid) {
+        return EGLYF_STATUS_PUSH(gid.status());
+      }
+    }
+    for (int s = 1; s <= hhu; s++) {
+      auto name = format("QW{}", s);
+      int16_t w = sb + s * hfu + sb;
+      int n = (int)round(w / (float)(sb + hfu + sb));
+      int16_t wallLength = w * 3 / (n * 5);
+      int16_t hollowLength = (w - n * wallLength) / (n * 2);
+      Contour up;
+      up.points.emplace_back(-jointLength, top - lineWidth);
+      up.points.emplace_back(-jointLength, top - lineWidth + walledLineWidth);
+      for (int i = 0; i < n; i++) {
+        int16_t x0 = (2 * hollowLength + wallLength) * i + hollowLength;
+        up.points.emplace_back(x0, top - lineWidth + walledLineWidth);
+        up.points.emplace_back(x0, top - lineWidth + walledLineWidth + wallHeight);
+        up.points.emplace_back(x0 + wallLength, top - lineWidth + walledLineWidth + wallHeight);
+        up.points.emplace_back(x0 + wallLength, top - lineWidth + walledLineWidth);
+      }
+      up.points.emplace_back(w + jointLength, top - lineWidth + walledLineWidth);
+      up.points.emplace_back(w + jointLength, top - lineWidth);
+
+      Contour down;
+      down.points.emplace_back(-jointLength, bottom + lineWidth - walledLineWidth);
+      down.points.emplace_back(-jointLength, bottom + lineWidth);
+      down.points.emplace_back(w + jointLength, bottom + lineWidth);
+      down.points.emplace_back(w + jointLength, bottom + lineWidth - walledLineWidth);
+      for (int i = n - 1; i >= 0; i--) {
+        int16_t x0 = (2 * hollowLength + wallLength) * i + hollowLength + wallLength;
+        down.points.emplace_back(x0, bottom + lineWidth - walledLineWidth);
+        down.points.emplace_back(x0, bottom + lineWidth - walledLineWidth - wallHeight);
+        down.points.emplace_back(x0 - wallLength, bottom + lineWidth - walledLineWidth - wallHeight);
+        down.points.emplace_back(x0 - wallLength, bottom + lineWidth - walledLineWidth);
+      }
+
+      auto gid = ReplaceSimpleGlyph(font, name, Class::Base, {up, down}, w, -jointLength);
       if (!gid) {
         return EGLYF_STATUS_PUSH(gid.status());
       }
