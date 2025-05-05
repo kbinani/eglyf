@@ -18,9 +18,8 @@ The key advantage is that once a font is processed with eglyf, it can properly d
 
 ## Features
 
-- Replaces GSUB and GPOS tables with necessary lookups for Egyptian Hieroglyph Format Controls
+- Replaces GSUB and GPOS tables with necessary lookups for Egyptian Hieroglyph Format Controls and [Manuel de Codage](http://www.catchpenny.org/codage/) notation system
 - Modifies cmap, GDEF, and other tables to enable proper rendering of hieroglyphic text
-- Supports [Manuel de Codage](http://www.catchpenny.org/codage/) notation system (can be disabled by `--disable-mdc-subst` option)
 
 ## Steps to build
 
@@ -48,6 +47,10 @@ eglyf --input <input-font> --output <output-font> [options]
 - `--name`: Custom name for the output font, formatted as "family/subFamily/fullName/postScriptName"
   - Example: `"My EgyptHiero/Regular/My Egyptian Hieroglyphs Regular/MyEgyptianHieroglyphs-Regular"`
 - `--disable-mdc-subst`: Disable some GSUB lookups for Manuel de Codage support (optional)
+
+## Disclaimer
+
+This tool modifies font files but does not check the license terms of the input fonts. Users are responsible for ensuring that any modifications made to fonts comply with the original font's license terms. Some font licenses may not permit modification or may have specific requirements for derivative works.
 
 ## Dependencies
 
