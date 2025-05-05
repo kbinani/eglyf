@@ -404,7 +404,10 @@ public:
     if (auto tr = records.find(FCC("name")); tr == records.end()) {
       return EGLYF_ERROR_WHAT("name table not found");
     } else if (auto buffer = tr->second.read(in); buffer) {
-      ff->name = make_shared<ReadonlyTable>(*buffer);
+      ByteInputStream slice(*buffer);
+      if (auto st = name::NamingTable::Read(slice, ff->name); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
       records.erase(tr);
     } else {
       return EGLYF_ERROR_WHAT("Failed to read name table");
@@ -714,7 +717,7 @@ public:
   std::shared_ptr<hhea::HorizontalHeaderTable> hhea;
   std::shared_ptr<hmtx::HorizontalMetricsTable> hmtx;
   std::shared_ptr<maxp::MaximumProfileTable> maxp;
-  std::shared_ptr<ReadonlyTable> name;
+  std::shared_ptr<name::NamingTable> name;
   std::shared_ptr<os2::OS2AndWindowsMetricsTable> os2;
   std::shared_ptr<post::PostScriptTable> post;
 

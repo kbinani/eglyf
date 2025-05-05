@@ -95,6 +95,7 @@
 #include "table/cmap/SegmentedCoverage.hpp"
 #include "table/cmap/UnicodeVariationSequences.hpp"
 #include "table/cmap/CharacterToGlyphIndexMappingTable.hpp"
+#include "table/name/NamingTable.hpp"
 #include "FontFile.hpp"
 #include "GlyphNames.hpp"
 #include "editor/PlaceholderGlyph.hpp"

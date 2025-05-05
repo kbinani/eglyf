@@ -91,6 +91,7 @@ list(APPEND src_files
   src/table/cmap/SegmentedCoverage.hpp
   src/table/cmap/UnicodeVariationSequences.hpp
   src/table/cmap/TrimmedTableMapping.hpp
+  src/table/name/NamingTable.hpp
   src/editor/Editor.hpp
   src/editor/VtpParser.hpp
   src/editor/EditorTests.hpp
