@@ -59,6 +59,9 @@ static void Run(juce::ArgumentList const &args) {
     cfg.name = name;
   }
 
+  juce::String disableMdCSubst = args.getValueForOption("--disable-mdc-subst");
+  cfg.enableSubstMdc = disableMdCSubst.length() == 0;
+
   FileInputStream fis(input);
   shared_ptr<FontFile> ff;
   if (auto st = FontFile::Read(fis, ff); !st.ok()) {
