@@ -1352,9 +1352,9 @@ public:
         if (auto st = createBaseGlyph(name270, sizeRotated, cp, gid, (bool)found, rect, Transform<int16_t>::CW270(), rot270); st.ok()) {
           if (rot270) {
             baseGlyphs[name270] = *rot270;
-          }
-          if (auto st2 = font->cmap->addUVS(cp, 0xfe02, rot270->gid); !st2.ok()) {
-            return EGLYF_STATUS_PUSH(st2);
+            if (auto st2 = font->cmap->addUVS(cp, 0xfe02, rot270->gid); !st2.ok()) {
+              return EGLYF_STATUS_PUSH(st2);
+            }
           }
         } else {
           return EGLYF_STATUS_PUSH(st);
