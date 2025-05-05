@@ -16,6 +16,7 @@
 #include <cassert>
 #include <format>
 #include <regex>
+#include <chrono>
 
 #include "Status.hpp"
 #include "Optional.hpp"

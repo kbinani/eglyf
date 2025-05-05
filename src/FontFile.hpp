@@ -206,6 +206,9 @@ public:
       all.erase(vmtxEntry);
     }
 
+    auto now = Now();
+    head->modified = now;
+
     for (auto &[tag, table] : all) {
       auto encoded = table->encode();
       if (!encoded) {

@@ -10,6 +10,28 @@ struct Fixed {
 };
 
 using LONGDATETIME = int64_t;
+
+inline LONGDATETIME Now() {
+  using namespace std;
+
+  time_t now = chrono::system_clock::to_time_t(chrono::system_clock::now());
+
+  std::tm epoch{};
+  epoch.tm_year = 1904 - 1900;
+  epoch.tm_mon = 1 - 1;
+  epoch.tm_mday = 1;
+  epoch.tm_isdst = 0;
+
+  time_t epochTime =
+#if defined(_WIN32)
+      _mkgmtime(&epoch);
+#else
+      timegm(&epoch);
+#endif
+
+  return (int64_t)now - (int64_t)epochTime;
+}
+
 using FWORD = int16_t;
 using UFWORD = uint16_t;
 
