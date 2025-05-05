@@ -103,6 +103,8 @@
   const r = "&#x1308B;";
   const st = "&#x132A8;";
   const G37 = "&#x1316A;";
+  const w = "&#x13171;";
+  const mirror = "&#x13440;";
   const data = [
     [`${A1}`, "A1"],
     [`${A1}${vj}${O1}`, "A1:O1"],
@@ -134,6 +136,8 @@
       "<nTr nfr nb:N17:N17 nb:ir:x*t L2a<ra mn xpr> mAa:xrw\\r1 x:r ir:st*nTr>"
     ],
     [`${G37}${bs}${t}`, `G37&t`],
+    [`${w}${bs}${t}${te}${t}`, `w&t&t`],
+    [`${A1}${mirror}${A1}`, `A1\\A1`],
   ];
   const table = document.getElementById("table");
   const filter = (s) => {

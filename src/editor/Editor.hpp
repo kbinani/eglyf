@@ -1413,6 +1413,47 @@ public:
     return Status::Ok();
   }
 
+  Status createMirrorGlyphs() {
+    using namespace std;
+
+    if (!holds_alternative<FontFile::TrueTypeOutlines>(font->outlines)) {
+      return EGLYF_ERROR;
+    }
+    auto &glyf = get<FontFile::TrueTypeOutlines>(font->outlines).glyf;
+
+    Transform<float> txm(-1, 0, 0, 1, 0, 0);
+    auto classValue = gdef::GlyphDefinitionTable::Class::Mark;
+
+    for (auto const &[name, sv] : sizeVariants) {
+      if (!sv.base || !sv.base->id) {
+        continue;
+      }
+      auto record = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord::New(*sv.base->id, txm);
+      auto n = format("{}R", name);
+      auto newGid = font->addCompositeGlyph(n, classValue, record, 0, -sv.bounds.xMax);
+      if (!newGid) {
+        return EGLYF_STATUS_PUSH(newGid.status());
+      }
+      for (auto const &[size, v] : sv.variants) {
+        if (!v->id) {
+          continue;
+        }
+        auto g = glyf->glyphs[*v->id];
+        auto bounds = glyf::GlyphDataTable::Bounds(g);
+        if (!bounds) {
+          return EGLYF_ERROR;
+        }
+        auto rec = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord::New(*v->id, txm);
+        auto rn = format("{}R", v->name);
+        auto gid = font->addCompositeGlyph(rn, classValue, rec, 0, -bounds->xMax);
+        if (!gid) {
+          return EGLYF_STATUS_PUSH(gid.status());
+        }
+      }
+    }
+    return Status::Ok();
+  }
+
   Status preprocess() {
     using namespace std;
     if (!font->gdef) {
@@ -1424,6 +1465,9 @@ public:
       font->gdef->glyphClassDef = make_shared<ClassDef>();
     }
     if (auto st = createSizeVariants(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    if (auto st = createMirrorGlyphs(); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
     return Status::Ok();
@@ -2506,6 +2550,7 @@ public:
     mapping["("] = {"ss"};
     mapping[")"] = {"se"};
     mapping["##"] = {"mi"};
+    mapping["\\"] = {"mr"};
     mapping["\\r1"] = {"VS3"};
     mapping["\\r2"] = {"VS2"};
     mapping["\\r3"] = {"VS1"};
@@ -3397,16 +3442,25 @@ public:
       for (auto const &[n, sv] : sizeVariants) {
         // A1 = 5x6
         // DEF_ANCHOR "MARK_center" ON 1811 GLYPH A1 COMPONENT 1 AT  POS DY 930 END_POS END_ANCHOR
+        // DEF_ANCHOR "MARK_center" ON 8087 GLYPH A1R COMPONENT 1 AT  POS DY 930 END_POS END_ANCHOR
         {
           auto glyph = getGlyphByName(n);
           int16_t dy = HeightFromWxH(sv.size) * vfu / 2;
           MARK_center->second->glyphs[glyph] = Vec<optional<int16_t>>(nullopt, dy);
         }
+        {
+          auto glyphR = getGlyphByName(format("{}R", n));
+          int16_t dy = HeightFromWxH(sv.size) * vfu / 2;
+          MARK_center->second->glyphs[glyphR] = Vec<optional<int16_t>>(nullopt, dy);
+        }
         for (auto const &[key, glyph] : sv.variants) {
           // DEF_ANCHOR "MARK_center" ON 2888 GLYPH A1_11 COMPONENT 1 AT  POS DY 144 END_POS END_ANCHOR
+          // DEF_ANCHOR "MARK_center" ON 8093 GLYPH A1_11R COMPONENT 1 AT  POS DY 144 END_POS END_ANCHOR
           int v = HeightFromWxH(key);
-          int16_t dy = v * vfu / 2; // TODO: this equation is not sure
+          int16_t dy = v * vfu / 2;
           MARK_center->second->glyphs[glyph] = Vec<optional<int16_t>>(nullopt, dy);
+          auto glyphR = getGlyphByName(format("{}R", glyph->name));
+          MARK_center->second->glyphs[glyphR] = Vec<optional<int16_t>>(nullopt, dy);
         }
       }
       for (int h = 1; h <= hhu; h++) {
