@@ -852,6 +852,25 @@ public:
         return EGLYF_STATUS_PUSH(gid.status());
       }
     }
+    for (int s = 1; s <= hhu; s++) {
+      auto name = format("QF{}", s);
+      int16_t w = sb + s * hfu + sb;
+      auto qo = font.postGetGlyphID(format("QO{}", s));
+      if (!qo) {
+        return EGLYF_ERROR;
+      }
+      auto qw = font.postGetGlyphID(format("QW{}", s));
+      if (!qw) {
+        return EGLYF_ERROR;
+      }
+      vector<GlyphRecord> children;
+      children.push_back(GlyphRecord::New(*qo));
+      children.push_back(GlyphRecord::New(*qw));
+      auto gid = ReplaceCompositeGlyph(font, name, Class::Base, children, w, -p.jointLength);
+      if (!gid) {
+        return EGLYF_STATUS_PUSH(gid.status());
+      }
+    }
     {
       // cdbL, cdbR, cdreL, cdreR
       auto c = CreateContour_cb(p, width, height, bottom);
