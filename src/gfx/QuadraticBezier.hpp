@@ -54,6 +54,13 @@ public:
   }
 
   bool intersects(Rect<T> const &b) const {
+    if (b.contains(p0) || b.contains(p2)) {
+      return true;
+    }
+    Rect<T> bb = boundingBox();
+    if (!bb.intersects(b)) {
+      return false;
+    }
     return intersectsH(b.yMin, b.xMin, b.xMax) ||
            intersectsH(b.yMax, b.xMin, b.xMax) ||
            intersectsV(b.xMin, b.yMin, b.yMax) ||
@@ -102,10 +109,18 @@ public:
     return false;
   }
 
-  Rect<double> boundingBox() const {
-    auto [xMin, xMax] = x.minmax(0, 1);
-    auto [yMin, yMax] = y.minmax(0, 1);
-    return Rect<double>(xMin, yMin, xMax, yMax);
+  Rect<T> boundingBox() const {
+    using namespace std;
+    T xMin = min(p0.x, p2.x);
+    T yMin = min(p0.y, p2.y);
+    T xMax = max(p0.x, p2.x);
+    T yMax = max(p0.y, p2.y);
+    if (xMin <= p1.x && p1.x <= xMax && yMin <= p1.y && p1.y <= yMax) {
+      return Rect<T>(xMin, yMin, xMax, yMax);
+    }
+    auto [x0, x1] = x.minmax(0, 1);
+    auto [y0, y1] = y.minmax(0, 1);
+    return Rect<T>(x0, y0, x1, y1);
   }
 
   QuadraticBezier<T> transformed(Transform<T> const &txm) const {
@@ -153,9 +168,6 @@ public:
       return lineA.intersects(up) || lineA.intersects(left) || lineA.intersects(bottom) || lineA.intersects(right);
     } else if (holds_alternative<QuadraticBezier<T>>(a)) {
       auto const &bezierA = std::get<QuadraticBezier<T>>(a);
-      if (r.contains(bezierA.p0) || r.contains(bezierA.p2)) {
-        return true;
-      }
       return bezierA.intersects(r);
     } else [[unlikely]] {
       return false;
