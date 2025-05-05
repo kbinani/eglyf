@@ -9,9 +9,8 @@ public:
     uint16_t encodingID;
     uint16_t languageID;
     uint16_t nameID;
-    std::string data;
 
-    static Optional<NameRecord> Read(InputStream &in, Offset16 storageOffset) {
+    static Optional<std::pair<NameRecord, std::string>> Read(InputStream &in, Offset16 storageOffset) {
       using namespace std;
       NameRecord r;
       if (!in.u16(&r.platformID)) {
@@ -38,15 +37,18 @@ public:
       if (!in.seek(storageOffset + stringOffset)) {
         return EGLYF_NULLOPT;
       }
-      r.data.resize(length);
-      if (!in.read(r.data.data(), length)) {
+      string data;
+      data.resize(length);
+      if (!in.read(data.data(), length)) {
         return EGLYF_NULLOPT;
       }
       if (!in.seek(pos)) {
         return EGLYF_NULLOPT;
       }
-      return r;
+      return make_pair(r, data);
     }
+
+    auto operator<=>(NameRecord const &other) const = default;
   };
 
   static Status Read(InputStream &stream, std::shared_ptr<NamingTable> &out) {
@@ -73,7 +75,7 @@ public:
       if (!record) {
         return EGLYF_STATUS_PUSH(record.status());
       }
-      ret->records.push_back(*record);
+      ret->records.insert(*record);
     }
     if (format == 1) {
       uint16_t langTagCount;
@@ -133,7 +135,7 @@ public:
     if (!out.o16(0)) {
       return EGLYF_NULLOPT;
     }
-    for (auto const &record : records) {
+    for (auto const &[record, data] : records) {
       if (!out.u16(record.platformID)) {
         return EGLYF_NULLOPT;
       }
@@ -146,23 +148,23 @@ public:
       if (!out.u16(record.nameID)) {
         return EGLYF_NULLOPT;
       }
-      if (!out.sizeU16(record.data.size())) {
+      if (!out.sizeU16(data.size())) {
         return EGLYF_NULLOPT;
       }
-      auto found = mapping.find(record.data);
+      auto found = mapping.find(data);
       if (found == mapping.end()) {
         auto offset = storage.position();
         if (offset > numeric_limits<Offset16>::max()) {
           return EGLYF_NULLOPT;
         }
         Offset16 offset16 = (Offset16)offset;
-        if (!storage.write(record.data.data(), record.data.size())) {
+        if (!storage.write(data.data(), data.size())) {
           return EGLYF_NULLOPT;
         }
         if (!out.o16(offset16)) {
           return EGLYF_NULLOPT;
         }
-        mapping[record.data] = offset16;
+        mapping[data] = offset16;
       } else {
         if (!out.o16(found->second)) {
           return EGLYF_NULLOPT;
@@ -209,7 +211,7 @@ public:
   }
 
 public:
-  std::deque<NameRecord> records;
+  std::map<NameRecord, std::string> records;
   std::deque<std::u16string> langTags;
 };
 
