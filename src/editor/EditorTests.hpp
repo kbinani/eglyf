@@ -130,7 +130,8 @@ public:
         fail(st);
         return;
       }
-      auto editor = make_shared<Editor>(font);
+      Config cfg;
+      auto editor = make_shared<Editor>(font, cfg);
       if (auto st = editor->preprocess(); !st.ok()) {
         fail(st);
         return;

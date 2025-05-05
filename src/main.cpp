@@ -15,6 +15,10 @@ static void Fail(eglyf::Status st) {
   juce::ConsoleApplication::fail(juce::String(out.str()));
 }
 
+static std::u16string U16StringFromJuceString(juce::String const &s) {
+  return std::u16string((char16_t const *)s.toUTF16().getAddress());
+}
+
 #if EGLYF_ENABLE_TESTS
 static void Test(juce::ArgumentList const &args) {
   using namespace eglyf::tests;
@@ -34,8 +38,26 @@ static void Run(juce::ArgumentList const &args) {
   using namespace std;
   using namespace eglyf;
 
+  Config cfg;
+
   juce::File input = args.getExistingFileForOption("--input");
   juce::File output = args.getFileForOption("--output");
+
+  juce::String name = args.getValueForOption("--name");
+  if (name.length() > 0) {
+    auto tokens = juce::StringArray::fromTokens(name, "/", "\"");
+    if (tokens.size() != 4) {
+      cerr << "--name family/subFamily/fullName/psName" << endl;
+      cerr << "ex: --name \"My EgyptHiero/Regular/My Egyptian Hieroglyphs Regular/MyEgyptianHieroglyphs-Regular\"" << endl;
+      return;
+    }
+    Config::Name name;
+    name.family = U16StringFromJuceString(tokens[0]);
+    name.subFamily = U16StringFromJuceString(tokens[1]);
+    name.fullName = U16StringFromJuceString(tokens[2]);
+    name.psName = U16StringFromJuceString(tokens[3]);
+    cfg.name = name;
+  }
 
   FileInputStream fis(input);
   shared_ptr<FontFile> ff;
@@ -43,7 +65,7 @@ static void Run(juce::ArgumentList const &args) {
     Fail(st);
     return;
   }
-  auto editor = make_shared<Editor>(ff);
+  auto editor = make_shared<Editor>(ff, cfg);
   if (auto st = editor->preprocess(); !st.ok()) {
     Fail(st);
     return;

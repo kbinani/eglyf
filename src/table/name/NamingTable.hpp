@@ -10,6 +10,12 @@ public:
     uint16_t languageID;
     uint16_t nameID;
 
+    NameRecord() = default;
+    NameRecord(uint16_t platformID,
+               uint16_t encodingID,
+               uint16_t languageID,
+               uint16_t nameID) : platformID(platformID), encodingID(encodingID), languageID(languageID), nameID(nameID) {}
+
     static Optional<std::pair<NameRecord, std::string>> Read(InputStream &in, Offset16 storageOffset) {
       using namespace std;
       NameRecord r;
@@ -208,6 +214,51 @@ public:
       return EGLYF_NULLOPT;
     }
     return EncodeResult(out.data());
+  }
+
+  // family: "My EgyptHiero"
+  // subFamily: "Regular"
+  // fullName: "My Egyptian Hieroglyphs Regular"
+  // psName: "MyEgyptianHieroglyphs-Regular"
+  void setName(std::u16string const &family, std::u16string const &subFamily, std::u16string const &fullName, std::u16string const &psName) {
+    using namespace std;
+    langTags.clear();
+    erase_if(records, [](auto const &it) {
+      NameRecord key = it.first;
+      if (key.platformID != 0 && key.platformID != 3) {
+        return true;
+      }
+      uint16_t nameID = key.nameID;
+      return nameID == 1 || nameID == 2 || nameID == 3 || nameID == 4 || nameID == 6 || nameID == 16 || nameID == 17;
+    });
+    static auto const StringU16BEFromU16String = [](u16string const &s) -> string {
+      ByteOutputStream stream;
+      for (char16_t ch : s) {
+        uint16_t u = *(uint16_t *)&ch;
+        stream.u16(u);
+      }
+      return stream.data();
+    };
+    auto family_ = StringU16BEFromU16String(family);
+    auto subFamily_ = StringU16BEFromU16String(subFamily);
+    auto fullName_ = StringU16BEFromU16String(fullName);
+    auto psName_ = StringU16BEFromU16String(psName);
+    records[NameRecord(0, 0, 0, 1)] = family_;
+    records[NameRecord(0, 0, 0, 2)] = subFamily_;
+    records[NameRecord(0, 0, 0, 3)] = fullName_;
+    records[NameRecord(0, 0, 0, 4)] = fullName_;
+    records[NameRecord(0, 0, 0, 6)] = psName_;
+    records[NameRecord(0, 0, 0, 16)] = family_;
+    records[NameRecord(0, 0, 0, 17)] = subFamily_;
+
+    uint16_t winEnLanguageID = 0x409;
+    records[NameRecord(3, 0, winEnLanguageID, 1)] = family_;
+    records[NameRecord(3, 0, winEnLanguageID, 2)] = subFamily_;
+    records[NameRecord(3, 0, winEnLanguageID, 3)] = fullName_;
+    records[NameRecord(3, 0, winEnLanguageID, 4)] = fullName_;
+    records[NameRecord(3, 0, winEnLanguageID, 6)] = psName_;
+    records[NameRecord(3, 0, winEnLanguageID, 16)] = family_;
+    records[NameRecord(3, 0, winEnLanguageID, 17)] = subFamily_;
   }
 
 public:

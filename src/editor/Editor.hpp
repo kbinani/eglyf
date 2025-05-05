@@ -104,7 +104,7 @@ public:
   };
 
 public:
-  explicit Editor(std::shared_ptr<FontFile> const &font) : font(font) {
+  Editor(std::shared_ptr<FontFile> const &font, Config cfg) : font(font), cfg(cfg) {
   }
 
   std::shared_ptr<Glyph> getGlyphByName(std::string const &name) {
@@ -3642,6 +3642,10 @@ public:
     font->gpos = gpos;
     font->gsub = gsub;
 
+    if (cfg.name) {
+      font->name->setName(cfg.name->family, cfg.name->subFamily, cfg.name->fullName, cfg.name->psName);
+    }
+
     return Status::Ok();
   }
 
@@ -4376,9 +4380,9 @@ public:
   static int constexpr chu = 6;
   static int constexpr insertionResolution = 20;
 
+  std::shared_ptr<FontFile> font;
   Config cfg;
 
-  std::shared_ptr<FontFile> font;
   std::unordered_map<std::string, std::shared_ptr<Glyph>> glyphs;
   std::unordered_map<uint16_t, std::shared_ptr<Glyph>> glyphsLut;
   std::unordered_map<std::string, std::shared_ptr<Group>> groups;
