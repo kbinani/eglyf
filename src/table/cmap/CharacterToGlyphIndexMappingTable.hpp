@@ -228,14 +228,14 @@ public:
     encodingRecords.push_back(unicode3);
     EncodingRecord unicode4(0, 4, format12);
     encodingRecords.push_back(unicode4);
-    EncodingRecord win1(3, 1, format4);
-    encodingRecords.push_back(win1);
-    EncodingRecord win10(3, 10, format12);
-    encodingRecords.push_back(win10);
     if (uvs) {
       EncodingRecord uvsRecord(0, 5, uvs);
       encodingRecords.push_back(uvsRecord);
     }
+    EncodingRecord win1(3, 1, format4);
+    encodingRecords.push_back(win1);
+    EncodingRecord win10(3, 10, format12);
+    encodingRecords.push_back(win10);
 
     if (!writer->sizeU16(encodingRecords.size())) {
       return EGLYF_NULLOPT_WHAT("Failed to write encoding records size");
