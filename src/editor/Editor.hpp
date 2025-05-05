@@ -1182,7 +1182,7 @@ public:
     vfu = (int16_t)round((h + 2 * margin) / (double)vhu);
     hfu = (int16_t)round(width * s / chu);
     base = averageBottom + 4 * lineWidth + margin;
-    sb = hfu / 3;
+    sb = 0;
 
     struct BaseGlyph {
       WxH size;
