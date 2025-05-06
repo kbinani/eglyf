@@ -31,7 +31,7 @@ mkdir build
 cd build
 cmake ..
 cmake --build . --parallel
-./eglyf_artefacts/eglyf --input input.ttf --output output.ttf --name "My EgyptHiero/Regular/My Egyptian Hieroglyphs Regular/MyEgyptianHieroglyphs-Regular"
+./eglyf_artefacts/eglyf --input input.ttf --output output.ttf --names "My EgyptHiero/Regular/My Egyptian Hieroglyphs Regular/MyEgyptianHieroglyphs-Regular"
 ```
 
 ## Usage
