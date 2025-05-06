@@ -10,30 +10,30 @@ struct TableDirectory {
   uint16_t rangeShift;
   std::vector<TableRecord> tableRecords;
 
-  static std::optional<TableDirectory> Read(InputStream &in) {
+  static Optional<TableDirectory> Read(InputStream &in) {
     using namespace std;
     TableDirectory td;
     if (!in.u32(&td.sfntVersion)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!in.u16(&td.numTables)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!in.u16(&td.searchRange)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!in.u16(&td.entrySelector)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     if (!in.u16(&td.rangeShift)) {
-      return nullopt;
+      return EGLYF_NULLOPT;
     }
     td.tableRecords.resize(td.numTables);
     for (uint32_t i = 0; i < td.numTables; i++) {
       if (auto record = TableRecord::Read(in); record) {
         td.tableRecords[i] = *record;
       } else {
-        return nullopt;
+        return EGLYF_NULLOPT;
       }
     }
     return td;

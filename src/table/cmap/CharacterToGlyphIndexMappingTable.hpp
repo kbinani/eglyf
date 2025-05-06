@@ -18,7 +18,7 @@ public:
   static Status Read(InputStream &stream, std::shared_ptr<CharacterToGlyphIndexMappingTable> &out) {
     using namespace std;
     OffsetInputStream in(&stream);
-    jassert(in.position() == 0);
+    assert(in.position() == 0);
     uint16_t format;
     if (!in.u16(&format)) {
       return EGLYF_ERROR_WHAT("Failed to read format");

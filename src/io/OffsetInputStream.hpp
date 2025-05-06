@@ -13,7 +13,7 @@ public:
 
   bool seek(int64_t loc) override {
     auto ok = upstream->seek(offset + loc);
-    jassert(position() == loc);
+    assert(position() == loc);
     return ok;
   }
 

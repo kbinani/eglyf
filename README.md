@@ -44,8 +44,8 @@ eglyf --input <input-font> --output <output-font> [options]
 
 - `--input`: File path to the input font file (required)
 - `--output`: File path where the modified font will be saved (required)
-- `--name`: Custom name for the output font, formatted as "family/subFamily/fullName/postScriptName"
-  - Example: `"My EgyptHiero/Regular/My Egyptian Hieroglyphs Regular/MyEgyptianHieroglyphs-Regular"`
+- `--names`: Custom name for the output font, formatted as "family/subFamily/fullName/postScriptName"
+  - Example: `--names "My EgyptHiero/Regular/My Egyptian Hieroglyphs Regular/MyEgyptianHieroglyphs-Regular"`
 - `--disable-mdc-subst`: Disable some GSUB lookups for Manuel de Codage support (optional)
 
 ## Disclaimer
@@ -54,7 +54,7 @@ This tool modifies font files but does not check the license terms of the input 
 
 ## Dependencies
 
-- [JUCE](https://github.com/juce-framework/JUCE)
+- [cxxopts](https://github.com/jarro2783/cxxopts)
 - C++20 compatible compiler
 - CMake 3.16+
 

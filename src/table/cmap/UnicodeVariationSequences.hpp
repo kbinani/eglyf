@@ -120,7 +120,7 @@ public:
   static Status Read(InputStream &in, std::shared_ptr<UnicodeVariationSequences> &out) {
     using namespace std;
     auto o = in.position();
-    jassert(in.position() == 2);
+    assert(in.position() == 2);
     uint32_t length;
     if (!in.u32(&length)) {
       return EGLYF_ERROR;

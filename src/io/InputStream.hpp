@@ -11,12 +11,13 @@ public:
   virtual int64_t position() = 0;
 
   bool i64(int64_t *x) {
-    int64_t v;
+    uint64_t v;
     auto size = read(&v, sizeof(v));
     if (size < sizeof(v)) {
       return false;
     }
-    *x = juce::ByteOrder::bigEndianInt64(&v);
+    uint64_t w = BigEndian(v);
+    *x = *(int64_t *)&w;
     return true;
   }
 
@@ -26,8 +27,7 @@ public:
     if (size < sizeof(v)) {
       return false;
     }
-    int32_t w = juce::ByteOrder::bigEndianInt(&v);
-    *x = *(uint32_t *)&w;
+    *x = BigEndian(v);
     return true;
   }
 
@@ -37,7 +37,8 @@ public:
     if (size < sizeof(v)) {
       return false;
     }
-    *x = juce::ByteOrder::bigEndianShort(&v);
+    uint16_t w = BigEndian(v);
+    *x = *(int16_t *)&w;
     return true;
   }
 
@@ -47,8 +48,7 @@ public:
     if (size < sizeof(v)) {
       return false;
     }
-    int16_t w = juce::ByteOrder::bigEndianShort(&v);
-    *x = *(uint16_t *)&w;
+    *x = BigEndian(v);
     return true;
   }
 

@@ -2,65 +2,88 @@
 
 #include "eglyf.hpp"
 
-#if EGLYF_ENABLE_TESTS
-#include "editor/EditorTests.hpp"
-#include "gfx/QuadraticBezierTests.hpp"
-#endif
+#include <cxxopts.hpp>
 
-#include <juce_core/juce_core.h>
+#if EGLYF_ENABLE_TESTS
+#endif
 
 static void Fail(eglyf::Status st) {
-  std::stringstream out;
-  st.print(out);
-  juce::ConsoleApplication::fail(juce::String(out.str()));
+  st.print(std::cout);
 }
 
-static std::u16string U16StringFromJuceString(juce::String const &s) {
-  return std::u16string((char16_t const *)s.toUTF16().getAddress());
+static eglyf::Optional<std::u8string> U8StringFromString(std::string const &s) {
+  using namespace std;
+  u8string ret;
+  for (char ch : s) {
+    if (0x20 <= ch && ch <= 0x7e) {
+      ret.push_back((char8_t)ch);
+    } else {
+      return EGLYF_NULLOPT;
+    }
+  }
+  return ret;
 }
 
-#if EGLYF_ENABLE_TESTS
-static void Test(juce::ArgumentList const &args) {
-  using namespace eglyf::tests;
-
-  //  juce::File input = args.getExistingFileForOption("--input");
-  //  juce::File reference = args.getExistingFileForOption("--reference");
-  //  EditorTests editorTest(input, reference);
-
-  QuadraticBezierTests quadraticBezierTests;
-
-  juce::UnitTestRunner runner;
-  runner.runAllTests();
-}
-#endif
-
-static void Run(juce::ArgumentList const &args) {
+int main(int argc, char *argv[]) {
   using namespace std;
   using namespace eglyf;
 
+  cxxopts::Options options("eglyf", "An OpenType font tool that modifies OTF files to add support for Egyptian Hieroglyph Format Controls.");
+  // clang-format off
+  options.add_options()
+    ("i,input", "Input font file path", cxxopts::value<string>())
+    ("o,output", "Output font file path", cxxopts::value<string>())
+    ("names", "Font names formatted as family/subFamily/fullName/psName (ex.: --names \"My EgyptHiero/Regular/My Egyptian Hieroglyphs Regular/MyEgyptianHieroglyphs-Regular\")", cxxopts::value<string>())
+    ("disable-mdc-subst", "Disable GSUB lookups for MdC support")
+  ;
+  // clang-format on
+
+  auto result = options.parse(argc, argv);
+
   Config cfg;
 
-  juce::File input = args.getExistingFileForOption("--input");
-  juce::File output = args.getFileForOption("--output");
+  string input = result["input"].as<string>();
+  string output = result["output"].as<string>();
 
-  juce::String name = args.getValueForOption("--name");
-  if (name.length() > 0) {
-    auto tokens = juce::StringArray::fromTokens(name, "/", "\"");
+  string names = result["names"].as<string>();
+  if (!names.empty()) {
+    vector<u8string> tokens;
+    size_t offset = 0;
+    size_t pos = names.find('/', offset);
+    while (pos != string::npos) {
+      auto sub = names.substr(offset, pos - offset);
+      auto sub8 = U8StringFromString(sub);
+      if (!sub8) {
+        Fail(sub8.status());
+        return;
+      }
+      tokens.push_back(*sub8);
+      offset = pos + 1;
+      pos = names.find('/', offset);
+    }
+    {
+      auto sub = names.substr(offset);
+      auto sub8 = U8StringFromString(sub);
+      if (!sub8) {
+        Fail(sub8.status());
+        return;
+      }
+      tokens.push_back(*sub8);
+    }
     if (tokens.size() != 4) {
       cerr << "--name family/subFamily/fullName/psName" << endl;
       cerr << "ex: --name \"My EgyptHiero/Regular/My Egyptian Hieroglyphs Regular/MyEgyptianHieroglyphs-Regular\"" << endl;
       return;
     }
     Config::Name name;
-    name.family = U16StringFromJuceString(tokens[0]);
-    name.subFamily = U16StringFromJuceString(tokens[1]);
-    name.fullName = U16StringFromJuceString(tokens[2]);
-    name.psName = U16StringFromJuceString(tokens[3]);
+    name.family = tokens[0];
+    name.subFamily = tokens[1];
+    name.fullName = tokens[2];
+    name.psName = tokens[3];
     cfg.name = name;
   }
 
-  juce::String disableMdCSubst = args.getValueForOption("--disable-mdc-subst");
-  cfg.enableSubstMdc = disableMdCSubst.length() == 0;
+  cfg.enableSubstMdc = !result["disable-mdc-subst"].as<bool>();
 
   FileInputStream fis(input);
   shared_ptr<FontFile> ff;
@@ -91,21 +114,4 @@ static void Run(juce::ArgumentList const &args) {
   if (auto st = ff->write(fos); !st.ok()) {
     Fail(st);
   }
-}
-
-int main(int argc, char *argv[]) {
-  juce::ConsoleApplication app;
-  app.addDefaultCommand({juce::String("--run"),
-                         juce::String("--run filename"),
-                         juce::String(""),
-                         juce::String(""),
-                         [](auto const &args) { Run(args); }});
-#if EGLYF_ENABLE_TESTS
-  app.addCommand({juce::String("--test"),
-                  "",
-                  "",
-                  "",
-                  [](auto const &args) { Test(args); }});
-#endif
-  return app.findAndRunCommand(argc, argv);
 }

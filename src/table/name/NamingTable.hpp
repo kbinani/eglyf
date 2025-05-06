@@ -220,7 +220,7 @@ public:
   // subFamily: "Regular"
   // fullName: "My Egyptian Hieroglyphs Regular"
   // psName: "MyEgyptianHieroglyphs-Regular"
-  void setName(std::u16string const &family, std::u16string const &subFamily, std::u16string const &fullName, std::u16string const &psName) {
+  void setName(std::u8string const &family, std::u8string const &subFamily, std::u8string const &fullName, std::u8string const &psName) {
     using namespace std;
     langTags.clear();
     erase_if(records, [](auto const &it) {
@@ -231,18 +231,19 @@ public:
       uint16_t nameID = key.nameID;
       return nameID == 1 || nameID == 2 || nameID == 3 || nameID == 4 || nameID == 6 || nameID == 16 || nameID == 17;
     });
-    static auto const StringU16BEFromU16String = [](u16string const &s) -> string {
+    static auto const U16BEStringDataFromU16String = [](u8string const &s) -> string {
       ByteOutputStream stream;
-      for (char16_t ch : s) {
-        uint16_t u = *(uint16_t *)&ch;
+      for (char8_t ch : s) {
+        char16_t ch16 = ch;
+        uint16_t u = *(uint16_t *)&ch16;
         stream.u16(u);
       }
       return stream.data();
     };
-    auto family_ = StringU16BEFromU16String(family);
-    auto subFamily_ = StringU16BEFromU16String(subFamily);
-    auto fullName_ = StringU16BEFromU16String(fullName);
-    auto psName_ = StringU16BEFromU16String(psName);
+    auto family_ = U16BEStringDataFromU16String(family);
+    auto subFamily_ = U16BEStringDataFromU16String(subFamily);
+    auto fullName_ = U16BEStringDataFromU16String(fullName);
+    auto psName_ = U16BEStringDataFromU16String(psName);
     records[NameRecord(0, 0, 0, 1)] = family_;
     records[NameRecord(0, 0, 0, 2)] = subFamily_;
     records[NameRecord(0, 0, 0, 3)] = fullName_;

@@ -340,7 +340,7 @@ public:
     auto ff = make_shared<FontFile>();
     auto td = TableDirectory::Read(in);
     if (!td) {
-      return EGLYF_ERROR_WHAT("Failed to read table directory");
+      return EGLYF_STATUS_PUSH(td.status());
     }
     ff->sfntVersion = td->sfntVersion;
     ff->numTables = td->numTables;

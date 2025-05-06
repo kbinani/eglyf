@@ -5,13 +5,13 @@ namespace eglyf {
 struct Config {
   struct Name {
     // ex: "My EgyptHiero"
-    std::u16string family;
+    std::u8string family;
     // ex: "Regular"
-    std::u16string subFamily;
+    std::u8string subFamily;
     // ex: "My Egyptian Hieroglyphs Regular"
-    std::u16string fullName;
+    std::u8string fullName;
     // ex: "MyEgyptianHieroglyphs-Regular"
-    std::u16string psName;
+    std::u8string psName;
   };
 
   std::optional<Name> name;

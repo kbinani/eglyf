@@ -21,7 +21,7 @@ else()
   )
 endif()
 
-add_subdirectory(deps/JUCE)
+add_subdirectory(deps/cxxopts)
 
 list(APPEND src_files
   src/Type.hpp
@@ -94,7 +94,6 @@ list(APPEND src_files
   src/table/name/NamingTable.hpp
   src/editor/Editor.hpp
   src/editor/VtpParser.hpp
-  src/editor/EditorTests.hpp
   src/GlyphNames.hpp
   src/Unicode.hpp
   src/table/g/pos/Attachment.hpp
@@ -114,8 +113,9 @@ list(APPEND src_files
   src/editor/Glyph.hpp
   src/editor/Group.hpp
   src/editor/SizeVariants.hpp
-  src/gfx/QuadraticBezierTests.hpp
   src/editor/Vtp.hpp.in
+  src/io/File.hpp
+  src/io/Endianness.hpp
 )
 
 file(READ ${CMAKE_CURRENT_SOURCE_DIR}/res/EgyptianText_200.vtp vtp_content)
@@ -142,27 +142,15 @@ configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/Vtp.hpp
   @ONLY)
 
-juce_add_console_app(eglyf)
+add_executable(eglyf)
 target_sources(eglyf PRIVATE ${src_files} src/main.cpp)
 target_include_directories(eglyf PRIVATE src include)
-target_link_libraries(eglyf
-  PRIVATE
-    juce::juce_graphics
-  PUBLIC
-    juce::juce_recommended_config_flags
-    juce::juce_recommended_lto_flags
-)
+target_link_libraries(eglyf PRIVATE cxxopts)
 if (MSVC)
   target_compile_definitions(eglyf
     PRIVATE
       NOMINMAX
       WIN32_LEAN_AND_MEAN
-      JUCE_DISABLE_JUCE_VERSION_PRINTING=1
-  )
-else()
-  target_compile_definitions(eglyf
-    PRIVATE
-      JUCE_DISABLE_JUCE_VERSION_PRINTING=1
   )
 endif()
 

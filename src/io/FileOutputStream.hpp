@@ -4,39 +4,29 @@ namespace eglyf {
 
 class FileOutputStream : public OutputStream {
 public:
-  explicit FileOutputStream(juce::File file) : s(file) {
-    if (!s.setPosition(0)) {
-      return;
-    }
-    s.truncate();
+  explicit FileOutputStream(std::filesystem::path file) {
+    fp = File::Open(file, File::Mode::Write);
   }
 
   bool write(void const *buffer, size_t size) override {
-    if (s.failedToOpen()) {
-      return false;
-    }
-    if (size == 0) {
-      return true;
-    }
-    if (!buffer) {
-      return false;
-    }
-    return s.write(buffer, size);
+    return File::Fwrite(buffer, size, 1, fp);
   }
 
   bool seek(int64_t loc) override {
-    if (s.failedToOpen()) {
-      return false;
-    }
-    return s.setPosition(loc);
+    return File::Fseek(fp, loc, SEEK_SET);
   }
 
   int64_t position() override {
-    return s.getPosition();
+    auto p = File::Ftell(fp);
+    if (p) {
+      return *p;
+    } else {
+      return 0;
+    }
   }
 
 private:
-  juce::FileOutputStream s;
+  FILE *fp = nullptr;
 };
 
 } // namespace eglyf

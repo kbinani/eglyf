@@ -11,17 +11,17 @@ public:
   virtual int64_t position() = 0;
 
   bool i64(int64_t v) {
-    int64_t x = juce::ByteOrder::bigEndianInt64(&v);
+    uint64_t x = BigEndian(*(uint64_t *)&v);
     return write(&x, sizeof(x));
   }
 
   bool u32(uint32_t v) {
-    int32_t x = juce::ByteOrder::bigEndianInt(&v);
+    uint32_t x = BigEndian(v);
     return write(&x, sizeof(x));
   }
 
   bool i16(int16_t v) {
-    int16_t x = juce::ByteOrder::bigEndianShort(&v);
+    uint16_t x = BigEndian(*(uint16_t *)&v);
     return write(&x, sizeof(x));
   }
 
@@ -30,7 +30,7 @@ public:
   }
 
   bool u16(uint16_t v) {
-    int16_t x = juce::ByteOrder::bigEndianShort(&v);
+    uint16_t x = BigEndian(v);
     return write(&x, sizeof(v));
   }
 

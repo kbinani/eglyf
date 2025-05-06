@@ -1,12 +1,11 @@
 // clang-format off
-#define HB_NO_PRAGMA_GCC_DIAGNOSTIC_WARNING
-#define HB_NO_PRAGMA_GCC_DIAGNOSTIC_ERROR
+#if __has_include(<unistd.h>)
+#include <unistd.h>
+#endif
 
-#include <juce_core/juce_core.h>
-#include <juce_graphics/juce_graphics.h>
-#include <juce_graphics/fonts/harfbuzz/hb.hh>
-#include <juce_graphics/fonts/juce_FunctionPointerDestructor.h>
-
+#include <map>
+#include <set>
+#include <iostream>
 #include <deque>
 #include <optional>
 #include <variant>
@@ -29,9 +28,11 @@
 #include "gfx/QuadraticBezier.hpp"
 #include "gfx/Path.hpp"
 #include "gfx/Shape.hpp"
+#include "io/Endianness.hpp"
 #include "io/InputStream.hpp"
 #include "io/OutputStream.hpp"
 #include "io/OffsetInputStream.hpp"
+#include "io/File.hpp"
 #include "io/FileInputStream.hpp"
 #include "io/FileOutputStream.hpp"
 #include "io/ByteInputStream.hpp"
