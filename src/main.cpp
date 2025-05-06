@@ -75,8 +75,7 @@ static void Run(juce::ArgumentList const &args) {
   }
 
   VtpParser parser(editor);
-  string_view vtp(BinaryData::EgyptianText_200_vtp, BinaryData::EgyptianText_200_vtpSize);
-  if (auto st = parser.parseVtp(vtp); !st.ok()) {
+  if (auto st = parser.parseVtp(res::vtp); !st.ok()) {
     Fail(st);
     return;
   }

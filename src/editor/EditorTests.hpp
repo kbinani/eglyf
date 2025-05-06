@@ -117,7 +117,7 @@ public:
 
     beginTest("prepare");
 
-    string_view vtp(BinaryData::EgyptianText_200_vtp, BinaryData::EgyptianText_200_vtpSize);
+    string_view vtp = eglyf::res::vtp;
 
     shared_ptr<FontFile> font;
     HbBlobUniquePtr hbBlob;

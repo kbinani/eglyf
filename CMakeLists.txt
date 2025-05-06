@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(eglyf VERSION 1.1.0)
+project(eglyf VERSION 0.0.0)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -115,14 +115,32 @@ list(APPEND src_files
   src/editor/Group.hpp
   src/editor/SizeVariants.hpp
   src/gfx/QuadraticBezierTests.hpp
+  src/editor/Vtp.hpp.in
 )
 
-juce_add_binary_data(eglyf-binary-data
-  NAMESPACE eglyf::BinaryData
-  HEADER_NAME BinaryData.hpp
-  SOURCES
-    "res/EgyptianText_200.vtp"
-)
+file(READ ${CMAKE_CURRENT_SOURCE_DIR}/res/EgyptianText_200.vtp vtp_content)
+
+set(chunk_size 16000) # workaround for MSVC C2026
+string(LENGTH "${vtp_content}" len)
+set(chunks "")
+set(offset 0)
+
+while(offset LESS len)
+  math(EXPR remaining "${len}-${offset}")
+  if(remaining GREATER chunk_size)
+    set(size ${chunk_size})
+  else()
+    set(size ${remaining})
+  endif()
+  string(SUBSTRING "${vtp_content}" ${offset} ${size} part)
+  string(APPEND chunks "R\"(${part})\"\n")
+  math(EXPR offset "${offset}+${size}")
+endwhile()
+
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/Vtp.hpp.in
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/Vtp.hpp
+  @ONLY)
 
 juce_add_console_app(eglyf)
 target_sources(eglyf PRIVATE ${src_files} src/main.cpp)
@@ -130,7 +148,6 @@ target_include_directories(eglyf PRIVATE src include)
 target_link_libraries(eglyf
   PRIVATE
     juce::juce_graphics
-    eglyf-binary-data
   PUBLIC
     juce::juce_recommended_config_flags
     juce::juce_recommended_lto_flags

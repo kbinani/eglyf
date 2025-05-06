@@ -7,8 +7,6 @@
 #include <juce_graphics/fonts/harfbuzz/hb.hh>
 #include <juce_graphics/fonts/juce_FunctionPointerDestructor.h>
 
-#include "BinaryData.hpp"
-
 #include <deque>
 #include <optional>
 #include <variant>
@@ -107,3 +105,4 @@
 #include "editor/Config.hpp"
 #include "editor/Editor.hpp"
 #include "editor/VtpParser.hpp"
+#include "editor/Vtp.hpp"
