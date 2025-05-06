@@ -78,18 +78,54 @@ public:
     }
   }
 
-  double length() const {
+  double length(double t = 1) const {
     // https://stackoverflow.com/questions/11854907/calculate-the-length-of-a-segment-of-a-quadratic-bezier
+    using namespace std;
     double x0 = p0.x;
     double x1 = p1.x;
     double x2 = p2.x;
     double y0 = p0.y;
     double y1 = p1.y;
     double y2 = p2.y;
-    double A = (x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0);
-    double B = (x1 - x0) * (x0 - 2 * x1 + x2) + (y1 - y0) * (y0 - 2 * y1 + y2);
-    double C = (x0 - 2 * x1 + x2) * (x0 - 2 * x1 + x2) + (y0 - 2 * y1 + y2) * (y0 - 2 * y1 + y2);
-    return (C + B) / C * sqrt(A + 2 * B + C) - B / C * sqrt(A) + (A * C - B * B) / pow(C, 1.5) * log((C + B + sqrt(C * (A + 2 * B + C))) / (B + sqrt(C * A)));
+    double ax = x0 - x1 - x1 + x2;
+    double ay = y0 - y1 - y1 + y2;
+    double bx = x1 + x1 - x0 - x0;
+    double by = y1 + y1 - y0 - y0;
+    double A = 4.0 * ((ax * ax) + (ay * ay));
+    double B = 4.0 * ((ax * bx) + (ay * by));
+    double C = (bx * bx) + (by * by);
+    if (fabs(A) <= numeric_limits<double>::epsilon()) {
+      return sqrt(C) * t;
+    }
+    double b = B / (2.0 * A);
+    double c = C / A;
+    double u = t + b;
+    double k = c - (b * b);
+    double ret = 0.5 * sqrt(A) * ((u * sqrt((u * u) + k)) - (b * sqrt((b * b) + k)) + (k * log(fabs((u + sqrt((u * u) + k)) / (b + sqrt((b * b) + k))))));
+    return ret;
+  }
+
+  // Find the parameter t corresponding to the normalized arc-length s.
+  // When t := curve.inverseArcLength(s), curve.cut(0, t).length() / curve.length() should be s.
+  double inverseArcLength(double s) {
+    using namespace std;
+    double ax = p0.x - 2 * p1.x + p2.x;
+    double ay = p0.y - 2 * p1.y + p2.y;
+    double bx = 2 * (p1.x - p0.x);
+    double by = 2 * (p1.y - p0.y);
+    double A = ax * ax + ay * ay;
+    double B = ax * bx + ay * by;
+    double C = bx * bx + by * by;
+    double len = length(1);
+    double t = s;
+    double next = t - (length(t) - s * len) / sqrt((A * t + B) * t + C);
+    int count = 0;
+    while (fabs(next - t) > 1e-12 && count < 100) {
+      t = next;
+      next = t - (length(t) - s * len) / sqrt((A * t + B) * t + C);
+      count++;
+    }
+    return next;
   }
 
   bool intersects(Rect<T> const &b) const {

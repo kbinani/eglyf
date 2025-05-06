@@ -963,12 +963,12 @@ public:
       c.points.emplace_back(in4.p0.x + p.approachLength + p.jointLength, in4.p0.y);
       c.points.emplace_back(in4.p0.x + p.approachLength + p.jointLength, in4.p0.y + walledLineWidth);
 
-      double const length = out1.length() + out2.length() + out3.length() + out4.length() + 2 * approachLength;
+      double const length = out1.length() + out2.length() + out3.length() + out4.length();
       int const numSections = (int)round(length / hfu);
       double const sectionLength = length / numSections;
-      double currentLength = approachLength;
+      double currentLength = 0;
       int curveIndex = 0;
-      double curveOffset = approachLength;
+      double curveOffset = 0;
       auto add = [&c](int i, int16_t x, int16_t y, bool control = false) {
         c.points.emplace_back(x, y, control);
         // TODO:debug
@@ -980,10 +980,10 @@ public:
 
       for (int i = 0; i < numSections; i++) {
         // up
-        double nextLength = approachLength + sectionLength * i + sectionLength / 5;
+        double nextLength = sectionLength * i + sectionLength / 5;
         double curveLength = current.length();
-        double t0 = (nextLength - curveOffset) / curveLength;
-        while (t0 > 1) {
+        double s0 = (nextLength - curveOffset) / curveLength;
+        while (s0 > 1) {
           add(i, current.p1.x, current.p1.y, true);
           add(i, current.p2.x, current.p2.y);
           curveIndex++;
@@ -994,8 +994,9 @@ public:
           currentLength += curveLength;
           current = out[curveIndex];
           curveLength = current.length();
-          t0 = (nextLength - curveOffset) / curveLength;
+          s0 = (nextLength - curveOffset) / curveLength;
         }
+        double t0 = current.inverseArcLength(s0);
         if (curveIndex >= out.size()) {
           break;
         }
@@ -1011,11 +1012,12 @@ public:
         curveOffset += upSubLength;
         currentLength += upSubLength;
         current = nx;
+        curveLength = nx.length();
 
         // down
-        nextLength = approachLength + sectionLength * i + sectionLength * 4 / 5;
-        double t1 = (nextLength - curveOffset) / curveLength;
-        while (t1 > 1) {
+        nextLength = sectionLength * i + sectionLength * 4 / 5;
+        double s1 = (nextLength - curveOffset) / curveLength;
+        while (s1 > 1) {
           curveIndex++;
           if (curveIndex >= out.size()) {
             break;
@@ -1024,8 +1026,9 @@ public:
           currentLength += curveLength;
           current = out[curveIndex];
           curveLength = current.length();
-          t1 = (nextLength - curveOffset) / curveLength;
+          s1 = (nextLength - curveOffset) / curveLength;
         }
+        double t1 = current.inverseArcLength(s1);
         if (curveIndex >= out.size()) {
           break;
         }
@@ -1046,7 +1049,7 @@ public:
       add(numSections, current.p1.x, current.p1.y, true);
       add(numSections, current.p2.x, current.p2.y);
 
-      int16_t advanceWidth = p.sideBearing + width + p.approachLength;
+      int16_t advanceWidth = sideBearing + width + approachLength;
       auto cwbL = ReplaceSimpleGlyph(font, "cwbL", Class::Base, {c}, advanceWidth, sideBearing + lineWidth - walledLineWidth - wallHeight);
       if (!cwbL) {
         return EGLYF_STATUS_PUSH(cwbL.status());
