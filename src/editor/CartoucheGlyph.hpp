@@ -939,6 +939,119 @@ public:
         return EGLYF_STATUS_PUSH(cdeR.status());
       }
     }
+    {
+      // cwbL
+      Vec<int16_t> center(Vec<int16_t>(p.sideBearing + width, bottom + height / 2));
+      array<QuadraticBezier<int16_t>, 4> out = QuadraticBezier<int16_t>::LeftCartouche(center, height - 2 * lineWidth + 2 * walledLineWidth, width - lineWidth + walledLineWidth);
+      auto [out1, out2, out3, out4] = out;
+      auto [in4, in3, in2, in1] = QuadraticBezier<int16_t>::LeftCartouche(center, height - 2 * lineWidth, width - lineWidth);
+
+      Contour c;
+      c.points.emplace_back(out4.p2.x + p.approachLength + p.jointLength, out4.p2.y);
+      c.points.emplace_back(in1.p2.x + p.approachLength + p.jointLength, in1.p2.y);
+
+      c.points.emplace_back(in1.p2.x, in1.p2.y);
+      c.points.emplace_back(in1.p1.x, in1.p1.y, true);
+      c.points.emplace_back(in1.p0.x, in1.p0.y);
+      c.points.emplace_back(in2.p1.x, in2.p1.y, true);
+      c.points.emplace_back(in2.p0.x, in2.p0.y);
+      c.points.emplace_back(in3.p1.x, in3.p1.y, true);
+      c.points.emplace_back(in3.p0.x, in3.p0.y);
+      c.points.emplace_back(in4.p1.x, in4.p1.y, true);
+      c.points.emplace_back(in4.p0.x, in4.p0.y);
+
+      c.points.emplace_back(in4.p0.x + p.approachLength + p.jointLength, in4.p0.y);
+      c.points.emplace_back(in4.p0.x + p.approachLength + p.jointLength, in4.p0.y + walledLineWidth);
+
+      double const length = out1.length() + out2.length() + out3.length() + out4.length() + 2 * approachLength;
+      int const numSections = (int)round(length / hfu);
+      double const sectionLength = length / numSections;
+      double currentLength = approachLength;
+      int curveIndex = 0;
+      double curveOffset = approachLength;
+      auto add = [&c](int i, int16_t x, int16_t y, bool control = false) {
+        c.points.emplace_back(x, y, control);
+        // TODO:debug
+        cout << "[" << i << "] (" << x << ", " << y << ", " << boolalpha << control << ")," << endl;
+      };
+
+      c.points.emplace_back(out1.p0.x, out1.p0.y);
+      QuadraticBezier<int16_t> current = out1;
+
+      for (int i = 0; i < numSections; i++) {
+        // up
+        double nextLength = approachLength + sectionLength * i + sectionLength / 5;
+        double curveLength = current.length();
+        double t0 = (nextLength - curveOffset) / curveLength;
+        while (t0 > 1) {
+          add(i, current.p1.x, current.p1.y, true);
+          add(i, current.p2.x, current.p2.y);
+          curveIndex++;
+          if (curveIndex >= out.size()) {
+            break;
+          }
+          curveOffset += curveLength;
+          currentLength += curveLength;
+          current = out[curveIndex];
+          curveLength = current.length();
+          t0 = (nextLength - curveOffset) / curveLength;
+        }
+        if (curveIndex >= out.size()) {
+          break;
+        }
+        auto upSub = current.cut(0, t0);
+        add(i, upSub.p1.x, upSub.p1.y, true);
+        add(i, upSub.p2.x, upSub.p2.y);
+        Vec<int16_t> upBase(upSub.p2.x, upSub.p2.y);
+        auto upNorm = current.normal(t0, center);
+        Vec<int16_t> upTip(upBase.x + (int16_t)round(upNorm.x * wallHeight), upBase.y + (int16_t)round(upNorm.y * wallHeight));
+        add(i, upTip.x, upTip.y);
+        auto nx = current.cut(t0, 1);
+        double upSubLength = upSub.length();
+        curveOffset += upSubLength;
+        currentLength += upSubLength;
+        current = nx;
+
+        // down
+        nextLength = approachLength + sectionLength * i + sectionLength * 4 / 5;
+        double t1 = (nextLength - curveOffset) / curveLength;
+        while (t1 > 1) {
+          curveIndex++;
+          if (curveIndex >= out.size()) {
+            break;
+          }
+          curveOffset += curveLength;
+          currentLength += curveLength;
+          current = out[curveIndex];
+          curveLength = current.length();
+          t1 = (nextLength - curveOffset) / curveLength;
+        }
+        if (curveIndex >= out.size()) {
+          break;
+        }
+        auto downSub = current.cut(0, t1);
+        Vec<int16_t> downBase = current.get(t1);
+        auto downNorm = current.normal(t1, center);
+        Vec<int16_t> downTip(downBase.x + (int16_t)round(downNorm.x * wallHeight), downBase.y + (int16_t)round(downNorm.y * wallHeight));
+        add(i, downTip.x, downTip.y);
+        add(i, downBase.x, downBase.y);
+
+        auto next = current.cut(t1, 1);
+        double downSubLength = downSub.length();
+        curveOffset += downSubLength;
+        currentLength += downSubLength;
+        current = next;
+      }
+
+      add(numSections, current.p1.x, current.p1.y, true);
+      add(numSections, current.p2.x, current.p2.y);
+
+      int16_t advanceWidth = p.sideBearing + width + p.approachLength;
+      auto cwbL = ReplaceSimpleGlyph(font, "cwbL", Class::Base, {c}, advanceWidth, sideBearing + lineWidth - walledLineWidth - wallHeight);
+      if (!cwbL) {
+        return EGLYF_STATUS_PUSH(cwbL.status());
+      }
+    }
     return Status::Ok();
   }
 };
