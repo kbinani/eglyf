@@ -969,11 +969,6 @@ public:
       double currentLength = 0;
       int curveIndex = 0;
       double curveOffset = 0;
-      auto add = [&c](int i, int16_t x, int16_t y, bool control = false) {
-        c.points.emplace_back(x, y, control);
-        // TODO:debug
-        cout << "[" << i << "] (" << x << ", " << y << ", " << boolalpha << control << ")," << endl;
-      };
 
       c.points.emplace_back(out1.p0.x, out1.p0.y);
       QuadraticBezier<int16_t> current = out1;
@@ -984,8 +979,8 @@ public:
         double curveLength = current.length();
         double s0 = (nextLength - curveOffset) / curveLength;
         while (s0 > 1) {
-          add(i, current.p1.x, current.p1.y, true);
-          add(i, current.p2.x, current.p2.y);
+          c.points.emplace_back(current.p1.x, current.p1.y, true);
+          c.points.emplace_back(current.p2.x, current.p2.y);
           curveIndex++;
           if (curveIndex >= out.size()) {
             break;
@@ -1001,12 +996,12 @@ public:
           break;
         }
         auto upSub = current.cut(0, t0);
-        add(i, upSub.p1.x, upSub.p1.y, true);
-        add(i, upSub.p2.x, upSub.p2.y);
+        c.points.emplace_back(upSub.p1.x, upSub.p1.y, true);
+        c.points.emplace_back(upSub.p2.x, upSub.p2.y);
         Vec<int16_t> upBase(upSub.p2.x, upSub.p2.y);
         auto upNorm = current.normal(t0, center);
         Vec<int16_t> upTip(upBase.x + (int16_t)round(upNorm.x * wallHeight), upBase.y + (int16_t)round(upNorm.y * wallHeight));
-        add(i, upTip.x, upTip.y);
+        c.points.emplace_back(upTip.x, upTip.y);
         auto nx = current.cut(t0, 1);
         double upSubLength = upSub.length();
         curveOffset += upSubLength;
@@ -1036,8 +1031,8 @@ public:
         Vec<int16_t> downBase = current.get(t1);
         auto downNorm = current.normal(t1, center);
         Vec<int16_t> downTip(downBase.x + (int16_t)round(downNorm.x * wallHeight), downBase.y + (int16_t)round(downNorm.y * wallHeight));
-        add(i, downTip.x, downTip.y);
-        add(i, downBase.x, downBase.y);
+        c.points.emplace_back(downTip.x, downTip.y);
+        c.points.emplace_back(downBase.x, downBase.y);
 
         auto next = current.cut(t1, 1);
         double downSubLength = downSub.length();
@@ -1046,8 +1041,8 @@ public:
         current = next;
       }
 
-      add(numSections, current.p1.x, current.p1.y, true);
-      add(numSections, current.p2.x, current.p2.y);
+      c.points.emplace_back(current.p1.x, current.p1.y, true);
+      c.points.emplace_back(current.p2.x, current.p2.y);
 
       int16_t advanceWidth = sideBearing + width + approachLength;
       auto cwbL = ReplaceSimpleGlyph(font, "cwbL", Class::Base, {c}, advanceWidth, sideBearing + lineWidth - walledLineWidth - wallHeight);
