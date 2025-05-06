@@ -9,12 +9,16 @@ This project is inspired by and builds upon concepts from [Microsoft Font Tools]
 
 ## About Egyptian Hieroglyph Format Controls
 
-Egyptian Hieroglyph Format Controls are special Unicode characters (U+13430–U+1343F) that enable the proper layout of Egyptian hieroglyphic text. By adding support for these format controls to a font, this tool enables:
+Egyptian Hieroglyph Format Controls (U+13430–U+1343F) are Unicode characters that specify the layout of hieroglyphic text. While these controls are defined in the Unicode standard, they typically require specialized software to be interpreted correctly.
 
-- Hieroglyph-specific layouts directly through the font's own capabilities, based on the standard OpenType features
-- Rendering of hieroglyphic texts with widely-available text rendering engines
+## What This Tool Does
 
-The key advantage is that once a font is processed with eglyf, it can properly display hieroglyphs with their unique layout requirements using only standard OpenType capabilities.
+eglyf enhances fonts to support these format controls:
+
+- Enables hieroglyph-specific layouts through the font's native capabilities
+- Allows proper rendering with widely-available text engines
+
+Once processed with eglyf, fonts can correctly display hieroglyphs with their unique layouts using only standard OpenType features.
 
 ## Features
 
@@ -57,6 +61,20 @@ This tool modifies font files but does not check the license terms of the input 
 - [cxxopts](https://github.com/jarro2783/cxxopts)
 - C++20 compatible compiler
 - CMake 3.16+
+
+## Tested Fonts
+
+The following fonts have been successfully tested with eglyf:
+
+- [Noto Sans Egyptian Hieroglyphs](https://github.com/notofonts/egyptian-hieroglyphs)
+- [NewGardiner](https://mjn.host.cs.st-andrews.ac.uk/egyptian/fonts/newgardiner.html)
+- [JSeshFont](http://files.qenherkhopeshef.org/jsesh/JSeshFont.ttf)
+- [EgyptianHiero](https://github.com/MKilani/Djehuty/blob/master/EgyptianHiero4.03.ttf)
+- [Aaron](https://github.com/HieroglyphsEverywhere/Fonts/tree/master/Experimental)
+- [SINUHE](https://github.com/somiyagawa/SINUHE-the-Hierotyper/tree/master/fonts/webfonts)
+
+> [!IMPORTANT]
+> When using these or other fonts, please ensure compliance with their respective licenses.
 
 ## License
 
