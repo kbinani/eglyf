@@ -356,6 +356,120 @@ class CartoucheGlyph {
     advanceHeight = 2 * top - height;
   }
 
+  static void CreateContour_cwbL(Param const &p, int16_t hfu, int16_t width, int16_t bottom, int16_t height, glyf::GlyphDataTable::Contour &c) {
+    using namespace std;
+    using Contour = glyf::GlyphDataTable::Contour;
+
+    auto sideBearing = p.sideBearing;
+    auto jointLength = p.jointLength;
+    auto approachLength = p.approachLength;
+    auto lineWidth = p.lineWidth;
+    auto walledLineWidth = p.walledLineWidth;
+    auto wallHeight = p.wallHeight;
+
+    Vec<int16_t> center(Vec<int16_t>(p.sideBearing + width, bottom + height / 2));
+    array<QuadraticBezier<int16_t>, 4> out = QuadraticBezier<int16_t>::LeftCartouche(center, height - 2 * lineWidth + 2 * walledLineWidth, width - lineWidth + walledLineWidth);
+    auto [out1, out2, out3, out4] = out;
+    auto [in4, in3, in2, in1] = QuadraticBezier<int16_t>::LeftCartouche(center, height - 2 * lineWidth, width - lineWidth);
+
+    c.points.emplace_back(out4.p2.x + p.approachLength + p.jointLength, out4.p2.y);
+    c.points.emplace_back(in1.p2.x + p.approachLength + p.jointLength, in1.p2.y);
+
+    c.points.emplace_back(in1.p2.x, in1.p2.y);
+    c.points.emplace_back(in1.p1.x, in1.p1.y, true);
+    c.points.emplace_back(in1.p0.x, in1.p0.y);
+    c.points.emplace_back(in2.p1.x, in2.p1.y, true);
+    c.points.emplace_back(in2.p0.x, in2.p0.y);
+    c.points.emplace_back(in3.p1.x, in3.p1.y, true);
+    c.points.emplace_back(in3.p0.x, in3.p0.y);
+    c.points.emplace_back(in4.p1.x, in4.p1.y, true);
+    c.points.emplace_back(in4.p0.x, in4.p0.y);
+
+    c.points.emplace_back(in4.p0.x + p.approachLength + p.jointLength, in4.p0.y);
+    c.points.emplace_back(in4.p0.x + p.approachLength + p.jointLength, in4.p0.y + walledLineWidth);
+
+    double const length = out1.length() + out2.length() + out3.length() + out4.length();
+    int const numSections = (int)round(length / hfu);
+    double const sectionLength = length / numSections;
+    double currentLength = 0;
+    int curveIndex = 0;
+    double curveOffset = 0;
+
+    c.points.emplace_back(out1.p0.x, out1.p0.y);
+    QuadraticBezier<int16_t> current = out1;
+
+    for (int i = 0; i < numSections; i++) {
+      // up
+      double nextLength = sectionLength * i + sectionLength / 5;
+      double curveLength = current.length();
+      double s0 = (nextLength - curveOffset) / curveLength;
+      while (s0 > 1) {
+        c.points.emplace_back(current.p1.x, current.p1.y, true);
+        c.points.emplace_back(current.p2.x, current.p2.y);
+        curveIndex++;
+        if (curveIndex >= out.size()) {
+          break;
+        }
+        curveOffset += curveLength;
+        currentLength += curveLength;
+        current = out[curveIndex];
+        curveLength = current.length();
+        s0 = (nextLength - curveOffset) / curveLength;
+      }
+      double t0 = current.inverseArcLength(s0);
+      if (curveIndex >= out.size()) {
+        break;
+      }
+      auto upSub = current.cut(0, t0);
+      c.points.emplace_back(upSub.p1.x, upSub.p1.y, true);
+      c.points.emplace_back(upSub.p2.x, upSub.p2.y);
+      Vec<int16_t> upBase(upSub.p2.x, upSub.p2.y);
+      auto upNorm = current.normal(t0, center);
+      Vec<int16_t> upTip(upBase.x + (int16_t)round(upNorm.x * wallHeight), upBase.y + (int16_t)round(upNorm.y * wallHeight));
+      c.points.emplace_back(upTip.x, upTip.y);
+      auto nx = current.cut(t0, 1);
+      double upSubLength = upSub.length();
+      curveOffset += upSubLength;
+      currentLength += upSubLength;
+      current = nx;
+      curveLength = nx.length();
+
+      // down
+      nextLength = sectionLength * i + sectionLength * 4 / 5;
+      double s1 = (nextLength - curveOffset) / curveLength;
+      while (s1 > 1) {
+        curveIndex++;
+        if (curveIndex >= out.size()) {
+          break;
+        }
+        curveOffset += curveLength;
+        currentLength += curveLength;
+        current = out[curveIndex];
+        curveLength = current.length();
+        s1 = (nextLength - curveOffset) / curveLength;
+      }
+      double t1 = current.inverseArcLength(s1);
+      if (curveIndex >= out.size()) {
+        break;
+      }
+      auto downSub = current.cut(0, t1);
+      Vec<int16_t> downBase = current.get(t1);
+      auto downNorm = current.normal(t1, center);
+      Vec<int16_t> downTip(downBase.x + (int16_t)round(downNorm.x * wallHeight), downBase.y + (int16_t)round(downNorm.y * wallHeight));
+      c.points.emplace_back(downTip.x, downTip.y);
+      c.points.emplace_back(downBase.x, downBase.y);
+
+      auto next = current.cut(t1, 1);
+      double downSubLength = downSub.length();
+      curveOffset += downSubLength;
+      currentLength += downSubLength;
+      current = next;
+    }
+
+    c.points.emplace_back(current.p1.x, current.p1.y, true);
+    c.points.emplace_back(current.p2.x, current.p2.y);
+  }
+
   static Optional<uint16_t> ReplaceSimpleGlyph(FontFile &font,
                                                std::string const &name,
                                                gdef::GlyphDefinitionTable::Class classValue,
@@ -941,113 +1055,56 @@ public:
     }
     {
       // cwbL
-      Vec<int16_t> center(Vec<int16_t>(p.sideBearing + width, bottom + height / 2));
-      array<QuadraticBezier<int16_t>, 4> out = QuadraticBezier<int16_t>::LeftCartouche(center, height - 2 * lineWidth + 2 * walledLineWidth, width - lineWidth + walledLineWidth);
-      auto [out1, out2, out3, out4] = out;
-      auto [in4, in3, in2, in1] = QuadraticBezier<int16_t>::LeftCartouche(center, height - 2 * lineWidth, width - lineWidth);
-
       Contour c;
-      c.points.emplace_back(out4.p2.x + p.approachLength + p.jointLength, out4.p2.y);
-      c.points.emplace_back(in1.p2.x + p.approachLength + p.jointLength, in1.p2.y);
-
-      c.points.emplace_back(in1.p2.x, in1.p2.y);
-      c.points.emplace_back(in1.p1.x, in1.p1.y, true);
-      c.points.emplace_back(in1.p0.x, in1.p0.y);
-      c.points.emplace_back(in2.p1.x, in2.p1.y, true);
-      c.points.emplace_back(in2.p0.x, in2.p0.y);
-      c.points.emplace_back(in3.p1.x, in3.p1.y, true);
-      c.points.emplace_back(in3.p0.x, in3.p0.y);
-      c.points.emplace_back(in4.p1.x, in4.p1.y, true);
-      c.points.emplace_back(in4.p0.x, in4.p0.y);
-
-      c.points.emplace_back(in4.p0.x + p.approachLength + p.jointLength, in4.p0.y);
-      c.points.emplace_back(in4.p0.x + p.approachLength + p.jointLength, in4.p0.y + walledLineWidth);
-
-      double const length = out1.length() + out2.length() + out3.length() + out4.length();
-      int const numSections = (int)round(length / hfu);
-      double const sectionLength = length / numSections;
-      double currentLength = 0;
-      int curveIndex = 0;
-      double curveOffset = 0;
-
-      c.points.emplace_back(out1.p0.x, out1.p0.y);
-      QuadraticBezier<int16_t> current = out1;
-
-      for (int i = 0; i < numSections; i++) {
-        // up
-        double nextLength = sectionLength * i + sectionLength / 5;
-        double curveLength = current.length();
-        double s0 = (nextLength - curveOffset) / curveLength;
-        while (s0 > 1) {
-          c.points.emplace_back(current.p1.x, current.p1.y, true);
-          c.points.emplace_back(current.p2.x, current.p2.y);
-          curveIndex++;
-          if (curveIndex >= out.size()) {
-            break;
-          }
-          curveOffset += curveLength;
-          currentLength += curveLength;
-          current = out[curveIndex];
-          curveLength = current.length();
-          s0 = (nextLength - curveOffset) / curveLength;
-        }
-        double t0 = current.inverseArcLength(s0);
-        if (curveIndex >= out.size()) {
-          break;
-        }
-        auto upSub = current.cut(0, t0);
-        c.points.emplace_back(upSub.p1.x, upSub.p1.y, true);
-        c.points.emplace_back(upSub.p2.x, upSub.p2.y);
-        Vec<int16_t> upBase(upSub.p2.x, upSub.p2.y);
-        auto upNorm = current.normal(t0, center);
-        Vec<int16_t> upTip(upBase.x + (int16_t)round(upNorm.x * wallHeight), upBase.y + (int16_t)round(upNorm.y * wallHeight));
-        c.points.emplace_back(upTip.x, upTip.y);
-        auto nx = current.cut(t0, 1);
-        double upSubLength = upSub.length();
-        curveOffset += upSubLength;
-        currentLength += upSubLength;
-        current = nx;
-        curveLength = nx.length();
-
-        // down
-        nextLength = sectionLength * i + sectionLength * 4 / 5;
-        double s1 = (nextLength - curveOffset) / curveLength;
-        while (s1 > 1) {
-          curveIndex++;
-          if (curveIndex >= out.size()) {
-            break;
-          }
-          curveOffset += curveLength;
-          currentLength += curveLength;
-          current = out[curveIndex];
-          curveLength = current.length();
-          s1 = (nextLength - curveOffset) / curveLength;
-        }
-        double t1 = current.inverseArcLength(s1);
-        if (curveIndex >= out.size()) {
-          break;
-        }
-        auto downSub = current.cut(0, t1);
-        Vec<int16_t> downBase = current.get(t1);
-        auto downNorm = current.normal(t1, center);
-        Vec<int16_t> downTip(downBase.x + (int16_t)round(downNorm.x * wallHeight), downBase.y + (int16_t)round(downNorm.y * wallHeight));
-        c.points.emplace_back(downTip.x, downTip.y);
-        c.points.emplace_back(downBase.x, downBase.y);
-
-        auto next = current.cut(t1, 1);
-        double downSubLength = downSub.length();
-        curveOffset += downSubLength;
-        currentLength += downSubLength;
-        current = next;
-      }
-
-      c.points.emplace_back(current.p1.x, current.p1.y, true);
-      c.points.emplace_back(current.p2.x, current.p2.y);
+      CreateContour_cwbL(p, hfu, width, bottom, height, c);
 
       int16_t advanceWidth = sideBearing + width + approachLength;
       auto cwbL = ReplaceSimpleGlyph(font, "cwbL", Class::Base, {c}, advanceWidth, sideBearing + lineWidth - walledLineWidth - wallHeight);
       if (!cwbL) {
         return EGLYF_STATUS_PUSH(cwbL.status());
+      }
+      // copy
+      for (string const &c : {"cweR"}) {
+        auto gid = ReplaceCompositeGlyph(font, c, Class::Base, GlyphRecord::New(*cwbL), advanceWidth, -p.jointLength);
+        if (!gid) {
+          return EGLYF_STATUS_PUSH(gid.status());
+        }
+      }
+      // mirror
+      for (string const &m : {"cwbR", "cweL"}) {
+        auto gid = ReplaceCompositeGlyph(font, m, Class::Base, GlyphRecord::New(*cwbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -p.jointLength);
+        if (!gid) {
+          return EGLYF_STATUS_PUSH(gid.status());
+        }
+      }
+      // cfbL
+      Contour c0;
+      c0.points.emplace_back(-jointLength, otop - lineWidth);
+      c0.points.emplace_back(-jointLength, otop);
+      c0.points.emplace_back(advanceWidth + jointLength, otop);
+      c0.points.emplace_back(advanceWidth + jointLength, otop - lineWidth);
+      Contour c1;
+      c1.points.emplace_back(-jointLength, obottom);
+      c1.points.emplace_back(-jointLength, obottom + lineWidth);
+      c1.points.emplace_back(advanceWidth + jointLength, obottom + lineWidth);
+      c1.points.emplace_back(advanceWidth + jointLength, obottom);
+      auto cfbL = ReplaceSimpleGlyph(font, "cfbL", Class::Base, {c, c0, c1}, advanceWidth, -jointLength);
+      if (!cfbL) {
+        return EGLYF_STATUS_PUSH(cfbL.status());
+      }
+      // copy
+      for (string const &c : {"cfeR"}) {
+        auto gid = ReplaceCompositeGlyph(font, c, Class::Base, GlyphRecord::New(*cfbL), advanceWidth, -p.jointLength);
+        if (!gid) {
+          return EGLYF_STATUS_PUSH(gid.status());
+        }
+      }
+      // mirror
+      for (string const &m : {"cfbR", "cfeL"}) {
+        auto gid = ReplaceCompositeGlyph(font, m, Class::Base, GlyphRecord::New(*cfbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -p.jointLength);
+        if (!gid) {
+          return EGLYF_STATUS_PUSH(gid.status());
+        }
       }
     }
     return Status::Ok();
