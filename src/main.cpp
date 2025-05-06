@@ -1,14 +1,10 @@
-#define EGLYF_ENABLE_TESTS 0
-
 #include "eglyf.hpp"
 
 #include <cxxopts.hpp>
 
-#if EGLYF_ENABLE_TESTS
-#endif
-
-static void Fail(eglyf::Status st) {
+static int Fail(eglyf::Status st) {
   st.print(std::cout);
+  return -1;
 }
 
 static eglyf::Optional<std::u8string> U8StringFromString(std::string const &s) {
@@ -54,8 +50,7 @@ int main(int argc, char *argv[]) {
       auto sub = names.substr(offset, pos - offset);
       auto sub8 = U8StringFromString(sub);
       if (!sub8) {
-        Fail(sub8.status());
-        return;
+        return Fail(sub8.status());
       }
       tokens.push_back(*sub8);
       offset = pos + 1;
@@ -65,15 +60,14 @@ int main(int argc, char *argv[]) {
       auto sub = names.substr(offset);
       auto sub8 = U8StringFromString(sub);
       if (!sub8) {
-        Fail(sub8.status());
-        return;
+        return Fail(sub8.status());
       }
       tokens.push_back(*sub8);
     }
     if (tokens.size() != 4) {
       cerr << "--name family/subFamily/fullName/psName" << endl;
       cerr << "ex: --name \"My EgyptHiero/Regular/My Egyptian Hieroglyphs Regular/MyEgyptianHieroglyphs-Regular\"" << endl;
-      return;
+      return -1;
     }
     Config::Name name;
     name.family = tokens[0];
@@ -88,30 +82,26 @@ int main(int argc, char *argv[]) {
   FileInputStream fis(input);
   shared_ptr<FontFile> ff;
   if (auto st = FontFile::Read(fis, ff); !st.ok()) {
-    Fail(st);
-    return;
+    return Fail(st);
   }
   auto editor = make_shared<Editor>(ff, cfg);
   if (auto st = editor->preprocess(); !st.ok()) {
-    Fail(st);
-    return;
+    return Fail(st);
   }
 
   VtpParser parser(editor);
   if (auto st = parser.parseVtp(res::vtp); !st.ok()) {
-    Fail(st);
-    return;
+    return Fail(st);
   }
   if (auto st = editor->postprocess(); !st.ok()) {
-    Fail(st);
-    return;
+    return Fail(st);
   }
   if (auto st = editor->compile(); !st.ok()) {
-    Fail(st);
-    return;
+    return Fail(st);
   }
   FileOutputStream fos(output);
   if (auto st = ff->write(fos); !st.ok()) {
-    Fail(st);
+    return Fail(st);
   }
+  return 0;
 }
