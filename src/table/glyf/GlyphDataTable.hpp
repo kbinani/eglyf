@@ -75,6 +75,56 @@ public:
       out.push_back(a);
     }
 
+    struct Drawer {
+      Drawer(Contour *c, int16_t x, int16_t y) : c(c) {
+        c->points.emplace_back(x, y);
+      }
+
+      void north(int16_t dy) {
+        auto p = c->points.back();
+        p.y += dy;
+        p.control = false;
+        c->points.push_back(p);
+      }
+
+      void south(int16_t dy) {
+        auto p = c->points.back();
+        p.y -= dy;
+        p.control = false;
+        c->points.push_back(p);
+      }
+
+      void east(int16_t dx) {
+        auto p = c->points.back();
+        p.x += dx;
+        p.control = false;
+        c->points.push_back(p);
+      }
+
+      void west(int16_t dx) {
+        auto p = c->points.back();
+        p.x -= dx;
+        p.control = false;
+        c->points.push_back(p);
+      }
+
+      void toX(int16_t x) {
+        auto p = c->points.back();
+        p.x = x;
+        p.control = false;
+        c->points.push_back(p);
+      }
+
+      void toY(int16_t y) {
+        auto p = c->points.back();
+        p.y = y;
+        p.control = false;
+        c->points.push_back(p);
+      }
+
+      Contour *c;
+    };
+
     std::vector<Point> points;
   };
 

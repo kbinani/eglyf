@@ -931,14 +931,15 @@ public:
     }
     for (int s = 1; s <= hhu; s++) {
       auto name = format("QW{}", s);
-      int16_t w = sb + s * hfu + sb;
-      int n = (int)round(w / (float)(sb + hfu + sb));
-      int16_t wallLength = w * 3 / (n * 5);
-      int16_t hollowLength = (w - n * wallLength) / (n * 2);
+      // int16_t w = sb + s * hfu + sb;
+      int16_t w = s * hfu;
+      // int n = s;// (int)round(w / (float)(sb + hfu + sb));
+      int16_t wallLength = hfu * 3 / 5; // w * 3 / (n * 5);
+      int16_t hollowLength = (s * hfu - s * wallLength) / (s * 2);
       Contour up;
       up.points.emplace_back(-jointLength, top - lineWidth);
       up.points.emplace_back(-jointLength, top - lineWidth + walledLineWidth);
-      for (int i = 0; i < n; i++) {
+      for (int i = 0; i < s; i++) {
         int16_t x0 = (2 * hollowLength + wallLength) * i + hollowLength;
         up.points.emplace_back(x0, top - lineWidth + walledLineWidth);
         up.points.emplace_back(x0, top - lineWidth + walledLineWidth + wallHeight);
@@ -953,7 +954,7 @@ public:
       down.points.emplace_back(-jointLength, bottom + lineWidth);
       down.points.emplace_back(w + jointLength, bottom + lineWidth);
       down.points.emplace_back(w + jointLength, bottom + lineWidth - walledLineWidth);
-      for (int i = n - 1; i >= 0; i--) {
+      for (int i = s - 1; i >= 0; i--) {
         int16_t x0 = (2 * hollowLength + wallLength) * i + hollowLength + wallLength;
         down.points.emplace_back(x0, bottom + lineWidth - walledLineWidth);
         down.points.emplace_back(x0, bottom + lineWidth - walledLineWidth - wallHeight);
@@ -1101,6 +1102,106 @@ public:
       }
       // mirror
       for (string const &m : {"cfbR", "cfeL"}) {
+        auto gid = ReplaceCompositeGlyph(font, m, Class::Base, GlyphRecord::New(*cfbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -p.jointLength);
+        if (!gid) {
+          return EGLYF_STATUS_PUSH(gid.status());
+        }
+      }
+    }
+    {
+      // hwbL
+      double a = hfu / 5.0;
+      double h = height - 2 * lineWidth + 2 * walledLineWidth + 2 * wallHeight;
+      int hDiv = (int)round((h - 2 * a) / (5 * a));
+      int16_t ha = (int16_t)round(h / (5 * hDiv - 2));
+
+      int16_t wallLength = hfu * 3 / 5;
+      int16_t hollowLength = (hfu - wallLength) / 2;
+
+      vector<int16_t> wallX;
+      int x = sideBearing + width - hollowLength;
+      while (x > sideBearing + hfu) {
+        wallX.push_back(x);
+        x -= hfu;
+      }
+
+      Contour c;
+      Contour::Drawer d(&c, sideBearing + lineWidth - walledLineWidth - wallHeight, bottom + lineWidth - walledLineWidth - wallHeight);
+      for (int i = 1; i < hDiv; i++) {
+        d.north(3 * ha);
+        d.east(wallHeight);
+        d.north(2 * ha);
+        d.west(wallHeight);
+      }
+      d.toY(top - lineWidth + walledLineWidth + wallHeight);
+      d.toX(wallX.back());
+      for (auto it = wallX.rbegin() + 1; it != wallX.rend(); it++) {
+        int16_t wx = *it;
+        d.south(wallHeight);
+        d.east(2 * hollowLength);
+        d.north(wallHeight);
+        d.toX(wx);
+      }
+      d.south(wallHeight);
+      d.toX(sideBearing + width + jointLength);
+      d.south(walledLineWidth);
+      d.toX(sideBearing + lineWidth);
+      d.toY(bottom + lineWidth);
+      d.toX(sideBearing + width + jointLength);
+      d.south(walledLineWidth);
+      d.toX(wallX.front());
+      for (auto it = wallX.begin(); it + 1 != wallX.end(); it++) {
+        int16_t wx = *it;
+        d.south(wallHeight);
+        d.west(wallLength);
+        d.north(wallHeight);
+        d.west(2 * hollowLength);
+      }
+      d.south(wallHeight);
+      int16_t advanceWidth = sideBearing + width;
+      int16_t sideB = sideBearing + lineWidth - walledLineWidth - wallHeight;
+      auto hwbL = ReplaceSimpleGlyph(font, "hwbL", Class::Base, {c}, advanceWidth, sideB);
+      if (!hwbL) {
+        return EGLYF_STATUS_PUSH(hwbL.status());
+      }
+      // copy
+      for (string const &c : {"hweR"}) {
+        auto gid = ReplaceCompositeGlyph(font, c, Class::Base, GlyphRecord::New(*hwbL), advanceWidth, sideB);
+        if (!gid) {
+          return EGLYF_STATUS_PUSH(gid.status());
+        }
+      }
+      // mirror
+      for (string const &m : {"hwbR", "hweL"}) {
+        auto gid = ReplaceCompositeGlyph(font, m, Class::Base, GlyphRecord::New(*hwbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -p.jointLength);
+        if (!gid) {
+          return EGLYF_STATUS_PUSH(gid.status());
+        }
+      }
+      // hfbL
+      Contour c0;
+      c0.points.emplace_back(-jointLength, otop - lineWidth);
+      c0.points.emplace_back(-jointLength, otop);
+      c0.points.emplace_back(advanceWidth + jointLength, otop);
+      c0.points.emplace_back(advanceWidth + jointLength, otop - lineWidth);
+      Contour c1;
+      c1.points.emplace_back(-jointLength, obottom);
+      c1.points.emplace_back(-jointLength, obottom + lineWidth);
+      c1.points.emplace_back(advanceWidth + jointLength, obottom + lineWidth);
+      c1.points.emplace_back(advanceWidth + jointLength, obottom);
+      auto cfbL = ReplaceSimpleGlyph(font, "hfbL", Class::Base, {c, c0, c1}, advanceWidth, -jointLength);
+      if (!cfbL) {
+        return EGLYF_STATUS_PUSH(cfbL.status());
+      }
+      // copy
+      for (string const &c : {"hfeR"}) {
+        auto gid = ReplaceCompositeGlyph(font, c, Class::Base, GlyphRecord::New(*cfbL), advanceWidth, -p.jointLength);
+        if (!gid) {
+          return EGLYF_STATUS_PUSH(gid.status());
+        }
+      }
+      // mirror
+      for (string const &m : {"hfbR", "hfeL"}) {
         auto gid = ReplaceCompositeGlyph(font, m, Class::Base, GlyphRecord::New(*cfbL, advanceWidth, 0, Vec<float>(-1, 1)), advanceWidth, -p.jointLength);
         if (!gid) {
           return EGLYF_STATUS_PUSH(gid.status());
