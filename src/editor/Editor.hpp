@@ -2818,7 +2818,7 @@ public:
     if (auto st = Insertion::CreatePlan(*font, sizeVariants, chu, vhu, hfu, vfu, base, lineWidth, insertionResolution, insertionPlans); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
-    if (auto st = ShadingGlyph::Create(hhu, vhu); !st.ok()) {
+    if (auto st = ShadingGlyph::Create(*font, hhu, chu, vhu, hfu, vfu, base, lineWidth); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
     if constexpr (false) {

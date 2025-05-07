@@ -470,6 +470,7 @@ class CartoucheGlyph {
     c.points.emplace_back(current.p2.x, current.p2.y);
   }
 
+public:
   static Optional<uint16_t> ReplaceSimpleGlyph(FontFile &font,
                                                std::string const &name,
                                                gdef::GlyphDefinitionTable::Class classValue,
