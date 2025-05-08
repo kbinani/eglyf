@@ -253,7 +253,7 @@ public:
               // TODO: while (bUnused > 1) { ... }
             }
           });
-          auto gid = CartoucheGlyph::ReplaceSimpleGlyph(font, name, Class::Mark, contours, 0, 0);
+          auto gid = CartoucheGlyph::ReplaceSimpleGlyph(font, name, Class::Mark, contours, 0, x0);
           if (!gid) {
             return EGLYF_STATUS_PUSH(gid.status());
           }

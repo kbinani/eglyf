@@ -14,17 +14,17 @@
   font-display: block;
 }
 .reference {
-  font-size: 30px;
+  font-size: 60px;
   font-family: 'ReferenceFont';
   white-space: pre;
 }
 .test {
-  font-size: 30px;
+  font-size: 60px;
   font-family: 'TestFont';
   white-space: pre;
 }
 .mdc {
-  font-size: 30px;
+  font-size: 60px;
   font-family: 'TestFont';
   white-space: pre;
 }
@@ -111,6 +111,21 @@
   const hwtwe = "&#x13289;";
   const cwb = "&#x13286;";
   const cwe = "&#x13287;";
+  const dq1 = "&#x13447;";
+  const dq2 = "&#x13448;";
+  const dq12 = "&#x13449;";
+  const dq3 = "&#x1344A;";
+  const dq13 = "&#x1344B;";
+  const dq23 = "&#x1344C;";
+  const dq123 = "&#x1344D;";
+  const dq4 = "&#x1344E;";
+  const dq14 = "&#x1344F;";
+  const dq24 = "&#x13450;";
+  const dq124 = "&#x13451;";
+  const dq34 = "&#x13452;";
+  const dq134 = "&#x13453;";
+  const dq234 = "&#x13454;";
+  const dq1234 = "&#x13455;";
   const data = [
     [`${A1}`, "A1"],
     [`${A1}${vj}${O1}`, "A1:O1"],
@@ -147,6 +162,7 @@
     [`${cwb}${ewb}${A1}${ewe}${cwe}`, ``],
     [`${hwtwb}${ewb}${A1}${t}${N35}${ewe}${hwtwe}`, `<F A1 >`],
     [`${cb}${esb}${A1}${hwtwb}${ewb}${A1}${t}${N35}${ewe}${hwtwe}${ese}${ce}`, `< <F A1 > >`],
+    [`${A1}${dq1234}${B1}${dq14}`, `A1#1234 B1#14`],
   ];
   const table = document.getElementById("table");
   const filter = (s) => {
