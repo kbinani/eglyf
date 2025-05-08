@@ -92,6 +92,17 @@ private:
         !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
+    if (auto st = cb({1, 3, 4}, Polyline({
+                                    Line(x2, y0, x0, y0),
+                                    Line(x0, y0, x0, y1),
+                                    Line(x0, y1, x1, y1),
+                                    Line(x1, y1, x1, y2),
+                                    Line(x1, y2, x2, y2),
+                                    Line(x2, y2, x2, y0),
+                                }));
+        !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
     if (auto st = cb({2, 3, 4}, Polyline({
                                     Line(x2, y0, x1, y0),
                                     Line(x1, y0, x1, y1),
