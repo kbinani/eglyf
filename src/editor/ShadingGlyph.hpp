@@ -3,9 +3,8 @@
 namespace eglyf {
 
 class ShadingGlyph {
-private:
   struct Polyline {
-    explicit Polyline(std::initializer_list<Line<int16_t>> init) : lines(init.begin(), init.end()) {}
+    Polyline(std::initializer_list<Line<int16_t>> init) : lines(init.begin(), init.end()) {}
 
     std::vector<Line<int16_t>> lines;
   };
@@ -14,7 +13,7 @@ private:
     return Polyline({Line(x0, y0, x0, y1), Line(x0, y1, x1, y1), Line(x1, y1, x1, y0), Line(x1, y0, x0, y0)});
   }
 
-  static Status ForEachPolyline(int16_t x, int16_t y, int16_t w, int16_t h, std::function<Status(std::set<int> member, Polyline const &)> cb) {
+  static Status ForEachPolyline(int16_t x, int16_t y, int16_t w, int16_t h, std::function<Status(std::set<int> const &member, Polyline const &)> cb) {
     // https://gyazo.com/d4b0feac3ef961076114f594eedf3219
     int16_t x0 = x;
     int16_t x1 = x + w / 2;
@@ -120,34 +119,50 @@ private:
     return Status::Ok();
   }
 
-  static void RepeatDiagonalLines(int hhu, int chu, int vhu, int16_t hfu, int16_t vfu, int16_t base, int16_t margin,
+  static void RepeatDiagonalLines(int ih, int chu, int vhu, int16_t hfu, int16_t vfu, int16_t base, int16_t margin,
                                   std::function<void(Line<double> const &a, Line<double> const &b)> cb) {
     using namespace std;
-    int x0 = -2 * hfu * chu;
-    int x1 = hfu * hhu / 2 + hfu;
-    int y0 = base - margin;
-    y0 -= vfu;
     int scale = min(hfu * chu, vfu * vhu);
-    int lineWidth = scale / 64;
-    int distance = scale / 16;
+    int lineWidth = max(1, (int)round(scale * 0.006));
+    int tdistance = (int)round(scale * 0.067);
+    int div = (int)round(hfu / (double)tdistance);
+    int distance = hfu / (double)div;
     double a = vfu / (double)hfu;
+    int k = (int)round(lineWidth * sqrt(1 / (a * a) + 1));
     int dy = vfu + vhu * vfu + vfu;
     int dx = (int)round(dy / a);
-    int x = x0;
-    int k = (int)round(lineWidth * sqrt(1 / (a * a) + 1));
-    int d = (int)round(distance * sqrt(1 / (a * a) + 1));
-    while (x < x1) {
-      Line<double> a(x, y0, x + dx, y0 + dy);
-      Line<double> b(x + k + dx, y0 + dy, x + k, y0);
-      cb(a, b);
-      x += d;
+    int x0 = -ih * hfu / 2;
+    int y0 = base - margin;
+    for (int i = 1;; i++) {
+      int x00 = x0 - i * hfu;
+      if (x00 < x0 - (vhu + 1) * vfu / a) {
+        break;
+      }
+      for (int j = 0; j < div; j++) {
+        int x = x00 + j * distance;
+        Line<double> la(x - dx + 1, y0 - dy, x + dx + 1, y0 + dy);
+        Line<double> lb(x + dx + k + 1, y0 + dy, x - dx + k + 1, y0 - dy);
+        cb(la, lb);
+      }
+    }
+    for (int i = 0;; i++) {
+      int x00 = x0 + i * hfu;
+      if (x0 + ih * hfu < x00) {
+        break;
+      }
+      for (int j = 0; j < div; j++) {
+        int x = x00 + j * distance;
+        Line<double> la(x - dx + 1, y0 - dy, x + dx + 1, y0 + dy);
+        Line<double> lb(x + dx + k + 1, y0 + dy, x - dx + k + 1, y0 - dy);
+        cb(la, lb);
+      }
     }
   }
 
 public:
   static Status Create(FontFile &font, int hhu, int chu, int vhu, int16_t hfu, int16_t vfu, int16_t base, int16_t lineWidth) {
     using namespace std;
-    using L = eglyf::Line<double>;
+    using L = Line<double>;
     using Contour = glyf::GlyphDataTable::Contour;
     using Class = gdef::GlyphDefinitionTable::Class;
 
@@ -158,7 +173,7 @@ public:
       for (int iv = 1; iv <= vhu; iv++) {
         int16_t h = vfu * iv;
         int16_t x0 = -w / 2;
-        auto st = ForEachPolyline(x0, y0, w, h, [&](set<int> member, Polyline const &pl) -> Status {
+        auto st = ForEachPolyline(x0, y0, w, h, [&](set<int> const &member, Polyline const &pl) -> Status {
           string name = "dq";
           for (int m : member) {
             name += format("{}", m);
@@ -171,7 +186,7 @@ public:
             bool used = false;
           };
           vector<Contour> contours;
-          RepeatDiagonalLines(hhu, chu, vhu, hfu, vfu, base, margin, [&](Line<double> const &a, Line<double> const &b) {
+          RepeatDiagonalLines(ih, chu, vhu, hfu, vfu, base, margin, [&](Line<double> const &a, Line<double> const &b) {
             deque<Cross> aCross;
             deque<Cross> bCross;
             L aL(a.x0, a.y0, a.x1, a.y1);
@@ -204,8 +219,8 @@ public:
             ranges::sort(aCross, [](auto const &a, auto const &b) { return a.t < b.t; });
             ranges::sort(bCross, [](auto const &a, auto const &b) { return a.t < b.t; });
 
-            int aUnused = aCross.size();
-            int bUnused = bCross.size();
+            size_t aUnused = aCross.size();
+            size_t bUnused = bCross.size();
 
             while (aUnused > 1) {
               auto c0i = ranges::find_if(aCross, [](Cross const &it) { return !it.used; });
@@ -249,8 +264,6 @@ public:
                 c.points.emplace_back((int16_t)round(p2.x), (int16_t)round(p2.y));
                 contours.push_back(c);
               }
-
-              // TODO: while (bUnused > 1) { ... }
             }
           });
           auto gid = CartoucheGlyph::ReplaceSimpleGlyph(font, name, Class::Mark, contours, 0, x0);
