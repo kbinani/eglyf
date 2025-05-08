@@ -2490,6 +2490,24 @@ public:
     mapping["8"] = {"Z15g"};
     mapping["9"] = {"Z15h"};
     mapping["nn"] = {"M22a"};
+    // MdC    dq
+    // 1 2    1 3
+    // 3 4    2 4
+    mapping["#1234"] = {"dq1234"};
+    mapping["#123"] = {"dq123"};
+    mapping["#124"] = {"dq134"};
+    mapping["#134"] = {"dq124"};
+    mapping["#234"] = {"dq234"};
+    mapping["#12"] = {"dq13"};
+    mapping["#13"] = {"dq12"};
+    mapping["#14"] = {"dq14"};
+    mapping["#23"] = {"dq23"};
+    mapping["#24"] = {"dq34"};
+    mapping["#34"] = {"dq24"};
+    mapping["#1"] = {"dq1"};
+    mapping["#2"] = {"dq3"};
+    mapping["#3"] = {"dq2"};
+    mapping["#4"] = {"dq4"};
 
     auto const add = [&](string mdc, char32_t cp) {
       auto gid = font->cmap->getGlyphID((uint32_t)cp);
