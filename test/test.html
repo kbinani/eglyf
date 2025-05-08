@@ -28,9 +28,29 @@
   font-family: 'TestFont';
   white-space: pre;
 }
+.ltrh {
+}
+.rtlh {
+  font-feature-settings: "rtlm";
+}
+.ltrv {
+  writing-mode: vertical-lr;
+  font-feature-settings: "vrt2";
+}
+.rtlv {
+  writing-mode: vertical-rl;
+  font-feature-settings: "rtlm", "vrt2";
+}
 </style>
 </head>
 <body>
+<label for="direction">Writing direction:</label>
+<select id="direction">
+  <option value="ltrh">LtR Horizontal</option>
+  <option value="rtlh">RtL Horizontal</option>
+  <option value="ltrv">LtR Vertical</option>
+  <option value="rtlv">RtL Vertical</option>
+</select>
 <table border=1 id="table">
 <tr>
   <td>MdC</td>
@@ -198,6 +218,22 @@
 
     table.appendChild(tr);
   }
+
+  const changeDirection = (dir) => {
+    const classes = ["ltrh", "rtlh", "ltrv", "rtlv"];
+    for (const div of document.getElementsByTagName("div")) {
+      if (!div.classList.contains("test") && !div.classList.contains("reference") && !div.classList.contains("mdc")) {
+        continue;
+      }
+      classes.forEach(c => div.classList.remove(c));
+      div.classList.add(dir);
+    }
+  };
+  changeDirection("ltrh");
+  const select = document.getElementById("direction");
+  select.addEventListener("change", (evt) => {
+    changeDirection(evt.currentTarget.value);
+  });
 </script>
 </body>
 </html>
