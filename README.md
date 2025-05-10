@@ -48,7 +48,7 @@ eglyf --input <input-font> --output <output-font> [options]
 
 - `--input`: File path to the input font file (required)
 - `--output`: File path where the modified font will be saved (required)
-- `--names`: Custom name for the output font, formatted as "family/subFamily/fullName/postScriptName"
+- `--names`: Custom name for the output font, formatted as "family/subFamily/fullName/postScriptName" (optional)
   - Example: `--names "My EgyptHiero/Regular/My Egyptian Hieroglyphs Regular/MyEgyptianHieroglyphs-Regular"`
 - `--experimental-mdc-subst`: Enable/disable GSUB lookups for Manuel de Codage support ("on"/"off", default "off")
 

@@ -41,23 +41,23 @@ int main(int argc, char *argv[]) {
   string input = result["input"].as<string>();
   string output = result["output"].as<string>();
 
-  string names = result["names"].as<string>();
-  if (!names.empty()) {
+  optional<string> names = result["names"].as_optional<string>();
+  if (names && !names->empty()) {
     vector<u8string> tokens;
     size_t offset = 0;
-    size_t pos = names.find('/', offset);
+    size_t pos = names->find('/', offset);
     while (pos != string::npos) {
-      auto sub = names.substr(offset, pos - offset);
+      auto sub = names->substr(offset, pos - offset);
       auto sub8 = U8StringFromString(sub);
       if (!sub8) {
         return Fail(sub8.status());
       }
       tokens.push_back(*sub8);
       offset = pos + 1;
-      pos = names.find('/', offset);
+      pos = names->find('/', offset);
     }
     {
-      auto sub = names.substr(offset);
+      auto sub = names->substr(offset);
       auto sub8 = U8StringFromString(sub);
       if (!sub8) {
         return Fail(sub8.status());
