@@ -3290,8 +3290,71 @@ public:
         }
       }
     }
-    // TODO: MARK_bi
-    // TODO: bi
+    if (auto MARK_bi = anchors.find("MARK_bi"); MARK_bi != anchors.end()) {
+      for (auto const &prefix : {"bi", "bi2", "it", "it2"}) {
+        for (int h = 1; h <= chu; h++) {
+          for (int v = 1; v <= vhu; v++) {
+            // DEF_ANCHOR "MARK_bi" ON None GLYPH bi23 COMPONENT 1 AT  POS DX 315 DY -930 END_POS END_ANCHOR
+            // DEF_ANCHOR "MARK_bi" ON None GLYPH bi223 COMPONENT 1 AT  POS DX 315 DY -930 END_POS END_ANCHOR
+            // DEF_ANCHOR "MARK_bi" ON None GLYPH it23 COMPONENT 1 AT  POS DX 315 DY -930 END_POS END_ANCHOR
+            // DEF_ANCHOR "MARK_bi" ON None GLYPH it223 COMPONENT 1 AT  POS DX 315 DY -930 END_POS END_ANCHOR
+            auto name = format("{}{}{}", prefix, h, v);
+            auto glyph = getGlyphByName(name);
+            int16_t dx = h * hfu / 2;
+            int16_t dy = -v * vfu;
+            MARK_bi->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
+          }
+        }
+      }
+      for (auto const &prefix : {"it", "it2"}) {
+        for (int h = 1; h <= chu; h++) {
+          for (int v = 1; v <= vhu; v++) {
+            // DEF_ANCHOR "MARK_bi" ON None GLYPH it223R COMPONENT 1 AT  POS DX -315 DY -930 END_POS END_ANCHOR
+            // DEF_ANCHOR "MARK_bi" ON None GLYPH it23R COMPONENT 1 AT  POS DX -315 DY -930 END_POS END_ANCHOR
+            auto name = format("{}{}{}R", prefix, h, v);
+            auto glyph = getGlyphByName(name);
+            int16_t dx = -h * hfu / 2;
+            int16_t dy = -v * vfu;
+            MARK_bi->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
+          }
+        }
+      }
+      for (int h = 1; h <= chu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "MARK_bi" ON 749 GLYPH es23 COMPONENT 1 AT  POS DX 315 END_POS END_ANCHOR
+          auto name = format("es{}{}", h, v);
+          auto glyph = getGlyphByName(name);
+          int16_t dx = h * hfu / 2;
+          MARK_bi->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, nullopt);
+        }
+      }
+    }
+    if (auto bi = anchors.find("bi"); bi != anchors.end()) {
+      for (int h = 1; h <= hhu; h++) {
+        for (int v = 1; v <= vhu; v++) {
+          // DEF_ANCHOR "bi" ON None GLYPH o23 COMPONENT 1 AT  POS DX 315 DY -930 END_POS END_ANCHOR
+          auto name = format("o{}{}", h, v);
+          auto glyph = getGlyphByName(name);
+          int16_t dx = h * hfu / 2;
+          int16_t dy = -v * vfu;
+          bi->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
+        }
+      }
+      for (auto const &prefix : {"s", "bi", "bi2"}) {
+        for (int h = 1; h <= chu; h++) {
+          for (int v = 1; v <= vhu; v++) {
+            // DEF_ANCHOR "bi" ON None GLYPH s23 COMPONENT 1 AT  POS DX 315 DY -930 END_POS END_ANCHOR
+            // DEF_ANCHOR "bi" ON None GLYPH bi23 COMPONENT 1 AT  POS DX 315 DY -930 END_POS END_ANCHOR
+            // DEF_ANCHOR "bi" ON None GLYPH bi223 COMPONENT 1 AT  POS DX 315 DY -930 END_POS END_ANCHOR
+            auto name = format("{}{}{}", prefix, h, v);
+            auto glyph = getGlyphByName(name);
+            int16_t dx = h * hfu / 2;
+            int16_t dy = -v * vfu;
+            bi->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, dy);
+          }
+        }
+      }
+    }
     if (auto MARK_center = anchors.find("MARK_center"); MARK_center != anchors.end()) {
       for (int h = 1; h <= chu; h++) {
         for (int v = 1; v <= vhu; v++) {
