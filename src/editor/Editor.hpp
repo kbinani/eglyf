@@ -3657,7 +3657,7 @@ public:
     ranges::copy(convertedGsubVrt2Lookups.direct, back_inserter(gsubLookups));
 
     auto gsubRtlmFeature = make_shared<SubtableCollection::Feature>();
-    gsubRtlmFeature->tag = FCC("rtml");
+    gsubRtlmFeature->tag = FCC("rtlm");
     auto gsubRtlmFeatureData = make_shared<SubtableCollection::FeatureData>();
     gsubRtlmFeature->data = gsubRtlmFeatureData;
     ranges::copy(convertedGsubRtlmLookups.direct, back_inserter(gsubRtlmFeatureData->lookups));
