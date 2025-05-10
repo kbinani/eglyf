@@ -3563,14 +3563,22 @@ public:
                   }).begin(),
                   lookups.end());
 
-    auto gpos = make_shared<gpos::GlyphPositioningTable>();
-    auto gsub = make_shared<gsub::GlyphSubstitutionTable>();
-
-    gpos->majorVersion = 1;
-    gpos->minorVersion = 0;
-
-    gsub->majorVersion = 1;
-    gsub->minorVersion = 0;
+    auto gpos = font->gpos;
+    if (!gpos) {
+      auto next = make_shared<gpos::GlyphPositioningTable>();
+      next->majorVersion = 1;
+      next->minorVersion = 0;
+      font->gpos = next;
+      gpos = next;
+    }
+    auto gsub = font->gsub;
+    if (!gsub) {
+      auto next = make_shared<gsub::GlyphSubstitutionTable>();
+      next->majorVersion = 1;
+      next->minorVersion = 0;
+      font->gsub = next;
+      gsub = next;
+    }
 
     struct ConvertedLookups {
       vector<shared_ptr<SubtableCollection::Lookup>> direct;
@@ -3578,7 +3586,8 @@ public:
     };
     ConvertedLookups convertedGposLookups;
     ConvertedLookups convertedGsubLookups;
-    ConvertedLookups convertedGsubVertLookups;
+    ConvertedLookups convertedGsubVrt2Lookups;
+    ConvertedLookups convertedGsubRtlmLookups;
 
     for (auto const &[name, lookup] : lookups) {
       bool const isGsub = !lookup->substitutions.empty();
@@ -3595,9 +3604,12 @@ public:
         continue;
       }
       if (isGsub) {
-        if (name.starts_with("rt") || name.starts_with("vr") || name.starts_with("s1")) {
-          ranges::copy(converted, back_inserter(convertedGsubVertLookups.direct));
-          ranges::copy(indirect, back_inserter(convertedGsubVertLookups.indirect));
+        if (name.starts_with("rt") || name.starts_with("s1")) {
+          ranges::copy(converted, back_inserter(convertedGsubRtlmLookups.direct));
+          ranges::copy(indirect, back_inserter(convertedGsubRtlmLookups.indirect));
+        } else if (name.starts_with("vr")) {
+          ranges::copy(converted, back_inserter(convertedGsubVrt2Lookups.direct));
+          ranges::copy(indirect, back_inserter(convertedGsubVrt2Lookups.indirect));
         } else {
           ranges::copy(converted, back_inserter(convertedGsubLookups.direct));
           ranges::copy(indirect, back_inserter(convertedGsubLookups.indirect));
@@ -3610,22 +3622,24 @@ public:
 
     SubtableCollection::Script gposScript;
     gposScript.tag = FCC("DFLT");
+    deque<shared_ptr<SubtableCollection::Lookup>> gposLookups;
     auto gposLangSys = make_shared<SubtableCollection::LangSys>();
     auto gposFeature = make_shared<SubtableCollection::Feature>();
     gposFeature->tag = FCC("mark");
     auto gposFeatureData = make_shared<SubtableCollection::FeatureData>();
     gposFeature->data = gposFeatureData;
     ranges::copy(convertedGposLookups.direct, back_inserter(gposFeatureData->lookups));
-    ranges::copy(convertedGposLookups.direct, back_inserter(gpos->lookups));
-    ranges::copy(convertedGposLookups.indirect, back_inserter(gpos->lookups));
+    ranges::copy(convertedGposLookups.direct, back_inserter(gposLookups));
+    ranges::copy(convertedGposLookups.indirect, back_inserter(gposLookups));
     gpos->features.push_back(gposFeature);
     gposLangSys->features.push_back(gposFeature);
     gposLangSys->requiredFeature = gposFeature;
     gposScript.defaultLangSys = gposLangSys;
-    gpos->scripts.push_back(gposScript);
+    ReplaceScript(*gpos, gposScript);
 
     SubtableCollection::Script gsubScript;
     gsubScript.tag = FCC("DFLT");
+    deque<shared_ptr<SubtableCollection::Lookup>> gsubLookups;
     auto gsubLangSys = make_shared<SubtableCollection::LangSys>();
 
     auto gsubFeature = make_shared<SubtableCollection::Feature>();
@@ -3633,35 +3647,42 @@ public:
     auto gsubFeatureData = make_shared<SubtableCollection::FeatureData>();
     gsubFeature->data = gsubFeatureData;
     ranges::copy(convertedGsubLookups.direct, back_inserter(gsubFeatureData->lookups));
-    ranges::copy(convertedGsubLookups.direct, back_inserter(gsub->lookups));
+    ranges::copy(convertedGsubLookups.direct, back_inserter(gsubLookups));
 
-    auto gsubVertFeature = make_shared<SubtableCollection::Feature>();
-    gsubVertFeature->tag = FCC("vrt2");
-    auto gsubVertFeatureData = make_shared<SubtableCollection::FeatureData>();
-    gsubVertFeature->data = gsubVertFeatureData;
-    ranges::copy(convertedGsubVertLookups.direct, back_inserter(gsubVertFeatureData->lookups));
-    ranges::copy(convertedGsubVertLookups.direct, back_inserter(gsub->lookups));
+    auto gsubVrt2Feature = make_shared<SubtableCollection::Feature>();
+    gsubVrt2Feature->tag = FCC("vrt2");
+    auto gsubVrt2FeatureData = make_shared<SubtableCollection::FeatureData>();
+    gsubVrt2Feature->data = gsubVrt2FeatureData;
+    ranges::copy(convertedGsubVrt2Lookups.direct, back_inserter(gsubVrt2FeatureData->lookups));
+    ranges::copy(convertedGsubVrt2Lookups.direct, back_inserter(gsubLookups));
 
-    ranges::copy(convertedGsubLookups.indirect, back_inserter(gsub->lookups));
-    ranges::copy(convertedGsubVertLookups.indirect, back_inserter(gsub->lookups));
+    auto gsubRtlmFeature = make_shared<SubtableCollection::Feature>();
+    gsubRtlmFeature->tag = FCC("rtml");
+    auto gsubRtlmFeatureData = make_shared<SubtableCollection::FeatureData>();
+    gsubRtlmFeature->data = gsubRtlmFeatureData;
+    ranges::copy(convertedGsubRtlmLookups.direct, back_inserter(gsubRtlmFeatureData->lookups));
+    ranges::copy(convertedGsubRtlmLookups.direct, back_inserter(gsubLookups));
+
+    ranges::copy(convertedGsubLookups.indirect, back_inserter(gsubLookups));
+    ranges::copy(convertedGsubVrt2Lookups.indirect, back_inserter(gsubLookups));
+    ranges::copy(convertedGsubRtlmLookups.indirect, back_inserter(gsubLookups));
 
     gsub->features.push_back(gsubFeature);
-    gsub->features.push_back(gsubVertFeature);
+    gsub->features.push_back(gsubVrt2Feature);
+    gsub->features.push_back(gsubRtlmFeature);
     gsubLangSys->features.push_back(gsubFeature);
-    gsubLangSys->features.push_back(gsubVertFeature);
+    gsubLangSys->features.push_back(gsubVrt2Feature);
+    gsubLangSys->features.push_back(gsubRtlmFeature);
     gsubLangSys->requiredFeature = gsubFeature;
     gsubScript.defaultLangSys = gsubLangSys;
-    gsub->scripts.push_back(gsubScript);
+    ReplaceScript(*gsub, gsubScript);
 
-    if (auto st = ReorderLookups(*gpos); !st.ok()) {
+    if (auto st = AppendLookups(*gpos, gposLookups); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
-    if (auto st = ReorderLookups(*gsub); !st.ok()) {
+    if (auto st = AppendLookups(*gsub, gsubLookups); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
-
-    font->gpos = gpos;
-    font->gsub = gsub;
 
     if (cfg.name) {
       font->name->setName(cfg.name->family, cfg.name->subFamily, cfg.name->fullName, cfg.name->psName);
@@ -3670,10 +3691,23 @@ public:
     return Status::Ok();
   }
 
-  static Status ReorderLookups(SubtableCollection &collection) {
+  static void ReplaceScript(SubtableCollection &collection, SubtableCollection::Script script) {
+    using namespace std;
+    auto found = ranges::find_if(collection.scripts, [&script](auto const &s) { return s.tag == script.tag; });
+    if (found == collection.scripts.end()) {
+      collection.scripts.push_back(script);
+    } else {
+      auto idx = distance(collection.scripts.begin(), found);
+      collection.scripts[idx] = script;
+    }
+  }
+
+  static Status AppendLookups(SubtableCollection &collection, std::deque<std::shared_ptr<SubtableCollection::Lookup>> const &lookups) {
     using namespace std;
 
-    for (auto const &lookup : collection.lookups) {
+    ranges::copy(lookups, back_inserter(collection.lookups));
+
+    for (auto const &lookup : lookups) {
       for (auto const &subtable : lookup->data->subtables) {
         auto sub = subtable;
         if (auto extension = dynamic_pointer_cast<gpos::PositioningExtension>(subtable); extension) {
