@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
     ("i,input", "Input font file path", cxxopts::value<string>())
     ("o,output", "Output font file path", cxxopts::value<string>())
     ("names", "Font names formatted as family/subFamily/fullName/psName (ex.: --names \"My EgyptHiero/Regular/My Egyptian Hieroglyphs Regular/MyEgyptianHieroglyphs-Regular\")", cxxopts::value<string>())
-    ("disable-mdc-subst", "Disable GSUB lookups for MdC support")
+    ("experimental-mdc-subst", "Switch experimental GSUB lookups for MdC support (on/off, default off)", cxxopts::value<string>()->default_value("off"))
   ;
   // clang-format on
 
@@ -77,7 +77,12 @@ int main(int argc, char *argv[]) {
     cfg.name = name;
   }
 
-  cfg.enableSubstMdc = !result["disable-mdc-subst"].as<bool>();
+  auto mdc = result["experimental-mdc-subst"].as<string>();
+  if (mdc != "on" && mdc != "off") {
+    cerr << "invalid value for experimental-mdc-subst option: \"" << mdc << "\"" << endl;
+    return -1;
+  }
+  cfg.enableSubstMdc = mdc == "on";
 
   FileInputStream fis(input);
   shared_ptr<FontFile> ff;
