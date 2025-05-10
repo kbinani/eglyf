@@ -2,6 +2,9 @@
 #if __has_include(<unistd.h>)
 #include <unistd.h>
 #endif
+#if __has_include(<io.h>)
+#include <io.h>
+#endif
 
 #include <map>
 #include <set>
@@ -14,6 +17,9 @@
 #include <format>
 #include <regex>
 #include <chrono>
+#include <array>
+#include <unordered_map>
+#include <functional>
 
 #include "Status.hpp"
 #include "Optional.hpp"

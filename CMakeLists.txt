@@ -153,6 +153,7 @@ if (MSVC)
       NOMINMAX
       WIN32_LEAN_AND_MEAN
   )
+  target_compile_options(eglyf PRIVATE /bigobj)
 endif()
 
 source_group(TREE ${CMAKE_CURRENT_LIST_DIR} FILES ${src_files})
