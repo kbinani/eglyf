@@ -22,6 +22,8 @@ else()
 endif()
 
 add_subdirectory(deps/cxxopts)
+add_subdirectory(deps/harfbuzz)
+add_subdirectory(deps/doctest)
 
 list(APPEND src_files
   src/Type.hpp
@@ -147,13 +149,17 @@ add_executable(eglyf)
 target_sources(eglyf PRIVATE ${src_files} src/main.cpp)
 target_include_directories(eglyf PRIVATE src include)
 target_link_libraries(eglyf PRIVATE cxxopts)
+
+add_executable(eglyf-tests)
+target_sources(eglyf-tests PRIVATE ${src_files} test/main.cpp)
+target_include_directories(eglyf-tests PRIVATE src include deps/harfbuzz/src deps/doctest/doctest)
+target_link_libraries(eglyf-tests PRIVATE harfbuzz)
+
 if (MSVC)
-  target_compile_definitions(eglyf
-    PRIVATE
-      NOMINMAX
-      WIN32_LEAN_AND_MEAN
-  )
-  target_compile_options(eglyf PRIVATE /bigobj)
+  foreach(target IN ITEMS eglyf eglyf-tests)
+    target_compile_definitions(${target} PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
+    target_compile_options(${target} PRIVATE /bigobj)
+  endforeach ()
 endif()
 
-source_group(TREE ${CMAKE_CURRENT_LIST_DIR} FILES ${src_files})
+source_group(TREE ${CMAKE_CURRENT_LIST_DIR} FILES ${src_files};src/main.cpp;test/main.cpp)
