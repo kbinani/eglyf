@@ -22,7 +22,7 @@ Once processed with eglyf, fonts can correctly display hieroglyphs with their un
 
 ## Features
 
-- Replaces GSUB and GPOS tables with necessary lookups for Egyptian Hieroglyph Format Controls and [Manuel de Codage](http://www.catchpenny.org/codage/) notation system
+- Replaces the 'DFLT' script of GSUB and GPOS tables to add necessary lookups for Egyptian Hieroglyph Format Controls and [Manuel de Codage](http://www.catchpenny.org/codage/) notation system
 - Modifies cmap, GDEF, and other tables to enable proper rendering of hieroglyphic text
 
 ## Steps to build
@@ -50,7 +50,7 @@ eglyf --input <input-font> --output <output-font> [options]
 - `--output`: File path where the modified font will be saved (required)
 - `--names`: Custom name for the output font, formatted as "family/subFamily/fullName/postScriptName"
   - Example: `--names "My EgyptHiero/Regular/My Egyptian Hieroglyphs Regular/MyEgyptianHieroglyphs-Regular"`
-- `--disable-mdc-subst`: Disable some GSUB lookups for Manuel de Codage support (optional)
+- `--experimental-mdc-subst`: Disable some GSUB lookups for Manuel de Codage support ("on"/"off", default "off")
 
 ## Disclaimer
 
