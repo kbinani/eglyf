@@ -266,7 +266,7 @@ public:
               }
             }
           });
-          auto gid = CartoucheGlyph::ReplaceSimpleGlyph(font, name, Class::Mark, contours, 0, x0);
+          auto gid = font.replaceSimpleGlyphByName(name, Class::Mark, contours, 0, x0);
           if (!gid) {
             return EGLYF_STATUS_PUSH(gid.status());
           }

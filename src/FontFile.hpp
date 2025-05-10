@@ -319,6 +319,109 @@ public:
     });
   }
 
+  Status replaceCompositeGlyph(uint16_t gid,
+                               gdef::GlyphDefinitionTable::Class classValue,
+                               std::vector<glyf::GlyphDataTable::CompositeGlyph::GlyphRecord> const &children,
+                               uint16_t advanceWidth,
+                               int16_t lsb) {
+    using namespace std;
+    if (!holds_alternative<TrueTypeOutlines>(outlines)) {
+      return EGLYF_ERROR;
+    }
+    auto &glyf = get<TrueTypeOutlines>(outlines).glyf;
+
+    if (auto st = glyf->replaceOutline(gid, children, *maxp); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+
+    hmtx::HorizontalMetricsTable::LongHorMetric hm;
+    hm.advanceWidth = advanceWidth;
+    hm.lsb = lsb;
+    hmtx->metrics[gid] = hm;
+
+    if (auto st = setGlyphClass(gid, classValue); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+
+    return Status::Ok();
+  }
+
+  Optional<uint16_t> replaceCompositeGlyphByName(std::string const &name,
+                                                 gdef::GlyphDefinitionTable::Class classValue,
+                                                 std::vector<glyf::GlyphDataTable::CompositeGlyph::GlyphRecord> const &children,
+                                                 uint16_t advanceWidth,
+                                                 int16_t lsb) {
+    auto gid = postGetGlyphID(name);
+    if (!gid) {
+      return EGLYF_NULLOPT;
+    }
+    if (auto st = replaceCompositeGlyph(*gid, classValue, children, advanceWidth, lsb); !st.ok()) {
+      return EGLYF_NULLOPT_PUSH(st);
+    }
+    return *gid;
+  }
+
+  Optional<uint16_t> replaceCompositeGlyphByName(std::string const &name,
+                                                 gdef::GlyphDefinitionTable::Class classValue,
+                                                 glyf::GlyphDataTable::CompositeGlyph::GlyphRecord const &child,
+                                                 uint16_t advanceWidth,
+                                                 int16_t lsb) {
+    using namespace std;
+    vector<glyf::GlyphDataTable::CompositeGlyph::GlyphRecord> children;
+    children.push_back(child);
+    auto gid = replaceCompositeGlyphByName(name, classValue, children, advanceWidth, lsb);
+    if (gid) {
+      return *gid;
+    } else {
+      return EGLYF_NULLOPT_PUSH(gid.status());
+    }
+  }
+
+  Status replaceSimpleGlyph(uint16_t gid,
+                            gdef::GlyphDefinitionTable::Class classValue,
+                            std::vector<glyf::GlyphDataTable::Contour> const &contours,
+                            uint16_t advanceWidth,
+                            int16_t lsb) {
+    using namespace std;
+    if (!holds_alternative<FontFile::TrueTypeOutlines>(outlines)) {
+      return EGLYF_ERROR;
+    }
+    auto &glyf = get<FontFile::TrueTypeOutlines>(outlines).glyf;
+
+    if (auto st = glyf->replaceOutline(gid, contours, *maxp); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+
+    hmtx::HorizontalMetricsTable::LongHorMetric hm;
+    hm.advanceWidth = advanceWidth;
+    hm.lsb = lsb;
+    hmtx->metrics[gid] = hm;
+
+    if (auto st = setGlyphClass(gid, classValue); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+
+    return Status::Ok();
+  }
+
+  Optional<uint16_t> replaceSimpleGlyphByName(std::string const &name,
+                                              gdef::GlyphDefinitionTable::Class classValue,
+                                              std::vector<glyf::GlyphDataTable::Contour> const &contours,
+                                              uint16_t advanceWidth,
+                                              int16_t lsb) {
+    using namespace std;
+    auto gid = postGetGlyphID(name);
+    if (!gid) {
+      return EGLYF_NULLOPT;
+    }
+    auto st = replaceSimpleGlyph(*gid, classValue, contours, advanceWidth, lsb);
+    if (st.ok()) {
+      return *gid;
+    } else {
+      return EGLYF_NULLOPT_PUSH(st);
+    }
+  }
+
   Status setGlyphClass(uint16_t gid, gdef::GlyphDefinitionTable::Class c) {
     using namespace std;
     if (!gdef) {
