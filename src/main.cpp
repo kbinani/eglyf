@@ -85,8 +85,8 @@ int main(int argc, char *argv[]) {
   cfg.enableSubstMdc = mdc == "on";
 
   FileInputStream fis(input);
-  shared_ptr<FontFile> ff;
-  if (auto st = FontFile::Read(fis, ff); !st.ok()) {
+  shared_ptr<Font> ff;
+  if (auto st = Font::Read(fis, ff); !st.ok()) {
     return Fail(st);
   }
   auto editor = make_shared<Editor>(ff, cfg);

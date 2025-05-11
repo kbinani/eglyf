@@ -30,7 +30,7 @@ list(APPEND src_files
   src/Tag.hpp
   src/TableRecord.hpp
   src/TableDirectory.hpp
-  src/FontFile.hpp
+  src/Font.hpp
   src/io/InputStream.hpp
   src/io/OutputStream.hpp
   src/io/FileInputStream.hpp

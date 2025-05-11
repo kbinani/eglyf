@@ -160,7 +160,7 @@ class ShadingGlyph {
   }
 
 public:
-  static Status Create(FontFile &font, int hhu, int chu, int vhu, int16_t hfu, int16_t vfu, int16_t base, int16_t lineWidth) {
+  static Status Create(Font &font, int hhu, int chu, int vhu, int16_t hfu, int16_t vfu, int16_t base, int16_t lineWidth) {
     using namespace std;
     using L = Line<double>;
     using Contour = glyf::GlyphDataTable::Contour;

@@ -45,16 +45,16 @@ public:
     return Rect<int16_t>(-x.s - c.t, base - c.t, x.s + c.t, base + 2 * y.s + c.t);
   }
 
-  static Status Create(FontFile &font, int16_t base, int16_t hfu, int16_t sb, int chu, int16_t vfu, int vhu) {
+  static Status Create(Font &font, int16_t base, int16_t hfu, int16_t sb, int chu, int16_t vfu, int vhu) {
     using namespace std;
     using SimpleGlyph = glyf::GlyphDataTable::SimpleGlyph;
     using Contour = glyf::GlyphDataTable::Contour;
 
     auto &outlines = font.outlines;
-    if (!holds_alternative<FontFile::TrueTypeOutlines>(outlines)) {
+    if (!holds_alternative<Font::TrueTypeOutlines>(outlines)) {
       return EGLYF_ERROR;
     }
-    auto &glyf = get<FontFile::TrueTypeOutlines>(outlines).glyf;
+    auto &glyf = get<Font::TrueTypeOutlines>(outlines).glyf;
     CommonParam p = CommonParameter(chu, hfu, vhu, vfu);
 
     for (int xLevel = 1; xLevel <= chu; xLevel++) {

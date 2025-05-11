@@ -138,7 +138,7 @@ class CartoucheGlyph {
     return Status::Ok();
   }
 
-  static Status Create_cb(FontFile &font, Param const &p, int16_t width, int16_t height, int16_t bottom,
+  static Status Create_cb(Font &font, Param const &p, int16_t width, int16_t height, int16_t bottom,
                           std::string const &name, std::vector<std::string> copy, std::vector<std::string> mirror) {
     using Class = gdef::GlyphDefinitionTable::Class;
     using GlyphRecord = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord;
@@ -166,7 +166,7 @@ class CartoucheGlyph {
     return Status::Ok();
   }
 
-  static Status Create_crb(FontFile &font, Param const &p, int16_t width, int16_t height, int16_t bottom,
+  static Status Create_crb(Font &font, Param const &p, int16_t width, int16_t height, int16_t bottom,
                            std::string const &name, std::vector<std::string> copy, std::vector<std::string> mirror) {
     using namespace std;
     using Class = gdef::GlyphDefinitionTable::Class;
@@ -471,7 +471,7 @@ class CartoucheGlyph {
   }
 
 public:
-  static Status Create(FontFile &font, int16_t base, int16_t hfu, int16_t sb, int hhu, int chu, int16_t vfu, int vhu, int lineWidth) {
+  static Status Create(Font &font, int16_t base, int16_t hfu, int16_t sb, int hhu, int chu, int16_t vfu, int vhu, int lineWidth) {
     using namespace std;
     using Class = gdef::GlyphDefinitionTable::Class;
     using GlyphRecord = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord;
@@ -505,10 +505,10 @@ public:
     int16_t owidth = oheight * 5 / 16;
 
     auto &outlines = font.outlines;
-    if (!holds_alternative<FontFile::TrueTypeOutlines>(outlines)) {
+    if (!holds_alternative<Font::TrueTypeOutlines>(outlines)) {
       return EGLYF_ERROR;
     }
-    auto &glyf = get<FontFile::TrueTypeOutlines>(outlines).glyf;
+    auto &glyf = get<Font::TrueTypeOutlines>(outlines).glyf;
 
     if (auto st = Create_cb(font, p, width, height, bottom, "cbL", {"creR"}, {"cbR", "creL"}); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);

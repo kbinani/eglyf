@@ -2,7 +2,7 @@
 
 namespace eglyf {
 
-class FontFile {
+class Font {
 public:
   struct TrueTypeOutlines {
     std::shared_ptr<glyf::GlyphDataTable> glyf;
@@ -383,10 +383,10 @@ public:
                             uint16_t advanceWidth,
                             int16_t lsb) {
     using namespace std;
-    if (!holds_alternative<FontFile::TrueTypeOutlines>(outlines)) {
+    if (!holds_alternative<TrueTypeOutlines>(outlines)) {
       return EGLYF_ERROR;
     }
-    auto &glyf = get<FontFile::TrueTypeOutlines>(outlines).glyf;
+    auto &glyf = get<TrueTypeOutlines>(outlines).glyf;
 
     if (auto st = glyf->replaceOutline(gid, contours, *maxp); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
@@ -438,9 +438,9 @@ public:
     return Status::Ok();
   }
 
-  static Status Read(InputStream &in, std::shared_ptr<FontFile> &out) {
+  static Status Read(InputStream &in, std::shared_ptr<Font> &out) {
     using namespace std;
-    auto ff = make_shared<FontFile>();
+    auto ff = make_shared<Font>();
     auto td = TableDirectory::Read(in);
     if (!td) {
       return EGLYF_STATUS_PUSH(td.status());

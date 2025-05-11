@@ -104,7 +104,7 @@ public:
   };
 
 public:
-  Editor(std::shared_ptr<FontFile> const &font, Config cfg) : font(font), cfg(cfg) {
+  Editor(std::shared_ptr<Font> const &font, Config cfg) : font(font), cfg(cfg) {
   }
 
   std::shared_ptr<Glyph> getGlyphByName(std::string const &name) {
@@ -1128,10 +1128,10 @@ public:
 
     map<uint16_t, pair<uint32_t, Rect<int16_t>>> bounds;
 
-    if (!holds_alternative<FontFile::TrueTypeOutlines>(font->outlines)) {
+    if (!holds_alternative<Font::TrueTypeOutlines>(font->outlines)) {
       return EGLYF_ERROR;
     }
-    auto &outline = get<FontFile::TrueTypeOutlines>(font->outlines);
+    auto &outline = get<Font::TrueTypeOutlines>(font->outlines);
     auto &glyf = outline.glyf;
     auto const process = [&, this](uint32_t cp) {
       auto gid = font->cmap->getGlyphID(cp);
@@ -1416,10 +1416,10 @@ public:
   Status createMirrorGlyphs() {
     using namespace std;
 
-    if (!holds_alternative<FontFile::TrueTypeOutlines>(font->outlines)) {
+    if (!holds_alternative<Font::TrueTypeOutlines>(font->outlines)) {
       return EGLYF_ERROR;
     }
-    auto &glyf = get<FontFile::TrueTypeOutlines>(font->outlines).glyf;
+    auto &glyf = get<Font::TrueTypeOutlines>(font->outlines).glyf;
 
     Transform<float> txm(-1, 0, 0, 1, 0, 0);
     auto classValue = gdef::GlyphDefinitionTable::Class::Mark;
@@ -2797,10 +2797,10 @@ public:
 
   Status createQuadratBase() {
     using namespace std;
-    if (!holds_alternative<FontFile::TrueTypeOutlines>(font->outlines)) {
+    if (!holds_alternative<Font::TrueTypeOutlines>(font->outlines)) {
       return EGLYF_ERROR;
     }
-    auto &glyf = get<FontFile::TrueTypeOutlines>(font->outlines).glyf;
+    auto &glyf = get<Font::TrueTypeOutlines>(font->outlines).glyf;
     for (int h = 1; h <= hhu; h++) {
       string name = format("QB{}", h);
       auto gid = font->postGetGlyphID(name);
@@ -2840,10 +2840,10 @@ public:
       return EGLYF_STATUS_PUSH(st);
     }
     if constexpr (false) {
-      if (holds_alternative<FontFile::TrueTypeOutlines>(font->outlines)) {
+      if (holds_alternative<Font::TrueTypeOutlines>(font->outlines)) {
         using Contour = glyf::GlyphDataTable::Contour;
         auto process = [this](string const &name, int x, int y) {
-          auto &glyf = get<FontFile::TrueTypeOutlines>(font->outlines).glyf;
+          auto &glyf = get<Font::TrueTypeOutlines>(font->outlines).glyf;
           auto bs11 = getGlyphByName(name);
           vector<Contour> contours;
           int margin = lineWidth / 2;
@@ -4498,7 +4498,7 @@ public:
   static int constexpr chu = 6;
   static int constexpr insertionResolution = 20;
 
-  std::shared_ptr<FontFile> font;
+  std::shared_ptr<Font> font;
   Config cfg;
 
   std::unordered_map<std::string, std::shared_ptr<Glyph>> glyphs;

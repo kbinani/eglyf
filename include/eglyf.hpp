@@ -106,7 +106,7 @@
 #include "table/cmap/UnicodeVariationSequences.hpp"
 #include "table/cmap/CharacterToGlyphIndexMappingTable.hpp"
 #include "table/name/NamingTable.hpp"
-#include "FontFile.hpp"
+#include "Font.hpp"
 #include "GlyphNames.hpp"
 #include "editor/PlaceholderGlyph.hpp"
 #include "editor/CartoucheGlyph.hpp"

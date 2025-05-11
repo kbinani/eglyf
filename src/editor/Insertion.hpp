@@ -48,7 +48,7 @@ public:
     std::map<Pos, std::map<WxH, Info>> insertions;
   };
 
-  static Status CreatePlan(FontFile const &font,
+  static Status CreatePlan(Font const &font,
                            std::unordered_map<std::string, SizeVariants> const &sizeVariants,
                            int16_t chu,
                            int16_t vhu,
@@ -298,7 +298,7 @@ public:
     return Status::Ok();
   }
 
-  static std::optional<std::pair<WxH, Vec<int16_t>>> ScanInsertionSpot(FontFile const &font,
+  static std::optional<std::pair<WxH, Vec<int16_t>>> ScanInsertionSpot(Font const &font,
                                                                        std::string const &name,
                                                                        WxH size,
                                                                        Pos pos,
@@ -315,10 +315,10 @@ public:
     double const yres = vfu * vhu / double(res);
     int const margin = lineWidth / 2;
 
-    if (!holds_alternative<FontFile::TrueTypeOutlines>(font.outlines)) {
+    if (!holds_alternative<Font::TrueTypeOutlines>(font.outlines)) {
       return nullopt;
     }
-    auto const &outlines = get<FontFile::TrueTypeOutlines>(font.outlines);
+    auto const &outlines = get<Font::TrueTypeOutlines>(font.outlines);
     auto const &glyf = outlines.glyf;
     auto gid = font.postGetGlyphID(name);
     if (!gid) {
