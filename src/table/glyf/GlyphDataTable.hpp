@@ -125,6 +125,14 @@ public:
       Contour *c;
     };
 
+    void add(Vec<int16_t> const &p, bool control = false) {
+      add(p.x, p.y, control);
+    }
+
+    void add(int16_t x, int16_t y, bool control = false) {
+      points.emplace_back(x, y, control);
+    }
+
     std::vector<Point> points;
   };
 

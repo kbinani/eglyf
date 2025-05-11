@@ -506,8 +506,18 @@ public:
     int16_t oheight = otop - obottom;
     int16_t owidth = oheight * 5 / 16;
 
+    // https://gyazo.com/92fda7e7991d32fa3009078850a38d77
     int16_t vtop = base - margin + vhu * vfu;
     int16_t vbottom = base - margin;
+    int16_t vwidth;
+    {
+      int16_t w = sb + hhu * hfu + sb;
+      int16_t center = w / 2;
+      int16_t vleft = center - hhu * hfu / 2 - 2 * lineWidth;
+      int16_t vright = center + hhu * hfu / 2 + 2 * lineWidth;
+      vwidth = vright - vleft;
+    }
+    int16_t vheight = vwidth * 5 / 16;
 
     auto &outlines = font.outlines;
     if (!holds_alternative<Font::TrueTypeOutlines>(outlines)) {
@@ -517,6 +527,52 @@ public:
 
     if (auto st = Create_cb(font, p, width, height, bottom, "cbL", {"creR"}, {"cbR", "creL"}); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
+    }
+    {
+      // cbT
+      int16_t w = sb + hhu * hfu + sb;
+      int16_t center = w / 2;
+      int16_t vleft = center - hhu * hfu / 2 - 2 * lineWidth;
+      int16_t vright = center + hhu * hfu / 2 + 2 * lineWidth;
+      auto out = QuadraticBezier<int16_t>::LeftCartouche(Vec<int16_t>(-vbottom - approachLength, 0), vwidth, vheight - approachLength);
+      auto in = QuadraticBezier<int16_t>::LeftCartouche(Vec<int16_t>(-vbottom - approachLength, 0), vwidth - 2 * lineWidth, vheight - approachLength - lineWidth);
+      auto out1 = out[0].rotatedCW90().translated(center, 0);
+      auto out2 = out[1].rotatedCW90().translated(center, 0);
+      auto out3 = out[2].rotatedCW90().translated(center, 0);
+      auto out4 = out[3].rotatedCW90().translated(center, 0);
+      auto in1 = in[0].rotatedCW90().translated(center, 0);
+      auto in2 = in[1].rotatedCW90().translated(center, 0);
+      auto in3 = in[2].rotatedCW90().translated(center, 0);
+      auto in4 = in[3].rotatedCW90().translated(center, 0);
+      Contour c;
+      c.add(vright, vbottom - jointLength);
+      c.add(vright, vbottom + approachLength);
+      c.add(out1.p0);
+      c.add(out1.p1, true);
+      c.add(out1.p2);
+      c.add(out2.p1, true);
+      c.add(out2.p2);
+      c.add(out3.p1, true);
+      c.add(out3.p2);
+      c.add(out4.p1, true);
+      c.add(out4.p2);
+      c.add(vleft, vbottom + approachLength);
+      c.add(vleft, vbottom - jointLength);
+      c.add(vleft + lineWidth, vbottom - jointLength);
+      c.add(vleft + lineWidth, vbottom + approachLength);
+      c.add(in4.p1, true);
+      c.add(in4.p0);
+      c.add(in3.p1, true);
+      c.add(in3.p0);
+      c.add(in2.p1, true);
+      c.add(in2.p0);
+      c.add(in1.p1, true);
+      c.add(in1.p0);
+      c.add(vright - lineWidth, vbottom - jointLength);
+      auto gid = font.replaceSimpleGlyphByName("cbT", Class::Base, {c}, w, vleft, vtop - vbottom, vheight);
+      if (!gid) {
+        return EGLYF_STATUS_PUSH(gid.status());
+      }
     }
     if (auto st = Create_crb(font, p, width, height, bottom, "crbL", {"ceR"}, {"crbR", "ceL"}); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
