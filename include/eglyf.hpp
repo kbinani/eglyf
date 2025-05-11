@@ -5,6 +5,11 @@
 #if __has_include(<io.h>)
 #include <io.h>
 #endif
+#if defined(_WIN32)
+#include <immintrin.h>
+#elif defined(__ARM_NEON) || defined(__ARM_NEON__)
+#include <arm_neon.h>
+#endif
 
 #include <map>
 #include <set>
