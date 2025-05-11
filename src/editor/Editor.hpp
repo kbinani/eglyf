@@ -1259,7 +1259,7 @@ public:
         record = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord::New(gid, Transform<float>::Concat(left, right));
       }
       auto classValue = gdef::GlyphDefinitionTable::Class::Mark;
-      auto newGid = font->addCompositeGlyph(name, classValue, record, 0, op.lsb);
+      auto newGid = font->addCompositeGlyph(name, classValue, record, 0, op.lsb, 0, 0);
       if (!newGid) {
         return EGLYF_STATUS_PUSH(newGid.status());
       }
@@ -1394,7 +1394,7 @@ public:
         SizeVariants::Resize resize = sv.transform(xLevel, yLevel, hfu, vfu, base, lineWidth);
         auto classValue = gdef::GlyphDefinitionTable::Class::Mark;
         auto record = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord::New(baseGlyph.gid, resize.dx, resize.dy, resize.scale);
-        auto newGid = font->addCompositeGlyph(n, classValue, record, 0, resize.lsb);
+        auto newGid = font->addCompositeGlyph(n, classValue, record, 0, resize.lsb, 0, 0);
         if (!newGid) {
           return EGLYF_STATUS_PUSH(newGid.status());
         }
@@ -1430,7 +1430,7 @@ public:
       }
       auto record = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord::New(*sv.base->id, txm);
       auto n = format("{}R", name);
-      auto newGid = font->addCompositeGlyph(n, classValue, record, 0, -sv.bounds.xMax);
+      auto newGid = font->addCompositeGlyph(n, classValue, record, 0, -sv.bounds.xMax, 0, 0);
       if (!newGid) {
         return EGLYF_STATUS_PUSH(newGid.status());
       }
@@ -1445,7 +1445,7 @@ public:
         }
         auto rec = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord::New(*v->id, txm);
         auto rn = format("{}R", v->name);
-        auto gid = font->addCompositeGlyph(rn, classValue, rec, 0, -bounds->xMax);
+        auto gid = font->addCompositeGlyph(rn, classValue, rec, 0, -bounds->xMax, 0, 0);
         if (!gid) {
           return EGLYF_STATUS_PUSH(gid.status());
         }
@@ -1464,6 +1464,7 @@ public:
     if (!font->gdef->glyphClassDef) {
       font->gdef->glyphClassDef = make_shared<ClassDef>();
     }
+    font->ensureVmtx();
     if (auto st = createSizeVariants(); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
@@ -2665,7 +2666,7 @@ public:
           name += format(".{}", o);
         }
         if (ligs.find(name) == ligs.end()) {
-          if (auto gid = font->addEmptyGlyph(name, gdef::GlyphDefinitionTable::Class::Mark, 0, 0); !gid) {
+          if (auto gid = font->addEmptyGlyph(name, gdef::GlyphDefinitionTable::Class::Mark, 0, 0, 0, 0); !gid) {
             return EGLYF_STATUS_PUSH(gid.status());
           }
           ligs.insert(name);
@@ -2814,6 +2815,9 @@ public:
       hm.advanceWidth = sb + h * hfu + sb;
       hm.lsb = 0;
       font->hmtx->metrics[*gid] = hm;
+
+      auto vmtx = font->ensureVmtx();
+      vmtx->set(*gid, vhu * vfu, vhu * vfu);
 
       if (auto st = font->setGlyphClass(*gid, gdef::GlyphDefinitionTable::Class::Base); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);

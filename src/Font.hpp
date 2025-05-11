@@ -250,12 +250,18 @@ public:
   Optional<uint16_t> addEmptyGlyph(std::string const &name,
                                    gdef::GlyphDefinitionTable::Class classValue,
                                    uint16_t advanceWidth,
-                                   int16_t lsb) {
-    return addTrueTypeGlyph(name, classValue, [&](glyf::GlyphDataTable &glyf, hmtx::HorizontalMetricsTable &hmtx) -> Optional<uint16_t> {
+                                   int16_t lsb,
+                                   uint16_t advanceHeight,
+                                   int16_t tsb) {
+    return addTrueTypeGlyph(name, classValue, [&](glyf::GlyphDataTable &glyf, hmtx::HorizontalMetricsTable &hmtx, vmtx::VerticalMetricsTable &vmtx) -> Optional<uint16_t> {
+      auto gid = hmtx.metrics.size();
+
       hmtx::HorizontalMetricsTable::LongHorMetric hm;
       hm.advanceWidth = advanceWidth;
       hm.lsb = lsb;
       hmtx.metrics.push_back(hm);
+
+      vmtx.set(gid, advanceHeight, tsb);
 
       return glyf.addEmptyGlyph();
     });
@@ -265,11 +271,13 @@ public:
                                        gdef::GlyphDefinitionTable::Class classValue,
                                        glyf::GlyphDataTable::CompositeGlyph::GlyphRecord const &child,
                                        uint16_t advanceWidth,
-                                       int16_t lsb) {
+                                       int16_t lsb,
+                                       uint16_t advanceHeight,
+                                       int16_t tsb) {
     using namespace std;
     vector<glyf::GlyphDataTable::CompositeGlyph::GlyphRecord> children;
     children.push_back(child);
-    auto gid = addCompositeGlyph(name, classValue, children, advanceWidth, lsb);
+    auto gid = addCompositeGlyph(name, classValue, children, advanceWidth, lsb, advanceHeight, tsb);
     if (gid) {
       return *gid;
     } else {
@@ -281,9 +289,11 @@ public:
                                        gdef::GlyphDefinitionTable::Class classValue,
                                        std::vector<glyf::GlyphDataTable::CompositeGlyph::GlyphRecord> const &children,
                                        uint16_t advanceWidth,
-                                       int16_t lsb) {
+                                       int16_t lsb,
+                                       uint16_t advanceHeight,
+                                       int16_t tsb) {
     using namespace std;
-    return addTrueTypeGlyph(name, classValue, [&](glyf::GlyphDataTable &glyf, hmtx::HorizontalMetricsTable &hmtx) -> Optional<uint16_t> {
+    return addTrueTypeGlyph(name, classValue, [&](glyf::GlyphDataTable &glyf, hmtx::HorizontalMetricsTable &hmtx, vmtx::VerticalMetricsTable &vmtx) -> Optional<uint16_t> {
       auto gid = glyf.addCompositeGlyph(children, *maxp);
       if (!gid) {
         return EGLYF_NULLOPT_PUSH(gid.status());
@@ -294,6 +304,8 @@ public:
       hm.lsb = lsb;
       hmtx.metrics.push_back(hm);
 
+      vmtx.set(*gid, advanceHeight, tsb);
+
       return *gid;
     });
   }
@@ -302,9 +314,11 @@ public:
                                     gdef::GlyphDefinitionTable::Class classValue,
                                     std::vector<glyf::GlyphDataTable::Contour> const &contours,
                                     uint16_t advanceWidth,
-                                    int16_t lsb) {
+                                    int16_t lsb,
+                                    uint16_t advanceHeight,
+                                    int16_t tsb) {
     using namespace std;
-    return addTrueTypeGlyph(name, classValue, [&](glyf::GlyphDataTable &glyf, hmtx::HorizontalMetricsTable &hmtx) -> Optional<uint16_t> {
+    return addTrueTypeGlyph(name, classValue, [&](glyf::GlyphDataTable &glyf, hmtx::HorizontalMetricsTable &hmtx, vmtx::VerticalMetricsTable &vmtx) -> Optional<uint16_t> {
       auto gid = glyf.addSimpleGlyph(contours, *maxp);
       if (!gid) {
         return EGLYF_NULLOPT_PUSH(gid.status());
@@ -315,6 +329,8 @@ public:
       hm.lsb = lsb;
       hmtx.metrics.push_back(hm);
 
+      vmtx.set(*gid, advanceHeight, tsb);
+
       return *gid;
     });
   }
@@ -323,7 +339,9 @@ public:
                                gdef::GlyphDefinitionTable::Class classValue,
                                std::vector<glyf::GlyphDataTable::CompositeGlyph::GlyphRecord> const &children,
                                uint16_t advanceWidth,
-                               int16_t lsb) {
+                               int16_t lsb,
+                               uint16_t advanceHeight,
+                               int16_t tsb) {
     using namespace std;
     if (!holds_alternative<TrueTypeOutlines>(outlines)) {
       return EGLYF_ERROR;
@@ -339,6 +357,9 @@ public:
     hm.lsb = lsb;
     hmtx->metrics[gid] = hm;
 
+    auto vmtx = ensureVmtx();
+    vmtx->set(gid, advanceHeight, tsb);
+
     if (auto st = setGlyphClass(gid, classValue); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
@@ -350,12 +371,14 @@ public:
                                                  gdef::GlyphDefinitionTable::Class classValue,
                                                  std::vector<glyf::GlyphDataTable::CompositeGlyph::GlyphRecord> const &children,
                                                  uint16_t advanceWidth,
-                                                 int16_t lsb) {
+                                                 int16_t lsb,
+                                                 uint16_t advanceHeight,
+                                                 int16_t tsb) {
     auto gid = postGetGlyphID(name);
     if (!gid) {
       return EGLYF_NULLOPT;
     }
-    if (auto st = replaceCompositeGlyph(*gid, classValue, children, advanceWidth, lsb); !st.ok()) {
+    if (auto st = replaceCompositeGlyph(*gid, classValue, children, advanceWidth, lsb, advanceHeight, tsb); !st.ok()) {
       return EGLYF_NULLOPT_PUSH(st);
     }
     return *gid;
@@ -365,11 +388,13 @@ public:
                                                  gdef::GlyphDefinitionTable::Class classValue,
                                                  glyf::GlyphDataTable::CompositeGlyph::GlyphRecord const &child,
                                                  uint16_t advanceWidth,
-                                                 int16_t lsb) {
+                                                 int16_t lsb,
+                                                 uint16_t advanceHeight,
+                                                 int16_t tsb) {
     using namespace std;
     vector<glyf::GlyphDataTable::CompositeGlyph::GlyphRecord> children;
     children.push_back(child);
-    auto gid = replaceCompositeGlyphByName(name, classValue, children, advanceWidth, lsb);
+    auto gid = replaceCompositeGlyphByName(name, classValue, children, advanceWidth, lsb, advanceHeight, tsb);
     if (gid) {
       return *gid;
     } else {
@@ -381,7 +406,9 @@ public:
                             gdef::GlyphDefinitionTable::Class classValue,
                             std::vector<glyf::GlyphDataTable::Contour> const &contours,
                             uint16_t advanceWidth,
-                            int16_t lsb) {
+                            int16_t lsb,
+                            uint16_t advanceHeight,
+                            int16_t tsb) {
     using namespace std;
     if (!holds_alternative<TrueTypeOutlines>(outlines)) {
       return EGLYF_ERROR;
@@ -397,6 +424,9 @@ public:
     hm.lsb = lsb;
     hmtx->metrics[gid] = hm;
 
+    auto vmtx = ensureVmtx();
+    vmtx->set(gid, advanceHeight, tsb);
+
     if (auto st = setGlyphClass(gid, classValue); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
@@ -408,13 +438,15 @@ public:
                                               gdef::GlyphDefinitionTable::Class classValue,
                                               std::vector<glyf::GlyphDataTable::Contour> const &contours,
                                               uint16_t advanceWidth,
-                                              int16_t lsb) {
+                                              int16_t lsb,
+                                              uint16_t advanceHeight,
+                                              int16_t tsb) {
     using namespace std;
     auto gid = postGetGlyphID(name);
     if (!gid) {
       return EGLYF_NULLOPT;
     }
-    auto st = replaceSimpleGlyph(*gid, classValue, contours, advanceWidth, lsb);
+    auto st = replaceSimpleGlyph(*gid, classValue, contours, advanceWidth, lsb, advanceHeight, tsb);
     if (st.ok()) {
       return *gid;
     } else {
@@ -779,17 +811,42 @@ public:
     return Status::Ok();
   }
 
+  std::shared_ptr<vmtx::VerticalMetricsTable> ensureVmtx() {
+    using namespace std;
+    if (!vhea) {
+      vhea = make_shared<vhea::VerticalHeaderTable>();
+      vhea::VerticalHeaderTable::Data11 data;
+      data.caretSlopeRise = 0;
+      data.caretSlopeRun = 1;
+      data.caretOffset = 0;
+      data.advanceHeightMax = 0;
+      data.minTopSideBearing = 0;
+      data.minBottomSideBearing = 0;
+      data.yMaxExtent = 0;
+      data.metricDataFormat = 0;
+      data.vertTypoLineGap = 0;
+      data.vertTypoAscender = 0;
+      data.vertTypoDescender = 0;
+      data.numOfLongVerMetrics = 0;
+      vhea->data = data;
+    }
+    if (!vmtx) {
+      vmtx = make_shared<vmtx::VerticalMetricsTable>();
+    }
+    return vmtx;
+  }
+
 private:
   Optional<uint16_t> addTrueTypeGlyph(std::string const &name,
                                       gdef::GlyphDefinitionTable::Class classValue,
-                                      std::function<Optional<uint16_t>(glyf::GlyphDataTable &glyf, hmtx::HorizontalMetricsTable &hmtx)> addOp) {
+                                      std::function<Optional<uint16_t>(glyf::GlyphDataTable &glyf, hmtx::HorizontalMetricsTable &hmtx, vmtx::VerticalMetricsTable &vmtx)> addOp) {
     using namespace std;
     if (!holds_alternative<TrueTypeOutlines>(outlines)) {
       return EGLYF_NULLOPT_WHAT("TrueType outlines not available");
     }
     TrueTypeOutlines &tto = get<TrueTypeOutlines>(outlines);
-
-    auto gid = addOp(*tto.glyf, *hmtx);
+    auto vmtx = ensureVmtx();
+    auto gid = addOp(*tto.glyf, *hmtx, *vmtx);
     if (!gid) {
       return EGLYF_NULLOPT_PUSH(gid.status());
     }

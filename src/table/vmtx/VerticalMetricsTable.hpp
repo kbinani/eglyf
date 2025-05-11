@@ -5,8 +5,8 @@ namespace eglyf::vmtx {
 class VerticalMetricsTable : public Table {
 public:
   struct Metric {
-    UFWORD advanceHeight;
-    FWORD topSideBearing;
+    UFWORD advanceHeight = 0;
+    FWORD topSideBearing = 0;
   };
 
 public:
@@ -78,6 +78,16 @@ public:
       }
     }
     return EncodeResult(out.data());
+  }
+
+  void set(uint16_t gid, uint16_t advanceHeight, int16_t tsb) {
+    Metric m;
+    m.advanceHeight = advanceHeight;
+    m.topSideBearing = tsb;
+    if (gid >= metrics.size()) {
+      metrics.resize(gid + 1);
+    }
+    metrics[gid] = m;
   }
 
 public:
