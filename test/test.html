@@ -149,12 +149,15 @@
   const F39 = "&#x1312A;";
   const bi = "&#x1343b;";
   const Aa1 = "&#x1340D;";
+  const C2 = "&#x1305B;";
+  const z = "&#x13283;";
   const data = [
     [`${A1}`, "A1"],
     [`${A1}${vj}${O1}`, "A1:O1"],
     [`${N35}${vj}${X1}`, "n:t"],
     [`${A1}${hj}${B1}${vj}${Z2}`, "A1*B1:Z2"],
     [`${G39}${te}${ra}${cb}${esb}${i}${mn}${vj}${N35}${vj}${N36}${ra}${vj}${Z1}${ms}${s}${sw}${ese}${ce}`, "G39 & ra <i mn:n:N36 ra:1 ms s sw>"],
+    [`${G39}${te}${ra}${cb}${esb}${i}${hj}${ss}${mn}${vj}${N35}${vj}${N36}${se}${C2}${hj}${ms}${z}${vj}${z}${ese}${ce}`, ``],
     [`${E1}${vj}${D40}${mr}${mAat}`, "E1:D40 mr mAat"],
     [`${hwtb}${esb}${E1}${vj}${D40}${xa}${vj}${Aa15}${R19}${ese}${O33a}`, "<s1 E1:D40 xa:Aa15 R19 s2>"],
     [`${hwtb}${esb}${E1}${vj}${D40}${mr}${mAat}${ese}${O33a}`, "<h1 E1:D40 mr mAat s2>"],
@@ -233,7 +236,7 @@
       div.classList.add(dir);
     }
   };
-  changeDirection("ltrh");
+  changeDirection("ltrv");
   const select = document.getElementById("direction");
   select.addEventListener("change", (evt) => {
     changeDirection(evt.currentTarget.value);
