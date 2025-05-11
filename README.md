@@ -11,7 +11,7 @@ This project is inspired by and builds upon concepts from [Microsoft Font Tools]
 
 Egyptian Hieroglyph Format Controls (U+13430–U+1343F) are Unicode characters that specify the layout of hieroglyphic text. While these controls are defined in the Unicode standard, they typically require specialized software to be interpreted correctly.
 
-## What This Tool Does
+## What this tool does
 
 eglyf enhances fonts to support these format controls:
 
@@ -22,8 +22,14 @@ Once processed with eglyf, fonts can correctly display hieroglyphs with their un
 
 ## Features
 
-- Replaces the 'DFLT' script of GSUB and GPOS tables to add necessary lookups for Egyptian Hieroglyph Format Controls and [Manuel de Codage](http://www.catchpenny.org/codage/) notation system
+- Replaces the 'DFLT' script of GSUB and GPOS tables to add necessary lookups for Egyptian Hieroglyph Format Controls
 - Modifies cmap, GDEF, and other tables to enable proper rendering of hieroglyphic text
+
+## Future plans
+
+- Enable vertical layout
+- Add support for processing fonts with CFF outlines
+- Enhance [Manuel de Codage](http://www.catchpenny.org/codage/) interpretation capabilities
 
 ## Steps to build
 
@@ -58,11 +64,16 @@ This tool modifies font files but does not check the license terms of the input 
 
 ## Dependencies
 
-- [cxxopts](https://github.com/jarro2783/cxxopts)
 - C++20 compatible compiler
 - CMake 3.16+
+- [cxxopts](https://github.com/jarro2783/cxxopts)
 
-## Tested Fonts
+## Dev dependencies
+
+- [harfbuzz](https://github.com/harfbuzz/harfbuzz)
+- [doctest](https://github.com/doctest/doctest)
+
+## Tested fonts
 
 The following fonts have been successfully tested with eglyf:
 
