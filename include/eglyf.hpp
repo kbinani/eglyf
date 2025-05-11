@@ -119,3 +119,4 @@
 #include "editor/Editor.hpp"
 #include "editor/VtpParser.hpp"
 #include "editor/Vtp.hpp"
+#include "editor/Transformer.hpp"

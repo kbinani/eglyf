@@ -89,19 +89,7 @@ int main(int argc, char *argv[]) {
   if (auto st = Font::Read(fis, ff); !st.ok()) {
     return Fail(st);
   }
-  auto editor = make_shared<Editor>(ff, cfg);
-  if (auto st = editor->preprocess(); !st.ok()) {
-    return Fail(st);
-  }
-
-  VtpParser parser(editor);
-  if (auto st = parser.parseVtp(res::vtp); !st.ok()) {
-    return Fail(st);
-  }
-  if (auto st = editor->postprocess(); !st.ok()) {
-    return Fail(st);
-  }
-  if (auto st = editor->compile(); !st.ok()) {
+  if (auto st = Transformer::Transform(ff, cfg); !st.ok()) {
     return Fail(st);
   }
   FileOutputStream fos(output);
