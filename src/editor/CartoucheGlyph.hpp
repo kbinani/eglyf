@@ -854,6 +854,28 @@ public:
       }
     }
     for (int s = 1; s <= hhu; s++) {
+      auto name = format("QO{}V", s);
+      int16_t w = sb + s * hfu + sb;
+      int16_t center = w / 2;
+      int16_t v = vhu * vfu;
+      int16_t vleft = center - hhu * hfu / 2 - 4 * lineWidth;
+      int16_t vright = center + hhu * hfu / 2 + 4 * lineWidth;
+      Contour c0;
+      c0.points.emplace_back(vleft, vbottom - jointLength);
+      c0.points.emplace_back(vleft, vtop + jointLength);
+      c0.points.emplace_back(vleft + lineWidth, vtop + jointLength);
+      c0.points.emplace_back(vleft + lineWidth, vbottom - jointLength);
+      Contour c1;
+      c1.points.emplace_back(vright - lineWidth, vbottom - jointLength);
+      c1.points.emplace_back(vright - lineWidth, vtop + jointLength);
+      c1.points.emplace_back(vright, vtop + jointLength);
+      c1.points.emplace_back(vright, vbottom - jointLength);
+      auto gid = font.replaceSimpleGlyphByName(name, Class::Base, {c0, c1}, w, vleft, v, vtop);
+      if (!gid) {
+        return EGLYF_STATUS_PUSH(gid.status());
+      }
+    }
+    for (int s = 1; s <= hhu; s++) {
       auto name = format("QD{}", s);
       int16_t w = sb + s * hfu + sb;
       auto qo = font.postGetGlyphID(format("QO{}", s));
@@ -868,6 +890,28 @@ public:
       children.push_back(GlyphRecord::New(*qo));
       children.push_back(GlyphRecord::New(*qc));
       auto gid = font.replaceCompositeGlyphByName(name, Class::Base, children, w, -p.jointLength, 0, 0);
+      if (!gid) {
+        return EGLYF_STATUS_PUSH(gid.status());
+      }
+    }
+    for (int s = 1; s <= hhu; s++) {
+      auto name = format("QD{}V", s);
+      int16_t w = sb + s * hfu + sb;
+      int16_t v = vhu * vfu;
+      int16_t center = w / 2;
+      int16_t vleft = center - hhu * hfu / 2 - 4 * lineWidth;
+      auto qo = font.postGetGlyphID(format("QO{}V", s));
+      if (!qo) {
+        return EGLYF_ERROR;
+      }
+      auto qc = font.postGetGlyphID(format("QC{}V", s));
+      if (!qc) {
+        return EGLYF_ERROR;
+      }
+      vector<GlyphRecord> children;
+      children.push_back(GlyphRecord::New(*qo));
+      children.push_back(GlyphRecord::New(*qc));
+      auto gid = font.replaceCompositeGlyphByName(name, Class::Base, children, w, vleft, v, vtop);
       if (!gid) {
         return EGLYF_STATUS_PUSH(gid.status());
       }
