@@ -67,11 +67,8 @@ This tool modifies font files but does not check the license terms of the input 
 - C++20 compatible compiler
 - CMake 3.16+
 - [cxxopts](https://github.com/jarro2783/cxxopts)
-
-## Dev dependencies
-
-- [harfbuzz](https://github.com/harfbuzz/harfbuzz)
-- [doctest](https://github.com/doctest/doctest)
+- [harfbuzz](https://github.com/harfbuzz/harfbuzz) (for unit test)
+- [doctest](https://github.com/doctest/doctest) (for unit test)
 
 ## Tested fonts
 
@@ -85,8 +82,10 @@ The following fonts have been successfully tested with eglyf:
 - [SINUHE](https://github.com/somiyagawa/SINUHE-the-Hierotyper/tree/master/fonts/webfonts)
 
 > [!IMPORTANT]
-> When using these or other fonts, please ensure compliance with their respective licenses.
+> When modifying these or other fonts, please ensure compliance with their respective licenses.
 
 ## License
+
+- MIT
 
 See the [LICENSE](LICENSE) file for details.
