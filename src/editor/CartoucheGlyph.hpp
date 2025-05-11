@@ -499,10 +499,15 @@ public:
     int16_t height = top - bottom;
     int16_t width = height * 5 / 16;
 
+    int16_t margin = lineWidth / 2;
+
     int16_t otop = top + vSpace + lineWidth;
     int16_t obottom = bottom - vSpace - lineWidth;
     int16_t oheight = otop - obottom;
     int16_t owidth = oheight * 5 / 16;
+
+    int16_t vtop = base - margin + vhu * vfu;
+    int16_t vbottom = base - margin;
 
     auto &outlines = font.outlines;
     if (!holds_alternative<Font::TrueTypeOutlines>(outlines)) {
@@ -801,7 +806,29 @@ public:
       c1.points.emplace_back(w + jointLength, bottom);
       c1.points.emplace_back(-jointLength, bottom);
 
-      auto gid = font.replaceSimpleGlyphByName(name, gdef::GlyphDefinitionTable::Class::Base, {c0, c1}, w, -jointLength, 0, 0);
+      auto gid = font.replaceSimpleGlyphByName(name, Class::Base, {c0, c1}, w, -jointLength, 0, 0);
+      if (!gid) {
+        return EGLYF_STATUS_PUSH(gid.status());
+      }
+    }
+    for (int s = 1; s <= hhu; s++) {
+      auto name = format("QC{}V", s);
+      int16_t w = sb + s * hfu + sb;
+      int16_t center = w / 2;
+      int16_t v = vhu * vfu;
+      int16_t vleft = center - hhu * hfu / 2 - 2 * lineWidth;
+      int16_t vright = center + hhu * hfu / 2 + 2 * lineWidth;
+      Contour c0;
+      c0.points.emplace_back(vleft, vbottom - jointLength);
+      c0.points.emplace_back(vleft, vtop + jointLength);
+      c0.points.emplace_back(vleft + lineWidth, vtop + jointLength);
+      c0.points.emplace_back(vleft + lineWidth, vbottom - jointLength);
+      Contour c1;
+      c1.points.emplace_back(vright - lineWidth, vbottom - jointLength);
+      c1.points.emplace_back(vright - lineWidth, vtop + jointLength);
+      c1.points.emplace_back(vright, vtop + jointLength);
+      c1.points.emplace_back(vright, vbottom - jointLength);
+      auto gid = font.replaceSimpleGlyphByName(name, Class::Base, {c0, c1}, w, vleft, v, vtop);
       if (!gid) {
         return EGLYF_STATUS_PUSH(gid.status());
       }
