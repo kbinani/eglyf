@@ -8,6 +8,4 @@
 /deps/fonts-main
 /.idea
 /.vscode/c_cpp_properties.json
-/test/verify/gsub_output
-/test/verify/gpos_output
 /src/editor/Vtp.hpp
