@@ -232,8 +232,8 @@
     table.appendChild(tr);
   }
 
+  const classes = ["ltrh", "rtlh", "ltrv", "rtlv"];
   const changeDirection = (dir) => {
-    const classes = ["ltrh", "rtlh", "ltrv", "rtlv"];
     for (const div of document.getElementsByTagName("div")) {
       if (!div.classList.contains("test") && !div.classList.contains("reference") && !div.classList.contains("mdc")) {
         continue;
@@ -242,8 +242,10 @@
       div.classList.add(dir);
     }
   };
-  changeDirection("ltrv");
+  const init = "ltrv";
+  changeDirection(init);
   const select = document.getElementById("direction");
+  select.selectedIndex = classes.indexOf(init);
   select.addEventListener("change", (evt) => {
     changeDirection(evt.currentTarget.value);
   });
