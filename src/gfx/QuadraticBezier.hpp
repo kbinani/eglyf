@@ -20,12 +20,38 @@ public:
   }
 
   size_t getTWhenX(double x, std::array<double, 2> &t) const {
-    using namespace std;
     QuadraticEquation qe(p0.x - 2 * p1.x + p2.x,
                          -2 * p0.x + 2 * p1.x,
                          p0.x - x);
     int count = qe.roots(t);
     if (count == 0) {
+      return 0;
+    }
+    if (count > 2) {
+      return 0;
+    }
+    for (int i = 0; i < count;) {
+      if (t[i] < 0 || 1 < t[i]) {
+        for (int j = i; j < count - 1; j++) {
+          t[j] = t[j + 1];
+        }
+        count--;
+      } else {
+        i++;
+      }
+    }
+    return count;
+  }
+
+  size_t getTWhenY(double y, std::array<double, 2> &t) const {
+    QuadraticEquation qe(p0.y - 2 * p1.y + p2.y,
+                         -2 * p0.y + 2 * p1.y,
+                         p0.y - y);
+    int count = qe.roots(t);
+    if (count == 0) {
+      return 0;
+    }
+    if (count > 2) {
       return 0;
     }
     for (int i = 0; i < count;) {
