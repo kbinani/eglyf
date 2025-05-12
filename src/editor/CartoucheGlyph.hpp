@@ -569,7 +569,7 @@ public:
       c.add(in1.p1, true);
       c.add(in1.p0);
       c.add(vright - lineWidth, vbottom - jointLength);
-      auto gid = font.replaceSimpleGlyphByName("cbT", Class::Base, {c}, w, vleft, vtop - vbottom, vheight);
+      auto gid = font.replaceSimpleGlyphByName("cbT", Class::Base, {c}, w, vleft, sideBearing + vheight, sideBearing);
       if (!gid) {
         return EGLYF_STATUS_PUSH(gid.status());
       }
@@ -884,7 +884,7 @@ public:
       c1.points.emplace_back(vright - lineWidth, vtop + jointLength);
       c1.points.emplace_back(vright, vtop + jointLength);
       c1.points.emplace_back(vright, vbottom - jointLength);
-      auto gid = font.replaceSimpleGlyphByName(name, Class::Base, {c0, c1}, w, vleft, v, vtop);
+      auto gid = font.replaceSimpleGlyphByName(name, Class::Base, {c0, c1}, w, vleft, v, -jointLength);
       if (!gid) {
         return EGLYF_STATUS_PUSH(gid.status());
       }
