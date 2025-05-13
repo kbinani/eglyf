@@ -58,6 +58,20 @@ eglyf --input <input-font> --output <output-font> [options]
   - Example: `--names "My EgyptHiero/Regular/My Egyptian Hieroglyphs Regular/MyEgyptianHieroglyphs-Regular"`
 - `--experimental-mdc-subst`: Enable/disable GSUB lookups for Manuel de Codage support ("on"/"off", default "off")
 
+## Writing Direction
+
+> [!WARNING]
+> The vertical writing feature is currently under development.
+
+When using the font for vertical writing, the `vrt2` OpenType feature must be enabled. This ensures that glyphs are rotated correctly for vertical layout. Note that currently, only left-to-right (LTR) vertical writing is supported; right-to-left (RTL) vertical writing is not yet implemented.
+
+Here's an example of how to enable this in CSS:
+
+```css
+writing-mode: vertical-lr;
+font-feature-settings: "vrt2";
+```
+
 ## Disclaimer
 
 This tool modifies font files but does not check the license terms of the input fonts. Users are responsible for ensuring that any modifications made to fonts comply with the original font's license terms. Some font licenses may not permit modification or may have specific requirements for derivative works.
