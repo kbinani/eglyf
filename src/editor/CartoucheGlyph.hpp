@@ -1087,7 +1087,7 @@ public:
       c1.points.emplace_back(vright - lineWidth, vtop + jointLength);
       c1.points.emplace_back(vright, vtop + jointLength);
       c1.points.emplace_back(vright, vbottom - jointLength);
-      auto gid = font.replaceSimpleGlyphByName(name, Class::Base, {c0, c1}, w, vleft, v, vtop);
+      auto gid = font.replaceSimpleGlyphByName(name, Class::Base, {c0, c1}, w, vleft, v, -jointLength);
       if (!gid) {
         return EGLYF_STATUS_PUSH(gid.status());
       }
@@ -1128,7 +1128,7 @@ public:
       vector<GlyphRecord> children;
       children.push_back(GlyphRecord::New(*qo));
       children.push_back(GlyphRecord::New(*qc));
-      auto gid = font.replaceCompositeGlyphByName(name, Class::Base, children, w, vleft, v, vtop);
+      auto gid = font.replaceCompositeGlyphByName(name, Class::Base, children, w, vleft, v, -jointLength);
       if (!gid) {
         return EGLYF_STATUS_PUSH(gid.status());
       }
@@ -1219,6 +1219,27 @@ public:
       auto cdreR = font.replaceCompositeGlyphByName("cdreR", Class::Base, GlyphRecord::New(*cdbL), w, -jointLength, 0, 0);
       if (!cdreR) {
         return EGLYF_STATUS_PUSH(cdreR.status());
+      }
+    }
+    {
+      // cdbT
+      int16_t w = sb + hhu * hfu + sb;
+      int16_t center = w / 2;
+      int16_t voleft = center - hhu * hfu / 2 - 4 * lineWidth;
+      int16_t voright = center + hhu * hfu / 2 + 4 * lineWidth;
+      Contour c0;
+      c0.add(voleft, vbottom - jointLength);
+      c0.add(voleft, vbottom + voheight + sideBearing + jointLength);
+      c0.add(voleft + lineWidth, vbottom + voheight + sideBearing + jointLength);
+      c0.add(voleft + lineWidth, vbottom - jointLength);
+      Contour c1;
+      c1.add(voright - lineWidth, vbottom - jointLength);
+      c1.add(voright - lineWidth, vbottom + voheight + sideBearing + jointLength);
+      c1.add(voright, vbottom + voheight + sideBearing + jointLength);
+      c1.add(voright, vbottom - jointLength);
+      auto cdbT = font.replaceSimpleGlyphByName("cdbT", Class::Base, {c0, c1, cbT}, w, voleft, voheight + sideBearing, -jointLength);
+      if (!cdbT) {
+        return EGLYF_STATUS_PUSH(cdbT.status());
       }
     }
     {
