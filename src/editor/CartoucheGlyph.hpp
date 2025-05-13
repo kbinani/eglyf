@@ -530,7 +530,7 @@ public:
     }
     Contour cbT;
     {
-      // cbT
+      // cbT, creB
       int16_t w = sb + hhu * hfu + sb;
       int16_t center = w / 2;
       int16_t vleft = center - hhu * hfu / 2 - 2 * lineWidth;
@@ -569,9 +569,20 @@ public:
       cbT.add(in1.p1, true);
       cbT.add(in1.p0);
       cbT.add(vright - lineWidth, vbottom - jointLength);
-      auto gid = font.replaceSimpleGlyphByName("cbT", Class::Base, {cbT}, w, vleft, sideBearing + vheight, sideBearing);
-      if (!gid) {
-        return EGLYF_STATUS_PUSH(gid.status());
+      auto gcbT = font.replaceSimpleGlyphByName("cbT", Class::Base, {cbT}, w, vleft, sideBearing + vheight, sideBearing);
+      if (!gcbT) {
+        return EGLYF_STATUS_PUSH(gcbT.status());
+      }
+
+      Contour creB;
+      for (auto it = cbT.points.rbegin(); it != cbT.points.rend(); it++) {
+        Point const &point = *it;
+        // -(vbottom + vheight) + K => vbottom, K = 2 * vbottom + vheight
+        creB.add(point.x, 2 * vbottom + vheight - point.y, point.control);
+      }
+      auto gcreB = font.replaceSimpleGlyphByName("creB", Class::Base, {creB}, w, vleft, sideBearing + vheight, -jointLength);
+      if (!gcreB) {
+        return EGLYF_STATUS_PUSH(gcreB.status());
       }
     }
     if (auto st = Create_crb(font, p, width, height, bottom, "crbL", {"ceR"}, {"crbR", "ceL"}); !st.ok()) {
@@ -579,7 +590,7 @@ public:
     }
     Contour crbT;
     {
-      // crbT
+      // crbT, ceB
       int16_t w = sb + hhu * hfu + sb;
       int16_t center = w / 2;
       int16_t vleft = center - hhu * hfu / 2 - 2 * lineWidth;
@@ -656,9 +667,19 @@ public:
       crbT.add(vleft, vrtop - lineWidth);
       crbT.add(vleft, vrtop);
 
-      auto gid = font.replaceSimpleGlyphByName("crbT", Class::Base, {crbT}, w, vleft, vrtop - vbottom, (vbottom + vheight + sideBearing) - vrtop);
-      if (!gid) {
-        return EGLYF_STATUS_PUSH(gid.status());
+      auto gcrbT = font.replaceSimpleGlyphByName("crbT", Class::Base, {crbT}, w, vleft, sideBearing + vheight, sideBearing - lineWidth * 9 / 32);
+      if (!gcrbT) {
+        return EGLYF_STATUS_PUSH(gcrbT.status());
+      }
+
+      Contour ceB;
+      for (auto it = crbT.points.rbegin(); it != crbT.points.rend(); it++) {
+        Point const &point = *it;
+        ceB.add(point.x, -point.y, point.control);
+      }
+      auto gceB = font.replaceSimpleGlyphByName("ceB", Class::Base, {ceB}, w, vleft, sideBearing + vheight, -jointLength);
+      if (!gceB) {
+        return EGLYF_STATUS_PUSH(gceB.status());
       }
     }
     if (auto st = Create_cb(font, p, owidth, oheight, obottom, "cobL", {"coreR"}, {"cobR", "coreL"}); !st.ok()) {
