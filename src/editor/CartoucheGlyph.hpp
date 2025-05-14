@@ -579,6 +579,8 @@ public:
       cbT.add(in1.p1, true);
       cbT.add(in1.p0);
       cbT.add(vright - lineWidth, vbottom - jointLength);
+      // NOTE(kbinani): This resolves minor rendering issue IDK why: https://gyazo.com/32cfbd24e47f968f53a718d719587d95 (line width of outer wall)
+      ranges::reverse(cbT.points);
       auto gcbT = font.replaceSimpleGlyphByName("cbT", Class::Base, {cbT}, w, vleft, sideBearing + vheight, sideBearing);
       if (!gcbT) {
         return EGLYF_STATUS_PUSH(gcbT.status());
