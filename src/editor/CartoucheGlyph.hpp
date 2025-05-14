@@ -687,11 +687,124 @@ public:
       Contour ceB;
       for (auto it = crbT.points.rbegin(); it != crbT.points.rend(); it++) {
         Point const &point = *it;
-        ceB.add(point.x, -point.y, point.control);
+        // -vbottom + K := vbottom + voheight + sideBearing, K = 2 * vbottom + voheight + sideBearing
+        ceB.add(point.x, 2 * vbottom + voheight + sideBearing - point.y, point.control);
       }
       auto gceB = font.replaceSimpleGlyphByName("ceB", Class::Base, {ceB}, w, vleft, sideBearing + vheight, -jointLength);
       if (!gceB) {
         return EGLYF_STATUS_PUSH(gceB.status());
+      }
+
+      // cdeB
+      int16_t voleft = center - hhu * hfu / 2 - 4 * lineWidth;
+      int16_t voright = center + hhu * hfu / 2 + 4 * lineWidth;
+      Contour c0;
+      c0.add(voleft, vbottom - jointLength);
+      c0.add(voleft, vbottom + voheight + sideBearing + jointLength);
+      c0.add(voleft + lineWidth, vbottom + voheight + sideBearing + jointLength);
+      c0.add(voleft + lineWidth, vbottom - jointLength);
+      Contour c1;
+      c1.add(voright - lineWidth, vbottom - jointLength);
+      c1.add(voright - lineWidth, vbottom + voheight + sideBearing + jointLength);
+      c1.add(voright, vbottom + voheight + sideBearing + jointLength);
+      c1.add(voright, vbottom - jointLength);
+      auto gcdeB = font.replaceSimpleGlyphByName("cdeB", Class::Base, {c0, c1, ceB}, w, voleft, voheight + sideBearing, -jointLength);
+      if (!gcdeB) {
+        return EGLYF_STATUS_PUSH(gcdeB.status());
+      }
+    }
+    {
+      // corbT, coeB
+      int16_t w = sb + hhu * hfu + sb;
+      int16_t center = w / 2;
+      int16_t voleft = center - hhu * hfu / 2 - 4 * lineWidth;
+      int16_t voright = center + hhu * hfu / 2 + 4 * lineWidth;
+      auto out = QuadraticBezier<int16_t>::LeftCartouche(Vec<int16_t>(-vbottom - approachLength, 0), vowidth, voheight - approachLength);
+      auto in = QuadraticBezier<int16_t>::LeftCartouche(Vec<int16_t>(-vbottom - approachLength, 0), vowidth - 2 * lineWidth, voheight - approachLength - lineWidth);
+      auto out1 = out[0].rotatedCW90().translated(center, 0);
+      auto out2 = out[1].rotatedCW90().translated(center, 0);
+      auto out3 = out[2].rotatedCW90().translated(center, 0);
+      auto out4 = out[3].rotatedCW90().translated(center, 0);
+      auto in1 = in[0].rotatedCW90().translated(center, 0);
+      auto in2 = in[1].rotatedCW90().translated(center, 0);
+      auto in3 = in[2].rotatedCW90().translated(center, 0);
+      auto in4 = in[3].rotatedCW90().translated(center, 0);
+
+      int16_t cutY = vbottom + voheight - lineWidth + lineWidth * 9 / 32;
+      int16_t vrtop = cutY + lineWidth;
+      Contour corbT;
+      corbT.add(voright, vrtop);
+      corbT.add(voright, vrtop - lineWidth);
+      array<double, 2> t;
+      size_t num = out1.getTWhenY(cutY, t);
+      if (num != 1) {
+        num = out2.getTWhenY(cutY, t);
+        if (num != 1) {
+          return EGLYF_ERROR;
+        }
+        auto out2_ = out2.cut(0, t[0]);
+        corbT.add(out2_.p2);
+        corbT.add(out2_.p1, true);
+        corbT.add(out2_.p0);
+
+        corbT.add(out1.p1, true);
+        corbT.add(out1.p0);
+      } else {
+        auto out1_ = out1.cut(0, t[0]);
+        corbT.add(out1_.p2);
+        corbT.add(out1_.p1, true);
+        corbT.add(out1_.p0);
+      }
+      corbT.add(voright, vbottom + approachLength);
+      corbT.add(voright, vbottom - jointLength);
+      corbT.add(voright - lineWidth, vbottom - jointLength);
+      corbT.add(voright - lineWidth, vbottom + approachLength);
+
+      corbT.add(in1.p1, true);
+      corbT.add(in1.p2);
+      corbT.add(in2.p1, true);
+      corbT.add(in2.p2);
+      corbT.add(in3.p1, true);
+      corbT.add(in3.p2);
+      corbT.add(in4.p1, true);
+      corbT.add(in4.p2);
+
+      corbT.add(voleft + lineWidth, vbottom + approachLength);
+      corbT.add(voleft + lineWidth, vbottom - jointLength);
+      corbT.add(voleft, vbottom - jointLength);
+      corbT.add(voleft, vbottom + approachLength);
+      num = out4.getTWhenY(cutY, t);
+      if (num != 1) {
+        num = out3.getTWhenY(cutY, t);
+        if (num != 1) {
+          return EGLYF_ERROR;
+        }
+        auto out3_ = out3.cut(t[0], 1);
+        corbT.add(out4.p1, true);
+        corbT.add(out4.p0);
+        corbT.add(out3_.p1, true);
+        corbT.add(out3_.p0);
+      } else {
+        auto out4_ = out4.cut(t[0], 1);
+        corbT.add(out4_.p1, true);
+        corbT.add(out4_.p0);
+      }
+      corbT.add(voleft, vrtop - lineWidth);
+      corbT.add(voleft, vrtop);
+
+      auto gcorbT = font.replaceSimpleGlyphByName("corbT", Class::Base, {corbT}, w, voleft, sideBearing + voheight, sideBearing - lineWidth * 9 / 32);
+      if (!gcorbT) {
+        return EGLYF_STATUS_PUSH(gcorbT.status());
+      }
+
+      Contour coeB;
+      for (auto it = corbT.points.rbegin(); it != corbT.points.rend(); it++) {
+        Point const &point = *it;
+        coeB.add(point.x, -point.y, point.control);
+      }
+      auto gcoeB = font.replaceSimpleGlyphByName("coeB", Class::Base, {coeB}, w, voleft, sideBearing + voheight, -jointLength);
+      if (!gcoeB) {
+        return EGLYF_STATUS_PUSH(gcoeB.status());
       }
     }
     if (auto st = Create_cb(font, p, owidth, oheight, obottom, "cobL", {"coreR"}, {"cobR", "coreL"}); !st.ok()) {
