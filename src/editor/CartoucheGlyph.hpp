@@ -596,6 +596,30 @@ public:
       if (!gcreB) {
         return EGLYF_STATUS_PUSH(gcreB.status());
       }
+
+      // cdreB
+      int16_t voleft = center - hhu * hfu / 2 - 4 * lineWidth;
+      int16_t voright = center + hhu * hfu / 2 + 4 * lineWidth;
+      Contour cdreB;
+      for (auto it = cbT.points.rbegin(); it != cbT.points.rend(); it++) {
+        Point const &point = *it;
+        // -vbottom + K = vbottom + voheight + sideBearing, K = 2 * vbottom + voheight + sideBearing
+        cdreB.add(point.x, 2 * vbottom + voheight + sideBearing - point.y, point.control);
+      }
+      Contour c0;
+      c0.add(voleft, vbottom - jointLength);
+      c0.add(voleft, vbottom + voheight + sideBearing + jointLength);
+      c0.add(voleft + lineWidth, vbottom + voheight + sideBearing + jointLength);
+      c0.add(voleft + lineWidth, vbottom - jointLength);
+      Contour c1;
+      c1.add(voright - lineWidth, vbottom - jointLength);
+      c1.add(voright - lineWidth, vbottom + voheight + sideBearing + jointLength);
+      c1.add(voright, vbottom + voheight + sideBearing + jointLength);
+      c1.add(voright, vbottom - jointLength);
+      auto gcdreB = font.replaceSimpleGlyphByName("cdreB", Class::Base, {c0, c1, cdreB}, w, voleft, sideBearing + voheight, -jointLength);
+      if (!gcdreB) {
+        return EGLYF_STATUS_PUSH(gcdreB.status());
+      }
     }
     if (auto st = Create_crb(font, p, width, height, bottom, "crbL", {"ceR"}, {"crbR", "ceL"}); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
@@ -684,6 +708,7 @@ public:
         return EGLYF_STATUS_PUSH(gcrbT.status());
       }
 
+      // ceB
       Contour ceB;
       for (auto it = crbT.points.rbegin(); it != crbT.points.rend(); it++) {
         Point const &point = *it;
@@ -711,6 +736,12 @@ public:
       auto gcdeB = font.replaceSimpleGlyphByName("cdeB", Class::Base, {c0, c1, ceB}, w, voleft, voheight + sideBearing, -jointLength);
       if (!gcdeB) {
         return EGLYF_STATUS_PUSH(gcdeB.status());
+      }
+
+      // cdrbT
+      auto gcdrbT = font.replaceSimpleGlyphByName("cdrbT", Class::Base, {c0, c1, crbT}, w, voleft, voheight + sideBearing, -jointLength);
+      if (!gcdrbT) {
+        return EGLYF_STATUS_PUSH(gcdrbT.status());
       }
     }
     {
@@ -854,6 +885,15 @@ public:
       auto gcobT = font.replaceSimpleGlyphByName("cobT", Class::Base, {cobT}, w, voleft, sideBearing + voheight, sideBearing);
       if (!gcobT) {
         return EGLYF_STATUS_PUSH(gcobT.status());
+      }
+      Contour coreB;
+      for (auto it = cobT.points.rbegin(); it != cobT.points.rend(); it++) {
+        Point const &point = *it;
+        coreB.add(point.x, -point.y, point.control);
+      }
+      auto gcoreB = font.replaceSimpleGlyphByName("coreB", Class::Base, {coreB}, w, voleft, sideBearing + voheight, -jointLength);
+      if (!gcoreB) {
+        return EGLYF_STATUS_PUSH(gcoreB.status());
       }
     }
     if (auto st = Create_crb(font, p, owidth, oheight, obottom, "corbL", {"coeR"}, {"corbR", "coeL"}); !st.ok()) {
