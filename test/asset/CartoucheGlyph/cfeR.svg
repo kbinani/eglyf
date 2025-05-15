@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-16 -77 404 1062">
+<line x1="388" y1="2" x2="388" y2="22" stroke="black" />
+<line x1="388" y1="22" x2="356" y2="22" stroke="black" />
+<path d="M 356,22 Q 208,22 133,238" stroke="black" fill="none" />
+<path d="M 133,238 Q 99,338 99,454" stroke="black" fill="none" />
+<path d="M 99,454 Q 99,570 133,670" stroke="black" fill="none" />
+<path d="M 133,670 Q 208,886 356,886" stroke="black" fill="none" />
+<line x1="356" y1="886" x2="388" y2="886" stroke="black" />
+<line x1="388" y1="886" x2="388" y2="906" stroke="black" />
+<line x1="388" y1="906" x2="356" y2="906" stroke="black" />
+<path d="M 356,906 Q 343,906 330,904" stroke="black" fill="none" />
+<line x1="330" y1="904" x2="327" y2="929" stroke="black" />
+<line x1="327" y1="929" x2="244" y2="901" stroke="black" />
+<line x1="244" y1="901" x2="256" y2="879" stroke="black" />
+<path d="M 256,879 Q 235,867 215,848" stroke="black" fill="none" />
+<line x1="215" y1="848" x2="198" y2="866" stroke="black" />
+<line x1="198" y1="866" x2="145" y2="800" stroke="black" />
+<line x1="145" y1="800" x2="166" y2="787" stroke="black" />
+<path d="M 166,787 Q 153,767 141,742" stroke="black" fill="none" />
+<line x1="141" y1="742" x2="118" y2="753" stroke="black" />
+<line x1="118" y1="753" x2="88" y2="678" stroke="black" />
+<line x1="88" y1="678" x2="112" y2="670" stroke="black" />
+<path d="M 112,670 Q 104,646 97,620" stroke="black" fill="none" />
+<line x1="97" y1="620" x2="73" y2="626" stroke="black" />
+<line x1="73" y1="626" x2="59" y2="547" stroke="black" />
+<line x1="59" y1="547" x2="84" y2="544" stroke="black" />
+<path d="M 84,544 Q 81,519 79,492" stroke="black" fill="none" />
+<line x1="79" y1="492" x2="54" y2="493" stroke="black" />
+<line x1="54" y1="493" x2="54" y2="413" stroke="black" />
+<line x1="54" y1="413" x2="79" y2="414" stroke="black" />
+<path d="M 79,414 Q 81,388 83,363" stroke="black" fill="none" />
+<line x1="83" y1="363" x2="58" y2="360" stroke="black" />
+<line x1="58" y1="360" x2="74" y2="280" stroke="black" />
+<line x1="74" y1="280" x2="98" y2="286" stroke="black" />
+<path d="M 98,286 Q 105,262 112,237" stroke="black" fill="none" />
+<line x1="112" y1="237" x2="88" y2="229" stroke="black" />
+<line x1="88" y1="229" x2="118" y2="154" stroke="black" />
+<line x1="118" y1="154" x2="141" y2="165" stroke="black" />
+<path d="M 141,165 Q 153,140 166,119" stroke="black" fill="none" />
+<line x1="166" y1="119" x2="145" y2="106" stroke="black" />
+<line x1="145" y1="106" x2="197" y2="41" stroke="black" />
+<line x1="197" y1="41" x2="214" y2="59" stroke="black" />
+<path d="M 214,59 Q 234,41 256,28" stroke="black" fill="none" />
+<line x1="256" y1="28" x2="244" y2="6" stroke="black" />
+<line x1="244" y1="6" x2="326" y2="-22" stroke="black" />
+<line x1="326" y1="-22" x2="329" y2="3" stroke="black" />
+<path d="M 329,3 Q 342,2 356,2" stroke="black" fill="none" />
+<line x1="356" y1="2" x2="388" y2="2" stroke="black" />
+<line x1="-16" y1="952" x2="-16" y2="985" stroke="black" />
+<line x1="-16" y1="985" x2="388" y2="985" stroke="black" />
+<line x1="388" y1="985" x2="388" y2="952" stroke="black" />
+<line x1="388" y1="952" x2="-16" y2="952" stroke="black" />
+<line x1="-16" y1="-77" x2="-16" y2="-44" stroke="black" />
+<line x1="-16" y1="-44" x2="388" y2="-44" stroke="black" />
+<line x1="388" y1="-44" x2="388" y2="-77" stroke="black" />
+<line x1="388" y1="-77" x2="-16" y2="-77" stroke="black" />
+</svg>

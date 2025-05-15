@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-66 23 1180 384">
+<line x1="1081" y1="23" x2="1081" y2="55" stroke="black" />
+<path d="M 1081,55 Q 1081,239 803,331" stroke="black" fill="none" />
+<path d="M 803,331 Q 673,374 524,374" stroke="black" fill="none" />
+<path d="M 524,374 Q 375,374 245,331" stroke="black" fill="none" />
+<path d="M 245,331 Q -33,239 -33,55" stroke="black" fill="none" />
+<line x1="-33" y1="55" x2="-33" y2="23" stroke="black" />
+<line x1="-33" y1="23" x2="-66" y2="23" stroke="black" />
+<line x1="-66" y1="23" x2="-66" y2="55" stroke="black" />
+<line x1="-66" y1="55" x2="-66" y2="55" stroke="black" />
+<path d="M -66,55 Q -66,258 229,360" stroke="black" fill="none" />
+<path d="M 229,360 Q 366,407 524,407" stroke="black" fill="none" />
+<path d="M 524,407 Q 682,407 819,360" stroke="black" fill="none" />
+<path d="M 819,360 Q 1114,258 1114,55" stroke="black" fill="none" />
+<line x1="1114" y1="55" x2="1114" y2="55" stroke="black" />
+<line x1="1114" y1="55" x2="1114" y2="23" stroke="black" />
+<line x1="1114" y1="23" x2="1081" y2="23" stroke="black" />
+</svg>

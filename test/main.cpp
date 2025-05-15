@@ -47,30 +47,163 @@ static std::shared_ptr<eglyf::Font> MakeFont(std::string const &file) {
 TEST_CASE("main") {
   using namespace std;
   using namespace eglyf;
-  auto f = MakeFont("test/asset/source.ttf");
+  namespace fs = std::filesystem;
+  auto f = MakeFont("test/asset/NotoSansEgyptianHieroglyphs-Regular.ttf");
   REQUIRE(f);
-  auto out = make_unique<ByteOutputStream>();
-  REQUIRE(f->write(*out).ok());
-  string data = out->data();
-  out.reset();
-  REQUIRE(!data.empty());
-  HbBlobUniquePtr blob(hb_blob_create(data.data(), data.size(), HB_MEMORY_MODE_READONLY, nullptr, nullptr));
-  HbFaceUniquePtr face(hb_face_create(blob.get(), 0));
-  shared_ptr<hb_font_t> font(hb_font_create(face.get()), hb_font_destroy);
-  REQUIRE(font);
-  hb_feature_t vrt2;
-  REQUIRE(hb_feature_from_string("vrt2", 4, &vrt2));
-  vector<hb_feature_t> features;
-  features.push_back(vrt2);
-  HbBufferUniquePtr buf(CreateBuffer(U"𓍹𓐼𓀀𓍹𓐼𓏤𓀾𓁊𓀖𓍿𓍮𓐽𓍺𓐽𓍺"s, font, features));
-  REQUIRE(buf);
-  auto numGlyphs = hb_buffer_get_length(buf.get());
-  hb_glyph_info_t *glyphInfo = hb_buffer_get_glyph_infos(buf.get(), nullptr);
-  for (unsigned int i = 0; i < numGlyphs; i++) {
-    hb_glyph_info_t info = glyphInfo[i];
-    auto gid = info.codepoint;
-    auto name = f->postGetName(gid);
-    REQUIRE(name);
-    cout << *name << endl;
+
+  SUBCASE("dump_glyph_names") {
+    auto out = make_unique<ByteOutputStream>();
+    REQUIRE(f->write(*out).ok());
+    string data = out->data();
+    out.reset();
+    REQUIRE(!data.empty());
+    HbBlobUniquePtr blob(hb_blob_create(data.data(), data.size(), HB_MEMORY_MODE_READONLY, nullptr, nullptr));
+    HbFaceUniquePtr face(hb_face_create(blob.get(), 0));
+    shared_ptr<hb_font_t> font(hb_font_create(face.get()), hb_font_destroy);
+    REQUIRE(font);
+    hb_feature_t vrt2;
+    REQUIRE(hb_feature_from_string("vrt2", 4, &vrt2));
+    vector<hb_feature_t> features;
+    features.push_back(vrt2);
+    HbBufferUniquePtr buf(CreateBuffer(U"𓍹𓐼𓀀𓍹𓐼𓏤𓀾𓁊𓀖𓍿𓍮𓐽𓍺𓐽𓍺"s, font, features));
+    REQUIRE(buf);
+    auto numGlyphs = hb_buffer_get_length(buf.get());
+    hb_glyph_info_t *glyphInfo = hb_buffer_get_glyph_infos(buf.get(), nullptr);
+    for (unsigned int i = 0; i < numGlyphs; i++) {
+      hb_glyph_info_t info = glyphInfo[i];
+      auto gid = info.codepoint;
+      auto name = f->postGetName(gid);
+      REQUIRE(name);
+      cout << *name << endl;
+    }
+  }
+
+  SUBCASE("CartoucheGlyph") {
+    vector<string> glyphs = {
+        "cbL",
+        "creR",
+        "cbR",
+        "creL",
+        "cbT",
+        "creB",
+        "cdreB",
+        "crbL",
+        "ceR",
+        "crbR",
+        "ceL",
+        "crbT",
+        "ceB",
+        "cdeB",
+        "cdrbT",
+        "corbT",
+        "coeB",
+        "cobL",
+        "coreR",
+        "cobR",
+        "coreL",
+        "cobT",
+        "coreB",
+        "corbL",
+        "coeR",
+        "corbR",
+        "coeL",
+        "hwtbL",
+        "hwteR",
+        "hwtbR",
+        "hwteL",
+        "hwtobL",
+        "hwtoeR",
+        "hwtobR",
+        "hwtoeL",
+        "hwttbL",
+        "hwttbR",
+        "hwtteL",
+        "hwtteR",
+        "hwtbbL",
+        "hwtbbL",
+        "hwtbbR",
+        "hwtbeL",
+        "hwtdbL",
+        "hwtdeR",
+        "hwtdbR",
+        "hwtdeL",
+        "hwtotbL",
+        "hwtoteR",
+        "hwtotbR",
+        "hwtoteL",
+        "hwtobbL",
+        "hwtobeR",
+        "hwtobbR",
+        "hwtobeL",
+        "hwtdtbL",
+        "hwtdbbL",
+        "hwtdteR",
+        "hwtdbeR",
+        "hwtdteL",
+        "hwtdtbR",
+        "hwtdbbR",
+        "hwtdbeL",
+        "hwtbT",
+        "O33aeL",
+        "O33aeR",
+        "O33aoeL",
+        "O33aoeR",
+        "O33adeL",
+        "O33adeR",
+        "cdbL",
+        "cdbR",
+        "cdreL",
+        "cdreR",
+        "cdbT",
+        "cdrbL",
+        "cdrbR",
+        "cdeL",
+        "cdeR",
+        "cwbL",
+        "cweR",
+        "cwbR",
+        "cweL",
+        "cfbL",
+        "cfeR",
+        "cfbR",
+        "cfeL",
+        "hwbL",
+        "hweR",
+        "hwbR",
+        "hweL",
+        "hfbL",
+        "hfeR",
+        "hfbR",
+        "hfeL",
+    };
+    for (int ih = 1; ih <= 8; ih++) {
+      glyphs.push_back(format("QC{}", ih));
+      glyphs.push_back(format("QC{}V", ih));
+      glyphs.push_back(format("QO{}", ih));
+      glyphs.push_back(format("QC{}V", ih));
+      glyphs.push_back(format("QD{}", ih));
+      glyphs.push_back(format("QD{}V", ih));
+      glyphs.push_back(format("QW{}", ih));
+      glyphs.push_back(format("QF{}", ih));
+    }
+    for (string const &pre : {"1", "2", "3", "4", "12", "13", "14", "23", "24", "34", "123", "124", "134", "234", "1234"}) {
+      for (int ih = 1; ih <= 8; ih++) {
+        for (int iv = 1; iv <= 6; iv++) {
+          glyphs.push_back(format("dq{}_{}{}", pre, ih, iv));
+        }
+      }
+    }
+    REQUIRE(holds_alternative<Font::TrueTypeOutlines>(f->outlines));
+    fs::remove_all("test/asset/CartoucheGlyph");
+    fs::create_directories(fs::path("test/asset/CartoucheGlyph"));
+    auto const &glyf = get<Font::TrueTypeOutlines>(f->outlines).glyf;
+    for (auto const &name : glyphs) {
+      auto gid = f->postGetGlyphID(name);
+      REQUIRE(gid);
+      Shape shape;
+      REQUIRE(glyf->toShape(*gid, shape).ok());
+      ofstream stream(format("test/asset/CartoucheGlyph/{}.svg", name));
+      shape.toSvg(stream);
+    }
   }
 }

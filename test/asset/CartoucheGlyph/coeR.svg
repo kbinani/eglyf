@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="57 -77 372 1062">
+<line x1="429" y1="985" x2="397" y2="985" stroke="black" />
+<path d="M 397,985 Q 206,985 110,720" stroke="black" fill="none" />
+<path d="M 110,720 Q 98,688 90,653" stroke="black" fill="none" />
+<line x1="90" y1="653" x2="90" y2="653" stroke="black" />
+<line x1="90" y1="653" x2="90" y2="985" stroke="black" />
+<line x1="90" y1="985" x2="57" y2="985" stroke="black" />
+<line x1="57" y1="985" x2="57" y2="-77" stroke="black" />
+<line x1="57" y1="-77" x2="90" y2="-77" stroke="black" />
+<line x1="90" y1="-77" x2="90" y2="254" stroke="black" />
+<path d="M 90,254 Q 98,220 110,188" stroke="black" fill="none" />
+<path d="M 110,188 Q 206,-77 397,-77" stroke="black" fill="none" />
+<line x1="397" y1="-77" x2="429" y2="-77" stroke="black" />
+<line x1="429" y1="-77" x2="429" y2="-44" stroke="black" />
+<line x1="429" y1="-44" x2="397" y2="-44" stroke="black" />
+<path d="M 397,-44 Q 225,-44 139,205" stroke="black" fill="none" />
+<path d="M 139,205 Q 99,321 99,454" stroke="black" fill="none" />
+<path d="M 99,454 Q 99,587 139,703" stroke="black" fill="none" />
+<path d="M 139,703 Q 225,952 397,952" stroke="black" fill="none" />
+<line x1="397" y1="952" x2="429" y2="952" stroke="black" />
+<line x1="429" y1="952" x2="429" y2="985" stroke="black" />
+</svg>

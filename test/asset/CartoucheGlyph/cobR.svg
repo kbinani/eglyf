@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-16 -77 363 1062">
+<line x1="-16" y1="985" x2="16" y2="985" stroke="black" />
+<path d="M 16,985 Q 207,985 303,720" stroke="black" fill="none" />
+<path d="M 303,720 Q 347,596 347,454" stroke="black" fill="none" />
+<path d="M 347,454 Q 347,312 303,188" stroke="black" fill="none" />
+<path d="M 303,188 Q 207,-77 16,-77" stroke="black" fill="none" />
+<line x1="16" y1="-77" x2="-16" y2="-77" stroke="black" />
+<line x1="-16" y1="-77" x2="-16" y2="-44" stroke="black" />
+<line x1="-16" y1="-44" x2="16" y2="-44" stroke="black" />
+<path d="M 16,-44 Q 188,-44 274,205" stroke="black" fill="none" />
+<path d="M 274,205 Q 314,321 314,454" stroke="black" fill="none" />
+<path d="M 314,454 Q 314,587 274,703" stroke="black" fill="none" />
+<path d="M 274,703 Q 188,952 16,952" stroke="black" fill="none" />
+<line x1="16" y1="952" x2="-16" y2="952" stroke="black" />
+<line x1="-16" y1="952" x2="-16" y2="985" stroke="black" />
+</svg>

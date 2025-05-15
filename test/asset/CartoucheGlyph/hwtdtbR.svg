@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-16 -77 346 1062">
+<line x1="248" y1="-11" x2="248" y2="919" stroke="black" />
+<line x1="248" y1="919" x2="-16" y2="919" stroke="black" />
+<line x1="-16" y1="919" x2="-16" y2="886" stroke="black" />
+<line x1="-16" y1="886" x2="66" y2="886" stroke="black" />
+<line x1="66" y1="886" x2="66" y2="558" stroke="black" />
+<line x1="66" y1="558" x2="215" y2="558" stroke="black" />
+<line x1="215" y1="558" x2="215" y2="22" stroke="black" />
+<line x1="215" y1="22" x2="-16" y2="22" stroke="black" />
+<line x1="-16" y1="22" x2="-16" y2="-11" stroke="black" />
+<line x1="-16" y1="-11" x2="248" y2="-11" stroke="black" />
+<line x1="99" y1="591" x2="99" y2="886" stroke="black" />
+<line x1="99" y1="886" x2="215" y2="886" stroke="black" />
+<line x1="215" y1="886" x2="215" y2="591" stroke="black" />
+<line x1="215" y1="591" x2="99" y2="591" stroke="black" />
+<line x1="330" y1="952" x2="330" y2="985" stroke="black" />
+<line x1="330" y1="985" x2="-16" y2="985" stroke="black" />
+<line x1="-16" y1="985" x2="-16" y2="952" stroke="black" />
+<line x1="-16" y1="952" x2="330" y2="952" stroke="black" />
+<line x1="330" y1="-77" x2="330" y2="-44" stroke="black" />
+<line x1="330" y1="-44" x2="-16" y2="-44" stroke="black" />
+<line x1="-16" y1="-44" x2="-16" y2="-77" stroke="black" />
+<line x1="-16" y1="-77" x2="330" y2="-77" stroke="black" />
+</svg>

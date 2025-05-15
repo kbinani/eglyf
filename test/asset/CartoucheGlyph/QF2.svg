@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-16 -77 294 1062">
+<line x1="-16" y1="985" x2="278" y2="985" stroke="black" />
+<line x1="278" y1="985" x2="278" y2="952" stroke="black" />
+<line x1="278" y1="952" x2="-16" y2="952" stroke="black" />
+<line x1="-16" y1="952" x2="-16" y2="985" stroke="black" />
+<line x1="-16" y1="-44" x2="278" y2="-44" stroke="black" />
+<line x1="278" y1="-44" x2="278" y2="-77" stroke="black" />
+<line x1="278" y1="-77" x2="-16" y2="-77" stroke="black" />
+<line x1="-16" y1="-77" x2="-16" y2="-44" stroke="black" />
+<line x1="-16" y1="886" x2="-16" y2="906" stroke="black" />
+<line x1="-16" y1="906" x2="26" y2="906" stroke="black" />
+<line x1="26" y1="906" x2="26" y2="931" stroke="black" />
+<line x1="26" y1="931" x2="104" y2="931" stroke="black" />
+<line x1="104" y1="931" x2="104" y2="906" stroke="black" />
+<line x1="104" y1="906" x2="156" y2="906" stroke="black" />
+<line x1="156" y1="906" x2="156" y2="931" stroke="black" />
+<line x1="156" y1="931" x2="234" y2="931" stroke="black" />
+<line x1="234" y1="931" x2="234" y2="906" stroke="black" />
+<line x1="234" y1="906" x2="278" y2="906" stroke="black" />
+<line x1="278" y1="906" x2="278" y2="886" stroke="black" />
+<line x1="278" y1="886" x2="-16" y2="886" stroke="black" />
+<line x1="-16" y1="2" x2="-16" y2="22" stroke="black" />
+<line x1="-16" y1="22" x2="278" y2="22" stroke="black" />
+<line x1="278" y1="22" x2="278" y2="2" stroke="black" />
+<line x1="278" y1="2" x2="234" y2="2" stroke="black" />
+<line x1="234" y1="2" x2="234" y2="-23" stroke="black" />
+<line x1="234" y1="-23" x2="156" y2="-23" stroke="black" />
+<line x1="156" y1="-23" x2="156" y2="2" stroke="black" />
+<line x1="156" y1="2" x2="104" y2="2" stroke="black" />
+<line x1="104" y1="2" x2="104" y2="-23" stroke="black" />
+<line x1="104" y1="-23" x2="26" y2="-23" stroke="black" />
+<line x1="26" y1="-23" x2="26" y2="2" stroke="black" />
+<line x1="26" y1="2" x2="-16" y2="2" stroke="black" />
+</svg>

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-132 -458 1312 435">
+<line x1="-132" y1="-458" x2="-132" y2="-425" stroke="black" />
+<line x1="-132" y1="-425" x2="297" y2="-425" stroke="black" />
+<path d="M 297,-425 Q 246,-413 196,-396" stroke="black" fill="none" />
+<path d="M 196,-396 Q -132,-282 -132,-55" stroke="black" fill="none" />
+<line x1="-132" y1="-55" x2="-132" y2="-23" stroke="black" />
+<line x1="-132" y1="-23" x2="-99" y2="-23" stroke="black" />
+<line x1="-99" y1="-23" x2="-99" y2="-55" stroke="black" />
+<line x1="-99" y1="-55" x2="-99" y2="-55" stroke="black" />
+<path d="M -99,-55 Q -99,-263 212,-368" stroke="black" fill="none" />
+<path d="M 212,-368 Q 357,-416 524,-416" stroke="black" fill="none" />
+<path d="M 524,-416 Q 691,-416 836,-368" stroke="black" fill="none" />
+<path d="M 836,-368 Q 1147,-263 1147,-55" stroke="black" fill="none" />
+<line x1="1147" y1="-55" x2="1147" y2="-23" stroke="black" />
+<line x1="1147" y1="-23" x2="1180" y2="-23" stroke="black" />
+<line x1="1180" y1="-23" x2="1180" y2="-55" stroke="black" />
+<line x1="1180" y1="-55" x2="1180" y2="-55" stroke="black" />
+<path d="M 1180,-55 Q 1180,-282 852,-396" stroke="black" fill="none" />
+<path d="M 852,-396 Q 802,-413 750,-425" stroke="black" fill="none" />
+<line x1="750" y1="-425" x2="1180" y2="-425" stroke="black" />
+<line x1="1180" y1="-425" x2="1180" y2="-458" stroke="black" />
+<line x1="1180" y1="-458" x2="-132" y2="-458" stroke="black" />
+</svg>
