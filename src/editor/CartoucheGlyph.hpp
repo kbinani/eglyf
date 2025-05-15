@@ -1126,6 +1126,45 @@ public:
       if (!hwtbT) {
         return EGLYF_STATUS_PUSH(hwtbT.status());
       }
+      auto hwteB = font.replaceCompositeGlyphByName("hwteB", Class::Base, GlyphRecord::New(*hwtbT, 0, 0, Vec<float>(1, -1)), w, vleft, hwvHeight + sideBearing, -jointLength);
+      if (!hwteB) {
+        return EGLYF_STATUS_PUSH(hwteB.status());
+      }
+    }
+    {
+      // hwttbT
+      int16_t w = sb + hhu * hfu + sb;
+      int16_t center = w / 2;
+      int16_t vleft = center - hhu * hfu / 2 - 2 * lineWidth;
+      int16_t vright = center + hhu * hfu / 2 + 2 * lineWidth;
+      int16_t hwvHeight = vfu;
+      vector<Contour> contours;
+      int16_t advanceWidth;
+      int16_t advanceHeight;
+      CreateContour_hwttb(p, vright, vright - vleft, contours, advanceHeight, advanceWidth);
+      for (auto &c : contours) {
+        for (auto &point : c.points) {
+          auto v = point.rotatedCW90();
+          point.x = v.x;
+          point.y = v.y;
+        }
+      }
+      auto hwttbT = font.replaceSimpleGlyphByName("hwttbT", Class::Base, contours, advanceWidth, vleft, advanceHeight, sideBearing);
+      if (!hwttbT) {
+        return EGLYF_STATUS_PUSH(hwttbT.status());
+      }
+      auto hwtbbT = font.replaceCompositeGlyphByName("hwtbbT", Class::Base, GlyphRecord::New(*hwttbT, vright + vleft, 0, Vec<float>(-1, 1)), advanceWidth, vleft, advanceHeight, sideBearing);
+      if (!hwtbbT) {
+        return EGLYF_STATUS_PUSH(hwtbbT.status());
+      }
+      auto hwtbeB = font.replaceCompositeGlyphByName("hwtbeB", Class::Base, GlyphRecord::New(*hwttbT, vright + vleft, 0, Vec<float>(-1, -1)), advanceWidth, vleft, advanceHeight, -jointLength);
+      if (!hwtbeB) {
+        return EGLYF_STATUS_PUSH(hwtbeB.status());
+      }
+      auto hwtteB = font.replaceCompositeGlyphByName("hwtteB", Class::Base, GlyphRecord::New(*hwttbT, 0, 0, Vec<float>(1, -1)), advanceWidth, vleft, advanceHeight, -jointLength);
+      if (!hwtteB) {
+        return EGLYF_STATUS_PUSH(hwtteB.status());
+      }
     }
     {
       // hwtobT
