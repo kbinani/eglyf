@@ -68,8 +68,10 @@ When using the font for vertical writing, the `vrt2` OpenType feature must be en
 Here's an example of how to enable this in CSS:
 
 ```css
-writing-mode: vertical-lr;
-font-feature-settings: "vrt2";
+.example {
+  writing-mode: vertical-lr;
+  font-feature-settings: "vrt2";
+}
 ```
 
 ## Disclaimer
@@ -83,6 +85,7 @@ This tool modifies font files but does not check the license terms of the input 
 - [cxxopts](https://github.com/jarro2783/cxxopts)
 - [harfbuzz](https://github.com/harfbuzz/harfbuzz) (for unit test)
 - [doctest](https://github.com/doctest/doctest) (for unit test)
+- [Noto Egyptian Hieroglyphs](https://github.com/notofonts/egyptian-hieroglyphs) (for unit test)
 
 ## Tested fonts
 
