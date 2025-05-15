@@ -1107,6 +1107,27 @@ public:
       }
     }
     {
+      // hwtbT
+      int16_t w = sb + hhu * hfu + sb;
+      int16_t center = w / 2;
+      int16_t vleft = center - hhu * hfu / 2 - 2 * lineWidth;
+      int16_t vright = center + hhu * hfu / 2 + 2 * lineWidth;
+      int16_t hwvHeight = vfu;
+      Contour c;
+      c.add(vleft + lineWidth, vbottom - jointLength);
+      c.add(vleft, vbottom - jointLength);
+      c.add(vleft, vbottom + hwvHeight);
+      c.add(vright, vbottom + hwvHeight);
+      c.add(vright, vbottom - jointLength);
+      c.add(vright - lineWidth, vbottom - jointLength);
+      c.add(vright - lineWidth, vbottom + hwvHeight - lineWidth);
+      c.add(vleft + lineWidth, vbottom + hwvHeight - lineWidth);
+      auto hwtbT = font.replaceSimpleGlyphByName("hwtbT", Class::Base, {c}, w, vleft, hwvHeight + sideBearing, sideBearing);
+      if (!hwtbT) {
+        return EGLYF_STATUS_PUSH(hwtbT.status());
+      }
+    }
+    {
       // O33aeL
       vector<Contour> contours;
       int16_t advanceWidth;
