@@ -1184,6 +1184,28 @@ public:
         return EGLYF_STATUS_PUSH(O33adeR.status());
       }
     }
+    {
+      // O33aeB
+      int16_t w = sb + hhu * hfu + sb;
+      int16_t center = w / 2;
+      int16_t vleft = center - hhu * hfu / 2 - 2 * lineWidth;
+      int16_t vright = center + hhu * hfu / 2 + 2 * lineWidth;
+
+      vector<Contour> contours;
+      int16_t advanceHeight;
+      CreateContour_O33aeL(p, vright, vright - vleft, contours, advanceHeight);
+      for (auto &c : contours) {
+        for (auto &point : c.points) {
+          auto v = point.rotatedCW90();
+          point.x = v.x;
+          point.y = v.y;
+        }
+      }
+      auto O33aeB = font.replaceSimpleGlyphByName("O33aeB", Class::Base, contours, w, vleft, advanceHeight, -jointLength);
+      if (!O33aeB) {
+        return EGLYF_STATUS_PUSH(O33aeB.status());
+      }
+    }
     for (int s = 1; s <= hhu; s++) {
       auto name = format("QC{}", s);
       int16_t w = sb + s * hfu + sb;
