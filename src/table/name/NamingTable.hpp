@@ -253,13 +253,13 @@ public:
     records[NameRecord(0, 0, 0, 17)] = subFamily_;
 
     uint16_t winEnLanguageID = 0x409;
-    records[NameRecord(3, 0, winEnLanguageID, 1)] = family_;
-    records[NameRecord(3, 0, winEnLanguageID, 2)] = subFamily_;
-    records[NameRecord(3, 0, winEnLanguageID, 3)] = fullName_;
-    records[NameRecord(3, 0, winEnLanguageID, 4)] = fullName_;
-    records[NameRecord(3, 0, winEnLanguageID, 6)] = psName_;
-    records[NameRecord(3, 0, winEnLanguageID, 16)] = family_;
-    records[NameRecord(3, 0, winEnLanguageID, 17)] = subFamily_;
+    records[NameRecord(3, 1, winEnLanguageID, 1)] = family_;
+    records[NameRecord(3, 1, winEnLanguageID, 2)] = subFamily_;
+    records[NameRecord(3, 1, winEnLanguageID, 3)] = fullName_;
+    records[NameRecord(3, 1, winEnLanguageID, 4)] = fullName_;
+    records[NameRecord(3, 1, winEnLanguageID, 6)] = psName_;
+    records[NameRecord(3, 1, winEnLanguageID, 16)] = family_;
+    records[NameRecord(3, 1, winEnLanguageID, 17)] = subFamily_;
   }
 
 public:
