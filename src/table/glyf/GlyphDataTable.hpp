@@ -133,6 +133,15 @@ public:
       points.emplace_back(x, y, control);
     }
 
+    Contour transformed(Transform<int16_t> const &txm) const {
+      Contour c;
+      for (auto const &p : points) {
+        Vec<int16_t> v = p.transformed(txm);
+        c.add(v.x, v.y, p.control);
+      }
+      return c;
+    }
+
     std::vector<Point> points;
   };
 

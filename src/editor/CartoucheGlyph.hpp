@@ -1303,6 +1303,32 @@ public:
       if (!O33aeB) {
         return EGLYF_STATUS_PUSH(O33aeB.status());
       }
+
+      // O33adeB
+      int16_t voleft = center - hhu * hfu / 2 - 4 * lineWidth;
+      int16_t voright = center + hhu * hfu / 2 + 4 * lineWidth;
+      Contour c0;
+      c0.add(voleft, vbottom - jointLength);
+      c0.add(voleft, vtop + jointLength);
+      c0.add(voleft + lineWidth, vtop + jointLength);
+      c0.add(voleft + lineWidth, vbottom - jointLength);
+      Contour c1;
+      c1.add(voright - lineWidth, vbottom - jointLength);
+      c1.add(voright - lineWidth, vtop + jointLength);
+      c1.add(voright, vtop + jointLength);
+      c1.add(voright, vbottom - jointLength);
+      vector<Contour> adeB;
+      // -(-jointLength) + dy := vtop + jointLength, dy = vtop
+      Transform<int16_t> txm(1, 0, 0, 1, 0, vtop);
+      for (auto const &c : contours) {
+        adeB.push_back(c.transformed(txm));
+      }
+      adeB.push_back(c0);
+      adeB.push_back(c1);
+      auto O33adeB = font.replaceSimpleGlyphByName("O33adeB", Class::Base, adeB, w, voleft, vhu * vfu, -jointLength);
+      if (!O33adeB) {
+        return EGLYF_STATUS_PUSH(O33adeB.status());
+      }
     }
     {
       // O33aoeB
