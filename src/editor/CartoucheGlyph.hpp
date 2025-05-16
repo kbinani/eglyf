@@ -1132,6 +1132,27 @@ public:
       }
     }
     {
+      // hwtobT
+      int16_t w = sb + hhu * hfu + sb;
+      int16_t center = w / 2;
+      int16_t voleft = center - hhu * hfu / 2 - 4 * lineWidth;
+      int16_t voright = center + hhu * hfu / 2 + 4 * lineWidth;
+      int16_t hwvHeight = vfu;
+      Contour c;
+      c.add(voleft + lineWidth, vbottom - jointLength);
+      c.add(voleft, vbottom - jointLength);
+      c.add(voleft, vbottom + hwvHeight);
+      c.add(voright, vbottom + hwvHeight);
+      c.add(voright, vbottom - jointLength);
+      c.add(voright - lineWidth, vbottom - jointLength);
+      c.add(voright - lineWidth, vbottom + hwvHeight - lineWidth);
+      c.add(voleft + lineWidth, vbottom + hwvHeight - lineWidth);
+      auto hwtobT = font.replaceSimpleGlyphByName("hwtobT", Class::Base, {c}, voright - voleft, voleft, sideBearing + hwvHeight, sideBearing);
+      if (!hwtobT) {
+        return EGLYF_STATUS_PUSH(hwtobT.status());
+      }
+    }
+    {
       // hwttbT
       int16_t w = sb + hhu * hfu + sb;
       int16_t center = w / 2;
