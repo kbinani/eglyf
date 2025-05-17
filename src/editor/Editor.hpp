@@ -1424,6 +1424,8 @@ public:
     Transform<float> txm(-1, 0, 0, 1, 0, 0);
     auto classValue = gdef::GlyphDefinitionTable::Class::Mark;
 
+    auto mirrorAll = getGroupByName("mirror_all");
+
     for (auto const &[name, sv] : sizeVariants) {
       if (!sv.base || !sv.base->id) {
         continue;
@@ -1434,6 +1436,7 @@ public:
       if (!newGid) {
         return EGLYF_STATUS_PUSH(newGid.status());
       }
+      mirrorAll->members.push_back(getGlyphByID(*newGid));
       for (auto const &[size, v] : sv.variants) {
         if (!v->id) {
           continue;
@@ -1449,6 +1452,7 @@ public:
         if (!gid) {
           return EGLYF_STATUS_PUSH(gid.status());
         }
+        mirrorAll->members.push_back(getGlyphByID(*gid));
       }
     }
     return Status::Ok();
@@ -1495,6 +1499,41 @@ public:
     }
     if (auto st = replaceLookup_mk_dist_offset(); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
+    }
+    if (auto st = replaceLookup_rt005_swaprtlsigns_M(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    return Status::Ok();
+  }
+
+  Status replaceLookup_rt005_swaprtlsigns_M() {
+    using namespace std;
+    auto a = getLookupByName("rt005_swaprtlsigns_M");
+    if (!a) {
+      return EGLYF_ERROR;
+    }
+    a->clear();
+    for (auto const &it : sizeVariants) {
+      //   SUB GLYPH "D40_62" GLYPH "mr"
+      //   WITH GLYPH "D40_62R"
+      // END_SUB
+      SizeVariants const &sv = it.second;
+      auto g = getGlyphByName(format("{}R", sv.base->name));
+      if (g->id) {
+        auto s = make_shared<Lookup::Substitution>();
+        s->input.push_back(sv.base);
+        s->output.push_back(g);
+        a->substitutions.push_back(s);
+      }
+      for (auto const &i : sv.variants) {
+        auto b = getGlyphByName(format("{}R", i.second->name));
+        if (b->id) {
+          auto s = make_shared<Lookup::Substitution>();
+          s->input.push_back(i.second);
+          s->output.push_back(b);
+          a->substitutions.push_back(s);
+        }
+      }
     }
     return Status::Ok();
   }
