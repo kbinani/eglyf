@@ -1203,6 +1203,31 @@ public:
       if (!hwtteB) {
         return EGLYF_STATUS_PUSH(hwtteB.status());
       }
+      // hwtdtbT
+      int16_t voleft = center - hhu * hfu / 2 - 4 * lineWidth;
+      int16_t voright = center + hhu * hfu / 2 + 4 * lineWidth;
+      Contour c0;
+      c0.add(voleft, vbottom - jointLength);
+      c0.add(voleft, vbottom + advanceHeight + sideBearing + jointLength);
+      c0.add(voleft + lineWidth, vbottom + advanceHeight + sideBearing + jointLength);
+      c0.add(voleft + lineWidth, vbottom - jointLength);
+      Contour c1;
+      c1.add(voright - lineWidth, vbottom - jointLength);
+      c1.add(voright - lineWidth, vbottom + advanceHeight + sideBearing + jointLength);
+      c1.add(voright, vbottom + advanceHeight + sideBearing + jointLength);
+      c1.add(voright, vbottom - jointLength);
+      vector<Contour> chwtdtbT;
+      // -(advanceHeight) + dy := vbottom, dy = vbottom + advanceHeight
+      Transform<int16_t> txm(1, 0, 0, 1, 0, vbottom + advanceHeight);
+      for (auto const &c : contours) {
+        chwtdtbT.push_back(c.transformed(txm));
+      }
+      chwtdtbT.push_back(c0);
+      chwtdtbT.push_back(c1);
+      auto hwtdtbT = font.replaceSimpleGlyphByName("hwtdtbT", Class::Base, chwtdtbT, w, voleft, advanceHeight + sideBearing, -jointLength);
+      if (!hwtdtbT) {
+        return EGLYF_STATUS_PUSH(hwtdtbT.status());
+      }
     }
     {
       // hwtobT
@@ -1223,6 +1248,25 @@ public:
       auto hwtobT = font.replaceSimpleGlyphByName("hwtobT", Class::Base, {c}, w, voleft, hwvHeight + sideBearing, sideBearing);
       if (!hwtobT) {
         return EGLYF_STATUS_PUSH(hwtobT.status());
+      }
+    }
+    {
+      // hwtotbT
+      int16_t w = sb + hhu * hfu + sb;
+      int16_t center = w / 2;
+      int16_t voleft = center - hhu * hfu / 2 - 4 * lineWidth;
+      int16_t voright = center + hhu * hfu / 2 + 4 * lineWidth;
+      vector<Contour> contours;
+      int16_t advanceWidth;
+      int16_t advanceHeight;
+      CreateContour_hwttb(p, voright, voright - voleft, contours, advanceHeight, advanceWidth);
+      Transform<int16_t> txm = Transform<int16_t>::CW90();
+      for (size_t i = 0; i < contours.size(); i++) {
+        contours[i] = contours[i].transformed(txm);
+      }
+      auto hwtotbT = font.replaceSimpleGlyphByName("hwtotbT", Class::Base, contours, w, voleft, advanceHeight, sideBearing);
+      if (!hwtotbT) {
+        return EGLYF_STATUS_PUSH(hwtotbT.status());
       }
     }
     {
