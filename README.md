@@ -60,17 +60,30 @@ eglyf --input <input-font> --output <output-font> [options]
 
 ## Writing Direction
 
-> [!WARNING]
-> The vertical writing feature is currently under development.
+### LtR (left to right) vertical writing
 
-When using the font for vertical writing, the `vrt2` OpenType feature must be enabled. This ensures that glyphs are rotated correctly for vertical layout. Note that currently, only left-to-right (LTR) vertical writing is supported; right-to-left (RTL) vertical writing is not yet implemented.
-
+When using the font for LtR vertical writing, the `vrt2` OpenType feature must be enabled.
 Here's an example of how to enable this in CSS:
 
 ```css
 .example {
   writing-mode: vertical-lr;
   font-feature-settings: "vrt2";
+}
+```
+
+### RtL (right to left) vertical writing
+
+> [!WARNING]
+> The RtL vertical writing feature is currently under development.
+
+When using the font for LtR vertical writing, the `rtlm` and `vrt2` OpenType features must be enabled.
+Here's an example of how to enable them in CSS:
+
+```css
+.example {
+  writing-mode: vertical-rl;
+  font-feature-settings: "rtlm", "vrt2";
 }
 ```
 
