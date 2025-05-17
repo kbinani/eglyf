@@ -102,7 +102,7 @@ public:
           return EGLYF_ERROR;
         }
         u16string tag;
-        for (int i = 0; i < length; i += 2) {
+        for (int j = 0; j < length; j += 2) {
           uint16_t u;
           if (!in.u16(&u)) {
             return EGLYF_ERROR;
