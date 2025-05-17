@@ -529,6 +529,8 @@ public:
     }
     int16_t voheight = vowidth * 5 / 16;
 
+    // hwt* glyph names for vertical writing direction: https://gyazo.com/88f0ac95e7cefac105bd913a76076510
+
     auto &outlines = font.outlines;
     if (!holds_alternative<Font::TrueTypeOutlines>(outlines)) {
       return EGLYF_ERROR;
@@ -1198,7 +1200,8 @@ public:
         for (auto &point : c.points) {
           auto v = point.rotatedCW90();
           point.x = v.x;
-          point.y = v.y;
+          // -advanceHeight + dy := vbottom
+          point.y = v.y + vbottom + advanceHeight;
         }
       }
       auto hwttbT = font.replaceSimpleGlyphByName("hwttbT", Class::Base, contours, advanceWidth, vleft, advanceHeight, sideBearing);
@@ -1231,8 +1234,7 @@ public:
       c1.add(voright, vbottom + advanceHeight + sideBearing + jointLength);
       c1.add(voright, vbottom - jointLength);
       vector<Contour> chwtdtbT;
-      // -(advanceHeight) + dy := vbottom, dy = vbottom + advanceHeight
-      Transform<int16_t> txm(1, 0, 0, 1, 0, vbottom + advanceHeight);
+      Transform<int16_t> txm(1, 0, 0, 1, 0, 0);
       for (auto const &c : contours) {
         chwtdtbT.push_back(c.transformed(txm));
       }
@@ -1248,6 +1250,26 @@ public:
       auto hwtdbbT = font.replaceCompositeGlyphByName("hwtdbbT", Class::Base, GlyphRecord::New(*hwtdtbT, voleft + voright, 0, Vec<float>(-1, 1)), w, voleft, advanceHeight + sideBearing, -jointLength);
       if (!hwtdbbT) {
         return EGLYF_STATUS_PUSH(hwtdbbT.status());
+      }
+
+      // hwtdbeB
+      vector<Contour> chwtdbeB;
+      // -(vbottom - jointLength) + dy := vbottom + advanceHeight + sideBearing + jointLength
+      // dy = 2 * vbottom + advanceHeight + sideBearing
+      Transform<int16_t> thwtdbeB(-1, 0, 0, -1, vright + vleft, 2 * vbottom + advanceHeight + sideBearing);
+      for (auto &c : contours) {
+        Contour cp;
+        for (auto &point : c.points) {
+          auto v = point.transformed(thwtdbeB);
+          cp.add(v.x, v.y, point.control);
+        }
+        chwtdbeB.push_back(cp);
+      }
+      chwtdbeB.push_back(c0);
+      chwtdbeB.push_back(c1);
+      auto hwtdbeB = font.replaceSimpleGlyphByName("hwtdbeB", Class::Base, chwtdbeB, w, voleft, advanceHeight + sideBearing, -jointLength);
+      if (!hwtdbeB) {
+        return EGLYF_STATUS_PUSH(hwtdbeB.status());
       }
     }
     {
@@ -1285,7 +1307,8 @@ public:
       int16_t advanceWidth;
       int16_t advanceHeight;
       CreateContour_hwttb(p, voright, voright - voleft, contours, advanceHeight, advanceWidth);
-      Transform<int16_t> txm = Transform<int16_t>::CW90();
+      // -(advanceHeight) + dy = vbottom
+      Transform<int16_t> txm(0, 1, -1, 0, 0, vbottom + advanceHeight);
       for (size_t i = 0; i < contours.size(); i++) {
         contours[i] = contours[i].transformed(txm);
       }
@@ -1297,6 +1320,14 @@ public:
       auto hwtobbT = font.replaceCompositeGlyphByName("hwtobbT", Class::Base, GlyphRecord::New(*hwtotbT, voleft + voright, 0, Vec<float>(-1, 1)), w, voleft, advanceHeight, sideBearing);
       if (!hwtobbT) {
         return EGLYF_STATUS_PUSH(hwtobbT.status());
+      }
+      auto hwtoteB = font.replaceCompositeGlyphByName("hwtoteB", Class::Base, GlyphRecord::New(*hwtotbT, 0, 0, Vec<float>(1, -1)), w, voleft, advanceHeight, -jointLength);
+      if (!hwtoteB) {
+        return EGLYF_STATUS_PUSH(hwtoteB.status());
+      }
+      auto hwtobeB = font.replaceCompositeGlyphByName("hwtobeB", Class::Base, GlyphRecord::New(*hwtotbT, voleft + voright, 0, Vec<float>(-1, -1)), w, voleft, advanceHeight, -jointLength);
+      if (!hwtobeB) {
+        return EGLYF_STATUS_PUSH(hwtobeB.status());
       }
     }
     {
