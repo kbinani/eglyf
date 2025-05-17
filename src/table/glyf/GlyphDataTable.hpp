@@ -142,6 +142,25 @@ public:
       return c;
     }
 
+    Rect<int16_t> boundingBox() const {
+      using namespace std;
+      if (points.empty()) {
+        return Rect<int16_t>(0, 0, 0, 0);
+      }
+      int16_t minX = points[0].x;
+      int16_t maxX = minX;
+      int16_t minY = points[0].y;
+      int16_t maxY = minY;
+      for (size_t i = 1; i < points.size(); i++) {
+        Point const &p = points[i];
+        minX = min(minX, p.x);
+        maxX = max(maxX, p.x);
+        minY = min(minY, p.y);
+        maxY = max(maxY, p.y);
+      }
+      return Rect<int16_t>(minX, minY, maxX, maxY);
+    }
+
     std::vector<Point> points;
   };
 

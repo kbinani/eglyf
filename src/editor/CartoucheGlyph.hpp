@@ -358,16 +358,12 @@ class CartoucheGlyph {
 
   static void CreateContour_cwbL(Param const &p, int16_t hfu, int16_t width, int16_t bottom, int16_t height, glyf::GlyphDataTable::Contour &c) {
     using namespace std;
-    using Contour = glyf::GlyphDataTable::Contour;
 
-    auto sideBearing = p.sideBearing;
-    auto jointLength = p.jointLength;
-    auto approachLength = p.approachLength;
     auto lineWidth = p.lineWidth;
     auto walledLineWidth = p.walledLineWidth;
     auto wallHeight = p.wallHeight;
 
-    Vec<int16_t> center(Vec<int16_t>(p.sideBearing + width, bottom + height / 2));
+    Vec<int16_t> center(p.sideBearing + width, bottom + height / 2);
     array<QuadraticBezier<int16_t>, 4> out = QuadraticBezier<int16_t>::LeftCartouche(center, height - 2 * lineWidth + 2 * walledLineWidth, width - lineWidth + walledLineWidth);
     auto [out1, out2, out3, out4] = out;
     auto [in4, in3, in2, in1] = QuadraticBezier<int16_t>::LeftCartouche(center, height - 2 * lineWidth, width - lineWidth);
@@ -1785,6 +1781,32 @@ public:
         if (!gid) {
           return EGLYF_STATUS_PUSH(gid.status());
         }
+      }
+    }
+    {
+      // cwbT
+      int16_t w = sb + hhu * hfu + sb;
+      int16_t center = w / 2;
+      int16_t vleft = center - hhu * hfu / 2 - 2 * lineWidth;
+      int16_t vright = center + hhu * hfu / 2 + 2 * lineWidth;
+
+      Contour c;
+      CreateContour_cwbL(p, vfu, vheight, vleft, vright - vleft, c);
+      // -(sideBearing + vheight + approachLength) + dy := vbottom
+      Transform<int16_t> txm(0, 1, -1, 0, 0, vbottom + sideBearing + vheight + approachLength);
+      c = c.transformed(txm);
+      Rect<int16_t> bounds = c.boundingBox();
+      int16_t advanceHeight = vheight + sideBearing + approachLength;
+      int16_t tsb = vbottom + advanceHeight - bounds.yMax;
+      auto cwbT = font.replaceSimpleGlyphByName("cwbT", Class::Base, {c}, w, bounds.xMin, advanceHeight, tsb);
+      if (!cwbT) {
+        return EGLYF_STATUS_PUSH(cwbT.status());
+      }
+      Transform<int16_t> tcweB(1, 0, 0, -1, 0, 0);
+      auto bcweB = bounds.transformed(tcweB);
+      auto cweB = font.replaceCompositeGlyphByName("cweB", Class::Base, GlyphRecord::New(*cwbT, 0, 0, Vec<float>(1, -1)), w, bcweB.xMin, advanceHeight, -jointLength);
+      if (!cweB) {
+        return EGLYF_STATUS_PUSH(cweB.status());
       }
     }
     {
