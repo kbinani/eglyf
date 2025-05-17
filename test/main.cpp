@@ -65,7 +65,7 @@ TEST_CASE("main") {
     REQUIRE(hb_feature_from_string("vrt2", 4, &vrt2));
     vector<hb_feature_t> features;
     features.push_back(vrt2);
-    HbBufferUniquePtr buf(CreateBuffer(U"𓍹𓐼𓀀𓊆𓐾𓀀𓐿𓊇𓐽𓍺"s, font, features));
+    HbBufferUniquePtr buf(CreateBuffer(U"𓃒𓐰𓂡𓌸𓁦"s, font, features));
     REQUIRE(buf);
     auto numGlyphs = hb_buffer_get_length(buf.get());
     hb_glyph_info_t *glyphInfo = hb_buffer_get_glyph_infos(buf.get(), nullptr);

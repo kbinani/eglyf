@@ -1512,7 +1512,6 @@ public:
     if (!a) {
       return EGLYF_ERROR;
     }
-    a->clear();
     for (auto const &it : sizeVariants) {
       //   SUB GLYPH "D40_62" GLYPH "mr"
       //   WITH GLYPH "D40_62R"
