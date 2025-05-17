@@ -77,7 +77,7 @@ Here's an example of how to enable this in CSS:
 > [!WARNING]
 > The RtL vertical writing feature is currently under development.
 
-When using the font for LtR vertical writing, the `rtlm` and `vrt2` OpenType features must be enabled.
+When using the font for RtL vertical writing, the `rtlm` and `vrt2` OpenType features must be enabled.
 Here's an example of how to enable them in CSS:
 
 ```css
