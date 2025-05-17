@@ -1147,6 +1147,20 @@ public:
       if (!hwtdbT) {
         return EGLYF_STATUS_PUSH(hwtdbT.status());
       }
+
+      // hwtdeB
+      Contour chwtdeB;
+      // -(vbottom - jointLength) + dy := vbottom + hwvHeight + sideBearing + jointLength, dy = 2 * vbottom + hwvHeight + sideBearing
+      Transform<int16_t> txm(1, 0, 0, -1, 0, 2 * vbottom + hwvHeight + sideBearing);
+      for (auto it = c.points.rbegin(); it != c.points.rend(); it++) {
+        auto const &point = *it;
+        auto v = point.transformed(txm);
+        chwtdeB.add(v.x, v.y, point.control);
+      }
+      auto hwtdeB = font.replaceSimpleGlyphByName("hwtdeB", Class::Base, {c0, c1, chwtdeB}, w, voleft, hwvHeight + sideBearing, -jointLength);
+      if (!hwtdeB) {
+        return EGLYF_STATUS_PUSH(hwtdeB.status());
+      }
     }
     {
       // hwtobT
@@ -1248,6 +1262,10 @@ public:
       auto hwtobT = font.replaceSimpleGlyphByName("hwtobT", Class::Base, {c}, w, voleft, hwvHeight + sideBearing, sideBearing);
       if (!hwtobT) {
         return EGLYF_STATUS_PUSH(hwtobT.status());
+      }
+      auto hwtoeB = font.replaceCompositeGlyphByName("hwtoeB", Class::Base, GlyphRecord::New(*hwtobT, 0, 0, Vec<float>(1, -1)), w, voleft, hwvHeight + sideBearing, -jointLength);
+      if (!hwtoeB) {
+        return EGLYF_STATUS_PUSH(hwtoeB.status());
       }
     }
     {
