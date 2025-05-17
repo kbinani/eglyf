@@ -976,7 +976,7 @@ public:
         return EGLYF_STATUS_PUSH(hwtteR.status());
       }
       for (auto const &n : {"hwtbbL", "hwtbeR"}) {
-        auto gid = font.replaceCompositeGlyphByName("hwtbbL", Class::Base, GlyphRecord::New(*hwttbL, 0, advanceHeight, Vec<float>(1, -1)), advanceWidth, p.sideBearing, 0, 0);
+        auto gid = font.replaceCompositeGlyphByName(n, Class::Base, GlyphRecord::New(*hwttbL, 0, advanceHeight, Vec<float>(1, -1)), advanceWidth, p.sideBearing, 0, 0);
         if (!gid) {
           return EGLYF_STATUS_PUSH(gid.status());
         }
