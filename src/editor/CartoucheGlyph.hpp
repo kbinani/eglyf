@@ -1242,6 +1242,13 @@ public:
       if (!hwtdtbT) {
         return EGLYF_STATUS_PUSH(hwtdtbT.status());
       }
+
+      // hwtdbbT
+      // -voright + dx := voleft, dx = voleft + voright
+      auto hwtdbbT = font.replaceCompositeGlyphByName("hwtdbbT", Class::Base, GlyphRecord::New(*hwtdtbT, voleft + voright, 0, Vec<float>(-1, 1)), w, voleft, advanceHeight + sideBearing, -jointLength);
+      if (!hwtdbbT) {
+        return EGLYF_STATUS_PUSH(hwtdbbT.status());
+      }
     }
     {
       // hwtobT
@@ -1285,6 +1292,11 @@ public:
       auto hwtotbT = font.replaceSimpleGlyphByName("hwtotbT", Class::Base, contours, w, voleft, advanceHeight, sideBearing);
       if (!hwtotbT) {
         return EGLYF_STATUS_PUSH(hwtotbT.status());
+      }
+      // -voright + dx := voleft, dx = voleft + voright
+      auto hwtobbT = font.replaceCompositeGlyphByName("hwtobbT", Class::Base, GlyphRecord::New(*hwtotbT, voleft + voright, 0, Vec<float>(-1, 1)), w, voleft, advanceHeight, sideBearing);
+      if (!hwtobbT) {
+        return EGLYF_STATUS_PUSH(hwtobbT.status());
       }
     }
     {
