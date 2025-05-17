@@ -1271,6 +1271,11 @@ public:
       if (!hwtdbeB) {
         return EGLYF_STATUS_PUSH(hwtdbeB.status());
       }
+      // hwtdteB
+      auto hwtdteB = font.replaceCompositeGlyphByName("hwtdteB", Class::Base, GlyphRecord::New(*hwtdbeB, voleft + voright, 0, Vec<float>(-1, 1)), w, voleft, advanceHeight + sideBearing, -jointLength);
+      if (!hwtdteB) {
+        return EGLYF_STATUS_PUSH(hwtdteB.status());
+      }
     }
     {
       // hwtobT
