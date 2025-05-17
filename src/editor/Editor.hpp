@@ -1503,6 +1503,9 @@ public:
     if (auto st = replaceLookup_rt005_swaprtlsigns_M(); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
+    if (auto st = replaceLookup_ps077_cntrlmirrorglyphsR_M(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
     return Status::Ok();
   }
 
@@ -2084,7 +2087,6 @@ public:
 
   Status replaceLookup_ps046_targetglyphs_1_A() {
     using namespace std;
-    using namespace std;
     auto a = getLookupByName("ps046_targetglyphs_1_A");
     if (!a) {
       return EGLYF_ERROR;
@@ -2142,6 +2144,50 @@ public:
     setupSubst(*a, {"et64", "BF1"}, {"BF1_64"});
     setupSubst(*a, {"et65", "BF1"}, {"BF1_65"});
 
+    return Status::Ok();
+  }
+
+  Status replaceLookup_ps077_cntrlmirrorglyphsR_M() {
+    using namespace std;
+    auto a = getLookupByName("ps077_cntrlmirrorglyphsR_Ma");
+    if (!a) {
+      return EGLYF_ERROR;
+    }
+    auto b = getLookupByName("ps078_cntrlmirrorglyphsR_Mb");
+    if (!b) {
+      return EGLYF_ERROR;
+    }
+    deque<shared_ptr<Lookup::Substitution>> all;
+    auto mr = getGlyphByName("mr");
+    for (auto const &it : sizeVariants) {
+      //   SUB GLYPH "M23R" GLYPH "mr"
+      //   WITH GLYPH "M23"
+      // END_SUB
+      SizeVariants const &sv = it.second;
+      auto g = getGlyphByName(format("{}R", sv.base->name));
+      if (g->id) {
+        auto s = make_shared<Lookup::Substitution>();
+        s->input.push_back(g);
+        s->input.push_back(mr);
+        s->output.push_back(sv.base);
+        all.push_back(s);
+      }
+      for (auto const &i : sv.variants) {
+        auto b = getGlyphByName(format("{}R", i.second->name));
+        if (b->id) {
+          auto s = make_shared<Lookup::Substitution>();
+          s->input.push_back(b);
+          s->input.push_back(mr);
+          s->output.push_back(i.second);
+          all.push_back(s);
+        }
+      }
+    }
+    // Split lookup table as it exceeds the maximum value representable by Offset16
+    size_t half = all.size() / 2;
+    copy(all.begin(), all.begin() + half, back_inserter(a->substitutions));
+    copy(all.begin() + half, all.end(), back_inserter(b->substitutions));
+    cout << all.size() << endl;
     return Status::Ok();
   }
 
