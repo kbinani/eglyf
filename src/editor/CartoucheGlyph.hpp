@@ -2044,6 +2044,30 @@ public:
       if (!hweB) {
         return EGLYF_STATUS_PUSH(hweB.status());
       }
+
+      // hfbT
+      int16_t voleft = center - hhu * hfu / 2 - 4 * lineWidth;
+      int16_t voright = center + hhu * hfu / 2 + 4 * lineWidth;
+
+      Contour c0;
+      c0.add(voleft, vbottom - jointLength);
+      c0.add(voleft, vbottom + hwvHeight + sideBearing + jointLength);
+      c0.add(voleft + lineWidth, vbottom + hwvHeight + sideBearing + jointLength);
+      c0.add(voleft + lineWidth, vbottom - jointLength);
+      Contour c1;
+      c1.add(voright - lineWidth, vbottom - jointLength);
+      c1.add(voright - lineWidth, vbottom + hwvHeight + sideBearing + jointLength);
+      c1.add(voright, vbottom + hwvHeight + sideBearing + jointLength);
+      c1.add(voright, vbottom - jointLength);
+      auto hfbT = font.replaceSimpleGlyphByName("hfbT", Class::Base, {c0, c1, c}, w, voleft, hwvHeight + sideBearing, -jointLength);
+      if (!hfbT) {
+        return EGLYF_STATUS_PUSH(hfbT.status());
+      }
+
+      auto hfeB = font.replaceCompositeGlyphByName("hfeB", Class::Base, GlyphRecord::New(*hfbT, 0, 0, Vec<float>(1, -1)), w, voleft, hwvHeight + sideBearing, -jointLength);
+      if (!hfeB) {
+        return EGLYF_STATUS_PUSH(hfeB.status());
+      }
     }
     return Status::Ok();
   }
