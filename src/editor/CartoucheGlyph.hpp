@@ -1873,6 +1873,36 @@ public:
       if (!cweB) {
         return EGLYF_STATUS_PUSH(cweB.status());
       }
+
+      // cfbT
+      int16_t voleft = center - hhu * hfu / 2 - 4 * lineWidth;
+      int16_t voright = center + hhu * hfu / 2 + 4 * lineWidth;
+      Contour c0;
+      c0.add(voleft, vbottom - jointLength);
+      c0.add(voleft, vbottom + advanceHeight + jointLength);
+      c0.add(voleft + lineWidth, vbottom + advanceHeight + jointLength);
+      c0.add(voleft + lineWidth, vbottom - jointLength);
+      Contour c1;
+      c1.add(voright - lineWidth, vbottom - jointLength);
+      c1.add(voright - lineWidth, vbottom + advanceHeight + jointLength);
+      c1.add(voright, vbottom + advanceHeight + jointLength);
+      c1.add(voright, vbottom - jointLength);
+      Contour ccfbT;
+      for (auto it = c.points.rbegin(); it != c.points.rend(); it++) {
+        ccfbT.points.push_back(*it);
+      }
+      auto cfbT = font.replaceSimpleGlyphByName("cfbT", Class::Base, {c0, c1, ccfbT}, w, voleft, advanceHeight, -jointLength);
+      if (!cfbT) {
+        return EGLYF_STATUS_PUSH(cfbT.status());
+      }
+
+      // cfeB
+      //  -vbottom + dy := vbottom + advanceHeight
+      Transform<int16_t> tcfeB(1, 0, 0, -1, 0, 2 * vbottom + advanceHeight);
+      auto cfeB = font.replaceSimpleGlyphByName("cfeB", Class::Base, {c0, c1, c.transformed(tcfeB)}, w, voleft, advanceHeight, -jointLength);
+      if (!cfeB) {
+        return EGLYF_STATUS_PUSH(cfeB.status());
+      }
     }
     {
       // hwbL
