@@ -1967,7 +1967,8 @@ public:
       int16_t wallLength = vfu * 3 / 5;
       int16_t hollowLength = (vfu - wallLength) / 2;
 
-      int16_t hwbTop = vbottom + vheight - lineWidth + walledLineWidth + wallHeight;
+      int16_t hwvHeight = width;
+      int16_t hwbTop = vbottom + hwvHeight - lineWidth + walledLineWidth + wallHeight;
       int vDiv = (int)round((hwbTop - vbottom - wallLength) / vfu);
 
       int16_t hwbLeft = vleft + lineWidth - walledLineWidth - wallHeight;
@@ -1983,8 +1984,8 @@ public:
         c.add(hwbLeft, y0 + wallLength);
         c.add(hwbLeft + wallHeight, y0 + wallLength);
       }
-      c.add(hwbLeft + wallHeight, hwbTop - wallLength);
-      c.add(hwbLeft, hwbTop - wallLength);
+      c.add(hwbLeft + wallHeight, vbottom + vfu * vDiv + hollowLength);
+      c.add(hwbLeft, vbottom + vfu * vDiv + hollowLength);
       c.add(hwbLeft, hwbTop);
       for (int i = 0; i < hDiv - 1; i++) {
         int16_t x0 = (int16_t)round(hwbLeft + va * 5 * i + 3 * va);
@@ -1994,8 +1995,8 @@ public:
         c.add(x0 + hollowLength * 2, hwbTop);
       }
       c.add(hwbRight, hwbTop);
-      c.add(hwbRight, hwbTop - wallLength);
-      c.add(hwbRight - wallHeight, hwbTop - wallLength);
+      c.add(hwbRight, vbottom + vfu * vDiv + hollowLength);
+      c.add(hwbRight - wallHeight, vbottom + vfu * vDiv + hollowLength);
       for (int i = vDiv - 1; i >= 0; i--) {
         int16_t y0 = vbottom + vfu * i + hollowLength;
         c.add(hwbRight - wallHeight, y0 + wallLength);
@@ -2007,9 +2008,17 @@ public:
       c.add(hwbRight - wallHeight - walledLineWidth, vbottom - jointLength);
       c.add(hwbRight - wallHeight - walledLineWidth, hwbTop - wallHeight - walledLineWidth);
       c.add(hwbLeft + wallHeight + walledLineWidth, hwbTop - wallHeight - walledLineWidth);
-      auto hwbT = font.replaceSimpleGlyphByName("hwbT", Class::Base, {c}, w, hwbLeft, vheight + sideBearing, vbottom + vheight + sideBearing - hwbTop);
+      auto hwbT = font.replaceSimpleGlyphByName("hwbT", Class::Base, {c}, w, hwbLeft, hwvHeight + sideBearing, vbottom + hwvHeight + sideBearing - hwbTop);
       if (!hwbT) {
         return EGLYF_STATUS_PUSH(hwbT.status());
+      }
+
+      // hweB
+      // -vbottom + dy := sideBearing + (hwbTop - vbottom)
+      Transform<int16_t> thweB(1, 0, 0, -1, 0, sideBearing + hwbTop);
+      auto hweB = font.replaceCompositeGlyphByName("hweB", Class::Base, GlyphRecord::New(*hwbT, 0, sideBearing + hwbTop, Vec<float>(1, -1)), w, hwbLeft, hwvHeight + sideBearing, -jointLength);
+      if (!hweB) {
+        return EGLYF_STATUS_PUSH(hweB.status());
       }
     }
     return Status::Ok();
