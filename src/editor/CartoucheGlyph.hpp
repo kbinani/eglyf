@@ -1950,6 +1950,68 @@ public:
         }
       }
     }
+    {
+      // hwbT
+      // https://gyazo.com/bcbece75fbf5883d67dcfc54495de843
+
+      int16_t w = sb + hhu * hfu + sb;
+      int16_t center = w / 2;
+      int16_t vleft = center - hhu * hfu / 2 - 2 * lineWidth;
+      int16_t vright = center + hhu * hfu / 2 + 2 * lineWidth;
+
+      double a = vfu / 5.0;
+      double sumW = vwidth - 2 * lineWidth + 2 * walledLineWidth + 2 * wallHeight;
+      int hDiv = (int)round((sumW - 2 * a) / (5 * a));
+      float va = (int16_t)round(sumW / (5 * hDiv - 2));
+
+      int16_t wallLength = vfu * 3 / 5;
+      int16_t hollowLength = (vfu - wallLength) / 2;
+
+      int16_t hwbTop = vbottom + vheight - lineWidth + walledLineWidth + wallHeight;
+      int vDiv = (int)round((hwbTop - vbottom - wallLength) / vfu);
+
+      int16_t hwbLeft = vleft + lineWidth - walledLineWidth - wallHeight;
+      int16_t hwbRight = vright - lineWidth + walledLineWidth + wallHeight;
+
+      Contour c;
+      c.add(vleft + lineWidth, vbottom - jointLength);
+      c.add(vleft + lineWidth - walledLineWidth, vbottom - jointLength);
+      for (int i = 0; i < vDiv; i++) {
+        int16_t y0 = vbottom + vfu * i + hollowLength;
+        c.add(hwbLeft + wallHeight, y0);
+        c.add(hwbLeft, y0);
+        c.add(hwbLeft, y0 + wallLength);
+        c.add(hwbLeft + wallHeight, y0 + wallLength);
+      }
+      c.add(hwbLeft + wallHeight, hwbTop - wallLength);
+      c.add(hwbLeft, hwbTop - wallLength);
+      c.add(hwbLeft, hwbTop);
+      for (int i = 0; i < hDiv - 1; i++) {
+        int16_t x0 = (int16_t)round(hwbLeft + va * 5 * i + 3 * va);
+        c.add(x0, hwbTop);
+        c.add(x0, hwbTop - wallHeight);
+        c.add(x0 + hollowLength * 2, hwbTop - wallHeight);
+        c.add(x0 + hollowLength * 2, hwbTop);
+      }
+      c.add(hwbRight, hwbTop);
+      c.add(hwbRight, hwbTop - wallLength);
+      c.add(hwbRight - wallHeight, hwbTop - wallLength);
+      for (int i = vDiv - 1; i >= 0; i--) {
+        int16_t y0 = vbottom + vfu * i + hollowLength;
+        c.add(hwbRight - wallHeight, y0 + wallLength);
+        c.add(hwbRight, y0 + wallLength);
+        c.add(hwbRight, y0);
+        c.add(hwbRight - wallHeight, y0);
+      }
+      c.add(hwbRight - wallHeight, vbottom - jointLength);
+      c.add(hwbRight - wallHeight - walledLineWidth, vbottom - jointLength);
+      c.add(hwbRight - wallHeight - walledLineWidth, hwbTop - wallHeight - walledLineWidth);
+      c.add(hwbLeft + wallHeight + walledLineWidth, hwbTop - wallHeight - walledLineWidth);
+      auto hwbT = font.replaceSimpleGlyphByName("hwbT", Class::Base, {c}, w, hwbLeft, vheight + sideBearing, vbottom + vheight + sideBearing - hwbTop);
+      if (!hwbT) {
+        return EGLYF_STATUS_PUSH(hwbT.status());
+      }
+    }
     return Status::Ok();
   }
 };
