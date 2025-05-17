@@ -1585,9 +1585,7 @@ public:
     }
     for (int s = 1; s <= hhu; s++) {
       auto name = format("QW{}", s);
-      // int16_t w = sb + s * hfu + sb;
       int16_t w = s * hfu;
-      // int n = s;// (int)round(w / (float)(sb + hfu + sb));
       int16_t wallLength = hfu * 3 / 5; // w * 3 / (n * 5);
       int16_t hollowLength = (s * hfu - s * wallLength) / (s * 2);
       Contour up;
@@ -1617,6 +1615,49 @@ public:
       }
 
       auto gid = font.replaceSimpleGlyphByName(name, Class::Base, {up, down}, w, -jointLength, 0, 0);
+      if (!gid) {
+        return EGLYF_STATUS_PUSH(gid.status());
+      }
+    }
+    for (int s = 1; s <= hhu; s++) {
+      auto name = format("QW{}V", s);
+      int16_t h = vhu * vfu;
+      int16_t wallLength = vfu * 3 / 5;
+      int16_t hollowLength = (vhu * vfu - vhu * wallLength) / (vhu * 2);
+      int16_t w = sb + s * hfu + sb;
+      int16_t center = w / 2;
+      int16_t vleft = center - hhu * hfu / 2 - 2 * lineWidth;
+      int16_t vright = center + hhu * hfu / 2 + 2 * lineWidth;
+      // https://gyazo.com/8deb4f8a827a67355bc073172b6e5c20
+      int16_t x1 = vleft + lineWidth - walledLineWidth;
+      int16_t x0 = x1 - wallHeight;
+      int16_t x2 = vright - lineWidth + walledLineWidth;
+      int16_t x3 = x2 + wallHeight;
+      Contour left;
+      left.add(x1, vbottom - jointLength);
+      for (int i = 0; i < vhu; i++) {
+        int16_t y0 = vbottom + (2 * hollowLength + wallLength) * i + hollowLength;
+        left.add(x1, y0);
+        left.add(x0, y0);
+        left.add(x0, y0 + wallLength);
+        left.add(x1, y0 + wallLength);
+      }
+      left.add(x1, vbottom + h + jointLength);
+      left.add(x1 + walledLineWidth, vbottom + h + jointLength);
+      left.add(x1 + walledLineWidth, vbottom - jointLength);
+      Contour right;
+      right.add(x2, vbottom - jointLength);
+      right.add(x2 - walledLineWidth, vbottom - jointLength);
+      right.add(x2 - walledLineWidth, vbottom + h + jointLength);
+      right.add(x2, vbottom + h + jointLength);
+      for (int i = 0; i < vhu; i++) {
+        int16_t y0 = vbottom + h - (2 * hollowLength + wallLength) * i - hollowLength;
+        right.add(x2, y0);
+        right.add(x3, y0);
+        right.add(x3, y0 - wallLength);
+        right.add(x2, y0 - wallLength);
+      }
+      auto gid = font.replaceSimpleGlyphByName(name, Class::Base, {left, right}, w, x0, h, -jointLength);
       if (!gid) {
         return EGLYF_STATUS_PUSH(gid.status());
       }
