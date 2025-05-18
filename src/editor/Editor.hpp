@@ -1519,24 +1519,31 @@ public:
       return EGLYF_ERROR;
     }
     for (auto const &it : sizeVariants) {
-      //   SUB GLYPH "D40_62" GLYPH "mr"
-      //   WITH GLYPH "D40_62R"
-      // END_SUB
       SizeVariants const &sv = it.second;
       auto g = getGlyphByName(format("{}R", sv.base->name));
       if (g->id) {
-        auto s = make_shared<Lookup::Substitution>();
-        s->input.push_back(sv.base);
-        s->output.push_back(g);
-        a->substitutions.push_back(s);
+        auto s1 = make_shared<Lookup::Substitution>();
+        s1->input.push_back(sv.base);
+        s1->output.push_back(g);
+        a->substitutions.push_back(s1);
+
+        auto s2 = make_shared<Lookup::Substitution>();
+        s2->input.push_back(g);
+        s2->output.push_back(sv.base);
+        a->substitutions.push_back(s2);
       }
       for (auto const &i : sv.variants) {
         auto b = getGlyphByName(format("{}R", i.second->name));
         if (b->id) {
-          auto s = make_shared<Lookup::Substitution>();
-          s->input.push_back(i.second);
-          s->output.push_back(b);
-          a->substitutions.push_back(s);
+          auto s1 = make_shared<Lookup::Substitution>();
+          s1->input.push_back(i.second);
+          s1->output.push_back(b);
+          a->substitutions.push_back(s1);
+
+          auto s2 = make_shared<Lookup::Substitution>();
+          s2->input.push_back(b);
+          s2->output.push_back(i.second);
+          a->substitutions.push_back(s2);
         }
       }
     }
