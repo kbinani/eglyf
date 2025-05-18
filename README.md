@@ -62,6 +62,10 @@ eglyf --input <input-font> --output <output-font> [options]
 
 ### LtR (left to right) vertical writing
 
+<p align="center">
+  <img width="99" height="243" src="https://github.com/user-attachments/assets/9a6a9b1b-7031-4791-8be1-1f3f1ce5427b">
+</p>
+
 When using the font for LtR vertical writing, the `vrt2` OpenType feature must be enabled.
 Here's an example of how to enable this in CSS:
 
@@ -74,8 +78,9 @@ Here's an example of how to enable this in CSS:
 
 ### RtL (right to left) vertical writing
 
-> [!WARNING]
-> The RtL vertical writing feature is currently under development.
+<p align="center">
+  <img width="99" width="243" src="https://github.com/user-attachments/assets/331b64aa-343e-49b8-9e68-a1444e9e5837">
+</p>
 
 When using the font for RtL vertical writing, the `rtlm` and `vrt2` OpenType features must be enabled.
 Here's an example of how to enable them in CSS:
