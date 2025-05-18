@@ -9,10 +9,17 @@ public:
   }
 
   size_t read(void *buffer, size_t size) override {
-    if (File::Fread(buffer, size, 1, fp)) {
-      return size;
-    } else {
+    if (!fp) {
       return 0;
+    }
+    if (size == 0) {
+      return 0;
+    }
+    int count = fread(buffer, 1, size, fp);
+    if (count < 0) {
+      return 0;
+    } else {
+      return count;
     }
   }
 
