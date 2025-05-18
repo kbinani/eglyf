@@ -120,7 +120,7 @@ TEST_CASE("main") {
         "hwtteL",
         "hwtteR",
         "hwtbbL",
-        "hwtbbL",
+        "hwtbeR",
         "hwtbbR",
         "hwtbeL",
         "hwtdbL",
@@ -144,12 +144,33 @@ TEST_CASE("main") {
         "hwtdbbR",
         "hwtdbeL",
         "hwtbT",
+        "hwteB",
+        "hwtdbT",
+        "hwtdeB",
+        "hwtobT",
+        "hwttbT",
+        "hwtbbT",
+        "hwtbeB",
+        "hwtteB",
+        "hwtdtbT",
+        "hwtdbbT",
+        "hwtdbeB",
+        "hwtdteB",
+        "hwtobT",
+        "hwtoeB",
+        "hwtotbT",
+        "hwtobbT",
+        "hwtoteB",
+        "hwtobeB",
         "O33aeL",
         "O33aeR",
         "O33aoeL",
         "O33aoeR",
         "O33adeL",
         "O33adeR",
+        "O33aeB",
+        "O33adeB",
+        "O33aoeB",
         "cdbL",
         "cdbR",
         "cdreL",
@@ -167,6 +188,10 @@ TEST_CASE("main") {
         "cfeR",
         "cfbR",
         "cfeL",
+        "cwbT",
+        "cweB",
+        "cfbT",
+        "cfeB",
         "hwbL",
         "hweR",
         "hwbR",
@@ -175,6 +200,10 @@ TEST_CASE("main") {
         "hfeR",
         "hfbR",
         "hfeL",
+        "hwbT",
+        "hweB",
+        "hfbT",
+        "hfeB",
     };
     for (int ih = 1; ih <= 8; ih++) {
       glyphs.push_back(format("QC{}", ih));
@@ -184,7 +213,9 @@ TEST_CASE("main") {
       glyphs.push_back(format("QD{}", ih));
       glyphs.push_back(format("QD{}V", ih));
       glyphs.push_back(format("QW{}", ih));
+      glyphs.push_back(format("QW{}V", ih));
       glyphs.push_back(format("QF{}", ih));
+      glyphs.push_back(format("QF{}V", ih));
     }
     for (string const &pre : {"1", "2", "3", "4", "12", "13", "14", "23", "24", "34", "123", "124", "134", "234", "1234"}) {
       for (int ih = 1; ih <= 8; ih++) {
@@ -194,16 +225,22 @@ TEST_CASE("main") {
       }
     }
     REQUIRE(holds_alternative<Font::TrueTypeOutlines>(f->outlines));
-    fs::remove_all("test/asset/CartoucheGlyph");
-    fs::create_directories(fs::path("test/asset/CartoucheGlyph"));
     auto const &glyf = get<Font::TrueTypeOutlines>(f->outlines).glyf;
     for (auto const &name : glyphs) {
       auto gid = f->postGetGlyphID(name);
       REQUIRE(gid);
       Shape shape;
       REQUIRE(glyf->toShape(*gid, shape).ok());
-      ofstream stream(format("test/asset/CartoucheGlyph/{}.svg", name));
+      ostringstream stream;
       shape.toSvg(stream);
+      string actual = stream.str();
+
+      auto eFile = format("test/asset/CartoucheGlyph/{}.svg", name);
+      FileInputStream fis(eFile);
+      string expected = fis.readUntilEos();
+      REQUIRE(!expected.empty());
+
+      CHECK(actual == expected);
     }
   }
 }
