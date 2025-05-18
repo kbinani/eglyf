@@ -9,6 +9,25 @@ public:
     Card8 minor;
     Card8 hdrSize;
     OffSize offSize;
+
+    Status read(InputStream &in) {
+      if (!in.u8(&major)) {
+        return EGLYF_ERROR;
+      }
+      if (!in.u8(&minor)) {
+        return EGLYF_ERROR;
+      }
+      if (major != 1 || minor != 0) {
+        return EGLYF_ERROR;
+      }
+      if (!in.u8(&hdrSize)) {
+        return EGLYF_ERROR;
+      }
+      if (!in.u8(&offSize)) {
+        return EGLYF_ERROR;
+      }
+      return Status::Ok();
+    }
   };
 
 public:
@@ -20,20 +39,8 @@ public:
     using namespace std;
     OffsetInputStream in(&stream);
     auto ret = make_unique<CompactFontFormatTable>();
-    if (!in.u8(&ret->header.major)) {
-      return EGLYF_ERROR;
-    }
-    if (!in.u8(&ret->header.minor)) {
-      return EGLYF_ERROR;
-    }
-    if (ret->header.major != 1 || ret->header.minor != 0) {
-      return EGLYF_ERROR;
-    }
-    if (!in.u8(&ret->header.hdrSize)) {
-      return EGLYF_ERROR;
-    }
-    if (!in.u8(&ret->header.offSize)) {
-      return EGLYF_ERROR;
+    if (auto st = ret->header.read(in); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
     if (!in.seek(ret->header.hdrSize)) {
       return EGLYF_ERROR;
