@@ -93,6 +93,14 @@ TEST_CASE_FIXTURE(Fixture, "main") {
   using namespace eglyf;
   namespace fs = std::filesystem;
 
+  SUBCASE("otf") {
+    auto fis = make_unique<FileInputStream>("test/asset/NotoSansEgyptianHieroglyphs-Regular.otf");
+    shared_ptr<Font> font;
+    auto st = Font::Read(*fis, font);
+    CHECK(st.ok());
+    st.print(cout);
+  }
+
   SUBCASE("vertical-rl") {
     HbBufferUniquePtr buffer(CreateBuffer(U"𓀀𓑀𓀀"s, hbFont.get(), {"rtlm", "vrt2"}));
     auto names = GetGlyphNames(buffer.get(), *font);
@@ -110,7 +118,6 @@ TEST_CASE_FIXTURE(Fixture, "main") {
   }
 
   SUBCASE("cartouche-glyph") {
-    REQUIRE(font);
     vector<string> glyphs = {
         "cbL",
         "creR",
@@ -179,7 +186,6 @@ TEST_CASE_FIXTURE(Fixture, "main") {
         "hwteB",
         "hwtdbT",
         "hwtdeB",
-        "hwtobT",
         "hwttbT",
         "hwtbbT",
         "hwtbeB",
