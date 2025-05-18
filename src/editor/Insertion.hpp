@@ -36,6 +36,24 @@ public:
     }
   }
 
+  static std::optional<Pos> Mirrored(Pos p) {
+    switch (p) {
+    case Pos::TopStart:
+      return Pos::TopEnd;
+    case Pos::BottomStart:
+      return Pos::BottomEnd;
+    case Pos::TopEnd:
+      return Pos::TopStart;
+    case Pos::BottomEnd:
+      return Pos::BottomStart;
+    case Pos::Top:
+    case Pos::Middle:
+    case Pos::Bottom:
+    default:
+      return std::nullopt;
+    }
+  }
+
   struct Info {
     Info() = default;
     explicit Info(WxH size, std::optional<int> dx = std::nullopt, std::optional<int> dy = std::nullopt) : size(size), dx(dx), dy(dy) {}
@@ -262,6 +280,7 @@ public:
       }
       WxH baseSize = found->second.size;
       for (Pos pos : poss) {
+        auto mirrored = Mirrored(pos);
         auto result = ScanInsertionSpot(font, name, baseSize, pos, chu, vhu, hfu, vfu, base, lineWidth, insertionResolution);
         if (result) {
           WxH sz = result->first;
@@ -274,22 +293,43 @@ public:
             info.dy = offset.y;
           }
           out[name].insertions[pos][baseSize] = info;
+          if (mirrored) {
+            Info mr(sz);
+            if (offset.x != 0) {
+              mr.dx = -offset.x;
+            }
+            if (offset.y != 0) {
+              mr.dy = offset.y;
+            }
+            out[format("{}R", name)].insertions[*mirrored][baseSize] = mr;
+          }
         }
         for (auto i = found->second.variants.begin(); i != found->second.variants.end(); i++) {
           WxH variantSize = i->first;
           shared_ptr<Glyph> g = i->second;
           auto r = ScanInsertionSpot(font, g->name, variantSize, pos, chu, vhu, hfu, vfu, base, lineWidth, insertionResolution);
-          if (r) {
-            WxH sz = r->first;
-            Vec<int16_t> offset = r->second;
-            Info info(sz);
+          if (!r) {
+            continue;
+          }
+          WxH sz = r->first;
+          Vec<int16_t> offset = r->second;
+          Info info(sz);
+          if (offset.x != 0) {
+            info.dx = offset.x;
+          }
+          if (offset.y != 0) {
+            info.dy = offset.y;
+          }
+          out[name].insertions[pos][variantSize] = info;
+          if (mirrored) {
+            Info mr(sz);
             if (offset.x != 0) {
-              info.dx = offset.x;
+              mr.dx = -offset.x;
             }
             if (offset.y != 0) {
-              info.dy = offset.y;
+              mr.dy = offset.y;
             }
-            out[name].insertions[pos][variantSize] = info;
+            out[format("{}R", name)].insertions[*mirrored][variantSize] = mr;
           }
         }
       }

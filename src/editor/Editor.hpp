@@ -1633,10 +1633,7 @@ public:
         string const &name = get<0>(*j);
         Pos pos = get<1>(*j);
         WxH size = get<2>(*j);
-        auto sv = sizeVariants.find(name);
-        if (sv == sizeVariants.end()) {
-          continue;
-        }
+
         // IN_CONTEXT
         //  LEFT GLYPH "G27"
         //  LEFT GLYPH "bs22"
