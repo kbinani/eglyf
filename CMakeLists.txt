@@ -120,6 +120,8 @@ list(APPEND src_files
   src/io/Endianness.hpp
   src/editor/ShadingGlyph.hpp
   src/editor/Transformer.hpp
+  src/table/cff/Type.hpp
+  src/table/cff/CompactFontFormatTable.hpp
 )
 
 file(READ ${CMAKE_CURRENT_SOURCE_DIR}/res/EgyptianText_200.vtp vtp_content)

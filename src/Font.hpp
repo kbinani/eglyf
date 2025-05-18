@@ -8,6 +8,7 @@ public:
     std::shared_ptr<glyf::GlyphDataTable> glyf;
   };
   struct CFFOutlines {
+    std::shared_ptr<cff::CompactFontFormatTable> cff;
   };
 
 public:
@@ -605,9 +606,25 @@ public:
 
       records.erase(tr0);
       records.erase(tr1);
+    } else if (auto trCff = records.find(FCC("CFF ")); trCff != records.end()) {
+      shared_ptr<cff::CompactFontFormatTable> cff;
+      {
+        auto buffer = trCff->second.read(in);
+        if (!buffer) {
+          return EGLYF_ERROR;
+        }
+        ByteInputStream slice(*buffer);
+        if (auto st = cff::CompactFontFormatTable::Read(slice, cff); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
+      }
+      CFFOutlines o;
+      o.cff = cff;
+      ff->outlines = o;
+
+      records.erase(trCff);
     } else {
-      // TODO: CFF outlines not supported yet
-      return EGLYF_ERROR_WHAT("CFF outlines not supported yet");
+      return EGLYF_ERROR;
     }
 
     if (auto tr = records.find(FCC("GSUB")); tr != records.end()) {
