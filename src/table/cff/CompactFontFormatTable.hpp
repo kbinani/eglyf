@@ -45,10 +45,26 @@ public:
     if (!in.seek(ret->header.hdrSize)) {
       return EGLYF_ERROR;
     }
+    if (auto st = Index::Read(in, ret->name); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    if (auto st = Index::Read(in, ret->topDict); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    if (auto st = Index::Read(in, ret->string); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    if (auto st = Index::Read(in, ret->globalSubr); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
     return EGLYF_ERROR;
   }
 
   Header header;
+  std::shared_ptr<Index> name;
+  std::shared_ptr<Index> topDict;
+  std::shared_ptr<Index> string;
+  std::shared_ptr<Index> globalSubr;
 };
 
 } // namespace eglyf::cff

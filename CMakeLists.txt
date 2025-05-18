@@ -122,6 +122,7 @@ list(APPEND src_files
   src/editor/Transformer.hpp
   src/table/cff/Type.hpp
   src/table/cff/CompactFontFormatTable.hpp
+  src/table/cff/Index.hpp
 )
 
 file(READ ${CMAKE_CURRENT_SOURCE_DIR}/res/EgyptianText_200.vtp vtp_content)
