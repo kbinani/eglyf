@@ -27,7 +27,6 @@ Once processed with eglyf, fonts can correctly display hieroglyphs with their un
 
 ## Future plans
 
-- Enable vertical layout
 - Add support for processing fonts with CFF outlines
 - Enhance [Manuel de Codage](http://www.catchpenny.org/codage/) interpretation capabilities
 
@@ -60,7 +59,19 @@ eglyf --input <input-font> --output <output-font> [options]
 
 ## Writing Direction
 
-### LtR (left to right) vertical writing
+### LtR (left to right) horizontal writing
+
+<p align="center">
+  <img width="243" height="99" src="https://github.com/user-attachments/assets/6d687566-f447-448c-bb63-8249c65fcaf8">
+</p>
+
+This writing direction is the default writing form. No feature setting needed.
+
+### RtL (right to left) horizontal writing
+
+This writing direction is not supported.
+
+### LtR vertical writing
 
 <p align="center">
   <img width="99" height="243" src="https://github.com/user-attachments/assets/9a6a9b1b-7031-4791-8be1-1f3f1ce5427b">
@@ -76,7 +87,7 @@ Here's an example of how to enable this in CSS:
 }
 ```
 
-### RtL (right to left) vertical writing
+### RtL vertical writing
 
 <p align="center">
   <img width="99" width="243" src="https://github.com/user-attachments/assets/331b64aa-343e-49b8-9e68-a1444e9e5837">
