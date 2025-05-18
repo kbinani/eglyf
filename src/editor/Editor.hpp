@@ -3388,7 +3388,7 @@ public:
           for (int v = 1; v <= vhu; v++) {
             // DEF_ANCHOR "MARK_ti" ON None GLYPH it11R COMPONENT 1 AT  POS DX -157 END_POS END_ANCHOR
             // DEF_ANCHOR "MARK_ti" ON None GLYPH it211R COMPONENT 1 AT  POS DX -157 END_POS END_ANCHOR
-            auto name = format("it{}{}R", h, v);
+            auto name = format("{}{}{}R", prefix, h, v);
             auto glyph = getGlyphByName(name);
             int16_t dx = -h * hfu / 2;
             MARK_ti->second->glyphs[glyph] = Vec<optional<int16_t>>(dx, nullopt);
