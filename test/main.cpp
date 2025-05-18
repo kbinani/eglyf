@@ -22,13 +22,19 @@ using HbFaceUniquePtr = std::unique_ptr<hb_face_t, Destructor<hb_face_destroy>>;
 using HbFontUniquePtr = std::unique_ptr<hb_font_t, Destructor<hb_font_destroy>>;
 using HbBufferUniquePtr = std::unique_ptr<hb_buffer_t, Destructor<hb_buffer_destroy>>;
 
-static hb_buffer_t *CreateBuffer(std::u32string const &str, std::shared_ptr<hb_font_t> const &font, std::vector<hb_feature_t> const &features) {
+static hb_buffer_t *CreateBuffer(std::u32string const &str, hb_font_t *font, std::vector<std::string> const &features) {
   HbBufferUniquePtr buffer(hb_buffer_create());
   hb_buffer_add_utf32(buffer.get(), (uint32_t const *)str.c_str(), -1, 0, -1);
   hb_buffer_set_direction(buffer.get(), HB_DIRECTION_LTR);
   hb_buffer_set_script(buffer.get(), HB_SCRIPT_EGYPTIAN_HIEROGLYPHS);
   hb_buffer_set_cluster_level(buffer.get(), HB_BUFFER_CLUSTER_LEVEL_CHARACTERS);
-  hb_shape(font.get(), buffer.get(), features.data(), features.size());
+  std::vector<hb_feature_t> fts;
+  for (auto const &n : features) {
+    hb_feature_t f;
+    REQUIRE(hb_feature_from_string(n.c_str(), n.size(), &f));
+    fts.push_back(f);
+  }
+  hb_shape(font, buffer.get(), fts.data(), fts.size());
   return buffer.release();
 }
 
@@ -44,12 +50,42 @@ static std::shared_ptr<eglyf::Font> MakeFont(std::string const &file) {
   return font;
 }
 
+static std::deque<std::string> GetGlyphNames(hb_buffer_t *buffer, eglyf::Font const &font) {
+  using namespace std;
+  deque<string> ret;
+  auto numGlyphs = hb_buffer_get_length(buffer);
+  hb_glyph_info_t *glyphInfo = hb_buffer_get_glyph_infos(buffer, nullptr);
+  for (unsigned int i = 0; i < numGlyphs; i++) {
+    hb_glyph_info_t info = glyphInfo[i];
+    auto gid = info.codepoint;
+    auto name = font.postGetName(gid);
+    REQUIRE(name);
+    ret.push_back(*name);
+  }
+  return ret;
+}
+
 struct Fixture {
   Fixture() {
+    using namespace std;
+    using namespace eglyf;
     font = MakeFont("test/asset/NotoSansEgyptianHieroglyphs-Regular.ttf");
+    REQUIRE(font);
+    auto out = make_unique<ByteOutputStream>();
+    REQUIRE(font->write(*out).ok());
+    string data = out->data();
+    out.reset();
+    REQUIRE(!data.empty());
+    hbBlob.reset(hb_blob_create(data.data(), data.size(), HB_MEMORY_MODE_READONLY, nullptr, nullptr));
+    hbFace.reset(hb_face_create(hbBlob.get(), 0));
+    hbFont.reset(hb_font_create(hbFace.get()));
+    REQUIRE(hbFont);
   }
 
   std::shared_ptr<eglyf::Font> font;
+  HbBlobUniquePtr hbBlob;
+  HbFaceUniquePtr hbFace;
+  HbFontUniquePtr hbFont;
 };
 
 TEST_CASE_FIXTURE(Fixture, "main") {
@@ -57,35 +93,23 @@ TEST_CASE_FIXTURE(Fixture, "main") {
   using namespace eglyf;
   namespace fs = std::filesystem;
 
-  SUBCASE("dump_glyph_names") {
-    REQUIRE(font);
-    auto out = make_unique<ByteOutputStream>();
-    REQUIRE(font->write(*out).ok());
-    string data = out->data();
-    out.reset();
-    REQUIRE(!data.empty());
-    HbBlobUniquePtr blob(hb_blob_create(data.data(), data.size(), HB_MEMORY_MODE_READONLY, nullptr, nullptr));
-    HbFaceUniquePtr face(hb_face_create(blob.get(), 0));
-    shared_ptr<hb_font_t> hbFont(hb_font_create(face.get()), hb_font_destroy);
-    REQUIRE(hbFont);
-    hb_feature_t vrt2;
-    REQUIRE(hb_feature_from_string("vrt2", 4, &vrt2));
-    vector<hb_feature_t> features;
-    features.push_back(vrt2);
-    HbBufferUniquePtr buf(CreateBuffer(U"𓀀𓑀𓀀"s, hbFont, features));
-    REQUIRE(buf);
-    auto numGlyphs = hb_buffer_get_length(buf.get());
-    hb_glyph_info_t *glyphInfo = hb_buffer_get_glyph_infos(buf.get(), nullptr);
-    for (unsigned int i = 0; i < numGlyphs; i++) {
-      hb_glyph_info_t info = glyphInfo[i];
-      auto gid = info.codepoint;
-      auto name = font->postGetName(gid);
-      REQUIRE(name);
-      cout << *name << endl;
-    }
+  SUBCASE("vertical-rl") {
+    HbBufferUniquePtr buffer(CreateBuffer(U"𓀀𓑀𓀀"s, hbFont.get(), {"rtlm", "vrt2"}));
+    auto names = GetGlyphNames(buffer.get(), *font);
+    REQUIRE(names.size() == 16);
+    CHECK(names[5] == "A1");
+    CHECK(names[13] == "A1R");
   }
 
-  SUBCASE("CartoucheGlyph") {
+  SUBCASE("vertical-lr") {
+    HbBufferUniquePtr buffer(CreateBuffer(U"𓀀𓑀𓀀"s, hbFont.get(), {"vrt2"}));
+    auto names = GetGlyphNames(buffer.get(), *font);
+    REQUIRE(names.size() == 16);
+    CHECK(names[5] == "A1R");
+    CHECK(names[13] == "A1");
+  }
+
+  SUBCASE("cartouche-glyph") {
     REQUIRE(font);
     vector<string> glyphs = {
         "cbL",
