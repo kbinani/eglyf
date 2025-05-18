@@ -44,41 +44,49 @@ static std::shared_ptr<eglyf::Font> MakeFont(std::string const &file) {
   return font;
 }
 
-TEST_CASE("main") {
+struct Fixture {
+  Fixture() {
+    font = MakeFont("test/asset/NotoSansEgyptianHieroglyphs-Regular.ttf");
+  }
+
+  std::shared_ptr<eglyf::Font> font;
+};
+
+TEST_CASE_FIXTURE(Fixture, "main") {
   using namespace std;
   using namespace eglyf;
   namespace fs = std::filesystem;
-  auto f = MakeFont("test/asset/NotoSansEgyptianHieroglyphs-Regular.ttf");
-  REQUIRE(f);
 
   SUBCASE("dump_glyph_names") {
+    REQUIRE(font);
     auto out = make_unique<ByteOutputStream>();
-    REQUIRE(f->write(*out).ok());
+    REQUIRE(font->write(*out).ok());
     string data = out->data();
     out.reset();
     REQUIRE(!data.empty());
     HbBlobUniquePtr blob(hb_blob_create(data.data(), data.size(), HB_MEMORY_MODE_READONLY, nullptr, nullptr));
     HbFaceUniquePtr face(hb_face_create(blob.get(), 0));
-    shared_ptr<hb_font_t> font(hb_font_create(face.get()), hb_font_destroy);
-    REQUIRE(font);
+    shared_ptr<hb_font_t> hbFont(hb_font_create(face.get()), hb_font_destroy);
+    REQUIRE(hbFont);
     hb_feature_t vrt2;
     REQUIRE(hb_feature_from_string("vrt2", 4, &vrt2));
     vector<hb_feature_t> features;
     features.push_back(vrt2);
-    HbBufferUniquePtr buf(CreateBuffer(U"𓀀𓑀𓀀"s, font, features));
+    HbBufferUniquePtr buf(CreateBuffer(U"𓀀𓑀𓀀"s, hbFont, features));
     REQUIRE(buf);
     auto numGlyphs = hb_buffer_get_length(buf.get());
     hb_glyph_info_t *glyphInfo = hb_buffer_get_glyph_infos(buf.get(), nullptr);
     for (unsigned int i = 0; i < numGlyphs; i++) {
       hb_glyph_info_t info = glyphInfo[i];
       auto gid = info.codepoint;
-      auto name = f->postGetName(gid);
+      auto name = font->postGetName(gid);
       REQUIRE(name);
       cout << *name << endl;
     }
   }
 
   SUBCASE("CartoucheGlyph") {
+    REQUIRE(font);
     vector<string> glyphs = {
         "cbL",
         "creR",
@@ -224,10 +232,10 @@ TEST_CASE("main") {
         }
       }
     }
-    REQUIRE(holds_alternative<Font::TrueTypeOutlines>(f->outlines));
-    auto const &glyf = get<Font::TrueTypeOutlines>(f->outlines).glyf;
+    REQUIRE(holds_alternative<Font::TrueTypeOutlines>(font->outlines));
+    auto const &glyf = get<Font::TrueTypeOutlines>(font->outlines).glyf;
     for (auto const &name : glyphs) {
-      auto gid = f->postGetGlyphID(name);
+      auto gid = font->postGetGlyphID(name);
       REQUIRE(gid);
       Shape shape;
       REQUIRE(glyf->toShape(*gid, shape).ok());
