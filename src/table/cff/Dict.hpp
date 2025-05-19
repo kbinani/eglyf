@@ -4,30 +4,35 @@ namespace eglyf::cff {
 
 class Dict {
 public:
-  using Scalar = std::variant<double, int32_t>;
-  using Value = std::variant<Scalar, std::vector<Scalar>>;
+  using Number = std::variant<double, int32_t>;
+  using Value = std::variant<Number, std::vector<Number>>;
 
   Status read(std::string const &data) {
     using namespace std;
     ByteInputStream in(data);
-    vector<Scalar> vv;
+    vector<Number> vv;
     while (in.position() < data.size()) {
       uint8_t b0;
       if (!in.u8(&b0)) {
         return EGLYF_ERROR;
       }
       if (b0 == 12 || b0 <= 21) {
-        uint8_t key = b0;
+        uint8_t key;
         if (b0 == 12) {
-          if (!in.u8(&key)) {
+          uint8_t b1;
+          if (!in.u8(&b1)) {
             return EGLYF_ERROR;
           }
+          key = Key(b0, b1);
+        } else {
+          key = Key(b0);
         }
         if (vv.size() == 1) {
           values[key] = vv[0];
         } else {
           values[key] = vv;
         }
+        vv.clear();
       } else if (32 <= b0 && b0 <= 246) {
         vv.push_back((int32_t)b0 - 139);
       } else if (247 <= b0 && b0 <= 250) {
@@ -140,7 +145,153 @@ public:
     return Status::Ok();
   }
 
-  std::map<uint8_t, Value> values;
+  std::optional<double> f64(uint8_t key0, std::optional<uint8_t> key1 = std::nullopt) const {
+    using namespace std;
+    uint16_t key = Key(key0, key1);
+    auto found = values.find(key);
+    if (found == values.end()) {
+      return nullopt;
+    }
+    if (!holds_alternative<Number>(found->second)) {
+      return nullopt;
+    }
+    Number const &v = get<Number>(found->second);
+    if (!holds_alternative<double>(v)) {
+      return nullopt;
+    }
+    return get<double>(v);
+  }
+
+  bool f64a(std::vector<double> &out, uint8_t key0, std::optional<uint8_t> key1 = std::nullopt) const {
+    using namespace std;
+    uint16_t key = Key(key0, key1);
+    auto found = values.find(key);
+    if (found == values.end()) {
+      return false;
+    }
+    vector<double> vv;
+    if (holds_alternative<vector<Number>>(found->second)) {
+      vector<Number> const &v = get<vector<Number>>(found->second);
+      for (Number const &item : v) {
+        if (holds_alternative<int32_t>(item)) {
+          vv.push_back(get<int32_t>(item));
+        } else if (holds_alternative<double>(item)) {
+          vv.push_back(get<double>(item));
+        } else {
+          return false;
+        }
+      }
+    } else if (holds_alternative<Number>(found->second)) {
+      Number const v = get<Number>(found->second);
+      if (holds_alternative<int32_t>(v)) {
+        vv.push_back(get<int32_t>(v));
+      } else if (holds_alternative<double>(v)) {
+        vv.push_back(get<double>(v));
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
+    vv.swap(out);
+    return true;
+  }
+
+  std::optional<int32_t> i32(uint8_t key0, std::optional<uint8_t> key1 = std::nullopt) const {
+    using namespace std;
+    uint16_t key = Key(key0, key1);
+    auto found = values.find(key);
+    if (found == values.end()) {
+      return nullopt;
+    }
+    if (!holds_alternative<Number>(found->second)) {
+      return nullopt;
+    }
+    Number const &v = get<Number>(found->second);
+    if (!holds_alternative<int32_t>(v)) {
+      return nullopt;
+    }
+    return get<int32_t>(v);
+  }
+
+  bool i32a(std::vector<int32_t> &out, uint8_t key0, std::optional<uint8_t> key1 = std::nullopt) const {
+    using namespace std;
+    uint16_t key = Key(key0, key1);
+    auto found = values.find(key);
+    if (found == values.end()) {
+      return false;
+    }
+    vector<int32_t> vv;
+    if (holds_alternative<vector<Number>>(found->second)) {
+      vector<Number> const &v = get<vector<Number>>(found->second);
+      for (Number const &item : v) {
+        if (!holds_alternative<int32_t>(item)) {
+          return false;
+        }
+        vv.push_back(get<int32_t>(item));
+      }
+    } else if (holds_alternative<Number>(found->second)) {
+      Number const &v = get<Number>(found->second);
+      if (!holds_alternative<int32_t>(v)) {
+        return false;
+      }
+      vv.push_back(get<int32_t>(v));
+    }
+    vv.swap(out);
+    return true;
+  }
+
+  std::optional<bool> boolean(uint8_t key0, std::optional<uint8_t> key1 = std::nullopt) const {
+    using namespace std;
+    uint16_t key = Key(key0, key1);
+    auto found = values.find(key);
+    if (found == values.end()) {
+      return nullopt;
+    }
+    if (!holds_alternative<Number>(found->second)) {
+      return nullopt;
+    }
+    Number const &v = get<Number>(found->second);
+    if (!holds_alternative<int32_t>(v)) {
+      return nullopt;
+    }
+    return get<int32_t>(v) != 0;
+  }
+
+  std::optional<SID> sid(uint8_t key0, std::optional<uint8_t> key1 = std::nullopt) const {
+    using namespace std;
+    uint16_t key = Key(key0, key1);
+    auto found = values.find(key);
+    if (found == values.end()) {
+      return nullopt;
+    }
+    if (!holds_alternative<Number>(found->second)) {
+      return nullopt;
+    }
+    Number const &v = get<Number>(found->second);
+    if (!holds_alternative<int32_t>(v)) {
+      return nullopt;
+    }
+    int32_t i = get<int32_t>(v);
+    if (i < 0) {
+      return nullopt;
+    }
+    if (numeric_limits<SID>::max() < i) {
+      return nullopt;
+    }
+    return static_cast<SID>(i);
+  }
+
+  static uint16_t Key(uint8_t key0, std::optional<uint8_t> key1 = std::nullopt) {
+    if (key1) {
+      return uint16_t(key0) * 256 + *key1;
+    } else {
+      return key0;
+    }
+  }
+
+private:
+  std::map<uint16_t, Value> values;
 };
 
 } // namespace eglyf::cff
