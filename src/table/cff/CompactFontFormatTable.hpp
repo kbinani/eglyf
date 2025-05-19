@@ -48,7 +48,16 @@ public:
     if (auto st = Index::Read(in, ret->name); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
-    if (auto st = Index::Read(in, ret->topDict); !st.ok()) {
+    shared_ptr<Index> topDict;
+    if (auto st = Index::Read(in, topDict); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    if (topDict->data.size() != 1) {
+      return EGLYF_ERROR;
+    }
+    auto const &data = topDict->data[0];
+    ret->topDict = make_shared<Dict>();
+    if (auto st = ret->topDict->read(data); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
     if (auto st = Index::Read(in, ret->string); !st.ok()) {
@@ -62,7 +71,7 @@ public:
 
   Header header;
   std::shared_ptr<Index> name;
-  std::shared_ptr<Index> topDict;
+  std::shared_ptr<Dict> topDict;
   std::shared_ptr<Index> string;
   std::shared_ptr<Index> globalSubr;
 };
