@@ -114,6 +114,9 @@ public:
     if (charStringsOffset && fdArrayOffset) {
       return EGLYF_ERROR;
     }
+    if (!charStringsOffset && !fdArrayOffset) {
+      return EGLYF_ERROR;
+    }
 
     bool const isCID = (bool)fdArrayOffset;
 
