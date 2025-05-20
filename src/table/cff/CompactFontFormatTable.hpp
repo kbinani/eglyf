@@ -66,6 +66,34 @@ public:
     if (auto st = Index::Read(in, ret->globalSubrIndex); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
+
+    vector<int32_t> privateSizeAndOffset;
+    if (ret->topDict->i32a(privateSizeAndOffset, 18)) {
+      if (privateSizeAndOffset.size() != 2) {
+        return EGLYF_ERROR;
+      }
+      int32_t size = privateSizeAndOffset[0];
+      int32_t offset = privateSizeAndOffset[1];
+      if (size < 0) {
+        return EGLYF_ERROR;
+      }
+      if (offset < 0) {
+        return EGLYF_ERROR;
+      }
+      ret->privateDict = make_shared<Dict>();
+      if (!in.seek(offset)) {
+        return EGLYF_ERROR;
+      }
+      string data;
+      data.resize(size);
+      if (in.read(data.data(), data.size()) != data.size()) {
+        return EGLYF_ERROR;
+      }
+      if (auto st = ret->privateDict->read(data); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+    }
+
     return EGLYF_ERROR;
   }
 
@@ -133,6 +161,7 @@ public:
   std::shared_ptr<Dict> topDict;
   std::shared_ptr<Index> stringIndex;
   std::shared_ptr<Index> globalSubrIndex;
+  std::shared_ptr<Dict> privateDict;
 };
 
 } // namespace eglyf::cff
