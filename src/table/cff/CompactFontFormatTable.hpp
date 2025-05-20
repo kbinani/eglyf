@@ -92,6 +92,16 @@ public:
       if (auto st = ret->privateDict->read(data); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
+
+      auto subrs = ret->privateDict->i32(19);
+      if (subrs) {
+        if (!in.seek(offset + *subrs)) {
+          return EGLYF_ERROR;
+        }
+        if (auto st = Index::Read(in, ret->localSubrIndex); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
+      }
     }
 
     return EGLYF_ERROR;
@@ -162,6 +172,7 @@ public:
   std::shared_ptr<Index> stringIndex;
   std::shared_ptr<Index> globalSubrIndex;
   std::shared_ptr<Dict> privateDict;
+  std::shared_ptr<Index> localSubrIndex;
 };
 
 } // namespace eglyf::cff
