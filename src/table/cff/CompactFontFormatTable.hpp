@@ -104,6 +104,30 @@ public:
       }
     }
 
+    auto fdArrayOffset = ret->topDict->i32(12, 36);
+    auto fdSelectOffset = ret->topDict->i32(12, 37);
+    if ((bool)fdArrayOffset != (bool)fdSelectOffset) {
+      return EGLYF_ERROR;
+    }
+
+    auto charStringsOffset = ret->topDict->i32(17);
+    if (charStringsOffset && fdArrayOffset) {
+      return EGLYF_ERROR;
+    }
+
+    bool const isCID = (bool)fdArrayOffset;
+
+    if (isCID) {
+      // TODO:
+    } else {
+      if (!in.seek(*charStringsOffset)) {
+        return EGLYF_ERROR;
+      }
+      if (auto st = Index::Read(in, ret->charStringsIndex); !st.ok()) {
+        return EGLYF_STATUS_PUSH(st);
+      }
+    }
+
     return EGLYF_ERROR;
   }
 
@@ -173,6 +197,7 @@ public:
   std::shared_ptr<Index> globalSubrIndex;
   std::shared_ptr<Dict> privateDict;
   std::shared_ptr<Index> localSubrIndex;
+  std::shared_ptr<Index> charStringsIndex;
 };
 
 } // namespace eglyf::cff
