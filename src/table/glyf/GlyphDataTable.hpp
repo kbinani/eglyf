@@ -892,6 +892,9 @@ public:
     if (children.empty()) {
       return EGLYF_NULLOPT;
     }
+    if (glyphs.size() + 1 > numeric_limits<uint16_t>::max()) [[unlikely]] {
+      return EGLYF_NULLOPT;
+    }
 
     uint16_t gid = glyphs.size();
     EmptyGlyph placeholder;
