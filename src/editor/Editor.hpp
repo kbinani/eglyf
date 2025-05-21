@@ -282,12 +282,15 @@ public:
       }
     }
     if (lookup->attach) {
-      shared_ptr<Subtable> subtable;
+      vector<pair<shared_ptr<Subtable>, shared_ptr<Coverage>>> subtables;
       uint16_t lookupType = 0;
-      if (auto st = createAttachmentSubtable(lookup, subtable, lookupType); !st.ok()) {
+      if (auto st = createAttachmentSubtable(lookup, subtables, lookupType); !st.ok()) {
         return EGLYF_STATUS_PUSH(st);
       }
-      if (subtable) {
+      for (auto const &it : subtables) {
+        shared_ptr<Subtable> subtable = it.first;
+        shared_ptr<Coverage> receptorCoverage = it.second;
+
         auto extensionSubtable = make_shared<gpos::PositioningExtension>();
         extensionSubtable->extensionLookupType = lookupType;
         extensionSubtable->extension = subtable;
@@ -307,11 +310,7 @@ public:
         gposLookup->data = lookupData;
 
         map<size_t, vector<shared_ptr<Coverage>>> inputCoverages;
-        auto coverage = make_shared<Coverage>();
-        for (auto const &receptor : lookup->attach->receptors) {
-          collectGIDSet(receptor, *coverage);
-        }
-        inputCoverages[1].push_back(coverage);
+        inputCoverages[1].push_back(receptorCoverage);
 
         lookups.push_back(make_pair(gposLookup, inputCoverages));
       }
@@ -4771,7 +4770,7 @@ private:
   }
 
   // Create attachment subtable (MarkToBase or MarkToMark) from Editor::Lookup::Attach
-  Status createAttachmentSubtable(std::shared_ptr<Lookup> const &lookup, std::shared_ptr<Subtable> &result, uint16_t &lookupType) {
+  Status createAttachmentSubtable(std::shared_ptr<Lookup> const &lookup, std::vector<std::pair<std::shared_ptr<Subtable>, std::shared_ptr<Coverage>>> &result, uint16_t &lookupType) {
     using namespace std;
     using ClassID = uint16_t;
 
@@ -4855,7 +4854,7 @@ private:
         markCoverage->insert(gid);
       }
 
-      auto mark = make_unique<gpos::MarkToBaseAttachment>();
+      auto mark = make_shared<gpos::MarkToBaseAttachment>();
       mark->markCoverage = markCoverage;
       mark->baseCoverage = receptorGlyphIDs;
 
@@ -4892,7 +4891,7 @@ private:
       }
       mark->baseArray.markClassCount = nextMarkClass;
 
-      result.reset(mark.release());
+      result.push_back(make_pair(mark, mark->baseCoverage));
       return Status::Ok();
     } else if (receptorMark > 0 && ligandMark > 0) {
       // mkmk
@@ -4948,52 +4947,123 @@ private:
         markCoverage->insert(gid);
       }
 
-      auto mark = make_unique<gpos::MarkToMarkAttachment>();
-      mark->mark1Coverage = markCoverage;
-      mark->mark2Coverage = receptorGlyphIDs;
-
-      for (auto const &[ligandGID, it] : ligandGlyphs) {
-        auto const &[ligand, anchor] = it;
-        auto found = anchors.find(anchor);
-        if (found == anchors.end()) [[unlikely]] {
-          return EGLYF_ERROR_WHAT("Anchor not found in anchors map");
+      // NOTE: Split tables to ensure their size does not exceed the uint16_t range.
+      size_t constexpr splitThreshold = 10000;
+      if (markCoverage->size() > splitThreshold && receptorGlyphIDs->size() == 1) {
+        vector<map<uint16_t, pair<shared_ptr<Glyph>, shared_ptr<Anchor>>>> splitLigandGlyphsList;
+        map<uint16_t, pair<shared_ptr<Glyph>, shared_ptr<Anchor>>> work;
+        for (auto const &[ligandGID, it] : ligandGlyphs) {
+          if (work.size() + 1 > splitThreshold) {
+            splitLigandGlyphsList.push_back(work);
+            work.clear();
+          }
+          work[ligandGID] = it;
         }
-        gpos::MarkRecord record;
-        record.markClass = found->second;
-        auto gposAnchor = make_shared<gpos::Anchor1>();
-        auto markAnchor = getAnchorByName("MARK_" + anchor->name);
-        if (auto f = markAnchor->glyphs.find(ligand); f == markAnchor->glyphs.end()) {
-          gposAnchor->xCoordinate = 0;
-          gposAnchor->yCoordinate = 0;
-        } else {
-          gposAnchor->xCoordinate = f->second.x.value_or(0);
-          gposAnchor->yCoordinate = f->second.y.value_or(0);
+        if (work.size() > 0) {
+          splitLigandGlyphsList.push_back(work);
         }
-        record.markAnchor = gposAnchor;
-        mark->mark1Array.markRecords.push_back(record);
-      }
+        for (auto const &splitLigandGlyphs : splitLigandGlyphsList) {
+          auto mkmk = make_shared<gpos::MarkToMarkAttachment>();
+          mkmk->mark1Coverage = make_shared<Coverage>();
+          for (auto const &[gid, _] : splitLigandGlyphs) {
+            mkmk->mark1Coverage->insert(gid);
+          }
+          mkmk->mark2Coverage = receptorGlyphIDs;
 
-      for (auto const &[receptorGID, receptor] : receptorGlyphs) {
-        gpos::MarkToMarkAttachment::Mark2 record;
-        record.mark2Anchors.resize(nextMarkClass, nullptr);
+          for (auto const &[ligandGID, it] : splitLigandGlyphs) {
+            auto const &[ligand, anchor] = it;
+            auto found = anchors.find(anchor);
+            if (found == anchors.end()) [[unlikely]] {
+              return EGLYF_ERROR_WHAT("Anchor not found in anchors map");
+            }
+            gpos::MarkRecord record;
+            record.markClass = found->second;
+            auto gposAnchor = make_shared<gpos::Anchor1>();
+            auto markAnchor = getAnchorByName("MARK_" + anchor->name);
+            if (auto f = markAnchor->glyphs.find(ligand); f == markAnchor->glyphs.end()) {
+              gposAnchor->xCoordinate = 0;
+              gposAnchor->yCoordinate = 0;
+            } else {
+              gposAnchor->xCoordinate = f->second.x.value_or(0);
+              gposAnchor->yCoordinate = f->second.y.value_or(0);
+            }
+            record.markAnchor = gposAnchor;
+            mkmk->mark1Array.markRecords.push_back(record);
+          }
 
-        for (auto const &[anchor, classID] : anchors) {
-          auto found = anchor->glyphs.find(receptor);
+          auto const &begin = receptorGlyphs.begin();
+          uint16_t receptorGID = begin->first;
+          shared_ptr<Glyph> const &receptor = begin->second;
+
+          gpos::MarkToMarkAttachment::Mark2 record;
+          record.mark2Anchors.resize(nextMarkClass, nullptr);
+
+          for (auto const &[anchor, classID] : anchors) {
+            auto found = anchor->glyphs.find(receptor);
+            auto gposAnchor = make_shared<gpos::Anchor1>();
+            if (found == anchor->glyphs.end()) [[unlikely]] {
+              gposAnchor->xCoordinate = 0;
+              gposAnchor->yCoordinate = 0;
+            } else {
+              gposAnchor->xCoordinate = found->second.x.value_or(0);
+              gposAnchor->yCoordinate = found->second.y.value_or(0);
+            }
+            record.mark2Anchors[classID] = gposAnchor;
+          }
+          mkmk->mark2Array.mark2Records.push_back(record);
+          mkmk->mark2Array.markClassCount = nextMarkClass;
+
+          result.push_back(make_pair(mkmk, mkmk->mark2Coverage));
+        }
+        return Status::Ok();
+      } else {
+        auto mkmk = make_shared<gpos::MarkToMarkAttachment>();
+        mkmk->mark1Coverage = markCoverage;
+        mkmk->mark2Coverage = receptorGlyphIDs;
+
+        for (auto const &[ligandGID, it] : ligandGlyphs) {
+          auto const &[ligand, anchor] = it;
+          auto found = anchors.find(anchor);
+          if (found == anchors.end()) [[unlikely]] {
+            return EGLYF_ERROR_WHAT("Anchor not found in anchors map");
+          }
+          gpos::MarkRecord record;
+          record.markClass = found->second;
           auto gposAnchor = make_shared<gpos::Anchor1>();
-          if (found == anchor->glyphs.end()) [[unlikely]] {
+          auto markAnchor = getAnchorByName("MARK_" + anchor->name);
+          if (auto f = markAnchor->glyphs.find(ligand); f == markAnchor->glyphs.end()) {
             gposAnchor->xCoordinate = 0;
             gposAnchor->yCoordinate = 0;
           } else {
-            gposAnchor->xCoordinate = found->second.x.value_or(0);
-            gposAnchor->yCoordinate = found->second.y.value_or(0);
+            gposAnchor->xCoordinate = f->second.x.value_or(0);
+            gposAnchor->yCoordinate = f->second.y.value_or(0);
           }
-          record.mark2Anchors[classID] = gposAnchor;
+          record.markAnchor = gposAnchor;
+          mkmk->mark1Array.markRecords.push_back(record);
         }
-        mark->mark2Array.mark2Records.push_back(record);
-      }
-      mark->mark2Array.markClassCount = nextMarkClass;
 
-      result.reset(mark.release());
+        for (auto const &[receptorGID, receptor] : receptorGlyphs) {
+          gpos::MarkToMarkAttachment::Mark2 record;
+          record.mark2Anchors.resize(nextMarkClass, nullptr);
+
+          for (auto const &[anchor, classID] : anchors) {
+            auto found = anchor->glyphs.find(receptor);
+            auto gposAnchor = make_shared<gpos::Anchor1>();
+            if (found == anchor->glyphs.end()) [[unlikely]] {
+              gposAnchor->xCoordinate = 0;
+              gposAnchor->yCoordinate = 0;
+            } else {
+              gposAnchor->xCoordinate = found->second.x.value_or(0);
+              gposAnchor->yCoordinate = found->second.y.value_or(0);
+            }
+            record.mark2Anchors[classID] = gposAnchor;
+          }
+          mkmk->mark2Array.mark2Records.push_back(record);
+        }
+        mkmk->mark2Array.markClassCount = nextMarkClass;
+
+        result.push_back(make_pair(mkmk, mkmk->mark2Coverage));
+      }
       return Status::Ok();
     } else {
       return EGLYF_ERROR_WHAT("Invalid combination of receptor and ligand glyph types");
