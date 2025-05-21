@@ -38,6 +38,7 @@ struct SizeVariants {
   Rect<int16_t> bounds;
   std::shared_ptr<Glyph> base;
   std::map<WxH, std::shared_ptr<Glyph>> variants;
+  uint32_t codepoint;
 };
 
 } // namespace eglyf

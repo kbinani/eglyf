@@ -1018,106 +1018,28 @@ public:
 
     // n
     static set<string> const rotate90 = {
-        "A1",
-        "D27",
-        "F16",
-        "F28",
-        "F32",
-        "F37b",
-        "F51",
-        "J11",
-        "J12",
-        "J21",
-        "J8",
-        "K6",
-        "M10",
-        "M17",
-        "M3",
-        "M9",
-        "N11",
-        "N12",
-        "O31",
-        "O36",
-        "O39",
-        "Q3",
-        "R24",
-        "S10",
-        "S18",
-        "T1",
-        "T16",
-        "T22",
-        "U7",
-        "U8",
-        "V10",
-        "V11",
-        "V26",
-        "V27",
-        "X4a",
-        "Z10",
-        "Z11",
-        "Z7",
+        // clang-format off
+        "A1", "D27", "F16", "F28", "F32", "F37b", "F51", "J11", "J12", "J21",
+        "J8", "K6", "M10", "M17", "M3", "M9", "N11", "N12", "O31", "O36",
+        "O39", "Q3", "R24", "S10", "S18", "T1", "T16", "T22", "U7", "U8",
+        "V10", "V11", "V26", "V27", "X4a", "Z10", "Z11", "Z7",
+        // clang-format on
     };
     // o
     static set<string> const rotate180 = {
-        "A1",
-        "D28",
-        "H8",
-        "J11",
-        "M3",
-        "M44",
-        "N10",
-        "N11",
-        "N12",
-        "O31",
-        "O6",
-        "P8",
-        "T10",
-        "T16",
-        "T2",
-        "T21",
-        "T22",
-        "T35",
-        "T9",
-        "T9a",
+        // clang-format off
+        "A1", "D28", "H8", "J11", "M3", "M44", "N10", "N11", "N12", "O31",
+        "O6", "P8", "T10", "T16", "T2", "T21", "T22", "T35", "T9", "T9a",
+        // clang-format on
     };
     // t
     static set<string> const rotate270 = {
-        "A1",
-        "F23",
-        "F51",
-        "H5",
-        "J11",
-        "J30",
-        "J32",
-        "K6",
-        "M44",
-        "M72",
-        "N35",
-        "O29",
-        "P8",
-        "S18",
-        "S20",
-        "S33",
-        "S37",
-        "S42",
-        "S43",
-        "T10",
-        "T16a",
-        "T21",
-        "T35",
-        "T8",
-        "T8a",
-        "T9",
-        "T9a",
-        "U22",
-        "U42",
-        "V12a",
-        "V19",
-        "V7a",
-        "W1",
-        "W14",
-        "W2",
-        "Y2",
+        // clang-format off
+        "A1", "F23", "F51", "H5", "J11", "J30", "J32", "K6", "M44", "M72",
+        "N35", "O29", "P8", "S18", "S20", "S33", "S37", "S42", "S43", "T10",
+        "T16a", "T21", "T35", "T8", "T8a", "T9", "T9a", "U22", "U42", "V12a",
+        "V19", "V7a", "W1", "W14", "W2", "Y2",
+        // clang-format on
     };
 
     deque<pair<WxH, float>> sizeList;
@@ -1189,6 +1111,7 @@ public:
       uint16_t gid;
       shared_ptr<Glyph> glyph;
       Rect<int16_t> bounds;
+      uint32_t codepoint;
     };
     map<string, BaseGlyph> baseGlyphs;
 
@@ -1230,7 +1153,6 @@ public:
                                                WxH size,
                                                uint32_t codepoint,
                                                uint16_t gid,
-                                               bool isNamedGlyph,
                                                Rect<int16_t> const &r,
                                                Transform<int16_t> const &pre,
                                                shared_ptr<BaseGlyph> &out) -> Status {
@@ -1264,9 +1186,6 @@ public:
         return EGLYF_STATUS_PUSH(newGid.status());
       }
       font->cmap->map(codepoint, *newGid);
-      if (!isNamedGlyph) {
-        return Status::Ok();
-      }
       auto newGlyph = getGlyphByName(name);
       if (!newGlyph) {
         return EGLYF_ERROR;
@@ -1282,6 +1201,7 @@ public:
       bg->gid = *newGid;
       bg->glyph = newGlyph;
       bg->bounds = *newBounds;
+      bg->codepoint = codepoint;
       out.swap(bg);
       return Status::Ok();
     };
@@ -1310,7 +1230,7 @@ public:
       WxH sizeRotated = decideSize(margin, s, rect.height(), rect.width());
 
       shared_ptr<BaseGlyph> normal;
-      if (auto st = createBaseGlyph(name, sizeNormal, cp, gid, (bool)found, rect, Transform<int16_t>(), normal); st.ok()) {
+      if (auto st = createBaseGlyph(name, sizeNormal, cp, gid, rect, Transform<int16_t>(), normal); st.ok()) {
         if (normal) {
           baseGlyphs[name] = *normal;
         }
@@ -1321,7 +1241,7 @@ public:
       if (rotate90.find(name) != rotate90.end()) {
         shared_ptr<BaseGlyph> rot90;
         string name90 = format("{}n", name);
-        if (auto st = createBaseGlyph(name90, sizeRotated, cp, gid, (bool)found, rect, Transform<int16_t>::CW90(), rot90); st.ok()) {
+        if (auto st = createBaseGlyph(name90, sizeRotated, cp, gid, rect, Transform<int16_t>::CW90(), rot90); st.ok()) {
           if (rot90) {
             baseGlyphs[name90] = *rot90;
             if (auto st2 = font->cmap->addUVS(cp, 0xfe00, rot90->gid); !st2.ok()) {
@@ -1335,7 +1255,7 @@ public:
       if (rotate180.find(name) != rotate180.end()) {
         shared_ptr<BaseGlyph> rot180;
         string name180 = format("{}o", name);
-        if (auto st = createBaseGlyph(name180, sizeNormal, cp, gid, (bool)found, rect, Transform<int16_t>::CW180(), rot180); st.ok()) {
+        if (auto st = createBaseGlyph(name180, sizeNormal, cp, gid, rect, Transform<int16_t>::CW180(), rot180); st.ok()) {
           if (rot180) {
             baseGlyphs[name180] = *rot180;
             if (auto st2 = font->cmap->addUVS(cp, 0xfe01, rot180->gid); !st2.ok()) {
@@ -1349,7 +1269,7 @@ public:
       if (rotate270.find(name) != rotate270.end()) {
         shared_ptr<BaseGlyph> rot270;
         string name270 = format("{}t", name);
-        if (auto st = createBaseGlyph(name270, sizeRotated, cp, gid, (bool)found, rect, Transform<int16_t>::CW270(), rot270); st.ok()) {
+        if (auto st = createBaseGlyph(name270, sizeRotated, cp, gid, rect, Transform<int16_t>::CW270(), rot270); st.ok()) {
           if (rot270) {
             baseGlyphs[name270] = *rot270;
             if (auto st2 = font->cmap->addUVS(cp, 0xfe02, rot270->gid); !st2.ok()) {
@@ -1379,6 +1299,7 @@ public:
       sv.base = baseGlyph.glyph;
       sv.bounds = rect;
       sv.size = size;
+      sv.codepoint = baseGlyph.codepoint;
 
       auto chain = variationChain.find(size);
       if (chain == variationChain.end()) {
@@ -1421,6 +1342,450 @@ public:
     }
     auto &glyf = get<Font::TrueTypeOutlines>(font->outlines).glyf;
 
+    static vector<pair<uint32_t, uint32_t>> const mirror = {
+        {0x13000, 0x1305a},
+        // 1305D 𓁝 EGYPTIAN HIEROGLYPH C002B • mirrored version of 1305C
+        // 1305E 𓁞 EGYPTIAN HIEROGLYPH C002C • mirrored version of 1305B
+        {0x1305c, 0x1305c},
+        {0x1305F, 0x13068},
+        // 1306A 𓁪 EGYPTIAN HIEROGLYPH C013 • mirrored version of 13069
+        {0x1306B, 0x13071},
+        // 13072 𓁲 EGYPTIAN HIEROGLYPH C021 • phonemogram : bs
+        {0x13073, 0x13076},
+        // 13077 𓁷 EGYPTIAN HIEROGLYPH D002 • phonemogram : ḥr
+        {0x13078, 0x13081},
+        // 13082 𓂂 EGYPTIAN HIEROGLYPH D012
+        {0x13083, 0x1308A},
+        // 1308B 𓂋 EGYPTIAN HIEROGLYPH D021
+        // 1308C 𓂌 EGYPTIAN HIEROGLYPH D022
+        // 1308D 𓂍 EGYPTIAN HIEROGLYPH D023
+        // 1308E 𓂎 EGYPTIAN HIEROGLYPH D024
+        // 1308F 𓂏 EGYPTIAN HIEROGLYPH D025
+        {0x13090, 0x13090},
+        // 13091 𓂑 EGYPTIAN HIEROGLYPH D027
+        // 13092 𓂒 EGYPTIAN HIEROGLYPH D027A
+        // 13093 𓂓 EGYPTIAN HIEROGLYPH D028
+        {0x13094, 0x13095},
+        // 13096 𓂖 EGYPTIAN HIEROGLYPH D031
+        // 13097 𓂗 EGYPTIAN HIEROGLYPH D031A
+        // 13098 𓂘 EGYPTIAN HIEROGLYPH D032
+        {0x13099, 0x1309B},
+        // 1309C 𓂜 EGYPTIAN HIEROGLYPH D035
+        {0x1309D, 0x130BA},
+        // 130BB 𓂻 EGYPTIAN HIEROGLYPH D054
+        {0x130BC, 0x130BC},
+        // 130BD 𓂽 EGYPTIAN HIEROGLYPH D055
+        {0x130BE, 0x130C8},
+        // 130C9 𓃉 EGYPTIAN HIEROGLYPH D067
+        // 130CA 𓃊 EGYPTIAN HIEROGLYPH D067A
+        // 130CB 𓃋 EGYPTIAN HIEROGLYPH D067B
+        // 130CC 𓃌 EGYPTIAN HIEROGLYPH D067C
+        // 130CD 𓃍 EGYPTIAN HIEROGLYPH D067D
+        // 130CE 𓃎 EGYPTIAN HIEROGLYPH D067E
+        // 130CF 𓃏 EGYPTIAN HIEROGLYPH D067F
+        // 130D0 𓃐 EGYPTIAN HIEROGLYPH D067G
+        // 130D1 𓃑 EGYPTIAN HIEROGLYPH D067H
+        {0x130D2, 0x1310A},
+        // 1310B 𓄋 EGYPTIAN HIEROGLYPH F013
+        // 1310C 𓄌 EGYPTIAN HIEROGLYPH F013A
+        {0x1310D, 0x1311B},
+        // 1311C 𓄜 EGYPTIAN HIEROGLYPH F028
+        {0x1311D, 0x1311E},
+        // 1311F 𓄟 EGYPTIAN HIEROGLYPH F031
+        // 13120 𓄠 EGYPTIAN HIEROGLYPH F031A
+        {0x13121, 0x13122},
+        // 13123 𓄣 EGYPTIAN HIEROGLYPH F034
+        // 13124 𓄤 EGYPTIAN HIEROGLYPH F035
+        // 13125 𓄥 EGYPTIAN HIEROGLYPH F036
+        {0x13126, 0x1312B},
+        // 1312C 𓄬 EGYPTIAN HIEROGLYPH F041
+        {0x1312D, 0x1312D},
+        // 1312E 𓄮 EGYPTIAN HIEROGLYPH F043
+        {0x1312F, 0x1312F},
+        // 13130 𓄰 EGYPTIAN HIEROGLYPH F045
+        // 13131 𓄱 EGYPTIAN HIEROGLYPH F045A
+        // 13132 𓄲 EGYPTIAN HIEROGLYPH F046
+        // 13133 𓄳 EGYPTIAN HIEROGLYPH F046A
+        // 13134 𓄴 EGYPTIAN HIEROGLYPH F047
+        // 13135 𓄵 EGYPTIAN HIEROGLYPH F047A
+        // 13136 𓄶 EGYPTIAN HIEROGLYPH F048
+        // 13137 𓄷 EGYPTIAN HIEROGLYPH F049
+        {0x13138, 0x131A2},
+        // 131A3 𓆣 EGYPTIAN HIEROGLYPH L001
+        {0x131A4, 0x131A5},
+        // 131A6 𓆦 EGYPTIAN HIEROGLYPH L003
+        {0x131A7, 0x131A8},
+        // 131A9 𓆩 EGYPTIAN HIEROGLYPH L006
+        // 131AA 𓆪 EGYPTIAN HIEROGLYPH L006A
+        // 131AB 𓆫 EGYPTIAN HIEROGLYPH L007
+        // 131AC 𓆬 EGYPTIAN HIEROGLYPH L008
+        // 131AD 𓆭 EGYPTIAN HIEROGLYPH M001
+        {0x131AE, 0x131B6},
+        // 131B7 𓆷 EGYPTIAN HIEROGLYPH M008
+        {0x131B8, 0x131C4},
+        // 131C5 𓇅 EGYPTIAN HIEROGLYPH M013
+        {0x131C6, 0x131C6},
+        // 131C7 𓇇 EGYPTIAN HIEROGLYPH M015
+        // 131C8 𓇈 EGYPTIAN HIEROGLYPH M015A
+        // 131C9 𓇉 EGYPTIAN HIEROGLYPH M016
+        // 131CA 𓇊 EGYPTIAN HIEROGLYPH M016A
+        {0x131CB, 0x131D4},
+        // 131D5 𓇕 EGYPTIAN HIEROGLYPH M024A
+        {0x131D6, 0x131D9},
+        // 131DA 𓇚 EGYPTIAN HIEROGLYPH M028A
+        {0x131DB, 0x131DC},
+        // 131DD 𓇝 EGYPTIAN HIEROGLYPH M031
+        // 131DE 𓇞 EGYPTIAN HIEROGLYPH M031A
+        // 131DF 𓇟 EGYPTIAN HIEROGLYPH M032
+        {0x131E0, 0x131E2},
+        // 131E3 𓇣 EGYPTIAN HIEROGLYPH M034
+        // 131E4 𓇤 EGYPTIAN HIEROGLYPH M035
+        {0x131E5, 0x131E7},
+        // 131E8 𓇨 EGYPTIAN HIEROGLYPH M039
+        {0x131E9, 0x131EB},
+        // 131EC 𓇬 EGYPTIAN HIEROGLYPH M042
+        {0x131ED, 0x131ED},
+        // 131EE 𓇮 EGYPTIAN HIEROGLYPH M044
+        // 131EF 𓇯 EGYPTIAN HIEROGLYPH N001
+        {0x131F0, 0x131F1},
+        // 131F2 𓇲 EGYPTIAN HIEROGLYPH N004
+        // 131F3 𓇳 EGYPTIAN HIEROGLYPH N005
+        {0x131F4, 0x131F4},
+        // 131F5 𓇵 EGYPTIAN HIEROGLYPH N007
+        // 131F6 𓇶 EGYPTIAN HIEROGLYPH N008
+        // 131F7 𓇷 EGYPTIAN HIEROGLYPH N009
+        // 131F8 𓇸 EGYPTIAN HIEROGLYPH N010
+        // 131F9 𓇹 EGYPTIAN HIEROGLYPH N011
+        // 131FA 𓇺 EGYPTIAN HIEROGLYPH N012
+        {0x131FB, 0x131FB},
+        // 131FC 𓇼 EGYPTIAN HIEROGLYPH N014
+        // 131FD 𓇽 EGYPTIAN HIEROGLYPH N015
+        // 131FE 𓇾 EGYPTIAN HIEROGLYPH N016
+        // 131FF 𓇿 EGYPTIAN HIEROGLYPH N017
+        // 13200 𓈀 EGYPTIAN HIEROGLYPH N018
+        // 13201 𓈁 EGYPTIAN HIEROGLYPH N018A
+        // 13202 𓈂 EGYPTIAN HIEROGLYPH N018B
+        // 13203 𓈃 EGYPTIAN HIEROGLYPH N019
+        {0x13204, 0x13207},
+        // 13208 𓈈 EGYPTIAN HIEROGLYPH N024
+        // 13209 𓈉 EGYPTIAN HIEROGLYPH N025
+        // 1320A 𓈊 EGYPTIAN HIEROGLYPH N025A
+        // 1320B 𓈋 EGYPTIAN HIEROGLYPH N026
+        // 1320C 𓈌 EGYPTIAN HIEROGLYPH N027
+        // 1320D 𓈍 EGYPTIAN HIEROGLYPH N028
+        {0x1320E, 0x1320E},
+        // 1320F 𓈏 EGYPTIAN HIEROGLYPH N030
+        // 13210 𓈐 EGYPTIAN HIEROGLYPH N031
+        {0x13211, 0x13211},
+        // 13212 𓈒 EGYPTIAN HIEROGLYPH N033
+        // 13213 𓈓 EGYPTIAN HIEROGLYPH N033A
+        {0x13214, 0x13215},
+        // 13216 𓈖 EGYPTIAN HIEROGLYPH N035
+        // 13217 𓈗 EGYPTIAN HIEROGLYPH N035A
+        // 13218 𓈘 EGYPTIAN HIEROGLYPH N036
+        // 13219 𓈙 EGYPTIAN HIEROGLYPH N037
+        {0x1321A, 0x1321A},
+        // 1321B 𓈛 EGYPTIAN HIEROGLYPH N038
+        {0x1321C, 0x1321D},
+        // 1321E 𓈞 EGYPTIAN HIEROGLYPH N041
+        // 1321F 𓈟 EGYPTIAN HIEROGLYPH N042
+        {0x13220, 0x1324F},
+        // 13250 𓉐 EGYPTIAN HIEROGLYPH O001
+        // 13251 𓉑 EGYPTIAN HIEROGLYPH O001A
+        // 13252 𓉒 EGYPTIAN HIEROGLYPH O002
+        {0x13253, 0x13254},
+        // 13255 𓉕 EGYPTIAN HIEROGLYPH O005
+        // 13256 𓉖 EGYPTIAN HIEROGLYPH O005A
+        {0x13257, 0x1326E},
+        // 1326F 𓉯 EGYPTIAN HIEROGLYPH O020
+        // 13270 𓉰 EGYPTIAN HIEROGLYPH O020A
+        // 13271 𓉱 EGYPTIAN HIEROGLYPH O021
+        // 13272 𓉲 EGYPTIAN HIEROGLYPH O022
+        // 13273 𓉳 EGYPTIAN HIEROGLYPH O023
+        // 13274 𓉴 EGYPTIAN HIEROGLYPH O024
+        // 13275 𓉵 EGYPTIAN HIEROGLYPH O024A
+        // 13276 𓉶 EGYPTIAN HIEROGLYPH O025
+        // 13277 𓉷 EGYPTIAN HIEROGLYPH O025A
+        // 13278 𓉸 EGYPTIAN HIEROGLYPH O026
+        // 13279 𓉹 EGYPTIAN HIEROGLYPH O027
+        // 1327A 𓉺 EGYPTIAN HIEROGLYPH O028
+        {0x1327B, 0x1327B},
+        // 1327C 𓉼 EGYPTIAN HIEROGLYPH O029A
+        // 1327D 𓉽 EGYPTIAN HIEROGLYPH O030
+        // 1327E 𓉾 EGYPTIAN HIEROGLYPH O030A
+        // 1327F 𓉿 EGYPTIAN HIEROGLYPH O031
+        // 13280 𓊀 EGYPTIAN HIEROGLYPH O032
+        // 13281 𓊁 EGYPTIAN HIEROGLYPH O033
+        {0x13282, 0x13282},
+        // 13283 𓊃 EGYPTIAN HIEROGLYPH O034
+        {0x13284, 0x13284},
+        // 13285 𓊅 EGYPTIAN HIEROGLYPH O036
+        // 13286 EGYPTIAN HIEROGLYPH O036A
+        // 13287 EGYPTIAN HIEROGLYPH O036B
+        // 13288 EGYPTIAN HIEROGLYPH O036C
+        // 13289 EGYPTIAN HIEROGLYPH O036D
+        {0x1328A, 0x1328B},
+        // 1328C 𓊌 EGYPTIAN HIEROGLYPH O039
+        {0x1328D, 0x1328D},
+        // 1328E 𓊎 EGYPTIAN HIEROGLYPH O041
+        {0x1328F, 0x1328F},
+        // 13290 𓊐 EGYPTIAN HIEROGLYPH O043
+        {0x13291, 0x13294},
+        // 13295 𓊕 EGYPTIAN HIEROGLYPH O048
+        // 13296 𓊖 EGYPTIAN HIEROGLYPH O049
+        // 13297 𓊗 EGYPTIAN HIEROGLYPH O050
+        // 13298 𓊘 EGYPTIAN HIEROGLYPH O050A
+        // 13299 𓊙 EGYPTIAN HIEROGLYPH O050B
+        {0x1329A, 0x132A1},
+        // 132A2 𓊢 EGYPTIAN HIEROGLYPH P006
+        {0x132A3, 0x132A3},
+        // 132A4 𓊤 EGYPTIAN HIEROGLYPH P008
+        {0x132A5, 0x132A9},
+        // 132AA 𓊪 EGYPTIAN HIEROGLYPH Q003
+        // 132AB 𓊫 EGYPTIAN HIEROGLYPH Q004
+        // 132AC 𓊬 EGYPTIAN HIEROGLYPH Q005
+        // 132AD 𓊭 EGYPTIAN HIEROGLYPH Q006
+        {0x132AE, 0x132B0},
+        // 132B1 𓊱 EGYPTIAN HIEROGLYPH R002A
+        {0x132B2, 0x132B2},
+        // 132B3 𓊳 EGYPTIAN HIEROGLYPH R003A
+        // 132B4 𓊴 EGYPTIAN HIEROGLYPH R003B
+        // 132B5 𓊵 EGYPTIAN HIEROGLYPH R004
+        {0x132B6, 0x132BC},
+        // 132BD 𓊽 EGYPTIAN HIEROGLYPH R011
+        {0x132BE, 0x132C0},
+        // 132C1 𓋁 EGYPTIAN HIEROGLYPH R015
+        {0x132C2, 0x132C2},
+        // 132C3 𓋃 EGYPTIAN HIEROGLYPH R016A
+        {0x132C4, 0x132C6},
+        // 132C7 𓋇 EGYPTIAN HIEROGLYPH R020
+        // 132C8 𓋈 EGYPTIAN HIEROGLYPH R021
+        // 132C9 𓋉 EGYPTIAN HIEROGLYPH R022
+        // 132CA 𓋊 EGYPTIAN HIEROGLYPH R023
+        // 132CB 𓋋 EGYPTIAN HIEROGLYPH R024
+        // 132CC 𓋌 EGYPTIAN HIEROGLYPH R025
+        // 132CD 𓋍 EGYPTIAN HIEROGLYPH R026
+        {0x132CE, 0x132CE},
+        // 132CF 𓋏 EGYPTIAN HIEROGLYPH R028
+        {0x132D0, 0x132DC},
+        // 132DD 𓋝 EGYPTIAN HIEROGLYPH S011
+        // 132DE 𓋞 EGYPTIAN HIEROGLYPH S012
+        {0x132DF, 0x132DF},
+        // 132E0 𓋠 EGYPTIAN HIEROGLYPH S014
+        {0x132E1, 0x132E2},
+        // 132E3 𓋣 EGYPTIAN HIEROGLYPH S015
+        // 132E4 𓋤 EGYPTIAN HIEROGLYPH S016
+        // 132E5 𓋥 EGYPTIAN HIEROGLYPH S017
+        // 132E6 𓋦 EGYPTIAN HIEROGLYPH S017A
+        {0x132E7, 0x132E8},
+        // 132E9 𓋩 EGYPTIAN HIEROGLYPH S020
+        // 132EA 𓋪 EGYPTIAN HIEROGLYPH S021
+        // 132EB 𓋫 EGYPTIAN HIEROGLYPH S022
+        // 132EC 𓋬 EGYPTIAN HIEROGLYPH S023
+        // 132ED 𓋭 EGYPTIAN HIEROGLYPH S024
+        // 132EE 𓋮 EGYPTIAN HIEROGLYPH S025
+        {0x132EF, 0x132EF},
+        // 132F0 𓋰 EGYPTIAN HIEROGLYPH S026A
+        // 132F1 𓋱 EGYPTIAN HIEROGLYPH S026B
+        // 132F2 𓋲 EGYPTIAN HIEROGLYPH S027
+        {0x132F3, 0x132F8},
+        // 132F9 𓋹 EGYPTIAN HIEROGLYPH S034
+        // 132FA 𓋺 EGYPTIAN HIEROGLYPH S035
+        // 132FB 𓋻 EGYPTIAN HIEROGLYPH S035A
+        // 132FC 𓋼 EGYPTIAN HIEROGLYPH S036
+        {0x132FD, 0x13301},
+        // 13302 𓌂 EGYPTIAN HIEROGLYPH S042
+        // 13303 𓌃 EGYPTIAN HIEROGLYPH S043
+        {0x13304, 0x13308},
+        // 13309 𓌉 EGYPTIAN HIEROGLYPH T003
+        // 1330A 𓌊 EGYPTIAN HIEROGLYPH T003A
+        {0x1330B, 0x1330F},
+        // 13310 𓌐 EGYPTIAN HIEROGLYPH T008
+        // 13311 𓌑 EGYPTIAN HIEROGLYPH T008A
+        // 13312 𓌒 EGYPTIAN HIEROGLYPH T009
+        // 13313 𓌓 EGYPTIAN HIEROGLYPH T009A
+        // 13314 𓌔 EGYPTIAN HIEROGLYPH T010
+        {0x13315, 0x13315},
+        // 13316 𓌖 EGYPTIAN HIEROGLYPH T011A
+        {0x13317, 0x13321},
+        // 13322 𓌢 EGYPTIAN HIEROGLYPH T022
+        // 13323 𓌣 EGYPTIAN HIEROGLYPH T023
+        {0x13324, 0x13327},
+        // 13328 𓌨 EGYPTIAN HIEROGLYPH T028
+        {0x13329, 0x13349},
+        // 1334A 𓍊 EGYPTIAN HIEROGLYPH U022
+        // 1334B 𓍋 EGYPTIAN HIEROGLYPH U023
+        // 1334C 𓍌 EGYPTIAN HIEROGLYPH U023A
+        {0x1334D, 0x1334E},
+        // 1334F 𓍏 EGYPTIAN HIEROGLYPH U026
+        // 13350 𓍐 EGYPTIAN HIEROGLYPH U027
+        // 13351 𓍑 EGYPTIAN HIEROGLYPH U028
+        // 13352 𓍒 EGYPTIAN HIEROGLYPH U029
+        {0x13353, 0x13358},
+        // 13359 𓍙 EGYPTIAN HIEROGLYPH U034
+        {0x1335A, 0x1335A},
+        // 1335B 𓍛 EGYPTIAN HIEROGLYPH U036
+        {0x1335C, 0x13360},
+        // 13361 𓍡 EGYPTIAN HIEROGLYPH U042
+        {0x13362, 0x1336F},
+        // 13370 𓍰 EGYPTIAN HIEROGLYPH V005
+        // 13371 𓍱 EGYPTIAN HIEROGLYPH V006
+        // 13372 𓍲 EGYPTIAN HIEROGLYPH V007
+        // 13373 𓍳 EGYPTIAN HIEROGLYPH V007A
+        // 13374 𓍴 EGYPTIAN HIEROGLYPH V007B
+        // 13375 𓍵 EGYPTIAN HIEROGLYPH V008
+        // 13376 𓍶 EGYPTIAN HIEROGLYPH V009
+        {0x13377, 0x13381},
+        // 13382 𓎂 EGYPTIAN HIEROGLYPH V016
+        // 13383 𓎃 EGYPTIAN HIEROGLYPH V017
+        // 13384 𓎄 EGYPTIAN HIEROGLYPH V018
+        // 13385 𓎅 EGYPTIAN HIEROGLYPH V019
+        // 13386 𓎆 EGYPTIAN HIEROGLYPH V020
+        // 13387 𓎇 EGYPTIAN HIEROGLYPH V020A
+        // 13388 𓎈 EGYPTIAN HIEROGLYPH V020B
+        // 13389 𓎉 EGYPTIAN HIEROGLYPH V020C
+        // 1338A 𓎊 EGYPTIAN HIEROGLYPH V020D
+        // 1338B 𓎋 EGYPTIAN HIEROGLYPH V020E
+        // 1338C 𓎌 EGYPTIAN HIEROGLYPH V020F
+        // 1338D 𓎍 EGYPTIAN HIEROGLYPH V020G
+        // 1338E 𓎎 EGYPTIAN HIEROGLYPH V020H
+        // 1338F 𓎏 EGYPTIAN HIEROGLYPH V020I
+        // 13390 𓎐 EGYPTIAN HIEROGLYPH V020J
+        // 13391 𓎑 EGYPTIAN HIEROGLYPH V020K
+        // 13392 𓎒 GYPTIAN HIEROGLYPH V020L
+        {0x13393, 0x13396},
+        // 13397 𓎗 EGYPTIAN HIEROGLYPH V024
+        {0x13398, 0x13398},
+        // 13399 𓎙 EGYPTIAN HIEROGLYPH V026
+        // 1339A 𓎚 EGYPTIAN HIEROGLYPH V027
+        // 1339B 𓎛 EGYPTIAN HIEROGLYPH V028
+        {0x1339C, 0x1339C},
+        // 1339D 𓎝 EGYPTIAN HIEROGLYPH V029
+        {0x1339E, 0x1339E},
+        // 1339F 𓎟 EGYPTIAN HIEROGLYPH V030
+        // 133A0 𓎠 EGYPTIAN HIEROGLYPH V030A
+        // 133A1 𓎡 EGYPTIAN HIEROGLYPH V031
+        // 133A2 𓎢 EGYPTIAN HIEROGLYPH V031A
+        // 133A3 𓎣 EGYPTIAN HIEROGLYPH V032
+        {0x133A4, 0x133A4},
+        // 133A5 𓎥 EGYPTIAN HIEROGLYPH V033A
+        {0x133A6, 0x133AA},
+        // 133AB 𓎫 EGYPTIAN HIEROGLYPH V038
+        // 133AC 𓎬 EGYPTIAN HIEROGLYPH V039
+        {0x133AD, 0x133AE},
+        // 133AF 𓎯 EGYPTIAN HIEROGLYPH W001
+        // 133B0 𓎰 EGYPTIAN HIEROGLYPH W002
+        // 133B1 𓎱 EGYPTIAN HIEROGLYPH W003
+        // 133B2 𓎲 EGYPTIAN HIEROGLYPH W003A
+        // 133B3 𓎳 EGYPTIAN HIEROGLYPH W004
+        // 133B4 𓎴 EGYPTIAN HIEROGLYPH W005
+        // 133B5 𓎵 EGYPTIAN HIEROGLYPH W006
+        // 133B6 𓎶 EGYPTIAN HIEROGLYPH W007
+        // 133B7 𓎷 EGYPTIAN HIEROGLYPH W008
+        // 133B8 𓎸 EGYPTIAN HIEROGLYPH W009
+        // 133B9 𓎹 EGYPTIAN HIEROGLYPH W009A
+        // 133BA 𓎺 EGYPTIAN HIEROGLYPH W010
+        {0x133BB, 0x133BB},
+        // 133BC 𓎼 EGYPTIAN HIEROGLYPH W011
+        // 133BD 𓎽 EGYPTIAN HIEROGLYPH W012
+        // 133BE 𓎾 EGYPTIAN HIEROGLYPH W013
+        // 133BF 𓎿 EGYPTIAN HIEROGLYPH W014
+        {0x133C0, 0x133C2},
+        // 133C3 𓏃 EGYPTIAN HIEROGLYPH W017
+        // 133C4 𓏄 EGYPTIAN HIEROGLYPH W017A
+        // 133C5 𓏅 EGYPTIAN HIEROGLYPH W018
+        // 133C6 𓏆 EGYPTIAN HIEROGLYPH W018A
+        // 133C7 𓏇 EGYPTIAN HIEROGLYPH W019
+        {0x133C8, 0x133C8},
+        // 133C9 𓏉 EGYPTIAN HIEROGLYPH W021
+        // 133CA 𓏊 EGYPTIAN HIEROGLYPH W022
+        // 133CB 𓏋 EGYPTIAN HIEROGLYPH W023
+        // 133CC 𓏌 EGYPTIAN HIEROGLYPH W024
+        // 133CD 𓏍 EGYPTIAN HIEROGLYPH W024A
+        {0x133CE, 0x133CE},
+        // 133CF 𓏏 EGYPTIAN HIEROGLYPH X001
+        // 133D0 𓏐 EGYPTIAN HIEROGLYPH X002
+        // 133D1 𓏑 EGYPTIAN HIEROGLYPH X003
+        // 133D2 𓏒 EGYPTIAN HIEROGLYPH X004
+        // 133D3 𓏓 EGYPTIAN HIEROGLYPH X004A
+        // 133D4 𓏔 EGYPTIAN HIEROGLYPH X004B
+        {0x133D5, 0x133D5},
+        // 133D6 𓏖 EGYPTIAN HIEROGLYPH X006
+        {0x133D7, 0x133D8},
+        // 133D9 𓏙 EGYPTIAN HIEROGLYPH X008
+        // 133DA 𓏚 EGYPTIAN HIEROGLYPH X008A
+        // 133DB 𓏛 EGYPTIAN HIEROGLYPH Y001
+        {0x133DC, 0x133DC},
+        // 133DD 𓏝 EGYPTIAN HIEROGLYPH Y002
+        // 133DE 𓏞 EGYPTIAN HIEROGLYPH Y003
+        // 133DF 𓏟 EGYPTIAN HIEROGLYPH Y004
+        // 133E0 𓏠 EGYPTIAN HIEROGLYPH Y005
+        // 133E1 𓏡 EGYPTIAN HIEROGLYPH Y006
+        {0x133E2, 0x133E2},
+        // 133E3 𓏣 EGYPTIAN HIEROGLYPH Y008
+        // 133E4 𓏤 EGYPTIAN HIEROGLYPH Z001
+        // 133E5 𓏥 EGYPTIAN HIEROGLYPH Z002
+        // 133E6 𓏦 EGYPTIAN HIEROGLYPH Z002A
+        // 133E7 𓏧 EGYPTIAN HIEROGLYPH Z002B
+        // 133E8 𓏨 EGYPTIAN HIEROGLYPH Z002C
+        // 133E9 𓏩 EGYPTIAN HIEROGLYPH Z002D
+        // 133EA 𓏪 EGYPTIAN HIEROGLYPH Z003
+        // 133EB 𓏫 EGYPTIAN HIEROGLYPH Z003A
+        // 133EC 𓏬 EGYPTIAN HIEROGLYPH Z003B
+        {0x133ED, 0x133ED},
+        // 133EE 𓏮 EGYPTIAN HIEROGLYPH Z004A
+        {0x133EF, 0x133F2},
+        // 133F3 𓏳 EGYPTIAN HIEROGLYPH Z008
+        {0x133F4, 0x133F5},
+        // 133F6 𓏶 EGYPTIAN HIEROGLYPH Z011
+        {0x133F7, 0x133F7},
+        // 133F8 𓏸 EGYPTIAN HIEROGLYPH Z013
+        {0x133F9, 0x133F9},
+        // 133FA 𓏺 EGYPTIAN HIEROGLYPH Z015
+        // 133FB 𓏻 EGYPTIAN HIEROGLYPH Z015A
+        // 133FC 𓏼 EGYPTIAN HIEROGLYPH Z015B
+        // 133FD 𓏽 EGYPTIAN HIEROGLYPH Z015C
+        // 133FE 𓏾 EGYPTIAN HIEROGLYPH Z015D
+        // 133FF 𓏿 EGYPTIAN HIEROGLYPH Z015E
+        // 13400 𓐀 EGYPTIAN HIEROGLYPH Z015F
+        // 13401 𓐁 EGYPTIAN HIEROGLYPH Z015G
+        // 13402 𓐂 EGYPTIAN HIEROGLYPH Z015H
+        // 13403 𓐃 EGYPTIAN HIEROGLYPH Z015I
+        // 13404 𓐄 EGYPTIAN HIEROGLYPH Z016
+        // 13405 𓐅 EGYPTIAN HIEROGLYPH Z016A
+        // 13406 𓐆 EGYPTIAN HIEROGLYPH Z016B
+        // 13407 𓐇 EGYPTIAN HIEROGLYPH Z016C
+        {0x13408, 0x13408},
+        // 13409 𓐉 EGYPTIAN HIEROGLYPH Z016E
+        {0x1340A, 0x1340A},
+        // 1340B 𓐋 EGYPTIAN HIEROGLYPH Z016G
+        // 1340C 𓐌 EGYPTIAN HIEROGLYPH Z016H
+        // 1340D 𓐍 EGYPTIAN HIEROGLYPH AA001
+        {0x1340E, 0x13410},
+        // 13411 𓐑 EGYPTIAN HIEROGLYPH AA005
+        // 13412 𓐒 EGYPTIAN HIEROGLYPH AA006
+        // 13413 𓐓 EGYPTIAN HIEROGLYPH AA007
+        // 13414 𓐔 EGYPTIAN HIEROGLYPH AA007A
+        {0x13415, 0x13415},
+        // 13416 𓐖 EGYPTIAN HIEROGLYPH AA008
+        // 13417 𓐗 EGYPTIAN HIEROGLYPH AA009
+        {0x13418, 0x13419},
+        // 1341A 𓐚 EGYPTIAN HIEROGLYPH AA012
+        {0x1341B, 0x13420},
+        // 13421 𓐡 EGYPTIAN HIEROGLYPH AA019
+        // 13422 𓐢 EGYPTIAN HIEROGLYPH AA020
+        // 13423 𓐣 EGYPTIAN HIEROGLYPH AA021
+        {0x13424, 0x13424},
+        // 13425 𓐥 EGYPTIAN HIEROGLYPH AA023
+        // 13426 𓐦 EGYPTIAN HIEROGLYPH AA024
+        // 13427 𓐧 EGYPTIAN HIEROGLYPH AA025
+        {0x13428, 0x13428},
+        // 13429 𓐩 EGYPTIAN HIEROGLYPH AA027
+        {0x1342A, 0x1342B},
+        // 1342C 𓐬 EGYPTIAN HIEROGLYPH AA030
+        {0x1342D, 0x1342F},
+    };
+
     Transform<float> txm(-1, 0, 0, 1, 0, 0);
     auto classValue = gdef::GlyphDefinitionTable::Class::Mark;
 
@@ -1428,6 +1793,12 @@ public:
 
     for (auto const &[name, sv] : sizeVariants) {
       if (!sv.base || !sv.base->id) {
+        continue;
+      }
+      if (ranges::find_if(mirror, [=](pair<uint32_t, uint32_t> const &it) {
+            auto [from, to] = it;
+            return from <= sv.codepoint && sv.codepoint <= to;
+          }) == mirror.end()) {
         continue;
       }
       auto record = glyf::GlyphDataTable::CompositeGlyph::GlyphRecord::New(*sv.base->id, txm);
