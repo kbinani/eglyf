@@ -681,7 +681,9 @@ public:
               return EGLYF_ERROR_WHAT("Unsupported variant type in input");
             }
           }
-          mapping.push_back(make_pair(in, *outGlyph->id));
+          if (ok) {
+            mapping.push_back(make_pair(in, *outGlyph->id));
+          }
         }
       } else {
         auto outGlyph = get<shared_ptr<Glyph>>(output);
@@ -2468,7 +2470,42 @@ public:
     if (!a) {
       return EGLYF_ERROR;
     }
+    auto position = ranges::find_if(lookups, [=](auto const &it) { return it.second == a; });
+    if (position == lookups.end()) {
+      return EGLYF_ERROR;
+    }
+    size_t index = distance(lookups.begin(), position);
+    shared_ptr<Feature> feature;
+    size_t lookupIndex = 0;
+    for (auto const &script : scripts) {
+      for (auto const &langSys : script.second->langSysList) {
+        for (auto const &f : langSys->features) {
+          auto found = ranges::find(f->lookups, a);
+          if (found != f->lookups.end()) {
+            feature = f;
+            lookupIndex = distance(f->lookups.begin(), found);
+            break;
+          }
+        }
+        if (feature) {
+          break;
+        }
+      }
+      if (feature) {
+        break;
+      }
+    }
+    if (!feature) {
+      return EGLYF_ERROR;
+    }
+
     a->substitutions.clear();
+    size_t constexpr splitThreshold = 10000;
+
+    shared_ptr<Lookup> current = a;
+    size_t count = 0;
+    size_t split = 0;
+
     for (auto const &it : sizeVariants) {
       auto const &name = it.first;
       auto const &sv = it.second;
@@ -2476,50 +2513,66 @@ public:
         // SUB GLYPH "et44" GLYPH "A1"
         // WITH GLYPH "A1_44"
 
+        if (count + 3 > splitThreshold) {
+          auto next = make_shared<Lookup>();
+          next->base = a->base;
+          next->marks = a->marks;
+          auto nextName = format("{}_{}", a->name, split + 1);
+          next->name = nextName;
+          if (split > 0) {
+            lookups.insert(lookups.begin() + index + split, make_pair(nextName, next));
+            feature->lookups.insert(feature->lookups.begin() + lookupIndex + split, next);
+          }
+          split++;
+          current = next;
+          count = 0;
+        }
+
         auto s = make_shared<Lookup::Substitution>();
         auto et = format("et{0}", key);
         s->input.push_back(getGlyphByName(et));
         s->input.push_back(sv.base);
         auto v = format("{0}_{1}", name, key);
         s->output.push_back(getGlyphByName(v));
-        a->substitutions.push_back(s);
+        current->substitutions.push_back(s);
+        count += 3;
       }
     }
-    setupSubst(*a, {"et11", "BF1"}, {"BF1_11"});
-    setupSubst(*a, {"et12", "BF1"}, {"BF1_12"});
-    setupSubst(*a, {"et13", "BF1"}, {"BF1_13"});
-    setupSubst(*a, {"et14", "BF1"}, {"BF1_14"});
-    setupSubst(*a, {"et15", "BF1"}, {"BF1_15"});
-    setupSubst(*a, {"et16", "BF1"}, {"BF1_16"});
-    setupSubst(*a, {"et21", "BF1"}, {"BF1_21"});
-    setupSubst(*a, {"et22", "BF1"}, {"BF1_22"});
-    setupSubst(*a, {"et23", "BF1"}, {"BF1_23"});
-    setupSubst(*a, {"et24", "BF1"}, {"BF1_24"});
-    setupSubst(*a, {"et25", "BF1"}, {"BF1_25"});
-    setupSubst(*a, {"et26", "BF1"}, {"BF1_26"});
-    setupSubst(*a, {"et31", "BF1"}, {"BF1_31"});
-    setupSubst(*a, {"et32", "BF1"}, {"BF1_32"});
-    setupSubst(*a, {"et33", "BF1"}, {"BF1_33"});
-    setupSubst(*a, {"et34", "BF1"}, {"BF1_34"});
-    setupSubst(*a, {"et35", "BF1"}, {"BF1_35"});
-    setupSubst(*a, {"et36", "BF1"}, {"BF1_36"});
-    setupSubst(*a, {"et41", "BF1"}, {"BF1_41"});
-    setupSubst(*a, {"et42", "BF1"}, {"BF1_42"});
-    setupSubst(*a, {"et43", "BF1"}, {"BF1_43"});
-    setupSubst(*a, {"et44", "BF1"}, {"BF1_44"});
-    setupSubst(*a, {"et45", "BF1"}, {"BF1_45"});
-    setupSubst(*a, {"et46", "BF1"}, {"BF1_46"});
-    setupSubst(*a, {"et51", "BF1"}, {"BF1_51"});
-    setupSubst(*a, {"et52", "BF1"}, {"BF1_52"});
-    setupSubst(*a, {"et53", "BF1"}, {"BF1_53"});
-    setupSubst(*a, {"et54", "BF1"}, {"BF1_54"});
-    setupSubst(*a, {"et55", "BF1"}, {"BF1_55"});
-    setupSubst(*a, {"et56", "BF1"}, {"BF1_56"});
-    setupSubst(*a, {"et61", "BF1"}, {"BF1_61"});
-    setupSubst(*a, {"et62", "BF1"}, {"BF1_62"});
-    setupSubst(*a, {"et63", "BF1"}, {"BF1_63"});
-    setupSubst(*a, {"et64", "BF1"}, {"BF1_64"});
-    setupSubst(*a, {"et65", "BF1"}, {"BF1_65"});
+    setupSubst(*current, {"et11", "BF1"}, {"BF1_11"});
+    setupSubst(*current, {"et12", "BF1"}, {"BF1_12"});
+    setupSubst(*current, {"et13", "BF1"}, {"BF1_13"});
+    setupSubst(*current, {"et14", "BF1"}, {"BF1_14"});
+    setupSubst(*current, {"et15", "BF1"}, {"BF1_15"});
+    setupSubst(*current, {"et16", "BF1"}, {"BF1_16"});
+    setupSubst(*current, {"et21", "BF1"}, {"BF1_21"});
+    setupSubst(*current, {"et22", "BF1"}, {"BF1_22"});
+    setupSubst(*current, {"et23", "BF1"}, {"BF1_23"});
+    setupSubst(*current, {"et24", "BF1"}, {"BF1_24"});
+    setupSubst(*current, {"et25", "BF1"}, {"BF1_25"});
+    setupSubst(*current, {"et26", "BF1"}, {"BF1_26"});
+    setupSubst(*current, {"et31", "BF1"}, {"BF1_31"});
+    setupSubst(*current, {"et32", "BF1"}, {"BF1_32"});
+    setupSubst(*current, {"et33", "BF1"}, {"BF1_33"});
+    setupSubst(*current, {"et34", "BF1"}, {"BF1_34"});
+    setupSubst(*current, {"et35", "BF1"}, {"BF1_35"});
+    setupSubst(*current, {"et36", "BF1"}, {"BF1_36"});
+    setupSubst(*current, {"et41", "BF1"}, {"BF1_41"});
+    setupSubst(*current, {"et42", "BF1"}, {"BF1_42"});
+    setupSubst(*current, {"et43", "BF1"}, {"BF1_43"});
+    setupSubst(*current, {"et44", "BF1"}, {"BF1_44"});
+    setupSubst(*current, {"et45", "BF1"}, {"BF1_45"});
+    setupSubst(*current, {"et46", "BF1"}, {"BF1_46"});
+    setupSubst(*current, {"et51", "BF1"}, {"BF1_51"});
+    setupSubst(*current, {"et52", "BF1"}, {"BF1_52"});
+    setupSubst(*current, {"et53", "BF1"}, {"BF1_53"});
+    setupSubst(*current, {"et54", "BF1"}, {"BF1_54"});
+    setupSubst(*current, {"et55", "BF1"}, {"BF1_55"});
+    setupSubst(*current, {"et56", "BF1"}, {"BF1_56"});
+    setupSubst(*current, {"et61", "BF1"}, {"BF1_61"});
+    setupSubst(*current, {"et62", "BF1"}, {"BF1_62"});
+    setupSubst(*current, {"et63", "BF1"}, {"BF1_63"});
+    setupSubst(*current, {"et64", "BF1"}, {"BF1_64"});
+    setupSubst(*current, {"et65", "BF1"}, {"BF1_65"});
 
     return Status::Ok();
   }
