@@ -1302,6 +1302,8 @@ public:
       sv.size = size;
       sv.codepoint = baseGlyph.codepoint;
 
+      glyphsSet1->members.push_back(baseGlyph.glyph);
+
       auto chain = variationChain.find(size);
       if (chain == variationChain.end()) {
         sizeVariants[name] = sv;
