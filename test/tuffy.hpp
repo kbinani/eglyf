@@ -34,6 +34,29 @@ static eglyf::Status Expand(eglyf::glyf::GlyphDataTable const &glyf,
   return Status::Ok();
 }
 
+static void WriteGlyph(std::string const &data, std::string const &outputFilePath, std::string const &varname) {
+  using namespace std;
+  using namespace eglyf;
+  ofstream out(outputFilePath);
+  REQUIRE(out);
+  out << "#pragma once" << endl;
+  out << "// clang-format off" << endl;
+  out << "namespace eglyf::res {" << endl;
+  out << endl;
+  out << "namespace detail {" << endl;
+  out << "inline constexpr unsigned char " << varname << "_raw[] = {" << endl;
+  for (size_t i = 0; i < data.size(); i++) {
+    uint8_t c = *((uint8_t *)data.data() + i);
+    out << (int)c << ",";
+  }
+  out << "};" << endl;
+  out << "}" << endl;
+  out << endl;
+  out << "inline std::string_view const " << varname << "{(char const*)detail::" << varname << "_raw, " << data.size() << "};" << endl;
+  out << endl;
+  out << "} // namespace eglyf::res" << endl;
+}
+
 TEST_CASE("tuffy") {
   using namespace std;
   using namespace eglyf;
@@ -44,21 +67,17 @@ TEST_CASE("tuffy") {
   REQUIRE(holds_alternative<Font::TrueTypeOutlines>(font->outlines));
   auto const &outline = get<Font::TrueTypeOutlines>(font->outlines);
   auto const &glyf = outline.glyf;
-  size_t empty = 0;
-  size_t simple = 0;
-  size_t composite = 0;
 
   for (uint32_t code = 32; code <= 126; code++) {
     auto gid = font->getGlyphID(code);
     if (!gid) {
       continue;
     }
+    auto name = format("code{}", code);
     auto const &glyph = glyf->glyphs[*gid];
     if (holds_alternative<glyf::GlyphDataTable::EmptyGlyph>(glyph)) {
-      empty++;
-      FileOutputStream fos(fs::path(format("res/{}.glyf", code)));
+      WriteGlyph("", format("src/glyph/{}.hpp", code), name);
     } else if (holds_alternative<glyf::GlyphDataTable::ReadonlyGlyph>(glyph)) {
-      simple++;
       auto const &rg = get<glyf::GlyphDataTable::ReadonlyGlyph>(glyph);
       auto sg = rg.toSimpleGlyph();
       REQUIRE(sg);
@@ -66,10 +85,8 @@ TEST_CASE("tuffy") {
       REQUIRE(sg->encode(out).ok());
 
       string data = out.data();
-      FileOutputStream fos(fs::path(format("res/{}.glyf", code)));
-      REQUIRE(fos.write(data.data(), data.size()));
+      WriteGlyph(data, format("src/glyph/{}.hpp", code), name);
     } else if (holds_alternative<glyf::GlyphDataTable::CompositeGlyph>(glyph)) {
-      composite++;
       auto cg = get<glyf::GlyphDataTable::CompositeGlyph>(glyph);
       glyf::GlyphDataTable::SimpleGlyph sg;
       auto st = Expand(*glyf, cg, Transform<int16_t>(), sg.contours);
@@ -97,11 +114,9 @@ TEST_CASE("tuffy") {
       ByteOutputStream out;
       REQUIRE(sg.encode(out).ok());
       string data = out.data();
-      FileOutputStream fos(fs::path(format("res/{}.glyf", code)));
-      REQUIRE(fos.write(data.data(), data.size()));
+      WriteGlyph(data, format("src/glyph/{}.hpp", code), name);
     } else {
       REQUIRE(false);
     }
   }
-  cout << "empty=" << empty << "; simple=" << simple << "; composite=" << composite << endl;
 }
