@@ -115,7 +115,7 @@ list(APPEND src_files
   src/editor/Glyph.hpp
   src/editor/Group.hpp
   src/editor/SizeVariants.hpp
-  src/editor/Vtp.hpp.in
+  src/res/template.hpp.in
   src/io/File.hpp
   src/io/Endianness.hpp
   src/editor/ShadingGlyph.hpp
@@ -127,29 +127,34 @@ list(APPEND src_files
   src/table/cff/StdStrings.hpp
 )
 
-file(READ ${CMAKE_CURRENT_SOURCE_DIR}/res/EgyptianText_200.vtp vtp_content)
+function(resource input output varname)
+  file(READ ${CMAKE_CURRENT_SOURCE_DIR}/${input} content)
 
-set(chunk_size 16000) # workaround for MSVC C2026
-string(LENGTH "${vtp_content}" len)
-set(chunks "")
-set(offset 0)
+  set(chunk_size 16000) # workaround for MSVC C2026
+  string(LENGTH "${content}" len)
+  set(chunks "")
+  set(offset 0)
+  set(variable_name "${varname}")
 
-while(offset LESS len)
-  math(EXPR remaining "${len}-${offset}")
-  if(remaining GREATER chunk_size)
-    set(size ${chunk_size})
-  else()
-    set(size ${remaining})
-  endif()
-  string(SUBSTRING "${vtp_content}" ${offset} ${size} part)
-  string(APPEND chunks "R\"(${part})\"\n")
-  math(EXPR offset "${offset}+${size}")
-endwhile()
+  while(offset LESS len)
+    math(EXPR remaining "${len}-${offset}")
+    if(remaining GREATER chunk_size)
+      set(size ${chunk_size})
+    else()
+      set(size ${remaining})
+    endif()
+    string(SUBSTRING "${content}" ${offset} ${size} part)
+    string(APPEND chunks "R\"(${part})\"\n")
+    math(EXPR offset "${offset}+${size}")
+  endwhile()
 
-configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/Vtp.hpp.in
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/editor/Vtp.hpp
-  @ONLY)
+  configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/res/template.hpp.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/${output}
+    @ONLY)
+endfunction()
+
+resource(res/EgyptianText_200.vtp src/editor/Vtp.hpp vtp)
 
 add_executable(eglyf)
 target_sources(eglyf PRIVATE ${src_files} src/main.cpp)

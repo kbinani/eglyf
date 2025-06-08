@@ -1,0 +1,12 @@
+#pragma once
+
+namespace eglyf::res {
+
+namespace detail {
+inline constexpr char const @variable_name@_raw[] = @chunks@;
+}
+
+inline constexpr std::string_view const @variable_name@{detail::@variable_name@_raw,
+                                            sizeof(detail::@variable_name@_raw) - 1};
+
+} // namespace eglyf::res
