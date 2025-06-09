@@ -124,5 +124,5 @@
 #include "editor/Editor.hpp"
 #include "editor/VtpParser.hpp"
 #include "editor/Vtp.hpp"
-#include "glyph/glyph.hpp"
+#include "glyph/BasicGlyphs.hpp"
 #include "editor/Transformer.hpp"
