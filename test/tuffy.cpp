@@ -1,7 +1,16 @@
-static eglyf::Status Expand(eglyf::glyf::GlyphDataTable const &glyf,
-                            eglyf::glyf::GlyphDataTable::CompositeGlyph const &cg,
-                            eglyf::Transform<int16_t> mtx,
-                            std::vector<eglyf::glyf::GlyphDataTable::Contour> &contours) {
+// clang-format off
+#include "doctest.h"
+#include "eglyf.hpp"
+#include <fstream>
+// clang-format on
+
+using namespace std;
+using namespace eglyf;
+
+static Status Expand(glyf::GlyphDataTable const &glyf,
+                     glyf::GlyphDataTable::CompositeGlyph const &cg,
+                     Transform<int16_t> mtx,
+                     std::vector<glyf::GlyphDataTable::Contour> &contours) {
   using namespace std;
   using namespace eglyf;
   for (auto const &r : cg.records) {
