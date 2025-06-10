@@ -77,7 +77,7 @@ TEST_CASE("tuffy") {
   auto const &outline = get<Font::TrueTypeOutlines>(font->outlines);
   auto const &glyf = outline.glyf;
 
-  for (uint32_t code = 32; code <= 126; code++) {
+  for (uint32_t code = BasicGlyphs::kMinCodepoint; code <= BasicGlyphs::kMaxCodepoint; code++) {
     auto gid = font->getGlyphID(code);
     if (!gid) {
       continue;

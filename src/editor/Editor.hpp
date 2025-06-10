@@ -1849,6 +1849,111 @@ public:
     if (auto st = createMirrorGlyphs(); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
+    if (auto st = insertLatinGlyphs(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    return Status::Ok();
+  }
+
+  Status insertLatinGlyphs() {
+    using namespace std;
+    // clang-format off
+    static set<char> const belowBaseline = {
+      'f', 'g', 'j', 'p', 'q', 'y',
+    };
+    static set<char> const aboveBaseline = {
+      'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+      'a', 'b', 'c', 'd', 'e', 'h', 'i', 'k', 'l', 'm', 'n', 'o', 'r', 's', 't', 'u', 'v', 'w', 'x',
+    };
+    static set<char> const other = {
+      'Q', 'z',
+    };
+    // clang-format on
+
+    // Check if all Latin glyphs are present
+    bool allLatinGlyphsExist = true;
+    for (uint32_t code = BasicGlyphs::kMinCodepoint; code <= BasicGlyphs::kMaxCodepoint; code++) {
+      auto gid = font->cmap->getGlyphID(code);
+      if (!gid) {
+        allLatinGlyphsExist = false;
+        break;
+      }
+    }
+    if (allLatinGlyphsExist) {
+      return Status::Ok();
+    }
+
+    if (!holds_alternative<Font::TrueTypeOutlines>(font->outlines)) {
+      return EGLYF_ERROR;
+    }
+    auto const &glyf = get<Font::TrueTypeOutlines>(font->outlines).glyf;
+
+    struct Metrics {
+      optional<int16_t> yMin;
+      optional<int16_t> baseline;
+      optional<int16_t> yMax;
+
+      void updateMinMax(Rect<int16_t> const &bounds) {
+        if (yMin) {
+          yMin = std::min(*yMin, bounds.yMin);
+        } else {
+          yMin = bounds.yMin;
+        }
+        if (yMax) {
+          yMax = std::max(*yMax, bounds.yMax);
+        }
+      }
+
+      void updateBaselineMax(Rect<int16_t> const &bounds) {
+        if (yMax) {
+          yMax = std::max(*yMax, bounds.yMax);
+        } else {
+          yMax = bounds.yMax;
+        }
+        if (baseline) {
+          baseline = std::min(*baseline, bounds.yMin);
+        } else {
+          baseline = bounds.yMin;
+        }
+      }
+    };
+
+    // Measure latin glyphs metrics for target/tuffy font
+    Metrics target;
+    Metrics basic;
+    for (char ch : belowBaseline) {
+      auto gid = font->cmap->getGlyphID((uint32_t)ch);
+      if (gid) {
+        auto glyph = glyf->glyphs[*gid];
+        auto bounds = glyf::GlyphDataTable::Bounds(glyph);
+        if (bounds) {
+          target.updateMinMax(*bounds);
+        }
+      }
+      auto basicGlyph = BasicGlyphs::Get((uint32_t)ch);
+      if (basicGlyph) {
+        auto bounds = glyf::GlyphDataTable::Bounds(*basicGlyph);
+        basic.updateMinMax(*bounds);
+      }
+    }
+    for (char ch : aboveBaseline) {
+      auto gid = font->cmap->getGlyphID((uint32_t)ch);
+      if (gid) {
+        auto glyph = glyf->glyphs[*gid];
+        auto bounds = glyf::GlyphDataTable::Bounds(glyph);
+        if (bounds) {
+          target.updateBaselineMax(*bounds);
+        }
+      }
+      auto basicGlyph = BasicGlyphs::Get((uint32_t)ch);
+      if (basicGlyph) {
+        auto bounds = glyf::GlyphDataTable::Bounds(*basicGlyph);
+        if (bounds) {
+          basic.updateBaselineMax(*bounds);
+        }
+      }
+    }
+
     return Status::Ok();
   }
 

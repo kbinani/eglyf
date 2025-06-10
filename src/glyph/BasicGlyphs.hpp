@@ -98,6 +98,11 @@
 namespace eglyf {
 
 class BasicGlyphs {
+public:
+  static uint32_t constexpr kMinCodepoint = 32;
+  static uint32_t constexpr kMaxCodepoint = 126;
+
+private:
   static std::map<uint32_t, glyf::GlyphDataTable::SimpleGlyph> *Load() {
     using namespace std;
     auto t = make_unique<map<uint32_t, glyf::GlyphDataTable::SimpleGlyph>>();
