@@ -8,5 +8,6 @@ inline constexpr unsigned char code114_raw[] = {
 }
 
 inline std::string_view const code114{(char const*)detail::code114_raw, 59};
+inline uint16_t constexpr code114_advanceWidth = 686;
 
 } // namespace eglyf::res

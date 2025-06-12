@@ -1930,7 +1930,7 @@ public:
           target.updateMinMax(*bounds);
         }
       }
-      auto basicGlyph = BasicGlyphs::Get((uint32_t)ch);
+      auto basicGlyph = BasicGlyphs::GetGlyph((uint32_t)ch);
       if (basicGlyph) {
         auto bounds = glyf::GlyphDataTable::Bounds(*basicGlyph);
         basic.updateMinMax(*bounds);
@@ -1945,7 +1945,7 @@ public:
           target.updateBaselineMax(*bounds);
         }
       }
-      auto basicGlyph = BasicGlyphs::Get((uint32_t)ch);
+      auto basicGlyph = BasicGlyphs::GetGlyph((uint32_t)ch);
       if (basicGlyph) {
         auto bounds = glyf::GlyphDataTable::Bounds(*basicGlyph);
         if (bounds) {
@@ -1972,25 +1972,34 @@ public:
 
     Transform<double> mtx(scale, 0, 0, scale, 0, (base - margin - *basic.yMin) * scale);
     for (uint32_t code = BasicGlyphs::kMinCodepoint; code <= BasicGlyphs::kMaxCodepoint; code++) {
-      auto basicGlyph = BasicGlyphs::Get(code);
-      if (!basicGlyph) {
+      auto originalAdvanceWidth = BasicGlyphs::GetAdvanceWidth(code);
+      if (!originalAdvanceWidth) {
         continue;
       }
-      vector<glyf::GlyphDataTable::Contour> contours;
-      for (auto const &c : basicGlyph->contours) {
-        auto t = c.transformed(mtx);
-        contours.push_back(t);
-      }
-      Vec<double> min(basicGlyph->header.xMin, basicGlyph->header.yMin);
-      Vec<double> max(basicGlyph->header.xMax, basicGlyph->header.yMax);
-      auto tmin = min.transformed(mtx);
-      auto tmax = max.transformed(mtx);
+      uint16_t advanceWidth = (uint16_t)round(*originalAdvanceWidth * scale);
       string name = cff::StdStrings::Get(code - 31);
-      auto gid = font->addSimpleGlyph(name, gdef::GlyphDefinitionTable::Class::Base, contours, round(tmax.x), round(tmin.x), 0, 0);
-      if (!gid) {
-        return EGLYF_STATUS_PUSH(gid.status());
+
+      auto basicGlyph = BasicGlyphs::GetGlyph(code);
+      if (basicGlyph) {
+        vector<glyf::GlyphDataTable::Contour> contours;
+        for (auto const &c : basicGlyph->contours) {
+          auto t = c.transformed(mtx);
+          contours.push_back(t);
+        }
+        Vec<double> min(basicGlyph->header.xMin, basicGlyph->header.yMin);
+        auto tmin = min.transformed(mtx);
+        auto gid = font->addSimpleGlyph(name, gdef::GlyphDefinitionTable::Class::Base, contours, advanceWidth, round(tmin.x), 0, 0);
+        if (!gid) {
+          return EGLYF_STATUS_PUSH(gid.status());
+        }
+        font->cmap->map(code, *gid);
+      } else {
+        auto gid = font->addEmptyGlyph(name, gdef::GlyphDefinitionTable::Class::Base, advanceWidth, 0, 0, 0);
+        if (!gid) {
+          return EGLYF_STATUS_PUSH(gid.status());
+        }
+        font->cmap->map(code, *gid);
       }
-      font->cmap->map(code, *gid);
     }
 
     return Status::Ok();

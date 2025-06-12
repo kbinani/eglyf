@@ -103,10 +103,21 @@ public:
   static uint32_t constexpr kMaxCodepoint = 126;
 
 private:
-  static std::map<uint32_t, glyf::GlyphDataTable::SimpleGlyph> *Load() {
+  struct Element {
+    std::optional<glyf::GlyphDataTable::SimpleGlyph> glyph;
+    uint16_t advanceWidth;
+  };
+
+  static std::map<uint32_t, Element> *Load() {
     using namespace std;
-    auto t = make_unique<map<uint32_t, glyf::GlyphDataTable::SimpleGlyph>>();
-    auto const read = [&t](uint32_t codepoint, string_view data) {
+    auto t = make_unique<map<uint32_t, Element>>();
+    auto const read = [&t](uint32_t codepoint, string_view data, uint16_t advanceWidth) {
+      Element e;
+      e.advanceWidth = advanceWidth;
+      if (data.empty()) {
+        (*t)[codepoint] = e;
+        return;
+      }
       ByteInputStream in(data);
       auto header = glyf::GlyphDataTable::Header::Read(in);
       if (!header) {
@@ -116,121 +127,133 @@ private:
       if (!sg) {
         return;
       }
-      (*t)[codepoint] = *sg;
+      e.glyph = *sg;
+      (*t)[codepoint] = e;
     };
-    read(32, res::code32);
-    read(33, res::code33);
-    read(34, res::code34);
-    read(35, res::code35);
-    read(36, res::code36);
-    read(37, res::code37);
-    read(38, res::code38);
-    read(39, res::code39);
-    read(40, res::code40);
-    read(41, res::code41);
-    read(42, res::code42);
-    read(43, res::code43);
-    read(44, res::code44);
-    read(45, res::code45);
-    read(46, res::code46);
-    read(47, res::code47);
-    read(48, res::code48);
-    read(49, res::code49);
-    read(50, res::code50);
-    read(51, res::code51);
-    read(52, res::code52);
-    read(53, res::code53);
-    read(54, res::code54);
-    read(55, res::code55);
-    read(56, res::code56);
-    read(57, res::code57);
-    read(58, res::code58);
-    read(59, res::code59);
-    read(60, res::code60);
-    read(61, res::code61);
-    read(62, res::code62);
-    read(63, res::code63);
-    read(64, res::code64);
-    read(65, res::code65);
-    read(66, res::code66);
-    read(67, res::code67);
-    read(68, res::code68);
-    read(69, res::code69);
-    read(70, res::code70);
-    read(71, res::code71);
-    read(72, res::code72);
-    read(73, res::code73);
-    read(74, res::code74);
-    read(75, res::code75);
-    read(76, res::code76);
-    read(77, res::code77);
-    read(78, res::code78);
-    read(79, res::code79);
-    read(80, res::code80);
-    read(81, res::code81);
-    read(82, res::code82);
-    read(83, res::code83);
-    read(84, res::code84);
-    read(85, res::code85);
-    read(86, res::code86);
-    read(87, res::code87);
-    read(88, res::code88);
-    read(89, res::code89);
-    read(90, res::code90);
-    read(91, res::code91);
-    read(92, res::code92);
-    read(93, res::code93);
-    read(94, res::code94);
-    read(95, res::code95);
-    read(96, res::code96);
-    read(97, res::code97);
-    read(98, res::code98);
-    read(99, res::code99);
-    read(100, res::code100);
-    read(101, res::code101);
-    read(102, res::code102);
-    read(103, res::code103);
-    read(104, res::code104);
-    read(105, res::code105);
-    read(106, res::code106);
-    read(107, res::code107);
-    read(108, res::code108);
-    read(109, res::code109);
-    read(110, res::code110);
-    read(111, res::code111);
-    read(112, res::code112);
-    read(113, res::code113);
-    read(114, res::code114);
-    read(115, res::code115);
-    read(116, res::code116);
-    read(117, res::code117);
-    read(118, res::code118);
-    read(119, res::code119);
-    read(120, res::code120);
-    read(121, res::code121);
-    read(122, res::code122);
-    read(123, res::code123);
-    read(124, res::code124);
-    read(125, res::code125);
-    read(126, res::code126);
+    read(32, res::code32, res::code32_advanceWidth);
+    read(33, res::code33, res::code33_advanceWidth);
+    read(34, res::code34, res::code34_advanceWidth);
+    read(35, res::code35, res::code35_advanceWidth);
+    read(36, res::code36, res::code36_advanceWidth);
+    read(37, res::code37, res::code37_advanceWidth);
+    read(38, res::code38, res::code38_advanceWidth);
+    read(39, res::code39, res::code39_advanceWidth);
+    read(40, res::code40, res::code40_advanceWidth);
+    read(41, res::code41, res::code41_advanceWidth);
+    read(42, res::code42, res::code42_advanceWidth);
+    read(43, res::code43, res::code43_advanceWidth);
+    read(44, res::code44, res::code44_advanceWidth);
+    read(45, res::code45, res::code45_advanceWidth);
+    read(46, res::code46, res::code46_advanceWidth);
+    read(47, res::code47, res::code47_advanceWidth);
+    read(48, res::code48, res::code48_advanceWidth);
+    read(49, res::code49, res::code49_advanceWidth);
+    read(50, res::code50, res::code50_advanceWidth);
+    read(51, res::code51, res::code51_advanceWidth);
+    read(52, res::code52, res::code52_advanceWidth);
+    read(53, res::code53, res::code53_advanceWidth);
+    read(54, res::code54, res::code54_advanceWidth);
+    read(55, res::code55, res::code55_advanceWidth);
+    read(56, res::code56, res::code56_advanceWidth);
+    read(57, res::code57, res::code57_advanceWidth);
+    read(58, res::code58, res::code58_advanceWidth);
+    read(59, res::code59, res::code59_advanceWidth);
+    read(60, res::code60, res::code60_advanceWidth);
+    read(61, res::code61, res::code61_advanceWidth);
+    read(62, res::code62, res::code62_advanceWidth);
+    read(63, res::code63, res::code63_advanceWidth);
+    read(64, res::code64, res::code64_advanceWidth);
+    read(65, res::code65, res::code65_advanceWidth);
+    read(66, res::code66, res::code66_advanceWidth);
+    read(67, res::code67, res::code67_advanceWidth);
+    read(68, res::code68, res::code68_advanceWidth);
+    read(69, res::code69, res::code69_advanceWidth);
+    read(70, res::code70, res::code70_advanceWidth);
+    read(71, res::code71, res::code71_advanceWidth);
+    read(72, res::code72, res::code72_advanceWidth);
+    read(73, res::code73, res::code73_advanceWidth);
+    read(74, res::code74, res::code74_advanceWidth);
+    read(75, res::code75, res::code75_advanceWidth);
+    read(76, res::code76, res::code76_advanceWidth);
+    read(77, res::code77, res::code77_advanceWidth);
+    read(78, res::code78, res::code78_advanceWidth);
+    read(79, res::code79, res::code79_advanceWidth);
+    read(80, res::code80, res::code80_advanceWidth);
+    read(81, res::code81, res::code81_advanceWidth);
+    read(82, res::code82, res::code82_advanceWidth);
+    read(83, res::code83, res::code83_advanceWidth);
+    read(84, res::code84, res::code84_advanceWidth);
+    read(85, res::code85, res::code85_advanceWidth);
+    read(86, res::code86, res::code86_advanceWidth);
+    read(87, res::code87, res::code87_advanceWidth);
+    read(88, res::code88, res::code88_advanceWidth);
+    read(89, res::code89, res::code89_advanceWidth);
+    read(90, res::code90, res::code90_advanceWidth);
+    read(91, res::code91, res::code91_advanceWidth);
+    read(92, res::code92, res::code92_advanceWidth);
+    read(93, res::code93, res::code93_advanceWidth);
+    read(94, res::code94, res::code94_advanceWidth);
+    read(95, res::code95, res::code95_advanceWidth);
+    read(96, res::code96, res::code96_advanceWidth);
+    read(97, res::code97, res::code97_advanceWidth);
+    read(98, res::code98, res::code98_advanceWidth);
+    read(99, res::code99, res::code99_advanceWidth);
+    read(100, res::code100, res::code100_advanceWidth);
+    read(101, res::code101, res::code101_advanceWidth);
+    read(102, res::code102, res::code102_advanceWidth);
+    read(103, res::code103, res::code103_advanceWidth);
+    read(104, res::code104, res::code104_advanceWidth);
+    read(105, res::code105, res::code105_advanceWidth);
+    read(106, res::code106, res::code106_advanceWidth);
+    read(107, res::code107, res::code107_advanceWidth);
+    read(108, res::code108, res::code108_advanceWidth);
+    read(109, res::code109, res::code109_advanceWidth);
+    read(110, res::code110, res::code110_advanceWidth);
+    read(111, res::code111, res::code111_advanceWidth);
+    read(112, res::code112, res::code112_advanceWidth);
+    read(113, res::code113, res::code113_advanceWidth);
+    read(114, res::code114, res::code114_advanceWidth);
+    read(115, res::code115, res::code115_advanceWidth);
+    read(116, res::code116, res::code116_advanceWidth);
+    read(117, res::code117, res::code117_advanceWidth);
+    read(118, res::code118, res::code118_advanceWidth);
+    read(119, res::code119, res::code119_advanceWidth);
+    read(120, res::code120, res::code120_advanceWidth);
+    read(121, res::code121, res::code121_advanceWidth);
+    read(122, res::code122, res::code122_advanceWidth);
+    read(123, res::code123, res::code123_advanceWidth);
+    read(124, res::code124, res::code124_advanceWidth);
+    read(125, res::code125, res::code125_advanceWidth);
+    read(126, res::code126, res::code126_advanceWidth);
     return t.release();
   }
 
-  static std::map<uint32_t, glyf::GlyphDataTable::SimpleGlyph> const &Table() {
+  static std::map<uint32_t, Element> const &Table() {
     using namespace std;
-    static unique_ptr<map<uint32_t, glyf::GlyphDataTable::SimpleGlyph> const> const sTable(Load());
+    static unique_ptr<map<uint32_t, Element> const> const sTable(Load());
     return *sTable;
   }
 
 public:
-  static std::optional<glyf::GlyphDataTable::SimpleGlyph> Get(uint32_t codepoint) {
+  static std::optional<glyf::GlyphDataTable::SimpleGlyph> GetGlyph(uint32_t codepoint) {
     using namespace std;
     auto const &table = Table();
     auto found = table.find(codepoint);
     if (found == table.end()) {
       return nullopt;
     } else {
-      return found->second;
+      return found->second.glyph;
+    }
+  }
+
+  static std::optional<uint16_t> GetAdvanceWidth(uint32_t codepoint) {
+    using namespace std;
+    auto const &table = Table();
+    auto found = table.find(codepoint);
+    if (found == table.end()) {
+      return nullopt;
+    } else {
+      return found->second.advanceWidth;
     }
   }
 };

@@ -43,7 +43,7 @@ static Status Expand(glyf::GlyphDataTable const &glyf,
   return Status::Ok();
 }
 
-static void WriteGlyph(std::string const &data, std::string const &outputFilePath, std::string const &varname) {
+static void WriteGlyph(std::string const &data, std::string const &outputFilePath, std::string const &varname, uint16_t advanceWidth) {
   using namespace std;
   using namespace eglyf;
   ofstream out(outputFilePath);
@@ -62,6 +62,7 @@ static void WriteGlyph(std::string const &data, std::string const &outputFilePat
   out << "}" << endl;
   out << endl;
   out << "inline std::string_view const " << varname << "{(char const*)detail::" << varname << "_raw, " << data.size() << "};" << endl;
+  out << "inline uint16_t constexpr " << varname << "_advanceWidth = " << advanceWidth << ";" << endl;
   out << endl;
   out << "} // namespace eglyf::res" << endl;
 }
@@ -83,9 +84,11 @@ TEST_CASE("tuffy") {
       continue;
     }
     auto name = format("code{}", code);
+    auto advanceWidth = font->hmtx->getAdvanceWidth(*gid);
+    REQUIRE(advanceWidth);
     auto const &glyph = glyf->glyphs[*gid];
     if (holds_alternative<glyf::GlyphDataTable::EmptyGlyph>(glyph)) {
-      WriteGlyph("", format("src/glyph/{}.hpp", code), name);
+      WriteGlyph("", format("src/glyph/{}.hpp", code), name, *advanceWidth);
     } else if (holds_alternative<glyf::GlyphDataTable::ReadonlyGlyph>(glyph)) {
       auto const &rg = get<glyf::GlyphDataTable::ReadonlyGlyph>(glyph);
       auto sg = rg.toSimpleGlyph();
@@ -94,7 +97,7 @@ TEST_CASE("tuffy") {
       REQUIRE(sg->encode(out).ok());
 
       string data = out.data();
-      WriteGlyph(data, format("src/glyph/{}.hpp", code), name);
+      WriteGlyph(data, format("src/glyph/{}.hpp", code), name, *advanceWidth);
     } else if (holds_alternative<glyf::GlyphDataTable::CompositeGlyph>(glyph)) {
       auto cg = get<glyf::GlyphDataTable::CompositeGlyph>(glyph);
       glyf::GlyphDataTable::SimpleGlyph sg;
@@ -123,7 +126,7 @@ TEST_CASE("tuffy") {
       ByteOutputStream out;
       REQUIRE(sg.encode(out).ok());
       string data = out.data();
-      WriteGlyph(data, format("src/glyph/{}.hpp", code), name);
+      WriteGlyph(data, format("src/glyph/{}.hpp", code), name, *advanceWidth);
     } else {
       REQUIRE(false);
     }

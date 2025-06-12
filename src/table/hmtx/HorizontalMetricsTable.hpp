@@ -82,6 +82,19 @@ public:
     return EncodeResult(out.data());
   }
 
+  std::optional<uint16_t> getAdvanceWidth(uint16_t gid) const {
+    using namespace std;
+    if (metrics.empty()) {
+      return nullopt;
+    }
+    if (gid < metrics.size()) {
+      return metrics[gid].advanceWidth;
+    } else {
+      auto back = metrics.back();
+      return back.advanceWidth;
+    }
+  }
+
 public:
   std::vector<LongHorMetric> metrics;
 };
