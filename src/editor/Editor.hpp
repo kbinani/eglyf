@@ -1953,6 +1953,45 @@ public:
         }
       }
     }
+    if (!basic.baseline || !basic.yMin || !basic.yMax) {
+      return EGLYF_ERROR;
+    }
+    if (*basic.baseline < *basic.yMin) {
+      return EGLYF_ERROR;
+    }
+    if (*basic.yMax < *basic.baseline) {
+      return EGLYF_ERROR;
+    }
+
+    // Add latin glyphs
+    int16_t height = *basic.yMax - *basic.yMin;
+    double scale = vhu * vfu / (double)height;
+    double upperRatio = (*basic.yMax - *basic.baseline) / (double)height;
+    double lowerRatio = (*basic.baseline - *basic.yMin) / (double)height;
+    int margin = lineWidth / 2;
+
+    Transform<double> mtx(scale, 0, 0, scale, 0, (base - margin - *basic.yMin) * scale);
+    for (uint32_t code = BasicGlyphs::kMinCodepoint; code <= BasicGlyphs::kMaxCodepoint; code++) {
+      auto basicGlyph = BasicGlyphs::Get(code);
+      if (!basicGlyph) {
+        continue;
+      }
+      vector<glyf::GlyphDataTable::Contour> contours;
+      for (auto const &c : basicGlyph->contours) {
+        auto t = c.transformed(mtx);
+        contours.push_back(t);
+      }
+      Vec<double> min(basicGlyph->header.xMin, basicGlyph->header.yMin);
+      Vec<double> max(basicGlyph->header.xMax, basicGlyph->header.yMax);
+      auto tmin = min.transformed(mtx);
+      auto tmax = max.transformed(mtx);
+      string name = cff::StdStrings::Get(code - 31);
+      auto gid = font->addSimpleGlyph(name, gdef::GlyphDefinitionTable::Class::Base, contours, round(tmax.x), round(tmin.x), 0, 0);
+      if (!gid) {
+        return EGLYF_STATUS_PUSH(gid.status());
+      }
+      font->cmap->map(code, *gid);
+    }
 
     return Status::Ok();
   }

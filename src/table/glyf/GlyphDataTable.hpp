@@ -142,6 +142,16 @@ public:
       return c;
     }
 
+    Contour transformed(Transform<double> const &txm) const {
+      Contour c;
+      for (auto const &p : points) {
+        Vec<double> pd(p.x, p.y);
+        auto tpd = pd.transformed(txm);
+        c.add((int16_t)round(tpd.x), (int16_t)round(tpd.y), p.control);
+      }
+      return c;
+    }
+
     Rect<int16_t> boundingBox() const {
       using namespace std;
       if (points.empty()) {
