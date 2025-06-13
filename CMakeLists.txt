@@ -126,6 +126,7 @@ list(APPEND src_files
   src/table/cff/Dict.hpp
   src/table/cff/StdStrings.hpp
   src/glyph/BasicGlyphs.hpp
+  src/editor/BracketGlyph.hpp
 )
 
 function(resource input output varname)

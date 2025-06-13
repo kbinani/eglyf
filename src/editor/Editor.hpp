@@ -3554,6 +3554,9 @@ public:
     if (auto st = ShadingGlyph::Create(*font, hhu, chu, vhu, hfu, vfu, base, lineWidth); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
+    if (auto st = BracketGlyph::Create(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
     if constexpr (false) {
       if (holds_alternative<Font::TrueTypeOutlines>(font->outlines)) {
         using Contour = glyf::GlyphDataTable::Contour;

@@ -116,6 +116,7 @@
 #include "editor/PlaceholderGlyph.hpp"
 #include "editor/CartoucheGlyph.hpp"
 #include "editor/ShadingGlyph.hpp"
+#include "editor/BracketGlyph.hpp"
 #include "editor/Glyph.hpp"
 #include "editor/Group.hpp"
 #include "editor/SizeVariants.hpp"
