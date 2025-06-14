@@ -14,6 +14,9 @@ public:
     if (auto st = bg.createTcbb(); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
+    if (auto st = bg.createTcpb(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
     return Status::Ok();
   }
 
@@ -45,6 +48,37 @@ private:
     t.add(110, -234);
     t.add(110, -284);
     return EGLYF_STATUS_PUSH(createFromTemplate(t, "tcbb", "tcbe"));
+  }
+
+  Status createTcpb() const {
+    using namespace std;
+    using Contour = glyf::GlyphDataTable::Contour;
+    Contour t;
+    t.add(112, -284);
+    t.add(72, -265, true);
+    t.add(27, -164, true);
+    t.add(5, -6, true);
+    t.add(0, 206, true);
+    t.add(0, 336);
+    t.add(0, 956);
+    t.add(0, 1086, true);
+    t.add(5, 1298, true);
+    t.add(27, 1456, true);
+    t.add(72, 1557, true);
+    t.add(112, 1576);
+    t.add(140, 1545);
+    t.add(103, 1523, true);
+    t.add(66, 1414, true);
+    t.add(51, 1259, true);
+    t.add(50, 1065, true);
+    t.add(50, 957);
+    t.add(50, 336);
+    t.add(50, 228, true);
+    t.add(51, 34, true);
+    t.add(66, -122, true);
+    t.add(103, -231, true);
+    t.add(140, -253);
+    return EGLYF_STATUS_PUSH(createFromTemplate(t, "tcpb", "tcpe"));
   }
 
   Status createFromTemplate(glyf::GlyphDataTable::Contour const &t, std::string const &prefix, std::string const &prefixMirrored) const {
