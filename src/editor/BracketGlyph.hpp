@@ -8,20 +8,20 @@ class BracketGlyph {
 public:
   static Status Create(Font &font, int16_t base, int hhu, int16_t vfu, int vhu) {
     BracketGlyph bg(font, base, hhu, vfu, vhu);
-    if (auto st = bg.createTcab(); !st.ok()) {
+    if (auto st = bg.createTca(); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
-    if (auto st = bg.createTcbb(); !st.ok()) {
+    if (auto st = bg.createTcb(); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
-    if (auto st = bg.createTcpb(); !st.ok()) {
+    if (auto st = bg.createTcp(); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
     return Status::Ok();
   }
 
 private:
-  Status createTcab() const {
+  Status createTca() const {
     using namespace std;
     using Contour = glyf::GlyphDataTable::Contour;
     Contour t;
@@ -32,10 +32,10 @@ private:
     t.add(50, 646);
     t.add(120, -284);
     t.add(70, -284);
-    return EGLYF_STATUS_PUSH(createFromTemplate(t, "tcab", "tcae"));
+    return EGLYF_STATUS_PUSH(createFromTemplate(t, "tca"));
   }
 
-  Status createTcbb() const {
+  Status createTcb() const {
     using namespace std;
     using Contour = glyf::GlyphDataTable::Contour;
     Contour t;
@@ -47,10 +47,10 @@ private:
     t.add(50, -234);
     t.add(110, -234);
     t.add(110, -284);
-    return EGLYF_STATUS_PUSH(createFromTemplate(t, "tcbb", "tcbe"));
+    return EGLYF_STATUS_PUSH(createFromTemplate(t, "tcb"));
   }
 
-  Status createTcpb() const {
+  Status createTcp() const {
     using namespace std;
     using Contour = glyf::GlyphDataTable::Contour;
     Contour t;
@@ -78,10 +78,10 @@ private:
     t.add(66, -122, true);
     t.add(103, -231, true);
     t.add(140, -253);
-    return EGLYF_STATUS_PUSH(createFromTemplate(t, "tcpb", "tcpe"));
+    return EGLYF_STATUS_PUSH(createFromTemplate(t, "tcp"));
   }
 
-  Status createFromTemplate(glyf::GlyphDataTable::Contour const &t, std::string const &prefix, std::string const &prefixMirrored) const {
+  Status createFromTemplate(glyf::GlyphDataTable::Contour const &t, std::string const &prefix) const {
     using namespace std;
     using Contour = glyf::GlyphDataTable::Contour;
     using Class = gdef::GlyphDefinitionTable::Class;
@@ -94,22 +94,23 @@ private:
       double ty = base - bounds.yMin * scale;
       Transform<double> mtx(scale, 0, 0, scale, tx, ty);
       auto c = t.transformed(mtx);
-      auto name = format("{}0_{}", prefix, i);
-      auto tcab0 = font->replaceSimpleGlyphByName(name, Class::Mark, {c}, 0, 0, 0, 0);
+      auto cb = c.boundingBox();
+      auto name = format("{}b0_{}", prefix, i);
+      auto tcab0 = font->replaceSimpleGlyphByName(name, Class::Mark, {c}, cb.xMax, 0, 0, 0);
       if (!tcab0) {
         return EGLYF_STATUS_PUSH(tcab0.status());
       }
 
       for (int j = 1; j <= 2; j++) {
-        auto n = format("{}{}_{}", prefix, j, i);
-        auto cp = font->replaceCompositeGlyphByName(n, Class::Mark, GlyphRecord::New(*tcab0), 0, 0, 0, 0);
+        auto n = format("{}b{}_{}", prefix, j, i);
+        auto cp = font->replaceCompositeGlyphByName(n, Class::Mark, GlyphRecord::New(*tcab0), cb.xMax, 0, 0, 0);
         if (!cp) {
           return EGLYF_STATUS_PUSH(cp.status());
         }
       }
       for (int j = 0; j <= 2; j++) {
-        auto n = format("{}{}_{}", prefixMirrored, j, i);
-        auto cp = font->replaceCompositeGlyphByName(n, Class::Mark, GlyphRecord::New(*tcab0, 0, 0, Vec<float>(-1, 1)), 0, 0, 0, 0);
+        auto n = format("{}e{}_{}", prefix, j, i);
+        auto cp = font->replaceCompositeGlyphByName(n, Class::Mark, GlyphRecord::New(*tcab0, 0, 0, Vec<float>(-1, 1)), 0, -cb.xMax, 0, 0);
         if (!cp) {
           return EGLYF_STATUS_PUSH(cp.status());
         }
