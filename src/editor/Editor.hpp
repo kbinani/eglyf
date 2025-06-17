@@ -2311,6 +2311,9 @@ public:
         lookup->marks = Lookup::ProcessMarks(Lookup::ProcessMarks::All{});
         for (auto const &name : names) {
           auto g = getGlyphByName(name);
+          if (!g->id) {
+            continue;
+          }
           auto context = make_shared<Lookup::Context>();
           context->left.push_back(g);
           lookup->inContexts.push_back(context);
