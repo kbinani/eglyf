@@ -145,6 +145,7 @@ public:
     using namespace std;
     if (auto found = groups.find(name); found == groups.end()) {
       auto g = make_shared<Group>();
+      g->name = name;
       groups[name] = g;
       return g;
     } else {
@@ -2305,10 +2306,22 @@ public:
         }
         sizes[key].push_back(name);
       }
+      Lookup::ProcessMarks marks(Lookup::ProcessMarks::All{});
+      switch (pos) {
+      case Pos::TopStart:
+      case Pos::Top:
+        break;
+      default: {
+        auto markGroupName = format("insmarkset{}", spos);
+        auto markGroup = getGroupByName(markGroupName);
+        marks = Lookup::ProcessMarks(Lookup::ProcessMarks::MarkGroup(markGroup));
+        break;
+      }
+      }
       for (auto const &[key, names] : sizes) {
         auto lookup = make_shared<Lookup>();
         lookup->base = Lookup::ProcessBase{};
-        lookup->marks = Lookup::ProcessMarks(Lookup::ProcessMarks::All{});
+        lookup->marks = marks;
         for (auto const &name : names) {
           auto g = getGlyphByName(name);
           if (!g->id) {
