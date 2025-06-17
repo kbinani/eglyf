@@ -128,6 +128,11 @@ list(APPEND src_files
   src/glyph/BasicGlyphs.hpp
   src/editor/BracketGlyph.hpp
 )
+list(APPEND test_files
+  test/main.cpp
+  test/tuffy.cpp
+  test/otf.cpp
+)
 
 function(resource input output varname)
   file(READ ${CMAKE_CURRENT_SOURCE_DIR}/${input} content)
@@ -164,7 +169,7 @@ target_include_directories(eglyf PRIVATE src include)
 target_link_libraries(eglyf PRIVATE cxxopts)
 
 add_executable(eglyf-tests)
-target_sources(eglyf-tests PRIVATE ${src_files} test/main.cpp test/tuffy.cpp)
+target_sources(eglyf-tests PRIVATE ${src_files} ${test_files})
 target_include_directories(eglyf-tests PRIVATE src include deps/harfbuzz/src deps/doctest/doctest)
 target_link_libraries(eglyf-tests PRIVATE harfbuzz)
 
@@ -175,4 +180,4 @@ if (MSVC)
   endforeach ()
 endif()
 
-source_group(TREE ${CMAKE_CURRENT_LIST_DIR} FILES ${src_files};src/main.cpp;test/main.cpp;test/tuffy.cpp)
+source_group(TREE ${CMAKE_CURRENT_LIST_DIR} FILES ${src_files} ${test_files})

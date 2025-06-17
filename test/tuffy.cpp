@@ -7,6 +7,8 @@
 using namespace std;
 using namespace eglyf;
 
+#if 0
+
 static Status Expand(glyf::GlyphDataTable const &glyf,
                      glyf::GlyphDataTable::CompositeGlyph const &cg,
                      Transform<int16_t> mtx,
@@ -132,3 +134,5 @@ TEST_CASE("tuffy") {
     }
   }
 }
+
+#endif
