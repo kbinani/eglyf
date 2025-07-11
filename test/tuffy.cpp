@@ -7,7 +7,7 @@
 using namespace std;
 using namespace eglyf;
 
-#if 0
+#if 1
 
 static Status Expand(glyf::GlyphDataTable const &glyf,
                      glyf::GlyphDataTable::CompositeGlyph const &cg,
@@ -54,16 +54,20 @@ static void WriteGlyph(std::string const &data, std::string const &outputFilePat
   out << "// clang-format off" << endl;
   out << "namespace eglyf::res {" << endl;
   out << endl;
-  out << "namespace detail {" << endl;
-  out << "inline constexpr unsigned char " << varname << "_raw[] = {" << endl;
-  for (size_t i = 0; i < data.size(); i++) {
-    uint8_t c = *((uint8_t *)data.data() + i);
-    out << (int)c << ",";
+  if (data.empty()) {
+    out << "inline std::string_view const " << varname << ";" << endl;
+  } else {
+    out << "namespace detail {" << endl;
+    out << "inline constexpr unsigned char " << varname << "_raw[] = {" << endl;
+    for (size_t i = 0; i < data.size(); i++) {
+      uint8_t c = *((uint8_t *)data.data() + i);
+      out << (int)c << ",";
+    }
+    out << "};" << endl;
+    out << "}" << endl;
+    out << endl;
+    out << "inline std::string_view const " << varname << "{(char const*)detail::" << varname << "_raw, " << data.size() << "};" << endl;
   }
-  out << "};" << endl;
-  out << "}" << endl;
-  out << endl;
-  out << "inline std::string_view const " << varname << "{(char const*)detail::" << varname << "_raw, " << data.size() << "};" << endl;
   out << "inline uint16_t constexpr " << varname << "_advanceWidth = " << advanceWidth << ";" << endl;
   out << endl;
   out << "} // namespace eglyf::res" << endl;
