@@ -4,7 +4,7 @@ namespace eglyf {
 
 class OffsetInputStream : public InputStream {
 public:
-  explicit OffsetInputStream(InputStream *up) : upstream(up), offset(up->position()) {
+  explicit OffsetInputStream(InputStream *up) : offset(up->position()), upstream(up) {
   }
 
   size_t read(void *buffer, size_t size) override {
