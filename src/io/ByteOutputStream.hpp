@@ -38,6 +38,11 @@ public:
     return s;
   }
 
+  std::string_view view() const {
+    std::string_view v((char const *)buffer.data(), buffer.size());
+    return v;
+  }
+
   size_t size() const {
     return buffer.size();
   }
