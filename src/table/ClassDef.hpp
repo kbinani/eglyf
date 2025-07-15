@@ -106,7 +106,7 @@ public:
       if (!in.u16a(classValues, glyphCount)) {
         return EGLYF_ERROR_WHAT("Failed to read classValues");
       }
-      for (uint16_t i = i = 0; i < glyphCount; i++) {
+      for (uint16_t i = 0; i < glyphCount; i++) {
         uint16_t gid = startGlyphID + i;
         ret->classValues[gid] = classValues[i];
       }
