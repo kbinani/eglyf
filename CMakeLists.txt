@@ -165,12 +165,12 @@ resource(res/EgyptianText_200.vtp src/editor/Vtp.hpp vtp)
 
 add_executable(eglyf)
 target_sources(eglyf PRIVATE ${src_files} src/main.cpp)
-target_include_directories(eglyf PRIVATE src include)
+target_include_directories(eglyf PRIVATE include)
 target_link_libraries(eglyf PRIVATE cxxopts)
 
 add_executable(eglyf-tests)
 target_sources(eglyf-tests PRIVATE ${src_files} ${test_files})
-target_include_directories(eglyf-tests PRIVATE src include deps/harfbuzz/src deps/doctest/doctest)
+target_include_directories(eglyf-tests PRIVATE include deps/harfbuzz/src deps/doctest/doctest)
 target_link_libraries(eglyf-tests PRIVATE harfbuzz)
 
 if (MSVC)
