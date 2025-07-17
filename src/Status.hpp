@@ -21,9 +21,9 @@ public:
     }
 
     template <class T>
-    void print(T &out) const {
+    void print(T &out, std::string const &indent) const {
       using namespace std;
-      out << fFile << ":" << fLine << endl;
+      out << indent << fFile << ":" << fLine << endl;
     }
   };
 
@@ -85,7 +85,7 @@ public:
   }
 
   template <class T>
-  void print(T &out) const {
+  void print(T &out, std::string const &indent) const {
     using namespace std;
     if (!fError) {
       return;
@@ -93,9 +93,9 @@ public:
     if (!fError->fWhat.empty()) {
       out << "what: " << fError->fWhat << endl;
     }
-    cout << "trace: " << endl;
+    out << "trace: " << endl;
     for (auto const &where : fError->fTrace) {
-      where.print(out);
+      where.print(out, indent);
     }
   }
 
