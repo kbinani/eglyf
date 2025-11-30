@@ -127,6 +127,7 @@ list(APPEND src_files
   src/table/cff/StdStrings.hpp
   src/glyph/BasicGlyphs.hpp
   src/editor/BracketGlyph.hpp
+  src/Unikemet.hpp
 )
 list(APPEND test_files
   test/main.cpp
