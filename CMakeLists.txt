@@ -21,6 +21,10 @@ else()
   )
 endif()
 
+if (APPLE)
+  set(CMAKE_OSX_DEPLOYMENT_TARGET "15.6")
+endif()
+
 add_subdirectory(deps/cxxopts)
 add_subdirectory(deps/harfbuzz)
 add_subdirectory(deps/doctest)
