@@ -2687,10 +2687,8 @@ public:
           next->marks = a->marks;
           auto nextName = format("{}_{}", a->name, split + 1);
           next->name = nextName;
-          if (split > 0) {
-            lookups.insert(lookups.begin() + index + split, make_pair(nextName, next));
-            feature->lookups.insert(feature->lookups.begin() + lookupIndex + split, next);
-          }
+          lookups.insert(lookups.begin() + index + split + 1, make_pair(nextName, next));
+          feature->lookups.insert(feature->lookups.begin() + lookupIndex + split, next);
           split++;
           current = next;
           count = 0;
