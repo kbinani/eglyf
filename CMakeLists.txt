@@ -180,4 +180,4 @@ if (MSVC)
   endforeach ()
 endif()
 
-source_group(TREE ${CMAKE_CURRENT_LIST_DIR} FILES ${src_files} ${test_files})
+source_group(TREE ${CMAKE_CURRENT_LIST_DIR} FILES ${src_files} ${test_files} src/main.cpp)
