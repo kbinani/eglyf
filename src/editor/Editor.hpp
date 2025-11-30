@@ -2016,9 +2016,6 @@ public:
     if (auto st = replaceLookup_ps046_targetglyphs_1_A(); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
-    if (auto st = replaceLookup_ps046_targetglyphs_1_A(); !st.ok()) {
-      return EGLYF_STATUS_PUSH(st);
-    }
     if (auto st = replaceLookup_bl_perglyphsize(); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
