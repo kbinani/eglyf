@@ -2007,6 +2007,9 @@ public:
   }
 
   Status replaceLookups() {
+    if (auto st = replaceAltSeq(); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
     if (auto st = replaceLookup_pr021_tsg_A(); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
@@ -2033,6 +2036,122 @@ public:
     }
     if (auto st = replaceLookup_ps077_cntrlmirrorglyphsR_M(); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
+    }
+    return Status::Ok();
+  }
+
+  Status replaceAltSeq() {
+    using namespace std;
+    auto a = getLookupByName("ha007_ligatures_internal_7_M");
+    if (!a) {
+      return EGLYF_ERROR;
+    }
+    auto position = ranges::find_if(lookups, [=](auto const &it) { return it.second == a; });
+    if (position == lookups.end()) {
+      return EGLYF_ERROR;
+    }
+    size_t index = distance(lookups.begin(), position);
+
+    auto const setupContext = [this](Lookup &lookup) {
+      for (auto const &n : {"vj", "hj", "om"}) {
+        auto g = getGlyphByName(n);
+        auto leftOnly = make_shared<Lookup::Context>();
+        leftOnly->left.push_back(g);
+        lookup.exceptContexts.push_back(leftOnly);
+        auto rightOnly = make_shared<Lookup::Context>();
+        rightOnly->right.push_back(g);
+        lookup.exceptContexts.push_back(rightOnly);
+      }
+      {
+        auto corners = getGroupByName("corners");
+        auto leftOnly = make_shared<Lookup::Context>();
+        leftOnly->left.push_back(corners);
+        lookup.exceptContexts.push_back(leftOnly);
+        auto rightOnly = make_shared<Lookup::Context>();
+        rightOnly->right.push_back(corners);
+        lookup.exceptContexts.push_back(rightOnly);
+      }
+    };
+
+    auto shrink = make_shared<Lookup>();
+    shrink->base = Lookup::ProcessBase{};
+    shrink->marks = Lookup::ProcessMarks(Lookup::ProcessMarks::All{});
+    shrink->name = "internal_ligature";
+    setupContext(*shrink);
+
+    auto expand = make_shared<Lookup>();
+    expand->base = Lookup::ProcessBase{};
+    expand->marks = Lookup::ProcessMarks(Lookup::ProcessMarks::All{});
+    expand->name = "internal_multiple_subst";
+    setupContext(*expand);
+
+    auto st = Unikemet::EnumerateAltSeq([this, &shrink, &expand](uint32_t target, vector<uint32_t> const &alt) {
+      auto targetGid = font->getGlyphID(target);
+      auto s = make_shared<Lookup::Substitution>();
+      bool ok = true;
+      if (targetGid) {
+        // shrink
+        auto targetGlyph = getGlyphByID(*targetGid);
+        s->output.push_back(targetGlyph);
+        for (uint32_t a : alt) {
+          auto g = font->getGlyphID(a);
+          if (!g) {
+            ok = false;
+            break;
+          }
+          auto glyph = getGlyphByID(*g);
+          s->input.push_back(glyph);
+        }
+        if (ok) {
+          shrink->substitutions.push_back(s);
+        }
+      } else {
+        // expand
+        auto targetGlyph = make_shared<Glyph>();
+        auto name = format("u{0:x}", target);
+        auto classDef = gdef::GlyphDefinitionTable::Class::Base;
+        targetGlyph->name = name;
+        targetGlyph->classDef = classDef;
+        glyphs[name] = targetGlyph;
+
+        auto targetGidEmpty = font->addEmptyGlyph(name, classDef, 0, 0, 0, 0);
+        if (!targetGidEmpty) {
+          return EGLYF_STATUS_PUSH(targetGidEmpty.status());
+        }
+        font->cmap->map(target, *targetGidEmpty);
+        if (auto st = font->gdef->glyphClassDef->add(*targetGidEmpty, static_cast<uint16_t>(classDef)); !st.ok()) {
+          return EGLYF_STATUS_PUSH(st);
+        }
+        targetGlyph->id = *targetGidEmpty;
+        glyphsLut[*targetGidEmpty] = targetGlyph;
+
+        s->input.push_back(targetGlyph);
+
+        for (uint32_t a : alt) {
+          auto g = font->getGlyphID(a);
+          if (!g) {
+            ok = false;
+            break;
+          }
+          auto glyph = getGlyphByID(*g);
+          s->output.push_back(glyph);
+        }
+        if (ok) {
+          expand->substitutions.push_back(s);
+        }
+      }
+      return Status::Ok();
+    });
+    if (!st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    if (!shrink->substitutions.empty()) {
+      index++;
+      lookups.insert(lookups.begin() + index, make_pair("internal_ligature", shrink));
+    }
+    if (!expand->substitutions.empty()) {
+      index++;
+      lookups.insert(lookups.begin() + index, make_pair("internal_multiple_subst", expand));
     }
     return Status::Ok();
   }
