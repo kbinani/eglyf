@@ -3,7 +3,7 @@
 #include <cxxopts.hpp>
 
 static int Fail(eglyf::Status st) {
-  st.print(std::cout);
+  st.print(std::cout, "");
   return -1;
 }
 
