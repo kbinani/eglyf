@@ -2042,47 +2042,51 @@ public:
 
   Status replaceAltSeq() {
     using namespace std;
-    size_t index = 0;
 
-    auto const setupContext = [this](Lookup &lookup) {
+    auto const createLookup = [this]() {
+      auto lookup = make_shared<Lookup>();
+      lookup->base = Lookup::ProcessBase{};
+      lookup->marks = Lookup::ProcessMarks(Lookup::ProcessMarks::All{});
+
       for (auto const &n : {"vj", "hj", "om"}) {
         auto g = getGlyphByName(n);
         auto leftOnly = make_shared<Lookup::Context>();
         leftOnly->left.push_back(g);
-        lookup.exceptContexts.push_back(leftOnly);
+        lookup->exceptContexts.push_back(leftOnly);
         auto rightOnly = make_shared<Lookup::Context>();
         rightOnly->right.push_back(g);
-        lookup.exceptContexts.push_back(rightOnly);
+        lookup->exceptContexts.push_back(rightOnly);
       }
       {
         auto corners = getGroupByName("corners");
         auto leftOnly = make_shared<Lookup::Context>();
         leftOnly->left.push_back(corners);
-        lookup.exceptContexts.push_back(leftOnly);
+        lookup->exceptContexts.push_back(leftOnly);
         auto rightOnly = make_shared<Lookup::Context>();
         rightOnly->right.push_back(corners);
-        lookup.exceptContexts.push_back(rightOnly);
+        lookup->exceptContexts.push_back(rightOnly);
       }
+      return lookup;
     };
 
-    auto shrink = make_shared<Lookup>();
-    shrink->base = Lookup::ProcessBase{};
-    shrink->marks = Lookup::ProcessMarks(Lookup::ProcessMarks::All{});
-    shrink->name = "ha001_internal_ligature";
-    setupContext(*shrink);
+    map<size_t, shared_ptr<Lookup>> shrinkList;
+    map<size_t, shared_ptr<Lookup>> expandList;
 
-    auto expand = make_shared<Lookup>();
-    expand->base = Lookup::ProcessBase{};
-    expand->marks = Lookup::ProcessMarks(Lookup::ProcessMarks::All{});
-    expand->name = "ha002_internal_multiple_subst";
-    setupContext(*expand);
-
-    auto st = Unikemet::EnumerateAltSeq([this, &shrink, &expand](uint32_t target, vector<uint32_t> const &alt) {
+    auto st = Unikemet::EnumerateAltSeq([this, &shrinkList, &expandList, &createLookup](uint32_t target, vector<uint32_t> const &alt) {
       auto targetGid = font->getGlyphID(target);
       auto s = make_shared<Lookup::Substitution>();
       bool ok = true;
+      size_t const count = alt.size();
       if (targetGid) {
         // shrink
+        shared_ptr<Lookup> shrink;
+        bool created = false;
+        if (auto found = shrinkList.find(count); found != shrinkList.end()) {
+          shrink = found->second;
+        } else {
+          shrink = createLookup();
+          created = true;
+        }
         auto targetGlyph = getGlyphByID(*targetGid);
         s->output.push_back(targetGlyph);
         for (uint32_t a : alt) {
@@ -2096,9 +2100,20 @@ public:
         }
         if (ok) {
           shrink->substitutions.push_back(s);
+          if (created) {
+            shrinkList[count] = shrink;
+          }
         }
       } else {
         // expand
+        shared_ptr<Lookup> expand;
+        bool created = false;
+        if (auto found = expandList.find(count); found != expandList.end()) {
+          expand = found->second;
+        } else {
+          expand = createLookup();
+          created = true;
+        }
         auto targetGlyph = make_shared<Glyph>();
         auto name = format("u{0:x}", target);
         auto classDef = gdef::GlyphDefinitionTable::Class::Base;
@@ -2130,6 +2145,9 @@ public:
         }
         if (ok) {
           expand->substitutions.push_back(s);
+          if (created) {
+            expandList[count] = expand;
+          }
         }
       }
       return Status::Ok();
@@ -2137,13 +2155,21 @@ public:
     if (!st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
-    if (!shrink->substitutions.empty()) {
+    size_t index = 0;
+    size_t tables = 0;
+    for (auto &[cnt, shrink] : shrinkList) {
+      tables++;
+      auto name = format("ha{0:03d}_ligatures_internal_{1}", tables, cnt);
+      shrink->name = name;
+      lookups.insert(lookups.begin() + index, make_pair(name, shrink));
       index++;
-      lookups.insert(lookups.begin() + index, make_pair(shrink->name, shrink));
     }
-    if (!expand->substitutions.empty()) {
+    for (auto &[cnt, expand] : expandList) {
+      tables++;
+      auto name = format("ha{0:03d}_multiple_internal_{1}", tables, cnt);
+      expand->name = name;
+      lookups.insert(lookups.begin() + index, make_pair(name, expand));
       index++;
-      lookups.insert(lookups.begin() + index, make_pair(expand->name, expand));
     }
     return Status::Ok();
   }
