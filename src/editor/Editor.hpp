@@ -2042,15 +2042,7 @@ public:
 
   Status replaceAltSeq() {
     using namespace std;
-    auto a = getLookupByName("ha007_ligatures_internal_7_M");
-    if (!a) {
-      return EGLYF_ERROR;
-    }
-    auto position = ranges::find_if(lookups, [=](auto const &it) { return it.second == a; });
-    if (position == lookups.end()) {
-      return EGLYF_ERROR;
-    }
-    size_t index = distance(lookups.begin(), position);
+    size_t index = 0;
 
     auto const setupContext = [this](Lookup &lookup) {
       for (auto const &n : {"vj", "hj", "om"}) {
@@ -2076,13 +2068,13 @@ public:
     auto shrink = make_shared<Lookup>();
     shrink->base = Lookup::ProcessBase{};
     shrink->marks = Lookup::ProcessMarks(Lookup::ProcessMarks::All{});
-    shrink->name = "internal_ligature";
+    shrink->name = "ha001_internal_ligature";
     setupContext(*shrink);
 
     auto expand = make_shared<Lookup>();
     expand->base = Lookup::ProcessBase{};
     expand->marks = Lookup::ProcessMarks(Lookup::ProcessMarks::All{});
-    expand->name = "internal_multiple_subst";
+    expand->name = "ha002_internal_multiple_subst";
     setupContext(*expand);
 
     auto st = Unikemet::EnumerateAltSeq([this, &shrink, &expand](uint32_t target, vector<uint32_t> const &alt) {
@@ -2147,11 +2139,11 @@ public:
     }
     if (!shrink->substitutions.empty()) {
       index++;
-      lookups.insert(lookups.begin() + index, make_pair("internal_ligature", shrink));
+      lookups.insert(lookups.begin() + index, make_pair(shrink->name, shrink));
     }
     if (!expand->substitutions.empty()) {
       index++;
-      lookups.insert(lookups.begin() + index, make_pair("internal_multiple_subst", expand));
+      lookups.insert(lookups.begin() + index, make_pair(expand->name, expand));
     }
     return Status::Ok();
   }
