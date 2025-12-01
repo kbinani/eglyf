@@ -53,7 +53,7 @@
 #include "../src/io/DataFragmentWriter.hpp"
 #include "../src/Tag.hpp"
 #include "../src/Unicode.hpp"
-#include "../src/Unikemet.hpp"
+#include "../src/unikemet/Unikemet.hpp"
 #include "../src/TableRecord.hpp"
 #include "../src/TableDirectory.hpp"
 #include "../src/table/Table.hpp"

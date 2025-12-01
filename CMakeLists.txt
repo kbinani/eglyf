@@ -27,11 +27,17 @@ if (APPLE)
   set(CMAKE_OSX_DEPLOYMENT_TARGET "15.6")
 endif()
 
-FetchContent_Populate(UniKemet
+FetchContent_Populate(
+  UniKemet
   URL https://www.unicode.org/Public/17.0.0/ucd/Unikemet.txt
   URL_HASH SHA512=59907f58cdf78578cae56739165ec0c4e66e307c4b821183e31f61885e470e74599581b12b904507133af39a914e256d57c2b36cb4d3247ccffc47b03a1ab7d6
   DOWNLOAD_NO_EXTRACT TRUE
-  SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/script")
+  SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/script"
+)
+execute_process(
+  COMMAND "bash" "${CMAKE_CURRENT_SOURCE_DIR}/script/unikemet.sh"
+  WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+)
 
 add_subdirectory(deps/cxxopts)
 add_subdirectory(deps/harfbuzz)
@@ -139,7 +145,7 @@ list(APPEND src_files
   src/table/cff/StdStrings.hpp
   src/glyph/BasicGlyphs.hpp
   src/editor/BracketGlyph.hpp
-  src/Unikemet.hpp
+  src/unikemet/Unikemet.hpp
 )
 list(APPEND test_files
   test/main.cpp

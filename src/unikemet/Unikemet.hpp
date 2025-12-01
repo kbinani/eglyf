@@ -11,7 +11,7 @@ public:
     static auto create = []() -> unordered_map<uint32_t, vector<uint32_t>> * {
       auto p = new unordered_map<uint32_t, vector<uint32_t>>();
       unordered_map<uint32_t, vector<uint32_t>> &r = *p;
-#include "./res/UnikemetAltSeq.hpp"
+#include "./UnikemetAltSeq.hpp"
       return p;
     };
     static unique_ptr<unordered_map<uint32_t, vector<uint32_t>> const> const sTable(create());

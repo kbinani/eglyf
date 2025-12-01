@@ -10,4 +10,4 @@ cat script/Unikemet.txt \
   | sed 's/, }/}/g'
 echo "// clang-format on"
 
-) > src/res/UnikemetAltSeq.hpp
+) > src/unikemet/UnikemetAltSeq.hpp
