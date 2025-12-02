@@ -2072,7 +2072,7 @@ public:
     map<size_t, shared_ptr<Lookup>> shrinkList;
     map<size_t, shared_ptr<Lookup>> expandList;
 
-    auto st = Unikemet::EnumerateAltSeq([this, &shrinkList, &expandList, &createLookup](uint32_t target, vector<uint32_t> const &alt) {
+    auto const accept = [this, &shrinkList, &expandList, &createLookup](uint32_t target, vector<uint32_t> const &alt) -> Status {
       auto targetGid = font->getGlyphID(target);
       auto s = make_shared<Lookup::Substitution>();
       bool ok = true;
@@ -2151,26 +2151,81 @@ public:
         }
       }
       return Status::Ok();
-    });
+    };
+
+    size_t index = 0;
+    size_t tables = 0;
+    auto const flush = [this, &shrinkList, &expandList, &index, &tables]() {
+      for (auto &[cnt, shrink] : shrinkList) {
+        tables++;
+        auto name = format("ha{0:03d}_ligatures_internal_{1}", tables, cnt);
+        shrink->name = name;
+        lookups.insert(lookups.begin() + index, make_pair(name, shrink));
+        index++;
+      }
+      for (auto &[cnt, expand] : expandList) {
+        tables++;
+        auto name = format("ha{0:03d}_multiple_internal_{1}", tables, cnt);
+        expand->name = name;
+        lookups.insert(lookups.begin() + index, make_pair(name, expand));
+        index++;
+      }
+      shrinkList.clear();
+      expandList.clear();
+    };
+
+    auto st = Unikemet::EnumerateAltSeq(accept);
     if (!st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
-    size_t index = 0;
-    size_t tables = 0;
-    for (auto &[cnt, shrink] : shrinkList) {
-      tables++;
-      auto name = format("ha{0:03d}_ligatures_internal_{1}", tables, cnt);
-      shrink->name = name;
-      lookups.insert(lookups.begin() + index, make_pair(name, shrink));
-      index++;
+    flush();
+
+    uint32_t D50 = 0x130ad;
+    uint32_t M17 = 0x131cb;
+    uint32_t hj = 0x13431;
+    uint32_t vj = 0x13430;
+    // D50A 𓂮
+    if (auto st = accept(0x130ae, {D50, hj, D50}); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
-    for (auto &[cnt, expand] : expandList) {
-      tables++;
-      auto name = format("ha{0:03d}_multiple_internal_{1}", tables, cnt);
-      expand->name = name;
-      lookups.insert(lookups.begin() + index, make_pair(name, expand));
-      index++;
+    // D50B 𓂯
+    if (auto st = accept(0x130af, {D50, hj, D50, hj, D50}); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
     }
+    // D50C 𓂰
+    if (auto st = accept(0x130b0, {D50, hj, D50, hj, D50, hj, D50}); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    // D50D 𓂱
+    if (auto st = accept(0x130b1, {D50, hj, D50, hj, D50, vj, D50, hj, D50}); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    // D50E 𓂲
+    if (auto st = accept(0x130b2, {D50, hj, D50, hj, D50, vj, D50, hj, D50, hj, D50}); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    // D50F 𓂳
+    if (auto st = accept(0x130b3, {D50, hj, D50, hj, D50, hj, D50, vj, D50, hj, D50, hj, D50}); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    // D50G 𓂴
+    if (auto st = accept(0x130b4, {D50, hj, D50, hj, D50, hj, D50, vj, D50, hj, D50, hj, D50, hj, D50}); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    // D50H 𓂵
+    if (auto st = accept(0x130b5, {D50, hj, D50, hj, D50, vj, D50, hj, D50, hj, D50, vj, D50, hj, D50, hj, D50}); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    // D50I 𓂶
+    if (auto st = accept(0x130b6, {D50, hj, D50, hj, D50, hj, D50, hj, D50}); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    // M17A 𓇌
+    if (auto st = accept(0x131cc, {M17, hj, M17}); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    flush();
+
     return Status::Ok();
   }
 
