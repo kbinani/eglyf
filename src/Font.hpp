@@ -853,6 +853,16 @@ public:
     return vmtx;
   }
 
+  bool hasNonEmptyOutline(uint16_t gid) const {
+    using namespace std;
+    if (holds_alternative<TrueTypeOutlines>(outlines)) {
+      auto &tto = get<TrueTypeOutlines>(outlines);
+      return tto.glyf->hasNonEmptyOutline(gid);
+    } else {
+      return false;
+    }
+  }
+
 private:
   Optional<uint16_t> addTrueTypeGlyph(std::string const &name,
                                       gdef::GlyphDefinitionTable::Class classValue,

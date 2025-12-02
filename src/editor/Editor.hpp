@@ -2077,7 +2077,7 @@ public:
       auto s = make_shared<Lookup::Substitution>();
       bool ok = true;
       size_t const count = alt.size();
-      if (targetGid) {
+      if (targetGid && font->hasNonEmptyOutline(*targetGid)) {
         // shrink
         shared_ptr<Lookup> shrink;
         bool created = false;
@@ -2111,26 +2111,32 @@ public:
         if (auto found = expandList.find(count); found != expandList.end()) {
           expand = found->second;
         } else {
-          expand = createLookup();
+          expand = make_shared<Lookup>();
+          expand->base = Lookup::ProcessBase{};
+          expand->marks = Lookup::ProcessMarks(Lookup::ProcessMarks::All{});
           created = true;
         }
-        auto targetGlyph = make_shared<Glyph>();
-        auto name = format("u{0:x}", target);
-        auto classDef = gdef::GlyphDefinitionTable::Class::Base;
-        targetGlyph->name = name;
-        targetGlyph->classDef = classDef;
-        glyphs[name] = targetGlyph;
-
-        auto targetGidEmpty = font->addEmptyGlyph(name, classDef, 0, 0, 0, 0);
-        if (!targetGidEmpty) {
-          return EGLYF_STATUS_PUSH(targetGidEmpty.status());
+        shared_ptr<Glyph> targetGlyph;
+        if (targetGid) {
+          targetGlyph = getGlyphByID(*targetGid);
+        } else {
+          targetGlyph = make_shared<Glyph>();
+          auto name = format("u{0:x}", target);
+          auto classDef = gdef::GlyphDefinitionTable::Class::Base;
+          targetGlyph->name = name;
+          targetGlyph->classDef = classDef;
+          glyphs[name] = targetGlyph;
+          auto targetGidEmpty = font->addEmptyGlyph(name, classDef, 0, 0, 0, 0);
+          if (!targetGidEmpty) {
+            return EGLYF_STATUS_PUSH(targetGidEmpty.status());
+          }
+          font->cmap->map(target, *targetGidEmpty);
+          if (auto st = font->gdef->glyphClassDef->add(*targetGidEmpty, static_cast<uint16_t>(classDef)); !st.ok()) {
+            return EGLYF_STATUS_PUSH(st);
+          }
+          targetGlyph->id = *targetGidEmpty;
+          glyphsLut[*targetGidEmpty] = targetGlyph;
         }
-        font->cmap->map(target, *targetGidEmpty);
-        if (auto st = font->gdef->glyphClassDef->add(*targetGidEmpty, static_cast<uint16_t>(classDef)); !st.ok()) {
-          return EGLYF_STATUS_PUSH(st);
-        }
-        targetGlyph->id = *targetGidEmpty;
-        glyphsLut[*targetGidEmpty] = targetGlyph;
 
         s->input.push_back(targetGlyph);
 
@@ -2156,14 +2162,18 @@ public:
     size_t index = 0;
     size_t tables = 0;
     auto const flush = [this, &shrinkList, &expandList, &index, &tables]() {
-      for (auto &[cnt, shrink] : shrinkList) {
+      for (auto it = shrinkList.rbegin(); it != shrinkList.rend(); it++) {
+        size_t cnt = it->first;
+        shared_ptr<Lookup> shrink = it->second;
         tables++;
         auto name = format("ha{0:03d}_ligatures_internal_{1}", tables, cnt);
         shrink->name = name;
         lookups.insert(lookups.begin() + index, make_pair(name, shrink));
         index++;
       }
-      for (auto &[cnt, expand] : expandList) {
+      for (auto it = expandList.rbegin(); it != expandList.rend(); it++) {
+        size_t cnt = it->first;
+        shared_ptr<Lookup> expand = it->second;
         tables++;
         auto name = format("ha{0:03d}_multiple_internal_{1}", tables, cnt);
         expand->name = name;
@@ -2182,8 +2192,12 @@ public:
 
     uint32_t D50 = 0x130ad;
     uint32_t M17 = 0x131cb;
+    uint32_t M22 = 0x131d1;
+    uint32_t Z1 = 0x133E4;
+    uint32_t Z015 = 0x133FA;
     uint32_t hj = 0x13431;
     uint32_t vj = 0x13430;
+
     // D50A 𓂮
     if (auto st = accept(0x130ae, {D50, hj, D50}); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
@@ -2222,6 +2236,46 @@ public:
     }
     // M17A 𓇌
     if (auto st = accept(0x131cc, {M17, hj, M17}); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    // M22A 𓇒
+    if (auto st = accept(0x131d2, {M22, hj, M22}); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    // Z015A 𓏻
+    if (auto st = accept(0x133FB, {Z015, hj, Z015}); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    // Z015B 𓏼
+    if (auto st = accept(0x133FC, {Z015, hj, Z015, hj, Z015}); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    // Z015C 𓏽
+    if (auto st = accept(0x133FD, {Z015, hj, Z015, hj, Z015, hj, Z015}); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    // Z015D 𓏾
+    if (auto st = accept(0x133FE, {Z015, hj, Z015, hj, Z015, vj, Z015, hj, Z015}); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    // Z015E 𓏿
+    if (auto st = accept(0x133FF, {Z015, hj, Z015, hj, Z015, vj, Z015, hj, Z015, hj, Z015}); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    // Z015F 𓐀
+    if (auto st = accept(0x13400, {Z015, hj, Z015, hj, Z015, hj, Z015, vj, Z015, hj, Z015, hj, Z015}); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    // Z015G 𓐁
+    if (auto st = accept(0x13401, {Z015, hj, Z015, hj, Z015, hj, Z015, vj, Z015, hj, Z015, hj, Z015, hj, Z015}); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    // Z015H 𓐂
+    if (auto st = accept(0x13402, {Z015, hj, Z015, hj, Z015, vj, Z015, hj, Z015, hj, Z015, vj, Z015, hj, Z015, hj, Z015}); !st.ok()) {
+      return EGLYF_STATUS_PUSH(st);
+    }
+    // Z015I 𓐃
+    if (auto st = accept(0x13403, {Z015, hj, Z015, hj, Z015, hj, Z015, hj, Z015}); !st.ok()) {
       return EGLYF_STATUS_PUSH(st);
     }
     flush();

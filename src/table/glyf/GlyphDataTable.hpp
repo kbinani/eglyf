@@ -1130,6 +1130,18 @@ public:
     return Status::Ok();
   }
 
+  bool hasNonEmptyOutline(uint16_t gid) const {
+    if (gid < glyphs.size()) {
+      if (holds_alternative<EmptyGlyph>(glyphs[gid])) {
+        return false;
+      } else {
+        return true;
+      }
+    } else {
+      return false;
+    }
+  }
+
   static std::optional<Rect<int16_t>> Bounds(Glyph const &glyph) {
     using namespace std;
     if (holds_alternative<ReadonlyGlyph>(glyph)) {
