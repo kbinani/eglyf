@@ -1094,18 +1094,21 @@ public:
       sumCount++;
     }
 
-    int averageTop = (int)round(sumTop / (double)sumCount);
-    int averageBottom = (int)round(sumBottom / (double)sumCount);
-    int height = averageTop - averageBottom;
-    int width = (int)round(sumWidth / (double)sumCount);
-    int scale = min(height, width);
-    lineWidth = (int16_t)max(1, scale / 32);
-    int margin = lineWidth / 2;
-    int h = height - 8 * lineWidth - 2 * margin;
-    double s = h / (double)height;
-    vfu = (int16_t)round((h + 2 * margin) / (double)vhu);
-    hfu = (int16_t)round(width * s / chu);
-    base = averageBottom + 4 * lineWidth + margin;
+    double averageTop = sumTop / (double)sumCount;
+    double averageBottom = sumBottom / (double)sumCount;
+
+    int height = font->hhea->ascender - font->hhea->descender;
+    double width = sumWidth / (double)sumCount;
+    double aspect = (averageTop - averageBottom) / width;
+    int scale = height;
+    lineWidth = (int)std::max(2, height / 32);
+    int margin = (int)std::max(1, lineWidth / 2);
+    double _h = height - 8 * lineWidth - 2 * margin;
+    double s = _h / (averageTop - averageBottom);
+
+    vfu = (int16_t)round((_h + 2 * margin) / (double)this->vhu);
+    hfu = (int16_t)round(_h / aspect / (double)this->vhu);
+    base = font->hhea->descender;
     sb = 0;
 
     struct BaseGlyph {
