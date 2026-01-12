@@ -1094,10 +1094,11 @@ public:
       sumCount++;
     }
 
+    // https://gyazo.com/db41f8ea3148d81694b73a9e10d94a6c
     double averageTop = sumTop / (double)sumCount;
     double averageBottom = sumBottom / (double)sumCount;
 
-    int height = font->hhea->ascender - font->hhea->descender;
+    int height = font->hhea->ascender;
     double width = sumWidth / (double)sumCount;
     double aspect = (averageTop - averageBottom) / width;
     int scale = height;
@@ -1108,7 +1109,7 @@ public:
 
     vfu = (int16_t)round((_h + 2 * margin) / (double)this->vhu);
     hfu = (int16_t)round(_h / aspect / (double)this->vhu);
-    base = font->hhea->descender;
+    base = 0;
     sb = 0;
 
     struct BaseGlyph {
