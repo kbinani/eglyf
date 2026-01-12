@@ -1,6 +1,6 @@
 #pragma once
 // clang-format off
-namespace eglyf::res {
+namespace eglyf::res::tuffy {
 
 namespace detail {
 inline constexpr unsigned char code79_raw[] = {
@@ -10,4 +10,4 @@ inline constexpr unsigned char code79_raw[] = {
 inline std::string_view const code79{(char const*)detail::code79_raw, 147};
 inline uint16_t constexpr code79_advanceWidth = 1333;
 
-} // namespace eglyf::res
+} // namespace eglyf::res::tuff

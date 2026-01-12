@@ -52,7 +52,7 @@ static void WriteGlyph(std::string const &data, std::string const &outputFilePat
   REQUIRE(out);
   out << "#pragma once" << endl;
   out << "// clang-format off" << endl;
-  out << "namespace eglyf::res {" << endl;
+  out << "namespace eglyf::res::tuffy {" << endl;
   out << endl;
   if (data.empty()) {
     out << "inline std::string_view const " << varname << ";" << endl;
@@ -70,7 +70,7 @@ static void WriteGlyph(std::string const &data, std::string const &outputFilePat
   }
   out << "inline uint16_t constexpr " << varname << "_advanceWidth = " << advanceWidth << ";" << endl;
   out << endl;
-  out << "} // namespace eglyf::res" << endl;
+  out << "} // namespace eglyf::res::tuff" << endl;
 }
 
 TEST_CASE("tuffy") {
@@ -83,6 +83,18 @@ TEST_CASE("tuffy") {
   REQUIRE(holds_alternative<Font::TrueTypeOutlines>(font->outlines));
   auto const &outline = get<Font::TrueTypeOutlines>(font->outlines);
   auto const &glyf = outline.glyf;
+
+  {
+    ofstream out("src/glyph/hhea.hpp");
+    out << "#pragma once" << endl;
+    out << "// clang-format off" << endl;
+    out << "namespace eglyf::res::tuffy {" << endl;
+    out << endl;
+    out << "inline constexpr int kAscender = " << font->hhea->ascender << ";" << endl;
+    out << "inline constexpr int kDescender = " << font->hhea->descender << ";" << endl;
+    out << endl;
+    out << "} // namespace eglyf::res::tuffy" << endl;
+  }
 
   for (uint32_t code = BasicGlyphs::kMinCodepoint; code <= BasicGlyphs::kMaxCodepoint; code++) {
     auto gid = font->getGlyphID(code);
